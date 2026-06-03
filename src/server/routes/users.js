@@ -40,7 +40,8 @@ router.post('/register', (req, res) => {
     return res.status(409).json({ error: 'Username already exists.' });
   }
 
-  const secret = (passphrase || generatePassphrase()).trim();
+  const providedPassphrase = typeof passphrase === 'string' ? passphrase.trim() : '';
+  const secret = providedPassphrase || generatePassphrase();
   const salt = createSalt();
   const hash = hashPassphrase(secret, salt);
   const userId = idGenerator();

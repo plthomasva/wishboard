@@ -202,6 +202,21 @@ export default function AccountPage() {
         </button>
       </div>
 
+      <div className="profile-details">
+        <h2>Your profile attributes</h2>
+        <ul>
+          <li>
+            <strong>Genders:</strong> {user.identity_genders.length ? user.identity_genders.join(', ') : 'None set'}
+          </li>
+          <li>
+            <strong>Orientations:</strong> {user.identity_orientations.length ? user.identity_orientations.join(', ') : 'None set'}
+          </li>
+          <li>
+            <strong>Roles:</strong> {user.identity_roles.length ? user.identity_roles.join(', ') : 'None set'}
+          </li>
+        </ul>
+      </div>
+
       {message && <div className="message success">{message}</div>}
       {error && <div className="message error">{error}</div>}
 

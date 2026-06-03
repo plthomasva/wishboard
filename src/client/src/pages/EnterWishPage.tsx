@@ -70,39 +70,47 @@ export default function EnterWishPage() {
             placeholder="Type your wish here"
           />
         </label>
-        <label>
-          Optional passphrase
-          <input
-            type="text"
-            value={passphrase}
-            onChange={(event) => setPassphrase(event.target.value)}
-            placeholder="Leave blank for automatic code phrase"
-          />
-        </label>
-        <label>
-          Creator genders (anonymous only)
-          <input
-            value={creatorGenders}
-            onChange={(event) => setCreatorGenders(event.target.value)}
-            placeholder="e.g. woman, non-binary"
-          />
-        </label>
-        <label>
-          Creator orientations (anonymous only)
-          <input
-            value={creatorOrientations}
-            onChange={(event) => setCreatorOrientations(event.target.value)}
-            placeholder="e.g. queer, straight"
-          />
-        </label>
-        <label>
-          Creator roles (anonymous only)
-          <input
-            value={creatorRoles}
-            onChange={(event) => setCreatorRoles(event.target.value)}
-            placeholder="e.g. speaker, volunteer"
-          />
-        </label>
+        {!token ? (
+          <>
+            <label>
+              Optional passphrase
+              <input
+                type="text"
+                value={passphrase}
+                onChange={(event) => setPassphrase(event.target.value)}
+                placeholder="Leave blank for automatic code phrase"
+              />
+            </label>
+            <label>
+              Creator genders (anonymous only)
+              <input
+                value={creatorGenders}
+                onChange={(event) => setCreatorGenders(event.target.value)}
+                placeholder="e.g. woman, non-binary"
+              />
+            </label>
+            <label>
+              Creator orientations (anonymous only)
+              <input
+                value={creatorOrientations}
+                onChange={(event) => setCreatorOrientations(event.target.value)}
+                placeholder="e.g. queer, straight"
+              />
+            </label>
+            <label>
+              Creator roles (anonymous only)
+              <input
+                value={creatorRoles}
+                onChange={(event) => setCreatorRoles(event.target.value)}
+                placeholder="e.g. speaker, volunteer"
+              />
+            </label>
+          </>
+        ) : (
+          <div className="note-box">
+            <p>Your account identity attributes are applied automatically to this wish.</p>
+          </div>
+        )}
         <label>
           Desired genders for who can fulfill this wish
           <input

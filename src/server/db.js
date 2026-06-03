@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const dataDir = path.resolve(__dirname, '../../data');
 fs.mkdirSync(dataDir, { recursive: true });
 
-const dbPath = path.join(dataDir, 'wishboard.db');
+const dbPath = process.env.WISHBOARD_DB_PATH || path.join(dataDir, 'wishboard.db');
 const db = new Database(dbPath);
 
 db.exec(`

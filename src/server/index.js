@@ -25,6 +25,10 @@ app.get('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Wishboard server listening on http://localhost:${PORT}`);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  app.listen(PORT, () => {
+    console.log(`Wishboard server listening on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
