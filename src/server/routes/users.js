@@ -29,6 +29,16 @@ const normalizeArrayField = (value) => {
     .filter(Boolean);
 };
 
+router.get('/exists', (req, res) => {
+  const { username } = req.query;
+  if (!username || typeof username !== 'string' || !username.trim()) {
+    return res.status(400).json({ error: 'Username is required.' });
+  }
+
+  const existingUser = db.prepare('SELECT 1 FROM users WHERE username = ?').get(username.trim());
+  res.json({ exists: Boolean(existingUser) });
+});
+
 router.post('/register', (req, res) => {
   const { username, passphrase, identity_genders, identity_orientations, identity_roles } = req.body;
   if (!username || !username.trim()) {

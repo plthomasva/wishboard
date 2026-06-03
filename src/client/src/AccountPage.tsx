@@ -13,7 +13,7 @@ const generatePassphrase = () => {
 
 export default function AccountPage() {
   const { user, token, login, register, logout } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register'>('register');
   const [username, setUsername] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [identityGenders, setIdentityGenders] = useState('');
@@ -23,6 +23,54 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number }>>([]);
   const [edits, setEdits] = useState<Record<string, string>>({});
+  const [existingUsername, setExistingUsername] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+
+  const effectiveMode = existingUsername ? 'login' : mode;
+
+  useEffect(() => {
+    const name = username.trim();
+    let active = true;
+
+    if (!name) {
+      setExistingUsername(false);
+      setCheckingUsername(false);
+      setMode('register');
+      return;
+    }
+
+    setCheckingUsername(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/users/exists?username=${encodeURIComponent(name)}`);
+        if (!active) {
+          return;
+        }
+        if (!response.ok) {
+          setExistingUsername(false);
+          setMode('register');
+        } else {
+          const data = await response.json();
+          setExistingUsername(Boolean(data.exists));
+          setMode(data.exists ? 'login' : 'register');
+        }
+      } catch {
+        if (active) {
+          setExistingUsername(false);
+          setMode('register');
+        }
+      } finally {
+        if (active) {
+          setCheckingUsername(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [username]);
 
   const loadWishes = async () => {
     setError(null);
@@ -49,6 +97,10 @@ export default function AccountPage() {
     event.preventDefault();
     setError(null);
     setMessage(null);
+    if (!username.trim() || !passphrase.trim()) {
+      setError('Username and passphrase are required to log in.');
+      return;
+    }
     const response = await login(username.trim(), passphrase.trim());
     if (!response.success) {
       setError(response.error || 'Login failed.');
@@ -63,6 +115,10 @@ export default function AccountPage() {
     event.preventDefault();
     setError(null);
     setMessage(null);
+    if (!username.trim()) {
+      setError('Username is required to register.');
+      return;
+    }
     const response = await register(username.trim(), passphrase.trim() || undefined, {
       identities: {
         genders: identityGenders,
@@ -135,7 +191,7 @@ export default function AccountPage() {
             Register
           </button>
         </div>
-        <form className="form-card" onSubmit={mode === 'login' ? onLogin : onRegister}>
+        <form className="form-card" onSubmit={effectiveMode === 'login' ? onLogin : onRegister}>
           <label>
             Username
             <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Choose a username" />
@@ -146,10 +202,10 @@ export default function AccountPage() {
               type="text"
               value={passphrase}
               onChange={(event) => setPassphrase(event.target.value)}
-              placeholder="Leave blank to auto-generate when registering"
+              placeholder={effectiveMode === 'register' ? 'Leave blank to auto-generate when registering' : 'Enter your passphrase'}
             />
           </label>
-          {mode === 'register' && (
+          {effectiveMode === 'register' && (
             <>
               <label>
                 Identity genders
@@ -177,11 +233,11 @@ export default function AccountPage() {
               </label>
             </>
           )}
-          <button type="submit">{mode === 'login' ? 'Login' : 'Register'}</button>
+          <button type="submit">{effectiveMode === 'login' ? 'Login' : 'Register'}</button>
         </form>
         {message && <div className="message success">{message}</div>}
         {error && <div className="message error">{error}</div>}
-        {mode === 'register' && (
+        {effectiveMode === 'register' && (
           <div className="note-box">
             <p>Tip: Use a memorable passphrase like <strong>{generatePassphrase()}</strong>.</p>
           </div>

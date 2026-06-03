@@ -25,6 +25,21 @@ describe('User registration and login', () => {
     expect(response.body.secret.length).toBeGreaterThan(0);
   });
 
+  it('reports username existence', async () => {
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: 'user5', passphrase: 'secret' })
+      .set('Accept', 'application/json');
+
+    const existsResponse = await request(app).get('/api/users/exists').query({ username: 'user5' });
+    expect(existsResponse.status).toBe(200);
+    expect(existsResponse.body.exists).toBe(true);
+
+    const missingResponse = await request(app).get('/api/users/exists').query({ username: 'unknown' });
+    expect(missingResponse.status).toBe(200);
+    expect(missingResponse.body.exists).toBe(false);
+  });
+
   it('registers with explicit passphrase and stores it correctly', async () => {
     const register = await request(app)
       .post('/api/users/register')
