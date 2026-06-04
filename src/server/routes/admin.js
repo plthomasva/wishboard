@@ -1,6 +1,7 @@
 import express from 'express';
 import db from '../db.js';
 import { requireAdmin } from '../auth.js';
+import { generateDemoData } from '../demoSeeder.js';
 
 const router = express.Router();
 
@@ -44,6 +45,21 @@ router.post('/users/:id/delete', requireAdmin, (req, res) => {
     return res.status(404).json({ error: 'User not found.' });
   }
   res.json({ success: true });
+});
+
+// POST /api/admin/reset-demo
+// Protected by requireAdmin so only the 'admin' account can trigger it
+router.post('/reset-demo', requireAdmin, (req, res) => {
+  try {
+    const stats = generateDemoData();
+    res.status(200).json({ 
+      message: 'Demo environment successfully seeded.',
+      stats
+    });
+  } catch (error) {
+    console.error('Failed to seed demo data:', error);
+    res.status(500).json({ error: 'Internal Server Error during seeding' });
+  }
 });
 
 export default router;
