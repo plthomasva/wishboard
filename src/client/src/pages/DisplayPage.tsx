@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
+import IdentityStickers from '../components/IdentityStickers';
+
+interface Wish {
+  id: string;
+  content: string;
+  creator_genders?: string[];
+  creator_orientations?: string[];
+}
 
 export default function DisplayPage() {
-  const [wishes, setWishes] = useState<Array<{ id: string; content: string }>>([]);
+  const [wishes, setWishes] = useState<Wish[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const loadWishes = async () => {
@@ -33,6 +41,7 @@ export default function DisplayPage() {
         {wishes.map((wish) => (
           <article className="display-card" key={wish.id}>
             <p>{wish.content}</p>
+            <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
             <span>{wish.id}</span>
           </article>
         ))}

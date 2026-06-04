@@ -190,9 +190,21 @@ const isCompatible = (wish, searcher) => {
   const desiredGenders = parseJsonArray(wish.desired_genders);
   const desiredOrientations = parseJsonArray(wish.desired_orientations);
   const desiredRoles = parseJsonArray(wish.desired_roles);
+  const creatorGenders = parseJsonArray(wish.creator_genders);
+
+  // 1. Does the searcher want the wish creator?
+  const searcherWantsCreatorGender = matchesGenderPreference(searcher.identity_genders, searcher.identity_orientations, creatorGenders);
+
+  // 2. Does the wish creator want the searcher?
+  const creatorWantsSearcherGender = desiredGenders.length === 0 || searcher.identity_genders.some((item) => {
+    const descriptor = parseGenderDescriptor(item);
+    const searcherLabels = [descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, item.trim().toLowerCase()];
+    return desiredGenders.some(d => searcherLabels.includes(normalizeToken(d)));
+  });
 
   return (
-    matchesGenderPreference(searcher.identity_genders, searcher.identity_orientations, desiredGenders) &&
+    searcherWantsCreatorGender &&
+    creatorWantsSearcherGender &&
     matchesPreference(searcher.identity_orientations, desiredOrientations) &&
     matchesRolePreference(searcher.identity_roles, desiredRoles)
   );
@@ -247,8 +259,15 @@ router.post('/', (req, res) => {
 
 router.get('/random', (req, res) => {
   const limit = Number(req.query.limit || 12);
-  const rows = db.prepare('SELECT id, content FROM wishes WHERE flagged = 0 ORDER BY RANDOM() LIMIT ?').all(limit);
-  res.json(rows);
+  const rows = db.prepare('SELECT id, content, creator_genders, creator_orientations FROM wishes WHERE flagged = 0 ORDER BY RANDOM() LIMIT ?').all(limit);
+  res.json(
+    rows.map((wish) => ({
+      id: wish.id,
+      content: wish.content,
+      creator_genders: parseJsonArray(wish.creator_genders),
+      creator_orientations: parseJsonArray(wish.creator_orientations)
+    }))
+  );
 });
 
 router.get('/', (req, res) => {

@@ -5,7 +5,9 @@ import { createSalt, hashPassphrase } from './auth.js';
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
 // Mock data pools matching the schema's identity fields
-const mockGenders = ['Woman', 'Man', 'Non-binary', 'Genderqueer', 'Agender', 'Transgender'];
+const primaryGenders = ['Woman', 'Man'];
+const secondaryGenders = ['Non-binary', 'Genderqueer', 'Agender', 'Transgender', 'Cisgender'];
+const mockGenders = [...primaryGenders, ...secondaryGenders];
 const mockOrientations = ['Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Queer'];
 const mockRoles = ['Dominant', 'Submissive', 'Switch', 'Top', 'Bottom', 'Versatile'];
 
@@ -52,6 +54,17 @@ function getRandom(arr, maxCount = 2) {
   return shuffled.slice(0, count);
 }
 
+function getRandomGenders() {
+  const selected = [];
+  if (Math.random() > 0.3) { // 70% chance to have a primary gender
+    selected.push(primaryGenders[Math.floor(Math.random() * primaryGenders.length)]);
+  }
+  if (Math.random() > 0.5) { // 50% chance to have a secondary gender
+    selected.push(secondaryGenders[Math.floor(Math.random() * secondaryGenders.length)]);
+  }
+  return selected;
+}
+
 // Helper to generate a random Mad Libs wish
 function generateMadLibsWish() {
   const action = textFragments.actions[Math.floor(Math.random() * textFragments.actions.length)];
@@ -80,7 +93,7 @@ export function generateDemoData() {
     const hash = hashPassphrase('demo-password', salt); 
     
     // Generate random identities
-    const genders = JSON.stringify(getRandom(mockGenders));
+    const genders = JSON.stringify(getRandomGenders());
     const orientations = JSON.stringify(getRandom(mockOrientations));
     const roles = JSON.stringify(getRandom(mockRoles));
     const createdAt = new Date().toISOString();

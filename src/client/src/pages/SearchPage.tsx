@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext';
+import IdentityStickers from '../components/IdentityStickers';
+
+interface Wish {
+  id: string;
+  content: string;
+  creator_genders?: string[];
+  creator_orientations?: string[];
+}
 
 export default function SearchPage() {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Array<{ id: string; content: string }>>([]);
+  const [results, setResults] = useState<Wish[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [useProfileAttributes, setUseProfileAttributes] = useState<boolean>(Boolean(user));
   const [manualGenders, setManualGenders] = useState('');
@@ -117,6 +125,7 @@ export default function SearchPage() {
           <article className="wish-card" key={wish.id}>
             <strong>{wish.id}</strong>
             <p>{wish.content}</p>
+            <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
           </article>
         ))}
       </div>

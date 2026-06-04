@@ -71,6 +71,20 @@ export default function AdminPage() {
     loadUsers();
   };
 
+  const runSeeder = async () => {
+    setMessage(null);
+    setError(null);
+    const response = await fetch('/api/admin/reset-demo', { method: 'POST', headers: authHeader });
+    if (!response.ok) {
+      setError('Failed to run seeder.');
+      return;
+    }
+    const data = await response.json();
+    setMessage(`Seeder completed: ${data.stats.usersCreated} users and ${data.stats.wishesCreated} wishes created.`);
+    loadUsers();
+    loadFlags();
+  };
+
   const onLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -135,6 +149,14 @@ export default function AdminPage() {
                 ))
               )}
             </div>
+          </section>
+
+          <section style={{ marginTop: '24px' }}>
+            <h2>Demo Seeder</h2>
+            <p>Generate simulated users and wishes for testing. <strong>Warning: This clears existing demo data.</strong></p>
+            <button className="secondary-button" onClick={runSeeder} style={{ marginTop: '12px' }}>
+              Run Seeder
+            </button>
           </section>
 
           <section style={{ marginTop: '24px' }}>

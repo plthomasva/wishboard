@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync as Database } from 'node:sqlite';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
