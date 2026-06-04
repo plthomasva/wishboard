@@ -160,11 +160,9 @@ export default function AccountPage() {
       return;
     }
     const response = await register(username.trim(), passphrase.trim() || undefined, {
-      identities: {
-        genders: identityGenders,
-        orientations: identityOrientations,
-        roles: identityRoles
-      }
+      genders: identityGenders,
+      orientations: identityOrientations,
+      roles: identityRoles
     });
     if (!response.success) {
       setError(response.error || 'Registration failed.');

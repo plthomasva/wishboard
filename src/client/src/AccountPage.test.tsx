@@ -86,7 +86,7 @@ describe('AccountPage', () => {
     fireEvent.click(registerSubmitButton);
 
     expect(register).toHaveBeenCalledWith('newuser', undefined, {
-      identities: { genders: '', orientations: '', roles: '' }
+      genders: '', orientations: '', roles: ''
     });
     await screen.findByText(/Account created. Remember your passphrase:/);
   });

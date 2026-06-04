@@ -108,4 +108,39 @@ describe('User registration and login', () => {
     expect(login.status).toBe(401);
     expect(login.body.error).toBe('Invalid username or passphrase.');
   });
+
+  it('persists identity attributes provided during registration', async () => {
+    const register = await request(app)
+      .post('/api/users/register')
+      .send({
+        username: 'identity_user',
+        passphrase: 'testpass',
+        identity_genders: 'woman',
+        identity_orientations: 'bisexual',
+        identity_roles: 'switch'
+      })
+      .set('Accept', 'application/json');
+
+    expect(register.status).toBe(200);
+    expect(register.body.identity_genders).toEqual(['woman']);
+    expect(register.body.identity_orientations).toEqual(['bisexual']);
+    expect(register.body.identity_roles).toEqual(['switch']);
+
+    // Verify the attributes survive a fresh login (i.e. they were actually saved to the DB)
+    const login = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'identity_user', passphrase: 'testpass' })
+      .set('Accept', 'application/json');
+
+    expect(login.status).toBe(200);
+    expect(login.body.identity_genders).toEqual(['woman']);
+    expect(login.body.identity_orientations).toEqual(['bisexual']);
+    expect(login.body.identity_roles).toEqual(['switch']);
+
+    // Also verify via direct DB query for belt-and-suspenders
+    const row = db.prepare('SELECT identity_genders, identity_orientations, identity_roles FROM users WHERE username = ?').get('identity_user');
+    expect(JSON.parse(row.identity_genders)).toEqual(['woman']);
+    expect(JSON.parse(row.identity_orientations)).toEqual(['bisexual']);
+    expect(JSON.parse(row.identity_roles)).toEqual(['switch']);
+  });
 });
