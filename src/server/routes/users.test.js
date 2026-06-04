@@ -67,6 +67,33 @@ describe('User registration and login', () => {
     expect(login.body.username).toBe('user3');
   });
 
+  it('updates authenticated user attributes', async () => {
+    const register = await request(app)
+      .post('/api/users/register')
+      .send({ username: 'user6', passphrase: 'updateme' })
+      .set('Accept', 'application/json');
+
+    const token = register.body.token;
+    const update = await request(app)
+      .put('/api/users/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ identity_genders: 'non-binary', identity_orientations: 'pansexual', identity_roles: 'mentor' })
+      .set('Accept', 'application/json');
+
+    expect(update.status).toBe(200);
+    expect(update.body.identity_genders).toEqual(['non-binary']);
+    expect(update.body.identity_orientations).toEqual(['pansexual']);
+    expect(update.body.identity_roles).toEqual(['mentor']);
+
+    const me = await request(app)
+      .get('/api/users/me')
+      .set('Authorization', `Bearer ${token}`);
+    expect(me.status).toBe(200);
+    expect(me.body.identity_genders).toEqual(['non-binary']);
+    expect(me.body.identity_orientations).toEqual(['pansexual']);
+    expect(me.body.identity_roles).toEqual(['mentor']);
+  });
+
   it('rejects login when existing user supplies an incorrect passphrase', async () => {
     await request(app)
       .post('/api/users/register')

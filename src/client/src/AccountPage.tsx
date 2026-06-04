@@ -12,13 +12,16 @@ const generatePassphrase = () => {
 };
 
 export default function AccountPage() {
-  const { user, token, login, register, logout } = useAuth();
+  const { user, token, login, register, logout, refreshUser } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('register');
   const [username, setUsername] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [identityGenders, setIdentityGenders] = useState('');
   const [identityOrientations, setIdentityOrientations] = useState('');
   const [identityRoles, setIdentityRoles] = useState('');
+  const [editIdentityGenders, setEditIdentityGenders] = useState('');
+  const [editIdentityOrientations, setEditIdentityOrientations] = useState('');
+  const [editIdentityRoles, setEditIdentityRoles] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number }>>([]);
@@ -92,6 +95,43 @@ export default function AccountPage() {
   useEffect(() => {
     loadWishes();
   }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    setEditIdentityGenders(user.identity_genders.join(', '));
+    setEditIdentityOrientations(user.identity_orientations.join(', '));
+    setEditIdentityRoles(user.identity_roles.join(', '));
+  }, [user]);
+
+  const saveProfile = async () => {
+    setError(null);
+    setMessage(null);
+    const response = await fetch('/api/users/me', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        identity_genders: editIdentityGenders,
+        identity_orientations: editIdentityOrientations,
+        identity_roles: editIdentityRoles
+      })
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      setError(data.error || 'Unable to save profile.');
+      return;
+    }
+
+    setMessage('Profile updated successfully.');
+    if (refreshUser) {
+      await refreshUser();
+    }
+  };
 
   const onLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -271,6 +311,37 @@ export default function AccountPage() {
             <strong>Roles:</strong> {user.identity_roles.length ? user.identity_roles.join(', ') : 'None set'}
           </li>
         </ul>
+      </div>
+
+      <div className="profile-edit">
+        <h2>Edit profile attributes</h2>
+        <label>
+          Genders
+          <input
+            value={editIdentityGenders}
+            onChange={(event) => setEditIdentityGenders(event.target.value)}
+            placeholder="e.g. woman, non-binary"
+          />
+        </label>
+        <label>
+          Orientations
+          <input
+            value={editIdentityOrientations}
+            onChange={(event) => setEditIdentityOrientations(event.target.value)}
+            placeholder="e.g. queer, straight"
+          />
+        </label>
+        <label>
+          Roles
+          <input
+            value={editIdentityRoles}
+            onChange={(event) => setEditIdentityRoles(event.target.value)}
+            placeholder="e.g. speaker, volunteer"
+          />
+        </label>
+        <button className="secondary-button" onClick={saveProfile} type="button">
+          Save attributes
+        </button>
       </div>
 
       {message && <div className="message success">{message}</div>}

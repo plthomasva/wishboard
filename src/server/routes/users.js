@@ -69,6 +69,31 @@ router.post('/register', (req, res) => {
   res.json({ id: userId, username: username.trim(), role: 'user', token, secret, identity_genders: genders, identity_orientations: orientations, identity_roles: roles });
 });
 
+router.put('/me', (req, res) => {
+  const user = getUserFromRequest(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Not authenticated.' });
+  }
+
+  const { identity_genders, identity_orientations, identity_roles } = req.body;
+  const genders = normalizeArrayField(identity_genders);
+  const orientations = normalizeArrayField(identity_orientations);
+  const roles = normalizeArrayField(identity_roles);
+
+  db.prepare(
+    'UPDATE users SET identity_genders = ?, identity_orientations = ?, identity_roles = ? WHERE id = ?'
+  ).run(JSON.stringify(genders), JSON.stringify(orientations), JSON.stringify(roles), user.id);
+
+  res.json({
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    identity_genders: genders,
+    identity_orientations: orientations,
+    identity_roles: roles
+  });
+});
+
 router.post('/login', (req, res) => {
   const { username, passphrase } = req.body;
   if (!username || !passphrase) {

@@ -151,4 +151,49 @@ describe('AccountPage', () => {
     expect(login).toHaveBeenCalledWith('newuser', 'newpass');
     await screen.findByText('Invalid username or passphrase.');
   });
+
+  it('lets logged-in users edit and save profile attributes', async () => {
+    const refreshUser = vi.fn();
+    const fetchMock = vi.fn((input, init) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url === '/api/users/me' && init?.method === 'PUT') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ identity_genders: ['woman'], identity_orientations: ['queer'], identity_roles: ['speaker'] }) });
+      }
+      if (url.includes('/api/users/me/wishes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+      }
+      if (url.includes('/api/users/exists')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ exists: false }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: {
+        id: 'user-test',
+        username: 'tester',
+        role: 'user',
+        identity_genders: ['woman'],
+        identity_orientations: ['queer'],
+        identity_roles: ['speaker']
+      },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser
+    });
+
+    render(<AccountPage />);
+
+    fireEvent.change(screen.getByLabelText('Genders'), { target: { value: 'woman' } });
+    fireEvent.change(screen.getByLabelText('Orientations'), { target: { value: 'queer' } });
+    fireEvent.change(screen.getByLabelText('Roles'), { target: { value: 'speaker' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save attributes' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me', expect.objectContaining({ method: 'PUT' })));
+    expect(refreshUser).toHaveBeenCalled();
+  });
 });
