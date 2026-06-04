@@ -163,15 +163,7 @@ const matchesRolePreference = (searcherRoles, desired) => {
   const normalizedDesired = desired.map(normalizeToken);
 
   return normalizedDesired.some((desiredRole) => {
-    if (normalizedSearcher.includes(desiredRole)) {
-      return true;
-    }
-    return normalizedSearcher.some((searcherRole) => {
-      return (
-        roleCompatibility[searcherRole]?.includes(desiredRole) ||
-        roleCompatibility[desiredRole]?.includes(searcherRole)
-      );
-    });
+    return normalizedSearcher.includes(desiredRole);
   });
 };
 
