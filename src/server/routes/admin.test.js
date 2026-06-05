@@ -1,0 +1,160 @@
+/** @vitest-environment node */
+process.env.WISHBOARD_DB_PATH = ':memory:';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+const request = (await import('supertest')).default;
+const appModule = await import('../index.js');
+const db = (await import('../db.js')).default;
+const app = appModule.default;
+
+const defaultAdminUsername = 'admin';
+const defaultAdminSecret = 'admin-board';
+
+const clearTestData = () => {
+  db.exec('DELETE FROM sessions');
+  db.exec('DELETE FROM wishes');
+  db.exec("DELETE FROM users WHERE role != 'admin'");
+};
+
+beforeEach(() => {
+  clearTestData();
+});
+
+afterEach(() => {
+  clearTestData();
+});
+
+describe('Admin routes', () => {
+  const loginAsAdmin = async () => {
+    const response = await request(app)
+      .post('/api/users/login')
+      .send({ username: defaultAdminUsername, passphrase: defaultAdminSecret })
+      .set('Accept', 'application/json');
+
+    expect(response.status).toBe(200);
+    return response.body.token;
+  };
+
+  it('rejects admin routes without admin credentials', async () => {
+    const response = await request(app).get('/api/admin/flags');
+    expect(response.status).toBe(403);
+    expect(response.body.error).toBe('Admin access required.');
+  });
+
+  it('lists flagged wishes and allows removal by admin', async () => {
+    const wishId = 'flagged-wish-1';
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      wishId,
+      null,
+      'Please remove me',
+      null,
+      JSON.stringify([]),
+      JSON.stringify([]),
+      JSON.stringify([]),
+      JSON.stringify([]),
+      JSON.stringify([]),
+      JSON.stringify([]),
+      now,
+      now,
+      1
+    );
+
+    const token = await loginAsAdmin();
+
+    const flagsResponse = await request(app)
+      .get('/api/admin/flags')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(flagsResponse.status).toBe(200);
+    expect(flagsResponse.body).toEqual([
+      expect.objectContaining({ id: wishId, content: 'Please remove me', flagged: 1 })
+    ]);
+
+    const removeResponse = await request(app)
+      .post(`/api/admin/wishes/${wishId}/remove`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(removeResponse.status).toBe(200);
+    expect(removeResponse.body).toEqual({ success: true });
+
+    const flagsAfterRemoval = await request(app)
+      .get('/api/admin/flags')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(flagsAfterRemoval.status).toBe(200);
+    expect(flagsAfterRemoval.body).toEqual([]);
+  });
+
+  it('lists users, updates roles, and deletes user accounts', async () => {
+    const registerResponse = await request(app)
+      .post('/api/users/register')
+      .send({ username: 'test-admin-flow', passphrase: 'password' })
+      .set('Accept', 'application/json');
+
+    expect(registerResponse.status).toBe(200);
+    const testUserId = registerResponse.body.id;
+
+    const token = await loginAsAdmin();
+
+    const usersResponse = await request(app)
+      .get('/api/admin/users')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(usersResponse.status).toBe(200);
+    expect(usersResponse.body.some((user) => user.username === 'test-admin-flow')).toBe(true);
+
+    const promoteResponse = await request(app)
+      .post(`/api/admin/users/${testUserId}/role`)
+      .send({ role: 'admin' })
+      .set('Authorization', `Bearer ${token}`)
+      .set('Content-Type', 'application/json');
+
+    expect(promoteResponse.status).toBe(200);
+    expect(promoteResponse.body).toEqual({ success: true });
+
+    const updatedUsers = await request(app)
+      .get('/api/admin/users')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(updatedUsers.body.find((user) => user.id === testUserId).role).toBe('admin');
+
+    const deleteResponse = await request(app)
+      .post(`/api/admin/users/${testUserId}/delete`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(deleteResponse.status).toBe(200);
+    expect(deleteResponse.body).toEqual({ success: true });
+
+    const usersAfterDelete = await request(app)
+      .get('/api/admin/users')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(usersAfterDelete.body.some((user) => user.id === testUserId)).toBe(false);
+  });
+
+  it('resets the demo environment and returns the correct stats', async () => {
+    db.prepare('INSERT INTO wishes (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)')
+      .run('preseed-wish', 'Leave me behind', new Date().toISOString(), new Date().toISOString());
+
+    const token = await loginAsAdmin();
+
+    const resetResponse = await request(app)
+      .post('/api/admin/reset-demo')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(resetResponse.status).toBe(200);
+    expect(resetResponse.body).toEqual({ message: 'Demo environment successfully seeded.', stats: { usersCreated: 50, wishesCreated: 100 } });
+
+    const usersCount = db.prepare("SELECT COUNT(*) AS count FROM users WHERE role != 'admin'").get().count;
+    const adminCount = db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").get().count;
+    const wishesCount = db.prepare('SELECT COUNT(*) AS count FROM wishes').get().count;
+
+    expect(usersCount).toBe(50);
+    expect(adminCount).toBe(1);
+    expect(wishesCount).toBe(100);
+  });
+});
