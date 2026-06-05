@@ -10,13 +10,24 @@ if (typeof globalThis !== 'undefined' && typeof globalThis.crypto?.getRandomValu
 }
 
 const randomIndex = (max) => {
-  if (max <= 0) {
-    return 0;
-  }
-  const randomUint32 = cryptoProvider.getRandomValues(new Uint32Array(1))[0];
-  return Math.floor((randomUint32 / 0x100000000) * max);
-};
+  if (max <= 1) return 0;
 
+  // Calculate the largest multiple of 'max' that fits in a 32-bit integer
+  const limit = 0x100000000 - (0x100000000 % max);
+  
+  const typedArray = new Uint32Array(1);
+
+  while (true) {
+    cryptoProvider.getRandomValues(typedArray);
+    const randomUint32 = typedArray[0];
+
+    // If the number is within the uniform range, map it and return
+    if (randomUint32 < limit) {
+      return randomUint32 % max;
+    }
+    // Otherwise, loop and "re-roll" (highly rare, so minimal performance hit)
+  }
+};
 const choose = (items) => items[randomIndex(items.length)];
 
 export const generatePassphrase = () => {
