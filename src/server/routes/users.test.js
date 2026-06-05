@@ -1,3 +1,4 @@
+/** @vitest-environment node */
 process.env.WISHBOARD_DB_PATH = ':memory:';
 
 import { beforeEach, describe, expect, it } from 'vitest';
