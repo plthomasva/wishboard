@@ -15,6 +15,7 @@ Implied are a home screen on the tablets where users can select one of the views
 1. manage admin users (super admin(s) only)
 2. review flagged wishes and remove any that violate the law or convention policies.
 3. manage self-service unprivileged users
+4. seed demo users and wishes for development and testing
 
 Users should be given a simple wish ID and easy to write down or remember security token or code word, so that they can come back and update or remove their own wishes. We may want to have a simple, self-service way for users to create an account in the system to manage multiple wishes. Security should be by easy to remember pass phrases.
 
