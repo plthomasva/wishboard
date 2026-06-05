@@ -1,15 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
-
-const generatePassphrase = () => {
-  const adjectives = ['solar', 'bright', 'gentle', 'lucky', 'quiet', 'merry', 'wild', 'cosmic', 'velvet', 'golden'];
-  const nouns = ['spark', 'wish', 'cloud', 'echo', 'lantern', 'maple', 'beam', 'ripple', 'pixel', 'trail'];
-  const colors = ['blue', 'amber', 'jade', 'pearl', 'ruby', 'sapphire', 'copper', 'opal', 'sage', 'ivory'];
-  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const color = colors[Math.floor(Math.random() * colors.length)];
-  return `${adjective}-${noun}-${color}`;
-};
+import { generatePassphrase } from '../../passphrase.js';
 
 export default function AccountPage() {
   const { user, token, login, register, logout, refreshUser } = useAuth();

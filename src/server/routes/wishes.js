@@ -3,20 +3,12 @@ import crypto from 'crypto';
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
 import { getUserFromToken, getTokenFromRequestHeader, hashPassphrase, verifyPassphrase } from '../auth.js';
+import { generatePassphrase } from '../../passphrase.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
 const generateSalt = () => crypto.randomBytes(16).toString('hex');
-const generatePassphrase = () => {
-  const adjectives = ['solar', 'bright', 'gentle', 'lucky', 'quiet', 'merry', 'wild', 'cosmic', 'velvet', 'golden'];
-  const nouns = ['spark', 'wish', 'cloud', 'echo', 'lantern', 'maple', 'beam', 'ripple', 'pixel', 'trail'];
-  const colors = ['blue', 'amber', 'jade', 'pearl', 'ruby', 'sapphire', 'copper', 'opal', 'sage', 'ivory'];
-  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const color = colors[Math.floor(Math.random() * colors.length)];
-  return `${adjective}-${noun}-${color}`;
-};
 
 const normalizeArrayField = (value) => {
   if (!value) {
