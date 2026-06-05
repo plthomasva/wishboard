@@ -45,6 +45,8 @@ Offline wish board for conventions, built to run on a Raspberry Pi or similar lo
 - `npm run dev` — start Vite development server for the client
 - `npm run build` — produce production assets in `dist/`
 - `npm start` — build and launch the Express server
+- `npm test` — run the test suite
+- `npm run test:coverage` — run tests with coverage reporting
 
 ## Wish metadata and search
 
@@ -64,4 +66,5 @@ Offline wish board for conventions, built to run on a Raspberry Pi or similar lo
 
 - The system is designed for a private Wi-Fi network and on-device deployment.
 - The admin interface is protected by an admin account created automatically on first run.
+- The admin panel includes a demo seeder to populate users and wishes for development or testing.
 - Set `WISHBOARD_ADMIN_USERNAME` and `WISHBOARD_ADMIN_SECRET` in the environment to customize the default admin credentials.
