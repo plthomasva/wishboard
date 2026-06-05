@@ -29,7 +29,11 @@ jobs:
     - name: Install native build dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential python3 pkg-config libsqlite3-dev
+        sudo apt-get install -y build-essential python3 pkg-config libsqlite3-dev gcc-13 g++-13
+    - name: Configure modern compiler for native builds
+      run: |
+        echo "CC=gcc-13" >> $GITHUB_ENV
+        echo "CXX=g++-13" >> $GITHUB_ENV
     - run: npm ci
     - run: npm run build --if-present
     - run: npm test
