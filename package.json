@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.0.0",
-    "@testing-library/react": "^16.3.2",
+    "@testing-library/react": "^19.2.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.19",
     "@types/node": "^25.9.1",
