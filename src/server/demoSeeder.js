@@ -74,10 +74,14 @@ function generateMadLibsWish() {
 }
 
 export function generateDemoData() {
-  // 1. Clear existing demo/user data (Keep the default admin!)
-  db.prepare('DELETE FROM sessions').run();
+  // 1. Clear existing demo/user data (Keep the default admin's session)
+  // Remove wishes and non-admin users first, then prune sessions that no
+  // longer belong to any remaining user (this preserves the admin's session)
   db.prepare('DELETE FROM wishes').run();
   db.prepare("DELETE FROM users WHERE role != 'admin'").run();
+
+  // Remove sessions for user_ids that no longer exist (keeps admin session)
+  db.prepare('DELETE FROM sessions WHERE user_id NOT IN (SELECT id FROM users)').run();
 
   const users = [];
   const insertUser = db.prepare(`
