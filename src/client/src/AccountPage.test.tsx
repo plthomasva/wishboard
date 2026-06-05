@@ -91,6 +91,26 @@ describe('AccountPage', () => {
     await screen.findByText(/Account created. Remember your passphrase:/);
   });
 
+  it('shows a generated passphrase tip in register mode', async () => {
+    useAuthMock.mockReturnValue({
+      user: null,
+      token: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+    const registerTabButton = screen.getAllByText('Register').find((button) => button.getAttribute('type') !== 'submit');
+    if (!registerTabButton) {
+      throw new Error('Could not find register tab button');
+    }
+
+    fireEvent.click(registerTabButton);
+    expect(await screen.findByText(/Tip: Use a memorable passphrase like/)).toBeInTheDocument();
+  });
+
   it('auto-switches to login once the username already exists', async () => {
     const login = vi.fn().mockResolvedValue({ success: false, error: 'Invalid username or passphrase.' });
     const fetchMock = vi.fn((input) => {

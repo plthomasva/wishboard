@@ -22,7 +22,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       reportsDirectory: '../../coverage',
-      exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**']
+      exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+      all: true,
+      include: ['src/**/*.{js,ts,tsx}', '../../src/**/*.{js,ts}']
     }
   }
 });

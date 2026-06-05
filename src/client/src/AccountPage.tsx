@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
-import { generatePassphrase } from '../../passphrase.js';
+import { generatePassphrase } from './passphrase.js';
 
 export default function AccountPage() {
   const { user, token, login, register, logout, refreshUser } = useAuth();

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "start": "npm run build && node ./src/server/index.js",
     "test": "vitest run",
-    "test:coverage": "c8 --reporter=lcov --reporter=text npm test",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -29,6 +29,7 @@
     "@types/react": "^18.3.4",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^6.0.2",
+    "@vitest/coverage-v8": "^4.1.8",
     "c8": "^11.0.0",
     "jsdom": "^29.1.1",
     "supertest": "^7.1.3",

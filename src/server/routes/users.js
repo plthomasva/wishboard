@@ -2,7 +2,7 @@ import express from 'express';
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
 import { createSalt, hashPassphrase, createSessionToken, getUserFromRequest, getTokenFromRequestHeader, verifyPassphrase } from '../auth.js';
-import { generatePassphrase } from '../../passphrase.js';
+import { generatePassphrase } from '../../client/src/passphrase.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
