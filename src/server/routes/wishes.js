@@ -24,12 +24,12 @@ const parseGenderDescriptor = (value) => {
   const base = token.includes('woman') || token.includes('female')
     ? 'woman'
     : token.includes('man') || token.includes('male')
-    ? 'man'
-    : token.includes('non') && token.includes('binary')
-    ? 'nonbinary'
-    : token.includes('enby')
-    ? 'nonbinary'
-    : token;
+      ? 'man'
+      : token.includes('non') && token.includes('binary')
+        ? 'nonbinary'
+        : token.includes('enby')
+          ? 'nonbinary'
+          : token;
   return { token, base, isTrans, isCis };
 };
 
@@ -235,11 +235,11 @@ router.get('/', (req, res) => {
 
   const rows = query
     ? db
-        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes WHERE content LIKE ? ORDER BY created_at DESC LIMIT 50')
-        .all(`%${query}%`)
+      .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes WHERE content LIKE ? ORDER BY created_at DESC LIMIT 50')
+      .all(`%${query}%`)
     : db
-        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes ORDER BY created_at DESC LIMIT 50')
-        .all();
+      .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes ORDER BY created_at DESC LIMIT 50')
+      .all();
 
   const filtered = ignoreAttributes ? rows : rows.filter((wish) => isCompatible(wish, searcherProfile));
   res.json(
