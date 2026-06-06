@@ -1,4 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap');
+@font-face {
+  font-family: 'Kalam';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Kalam-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Kalam';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Kalam-Bold.ttf') format('truetype');
+}
 
 :root {
   color-scheme: light;
