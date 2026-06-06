@@ -187,7 +187,6 @@ button:hover {
     #fffdf3;
   background-size: 100% 100%, 100% 24px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.08);
-  min-height: 170px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   overflow-y: auto;
 }
@@ -463,6 +462,10 @@ button:hover {
 
 /* Big Screen Display scaling */
 @media (min-width: 1600px) {
+  .display-grid {
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 40px;
+  }
   .display-card .wish-text {
     font-size: 2.2rem;
     line-height: 48px;
@@ -475,7 +478,6 @@ button:hover {
       linear-gradient(to bottom, transparent 47px, rgba(33, 150, 243, 0.08) 47px, rgba(33, 150, 243, 0.08) 48px),
       #fffdf3;
     background-size: 100% 100%, 100% 48px;
-    min-height: 340px;
   }
   .display-card .wish-id {
     font-size: 1.2rem;
@@ -511,3 +513,110 @@ button:hover {
     stroke-width: 3;
   }
 }
+
+/* Big Screen & Kiosk Mode Layout Adjustments */
+.display-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.app-shell.page-display .content-area {
+  max-width: 100%;
+  padding: 16px 24px;
+  margin: 0;
+}
+
+/* Kiosk Mode Styles */
+.kiosk-mode {
+  min-height: 100vh;
+  background-color: #d7ccc8;
+}
+
+.kiosk-mode .kiosk-content {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.kiosk-mode .kiosk-content section.display-section {
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.kiosk-mode .kiosk-content section.display-section p:not(.wish-text) {
+  display: none; /* Hide description text in Kiosk mode to maximize space */
+}
+
+.kiosk-mode .kiosk-content section.display-section h1 {
+  display: none; /* Hide main heading in Kiosk mode for clean board presentation */
+}
+
+/* Kiosk Modal Exit Dialog */
+.kiosk-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.kiosk-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 440px;
+  animation: kioskModalScale 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes kioskModalScale {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.kiosk-modal h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.kiosk-modal-sub {
+  color: #556275;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+.kiosk-modal label {
+  margin-bottom: 16px;
+}
+
+.kiosk-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.kiosk-modal-error {
+  background: #fdecea;
+  color: #b91717;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
