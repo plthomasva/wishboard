@@ -40,9 +40,9 @@ export default function DisplayPage() {
       <div className="display-grid">
         {wishes.map((wish) => (
           <article className="display-card" key={wish.id}>
-            <p>{wish.content}</p>
             <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
-            <span>{wish.id}</span>
+            <span className="wish-id">#{wish.id}</span>
+            <p className="wish-text">{wish.content}</p>
           </article>
         ))}
       </div>

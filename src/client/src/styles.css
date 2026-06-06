@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap');
+
 :root {
   color-scheme: light;
   font-family: Inter, system-ui, sans-serif;
@@ -149,36 +151,121 @@ button:hover {
 .wish-grid,
 .display-grid {
   display: grid;
-  gap: 16px;
+  gap: 24px;
   margin-top: 24px;
+  background-color: #d7ccc8; /* Warm corkboard base */
+  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 15%, transparent 16%),
+                    radial-gradient(rgba(0, 0, 0, 0.08) 15%, transparent 16%);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #bcaaa4;
 }
 
 .wish-grid {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .display-grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .wish-card,
 .display-card {
-  border: 1px solid #e4e9f0;
-  border-radius: 18px;
-  padding: 18px;
-  background: #ffffff;
+  position: relative;
+  aspect-ratio: 5 / 3;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  padding: 24px 18px 18px 18px;
+  background: 
+    /* Red line at top margin */
+    linear-gradient(to bottom, transparent 38px, rgba(239, 83, 80, 0.3) 38px, rgba(239, 83, 80, 0.3) 39px, transparent 39px),
+    /* Blue ruled lines */
+    linear-gradient(to bottom, transparent 23px, rgba(33, 150, 243, 0.08) 23px, rgba(33, 150, 243, 0.08) 24px),
+    #fffdf3;
+  background-size: 100% 100%, 100% 24px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.08);
+  min-height: 170px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow-y: auto;
 }
 
-.display-card {
-  min-height: 180px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+/* Thumbtack / Pushpin */
+.wish-card::before,
+.display-card::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle at 4px 4px, #ff5252 20%, #c62828 80%);
+  border-radius: 50%;
+  box-shadow: 0 10px 8px rgba(0, 0, 0, 0.3), inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+  z-index: 5;
 }
 
-.wish-card strong {
-  display: block;
-  margin-bottom: 10px;
+.wish-card::after,
+.display-card::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 2px);
+  width: 2px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  transform: rotate(15deg);
+  z-index: 4;
+}
+
+/* Organic rotations to make board look natural */
+.wish-card:nth-child(even),
+.display-card:nth-child(even) {
+  transform: rotate(0.8deg);
+}
+
+.wish-card:nth-child(odd),
+.display-card:nth-child(odd) {
+  transform: rotate(-1deg);
+}
+
+.wish-card:nth-child(3n),
+.display-card:nth-child(3n) {
+  transform: rotate(1.2deg);
+}
+
+.wish-card:nth-child(5n),
+.display-card:nth-child(5n) {
+  transform: rotate(-0.6deg);
+}
+
+.wish-card:hover,
+.display-card:hover {
+  transform: translateY(-4px) scale(1.02) rotate(0deg) !important;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.wish-id {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 0.75rem;
+  color: #7f8c8d;
+  font-family: Inter, sans-serif;
+  font-weight: bold;
+}
+
+.wish-text {
+  font-family: 'Kalam', 'Architects Daughter', 'Georgia', serif;
+  font-size: 1.15rem;
+  line-height: 24px;
+  color: #2c3e50;
+  margin: 18px 0 0 0;
+  word-wrap: break-word;
 }
 
 .wish-actions {
@@ -281,6 +368,17 @@ button:hover {
   align-items: center;
 }
 
+.wish-card .identity-stickers,
+.display-card .identity-stickers {
+  float: right;
+  margin-top: 18px; /* Position below the top red line area */
+  margin-left: 10px;
+  margin-bottom: 6px;
+  gap: 6px;
+  z-index: 2;
+  position: relative;
+}
+
 .sticker-heart-shadow {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
   display: inline-flex;
@@ -365,15 +463,31 @@ button:hover {
 
 /* Big Screen Display scaling */
 @media (min-width: 1600px) {
-  .display-card p {
+  .display-card .wish-text {
     font-size: 2.2rem;
+    line-height: 48px;
   }
-  .display-card span {
+  .display-card {
+    background: 
+      /* Red line at top margin */
+      linear-gradient(to bottom, transparent 60px, rgba(239, 83, 80, 0.3) 60px, rgba(239, 83, 80, 0.3) 62px, transparent 62px),
+      /* Blue ruled lines */
+      linear-gradient(to bottom, transparent 47px, rgba(33, 150, 243, 0.08) 47px, rgba(33, 150, 243, 0.08) 48px),
+      #fffdf3;
+    background-size: 100% 100%, 100% 48px;
+    min-height: 340px;
+  }
+  .display-card .wish-id {
     font-size: 1.2rem;
+    top: 18px;
+    left: 24px;
   }
-  .identity-stickers {
+  .display-card .identity-stickers {
     gap: 20px;
     margin-top: 24px;
+    float: right;
+    margin-left: 20px;
+    margin-bottom: 12px;
   }
   .sticker-heart {
     width: 64px;

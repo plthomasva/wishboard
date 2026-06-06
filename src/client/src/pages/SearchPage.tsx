@@ -123,9 +123,9 @@ export default function SearchPage() {
       <div className="wish-grid">
         {results.map((wish) => (
           <article className="wish-card" key={wish.id}>
-            <strong>{wish.id}</strong>
-            <p>{wish.content}</p>
             <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
+            <strong className="wish-id">#{wish.id}</strong>
+            <p className="wish-text">{wish.content}</p>
           </article>
         ))}
       </div>
