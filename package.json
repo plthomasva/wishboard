@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node ./scripts/download-fonts.js",
     "build": "vite build",
     "preview": "vite preview",
     "start": "npm run build && node ./src/server/index.js",

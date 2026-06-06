@@ -8,7 +8,12 @@ interface Wish {
   creator_orientations?: string[];
 }
 
-export default function DisplayPage() {
+interface DisplayPageProps {
+  onEnterKiosk?: () => void;
+  isKiosk?: boolean;
+}
+
+export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps = {}) {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,16 +38,23 @@ export default function DisplayPage() {
   }, []);
 
   return (
-    <section>
-      <h1>Big Screen Display</h1>
+    <section className="display-section">
+      <div className="display-header-bar">
+        <h1>Big Screen Display</h1>
+        {!isKiosk && onEnterKiosk && (
+          <button className="kiosk-btn secondary-button" onClick={onEnterKiosk}>
+            Enter Kiosk Mode
+          </button>
+        )}
+      </div>
       <p>This screen refreshes automatically with rotated wishes.</p>
       {error && <div className="message error">{error}</div>}
       <div className="display-grid">
         {wishes.map((wish) => (
           <article className="display-card" key={wish.id}>
-            <p>{wish.content}</p>
             <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
-            <span>{wish.id}</span>
+            <span className="wish-id">#{wish.id}</span>
+            <p className="wish-text">{wish.content}</p>
           </article>
         ))}
       </div>

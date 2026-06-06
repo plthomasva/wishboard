@@ -16,14 +16,17 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:3000'
+    }
   },
   test: {
     // Use repo root for testing so both client and server files are visible.
     root: projectRoot,
     globals: true,
     environment: 'jsdom',
-    include: ['src/client/src/**/*.{test,spec}.{ts,tsx}', 'src/server/**/*.{test,spec}.{js,ts}'],
+    include: ['src/client/src/**/*.{test,spec}.{ts,tsx}', 'src/server/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
     setupFiles: 'src/client/src/setupTests.ts',
     maxWorkers: 1,
     coverage: {
@@ -32,7 +35,7 @@ export default defineConfig({
       reportsDirectory: 'coverage',
       exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
       all: true,
-      include: ['src/client/src/**/*.{js,ts,tsx}', 'src/server/**/*.{js,ts}']
+      include: ['src/client/src/**/*.{js,ts,tsx}', 'src/server/**/*.{js,ts}', 'scripts/**/*.{js,ts}']
     }
   }
 });
