@@ -62,6 +62,38 @@ Offline wish board for conventions, built to run on a Raspberry Pi or similar lo
 - Use `http://<host>:3000/#/remote` to open the combined live preview with both kiosk and main display.
 - For cloud or tunneling-based development, expose port `3000` securely and point collaborators to the same URL.
 
+## Raspberry Pi Kiosk Deployment
+
+Wishboard includes automation to deploy the application as a secure, full-screen kiosk on a Raspberry Pi. 
+
+**Requirements:**
+- **OS**: Raspberry Pi OS based on **Debian 13 (Trixie)** or newer. The setup relies on the `labwc` Wayland compositor, which is the new default standard replacing X11/Mutter. 
+- **Network**: The Pi must be reachable via SSH.
+
+**Deployment:**
+Run the appropriate orchestrator script for your operating system from the project directory.
+
+**For Windows (PowerShell):**
+```powershell
+.\scripts\deploy-kiosk.ps1 -AdminUsername pi -HostName raspberrypi.local
+```
+
+**For macOS / Linux (Bash):**
+```bash
+./scripts/deploy-kiosk.sh pi raspberrypi.local
+```
+
+**What the script does:**
+- Disables TTY autologin for the `pi` user to secure physical access (`Ctrl-Alt-F1`).
+- Creates a dedicated locked-down `wishboard` user.
+- Configures `LightDM` to auto-login the `wishboard` user.
+- Configures `labwc` to automatically launch Chromium in incognito kiosk mode pointed at `http://localhost:3000`.
+- Sets up a systemd service (`wishboard.service`) to ensure the Node server runs on boot.
+- Deploys the code, installs production dependencies, and builds the assets.
+
+**Kiosk Shortcuts:**
+- To cleanly exit the Wayland kiosk and drop back to the standard LightDM graphical login screen, press `Ctrl-Alt-Q`.
+
 ## Notes
 
 - The system is designed for a private Wi-Fi network and on-device deployment.
