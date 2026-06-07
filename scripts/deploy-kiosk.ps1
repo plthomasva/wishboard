@@ -1,11 +1,18 @@
 param (
+    [Parameter(Mandatory=$false)]
     [string]$AdminUsername = "pi",
-    [string]$HostName = "raspberrypi.local"
+    
+    [Parameter(Mandatory=$false)]
+    [string]$HostName = "raspberrypi.local",
+    
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("prod", "dev")]
+    [string]$Mode = "prod"
 )
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "Starting Wishboard Kiosk Deployment to ${AdminUsername}@${HostName}..." -ForegroundColor Cyan
+Write-Host "Starting Wishboard Kiosk Deployment to ${AdminUsername}@${HostName} (Mode: $Mode)..." -ForegroundColor Cyan
 
 $ProjectRoot = Resolve-Path "$PSScriptRoot\.."
 Set-Location $ProjectRoot
@@ -22,7 +29,7 @@ try {
 
     Write-Host "3. Executing setup script (creating user and configs)..." -ForegroundColor Yellow
     # Ensure DOS line endings don't break bash execution by stripping \r using sed
-    ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/setup-kiosk.sh && sudo bash /tmp/setup-kiosk.sh"
+    ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/setup-kiosk.sh && sudo bash /tmp/setup-kiosk.sh $Mode"
     if ($LASTEXITCODE -ne 0) {
         throw "Setup script failed on the target device."
     }

@@ -7,6 +7,7 @@ import DisplayPage from './pages/DisplayPage';
 import RemotePreview from './pages/RemotePreview';
 import AdminPage from './pages/AdminPage';
 import AccountPage from './AccountPage';
+import WiFiQrCode from './components/WiFiQrCode';
 
 const pages = [
   { id: 'home', label: 'Home' },
@@ -116,6 +117,7 @@ function AppContent() {
       {isKiosk ? (
         <main className="kiosk-content">
           <DisplayPage onEnterKiosk={() => setIsKiosk(true)} isKiosk={true} />
+          <WiFiQrCode />
         </main>
       ) : (
         <main className="content-area">
