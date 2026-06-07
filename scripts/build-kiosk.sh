@@ -32,12 +32,11 @@ echo "Removing dev dependencies to save space..."
 sudo -u wishboard bash -c 'cd /home/wishboard/wishboard && npm prune --omit=dev'
 
 echo "Cleaning up archive..."
-rm -f /tmp/wishboard.tar.gz /tmp/setup-kiosk.sh /tmp/build-kiosk.sh
+rm -f /tmp/wishboard.tar.gz
 
-echo "Starting service and rebooting..."
-sudo systemctl enable wishboard.service
-sudo systemctl start wishboard.service
+echo "Restarting services..."
+sudo systemctl restart wishboard.service || true
+sudo systemctl restart lightdm || true
 
-echo "Deployment complete! The Pi will now reboot."
-(sleep 2 && sudo reboot) >/dev/null 2>&1 < /dev/null &
+echo "Deployment complete! Wishboard and Display Manager have been restarted."
 exit 0

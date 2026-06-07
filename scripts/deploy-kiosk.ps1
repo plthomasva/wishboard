@@ -6,8 +6,8 @@ param (
     [string]$HostName = "raspberrypi.local",
     
     [Parameter(Mandatory=$false)]
-    [ValidateSet("prod", "dev")]
-    [string]$Mode = "prod"
+    [ValidateSet("prod", "dev", "dual")]
+    [string]$Mode = "dev"
 )
 
 $ErrorActionPreference = "Stop"

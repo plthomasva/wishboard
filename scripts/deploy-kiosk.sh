@@ -1,20 +1,14 @@
 #!/bin/bash
 set -e
 
-# Default parameters
-ADMIN_USERNAME="pi"
-HOST_NAME="raspberrypi.local"
-MODE="prod"
+ADMIN_USERNAME="${1:-pi}"
+HOST_NAME="${2:-raspberrypi.local}"
+MODE="${3:-dev}"
 
-# Parse arguments (e.g., ./deploy-kiosk.sh pi 192.168.1.100 dev)
-if [ -n "$1" ]; then
-    ADMIN_USERNAME="$1"
-fi
-if [ -n "$2" ]; then
-    HOST_NAME="$2"
-fi
-if [ -n "$3" ]; then
-    MODE="$3"
+if [[ ! "$MODE" =~ ^(prod|dev|dual)$ ]]; then
+    echo "Error: Mode must be 'prod', 'dev', or 'dual'"
+    echo "Usage: ./scripts/deploy-kiosk.sh [user] [host] [mode]"
+    exit 1
 fi
 
 echo -e "\033[1;36mStarting Wishboard Kiosk Deployment to ${ADMIN_USERNAME}@${HOST_NAME} (Mode: ${MODE})...\033[0m"
@@ -38,7 +32,7 @@ echo -e "\033[1;33m4. Extracting codebase and building...\033[0m"
 # Execute the remote build script
 ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh"
 
-echo -e "\033[1;32mDeployment complete! The Pi is now rebooting into Kiosk mode.\033[0m"
+echo -e "\033[1;32mDeployment complete! Services restarted.\033[0m"
 
 # Cleanup local archive
 rm -f wishboard.tar.gz
