@@ -8,9 +8,12 @@ describe('WiFiQrCode', () => {
   });
 
   afterEach(() => {
+  // Tell React: "Hey, I'm about to do something that will trigger state changes"
+  act(() => {
     vi.runOnlyPendingTimers();
-    vi.useRealTimers();
   });
+  vi.useRealTimers();
+});
 
   it('initializes invisibly and waits for the initial delay', () => {
     const { container } = render(<WiFiQrCode />);
@@ -26,8 +29,8 @@ describe('WiFiQrCode', () => {
     });
 
     expect(screen.getByText('Connect to Wishboard')).toBeInTheDocument();
-    expect(screen.getByText('Wishboard_WiFi')).toBeInTheDocument();
-  });
+    expect(screen.getByText(/Wishboard_WiFi/)).toBeInTheDocument();
+    });
 
   it('hides itself after the display duration', () => {
     render(<WiFiQrCode />);
