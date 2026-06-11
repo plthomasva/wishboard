@@ -216,4 +216,143 @@ describe('AccountPage', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me', expect.objectContaining({ method: 'PUT' })));
     expect(refreshUser).toHaveBeenCalled();
   });
+
+  it('allows user to edit and delete a wish', async () => {
+    const fetchMock = vi.fn((input, init) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/me/wishes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 'wish-1', content: 'test wish', flagged: 0 }]) });
+      }
+      if (url.includes('/api/wishes/wish-1/manage')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+
+    const textarea = await screen.findByDisplayValue('test wish');
+    fireEvent.change(textarea, { target: { value: 'updated wish' } });
+    
+    const saveButton = screen.getByRole('button', { name: 'Save' });
+    fireEvent.click(saveButton);
+    
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/wishes/wish-1/manage', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ content: 'updated wish' })
+      }));
+    });
+
+    const deleteButton = screen.getByRole('button', { name: 'Delete' });
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/wishes/wish-1/manage', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ action: 'delete' })
+      }));
+    });
+  });
+
+  it('shows error if registration fields are missing', async () => {
+    useAuthMock.mockReturnValue({
+      user: null, token: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+    render(<AccountPage />);
+    const submit = screen.getAllByRole('button').find((button) => button.getAttribute('type') === 'submit');
+    fireEvent.click(submit!);
+    expect(await screen.findByText('Username is required to register.')).toBeInTheDocument();
+  });
+  
+  it('shows error if login fields are missing', async () => {
+    useAuthMock.mockReturnValue({
+      user: null, token: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+    render(<AccountPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Login' }));
+    const submit = screen.getAllByRole('button').find((button) => button.getAttribute('type') === 'submit');
+    fireEvent.click(submit!);
+    expect(await screen.findByText('Username and passphrase are required to log in.')).toBeInTheDocument();
+  });
+
+  it('shows error if updating a wish fails', async () => {
+    const fetchMock = vi.fn((input, init) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/me/wishes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 'wish-2', content: 'test', flagged: 0 }]) });
+      }
+      if (url.includes('/api/wishes/wish-2/manage')) {
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({ error: 'Update failed' }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+    const saveButton = await screen.findByRole('button', { name: 'Save' });
+    fireEvent.click(saveButton);
+    expect(await screen.findByText('Update failed')).toBeInTheDocument();
+  });
+
+  it('shows error if deleting a wish fails', async () => {
+    const fetchMock = vi.fn((input, init) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/me/wishes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 'wish-3', content: 'test', flagged: 0 }]) });
+      }
+      if (url.includes('/api/wishes/wish-3/manage')) {
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({ error: 'Delete failed' }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+    const deleteButton = await screen.findByRole('button', { name: 'Delete' });
+    fireEvent.click(deleteButton);
+    expect(await screen.findByText('Delete failed')).toBeInTheDocument();
+  });
+
+  it('allows user to type into identity fields during registration', async () => {
+    const register = vi.fn().mockResolvedValue({ success: true, secret: 'secret' });
+    useAuthMock.mockReturnValue({
+      user: null, token: null, login: vi.fn(), register, logout: vi.fn(), refreshUser: vi.fn()
+    });
+    render(<AccountPage />);
+    
+    // In register mode by default
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'testuser' } });
+    fireEvent.change(screen.getByLabelText('Identity genders'), { target: { value: 'agender' } });
+    fireEvent.change(screen.getByLabelText('Identity orientations'), { target: { value: 'ace' } });
+    fireEvent.change(screen.getByLabelText('Identity roles'), { target: { value: 'attendee' } });
+
+    const submit = screen.getAllByRole('button').find((button) => button.getAttribute('type') === 'submit');
+    fireEvent.click(submit!);
+    
+    expect(register).toHaveBeenCalledWith('testuser', undefined, { genders: 'agender', orientations: 'ace', roles: 'attendee' });
+    await screen.findByText(/Account created. Remember your passphrase: secret/);
+  });
 });

@@ -59,7 +59,7 @@ Offline wish board for conventions, built to run on a Raspberry Pi or similar lo
 ## Remote access
 
 - The production server listens on all network interfaces by default, so remote developers can access the app if the host is reachable on port `3000`.
-- Use `http://<host>:3000/#/remote` to open the combined live preview with both kiosk and main display.
+- Use `http://<host>:3000/` to open the live preview.
 - For cloud or tunneling-based development, expose port `3000` securely and point collaborators to the same URL.
 
 ## Raspberry Pi Kiosk Deployment

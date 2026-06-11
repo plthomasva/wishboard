@@ -157,4 +157,49 @@ describe('Admin routes', () => {
     expect(adminCount).toBe(1);
     expect(wishesCount).toBe(100);
   });
+
+  it('handles not found errors for removing wishes', async () => {
+    const token = await loginAsAdmin();
+    const response = await request(app).post('/api/admin/wishes/non-existent/remove').set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe('Wish not found.');
+  });
+
+  it('handles invalid roles when updating user role', async () => {
+    const token = await loginAsAdmin();
+    const response = await request(app).post('/api/admin/users/123/role').send({ role: 'invalid' }).set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Role must be user or admin.');
+  });
+
+  it('handles not found errors for updating user role', async () => {
+    const token = await loginAsAdmin();
+    const response = await request(app).post('/api/admin/users/non-existent/role').send({ role: 'admin' }).set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe('User not found.');
+  });
+
+  it('handles not found errors for deleting users', async () => {
+    const token = await loginAsAdmin();
+    const response = await request(app).post('/api/admin/users/non-existent/delete').set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe('User not found.');
+  });
+
+  it('handles errors during demo reset', async () => {
+    const token = await loginAsAdmin();
+    const originalPrepare = db.prepare.bind(db);
+    const spy = vi.spyOn(db, 'prepare').mockImplementation((sql) => {
+      if (typeof sql === 'string' && sql.includes('DELETE FROM wishes')) {
+        throw new Error('Mock error');
+      }
+      return originalPrepare(sql);
+    });
+    
+    const response = await request(app).post('/api/admin/reset-demo').set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(500);
+    expect(response.body.error).toBe('Internal Server Error during seeding');
+    
+    spy.mockRestore();
+  });
 });

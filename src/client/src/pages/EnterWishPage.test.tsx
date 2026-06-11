@@ -28,4 +28,19 @@ describe('EnterWishPage', () => {
     await waitFor(() => expect(screen.getByText(/Wish saved! ID:/i)).toBeInTheDocument());
     expect(global.fetch).toHaveBeenCalledWith('/api/wishes', expect.objectContaining({ method: 'POST' }));
   });
+
+
+
+  it('shows error if API request fails', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'Server error' })
+    }) as any;
+
+    render(<EnterWishPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Type your wish here/i), { target: { value: 'test wish' } });
+    fireEvent.click(screen.getByRole('button', { name: /Submit Wish/i }));
+    
+    expect(await screen.findByText(/Server error/i)).toBeInTheDocument();
+  });
 });

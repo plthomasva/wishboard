@@ -35,4 +35,38 @@ describe('SearchPage', () => {
     expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('searcher_orientations=queer'));
     expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('searcher_roles=top'));
   });
+
+  it('handles empty results', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => []
+    }) as any;
+
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'unknown' } });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
+  });
+
+  it('handles API errors', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'Search failed' })
+    }) as any;
+
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'error' } });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => expect(screen.getByText(/Unable to perform search./i)).toBeInTheDocument());
+  });
+
+  it('does not error when clearing the search input', async () => {
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  });
 });
