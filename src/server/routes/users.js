@@ -1,24 +1,12 @@
 import express from 'express';
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
-import { createSalt, hashPassphrase, createSessionToken, getUserFromRequest, getTokenFromRequestHeader, verifyPassphrase } from '../auth.js';
+import { createSalt, hashPassphrase, createSessionToken, getUserFromRequest, getTokenFromRequestHeader, verifyPassphrase, normalizeArrayInput } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
-const normalizeArrayField = (value) => {
-  if (!value) {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.map(String).map((item) => item.trim()).filter(Boolean);
-  }
-  return String(value)
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-};
 
 router.get('/exists', (req, res) => {
   const { username } = req.query;
@@ -48,9 +36,9 @@ router.post('/register', (req, res) => {
   const userId = idGenerator();
   const now = new Date().toISOString();
 
-  const genders = normalizeArrayField(identity_genders);
-  const orientations = normalizeArrayField(identity_orientations);
-  const roles = normalizeArrayField(identity_roles);
+  const genders = normalizeArrayInput(identity_genders);
+  const orientations = normalizeArrayInput(identity_orientations);
+  const roles = normalizeArrayInput(identity_roles);
 
   db.prepare(
     'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
@@ -67,9 +55,9 @@ router.put('/me', (req, res) => {
   }
 
   const { identity_genders, identity_orientations, identity_roles } = req.body;
-  const genders = normalizeArrayField(identity_genders);
-  const orientations = normalizeArrayField(identity_orientations);
-  const roles = normalizeArrayField(identity_roles);
+  const genders = normalizeArrayInput(identity_genders);
+  const orientations = normalizeArrayInput(identity_orientations);
+  const roles = normalizeArrayInput(identity_roles);
 
   db.prepare(
     'UPDATE users SET identity_genders = ?, identity_orientations = ?, identity_roles = ? WHERE id = ?'

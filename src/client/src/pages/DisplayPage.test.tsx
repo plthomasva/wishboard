@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import DisplayPage from './DisplayPage';
 
 // Mock ResizeObserver for jsdom
@@ -8,6 +8,9 @@ class ResizeObserverMock {
   unobserve() {}
   disconnect() {}
 }
+
+const realSetInterval = global.setInterval;
+const realClearInterval = global.clearInterval;
 
 describe('DisplayPage', () => {
   beforeEach(() => {
@@ -24,6 +27,8 @@ describe('DisplayPage', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    global.setInterval = realSetInterval;
+    global.clearInterval = realClearInterval;
   });
 
   it('loads and renders wishes from the random endpoint with default limit=12 when not in kiosk mode', async () => {
@@ -89,5 +94,92 @@ describe('DisplayPage', () => {
     if (originalClientWidth) Object.defineProperty(Element.prototype, 'clientWidth', originalClientWidth);
     if (originalClientHeight) Object.defineProperty(Element.prototype, 'clientHeight', originalClientHeight);
     if (originalInnerWidth) Object.defineProperty(window, 'innerWidth', originalInnerWidth);
+  });
+
+  it('flags a wish and removes it from the display list when confirmed', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    global.fetch = vi.fn().mockImplementation((url, init) => {
+      if (url === '/api/wishes/random?limit=12') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [
+            { id: 'wish-1', content: 'Flag me', creator_genders: [], creator_orientations: [] }
+          ]
+        });
+      }
+      if (url === '/api/wishes/wish-1/flag' && init?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    }) as any;
+
+    render(<DisplayPage isKiosk={false} />);
+
+    // Wait for the wish to be displayed
+    await waitFor(() => expect(screen.getByText('Flag me')).toBeInTheDocument());
+
+    // Click flag button
+    const flagBtn = screen.getByTitle('Flag as inappropriate');
+    fireEvent.click(flagBtn);
+
+    // Verify confirm was called
+    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to flag this wish as inappropriate?');
+
+    // Verify fetch flag endpoint was called
+    expect(global.fetch).toHaveBeenCalledWith('/api/wishes/wish-1/flag', { method: 'POST' });
+
+    // Verify the wish was removed from the UI
+    await waitFor(() => expect(screen.queryByText('Flag me')).not.toBeInTheDocument());
+  });
+
+  it('does not flag a wish if confirmation is cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { id: 'wish-1', content: 'Cancel flag wish', creator_genders: [], creator_orientations: [] }
+      ]
+    }) as any;
+
+    render(<DisplayPage isKiosk={false} />);
+
+    await waitFor(() => expect(screen.getByText('Cancel flag wish')).toBeInTheDocument());
+
+    const flagBtn = screen.getByTitle('Flag as inappropriate');
+    fireEvent.click(flagBtn);
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledTimes(1); // only the initial load fetch
+    expect(screen.getByText('Cancel flag wish')).toBeInTheDocument();
+  });
+
+  it('handles flagging failure by showing an alert', async () => {
+    global.setInterval = realSetInterval;
+    global.clearInterval = realClearInterval;
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url === '/api/wishes/random?limit=12') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [
+            { id: 'wish-1', content: 'Fail flag wish', creator_genders: [], creator_orientations: [] }
+          ]
+        });
+      }
+      return Promise.resolve({ ok: false }); // fails flag POST
+    }) as any;
+
+    render(<DisplayPage isKiosk={false} />);
+
+    await waitFor(() => expect(screen.getByText('Fail flag wish')).toBeInTheDocument());
+
+    const flagBtn = screen.getByTitle('Flag as inappropriate');
+    fireEvent.click(flagBtn);
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Failed to flag the wish.'));
+    expect(screen.getByText('Fail flag wish')).toBeInTheDocument();
   });
 });

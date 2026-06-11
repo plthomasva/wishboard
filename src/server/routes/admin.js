@@ -19,6 +19,20 @@ router.post('/wishes/:id/remove', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+router.post('/wishes/:id/clear-flag', requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const result = db.prepare('UPDATE wishes SET flagged = 0 WHERE id = ?').run(id);
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Wish not found.' });
+  }
+  res.json({ success: true });
+});
+
+router.post('/wishes/clear-all-flags', requireAdmin, (req, res) => {
+  db.prepare('UPDATE wishes SET flagged = 0').run();
+  res.json({ success: true });
+});
+
 router.get('/users', requireAdmin, (req, res) => {
   const users = db.prepare('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC').all();
   res.json(users);

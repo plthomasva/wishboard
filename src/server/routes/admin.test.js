@@ -89,6 +89,60 @@ describe('Admin routes', () => {
     expect(flagsAfterRemoval.body).toEqual([]);
   });
 
+  it('allows admin to clear flags individually and in bulk', async () => {
+    const wishId1 = 'flagged-wish-1';
+    const wishId2 = 'flagged-wish-2';
+    const now = new Date().toISOString();
+    const insertWish = (id) => {
+      db.prepare(
+        `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(
+        id, null, 'Content ' + id, null,
+        JSON.stringify([]), JSON.stringify([]), JSON.stringify([]),
+        JSON.stringify([]), JSON.stringify([]), JSON.stringify([]),
+        now, now, 1
+      );
+    };
+
+    insertWish(wishId1);
+    insertWish(wishId2);
+
+    const token = await loginAsAdmin();
+
+    // 1. Clear single flag
+    const clearOneResponse = await request(app)
+      .post(`/api/admin/wishes/${wishId1}/clear-flag`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(clearOneResponse.status).toBe(200);
+    expect(clearOneResponse.body).toEqual({ success: true });
+
+    // Check flagged list - only wishId2 should be flagged
+    let flagsResponse = await request(app)
+      .get('/api/admin/flags')
+      .set('Authorization', `Bearer ${token}`);
+    expect(flagsResponse.status).toBe(200);
+    expect(flagsResponse.body.length).toBe(1);
+    expect(flagsResponse.body[0].id).toBe(wishId2);
+
+    // 2. Set wishId1 flagged status back to 1 to test bulk clear
+    db.prepare('UPDATE wishes SET flagged = 1 WHERE id = ?').run(wishId1);
+
+    // Clear all flags in bulk
+    const clearAllResponse = await request(app)
+      .post('/api/admin/wishes/clear-all-flags')
+      .set('Authorization', `Bearer ${token}`);
+    expect(clearAllResponse.status).toBe(200);
+    expect(clearAllResponse.body).toEqual({ success: true });
+
+    // Check flagged list - should be empty
+    flagsResponse = await request(app)
+      .get('/api/admin/flags')
+      .set('Authorization', `Bearer ${token}`);
+    expect(flagsResponse.status).toBe(200);
+    expect(flagsResponse.body).toEqual([]);
+  });
+
   it('lists users, updates roles, and deletes user accounts', async () => {
     const registerResponse = await request(app)
       .post('/api/users/register')

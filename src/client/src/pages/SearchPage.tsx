@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext';
-import IdentityStickers from '../components/IdentityStickers';
+import WishCard from '../components/WishCard';
+import useFlagWish from '../hooks/useFlagWish';
 
 interface Wish {
   id: string;
@@ -60,6 +61,8 @@ export default function SearchPage() {
 
     setResults(data);
   };
+
+  const handleFlag = useFlagWish((id) => setResults((prev) => prev.filter((wish) => wish.id !== id)));
 
   return (
     <section>
@@ -122,11 +125,11 @@ export default function SearchPage() {
 
       <div className="wish-grid">
         {results.map((wish) => (
-          <article className="wish-card" key={wish.id}>
-            <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
-            <strong className="wish-id">#{wish.id}</strong>
-            <p className="wish-text">{wish.content}</p>
-          </article>
+          <WishCard
+            key={wish.id}
+            wish={wish}
+            onFlag={handleFlag}
+          />
         ))}
       </div>
     </section>
