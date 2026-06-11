@@ -1,7 +1,7 @@
 import InfoToggle from '../components/InfoToggle';
 
 interface HomePageProps {
-  onNavigate: (page: 'enter' | 'search' | 'display' | 'account' | 'admin') => void;
+  onNavigate: (page: 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin') => void;
 }
 
 export default function HomePage({ onNavigate }: HomePageProps) {
@@ -22,6 +22,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         <button onClick={() => onNavigate('display')}>Big Screen Display</button>
 
         <button onClick={() => onNavigate('account')}>My Account</button>
+        <button onClick={() => onNavigate('about')}>About Wishboard</button>
         <button onClick={() => onNavigate('admin')}>Admin</button>
       </div>
     </section>

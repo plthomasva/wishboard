@@ -14,6 +14,7 @@ vi.mock('./AuthContext', () => ({
 vi.mock('./pages/HomePage', () => ({ default: () => <div>HomePage Mock</div> }));
 vi.mock('./pages/EnterWishPage', () => ({ default: () => <div>EnterWishPage Mock</div> }));
 vi.mock('./pages/SearchPage', () => ({ default: () => <div>SearchPage Mock</div> }));
+vi.mock('./pages/AboutPage', () => ({ default: () => <div>AboutPage Mock</div> }));
 vi.mock('./pages/DisplayPage', () => ({
   default: ({ onEnterKiosk, isKiosk }: any) => (
     <div>
@@ -48,6 +49,11 @@ describe('App Component', () => {
     fireEvent.click(searchTab);
 
     expect(screen.getByText('SearchPage Mock')).toBeInTheDocument();
+
+    const aboutTab = screen.getByText('About');
+    fireEvent.click(aboutTab);
+
+    expect(screen.getByText('AboutPage Mock')).toBeInTheDocument();
   });
 
   it('enters kiosk mode and hides header navigation', async () => {

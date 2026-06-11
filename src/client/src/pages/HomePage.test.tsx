@@ -21,5 +21,8 @@ describe('HomePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /My Account/i }));
     expect(onNavigate).toHaveBeenCalledWith('account');
+
+    fireEvent.click(screen.getByRole('button', { name: /About Wishboard/i }));
+    expect(onNavigate).toHaveBeenCalledWith('about');
   });
 });

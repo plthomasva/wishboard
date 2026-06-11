@@ -7,6 +7,7 @@ import DisplayPage from './pages/DisplayPage';
 import AdminPage from './pages/AdminPage';
 import AccountPage from './AccountPage';
 import ManageWishPage from './pages/ManageWishPage';
+import AboutPage from './pages/AboutPage';
 import WiFiQrCode from './components/WiFiQrCode';
 
 const pages = [
@@ -15,10 +16,11 @@ const pages = [
   { id: 'search', label: 'Search Wishes' },
   { id: 'display', label: 'Big Screen' },
   { id: 'account', label: 'My Account' },
+  { id: 'about', label: 'About' },
   { id: 'admin', label: 'Admin' }
 ];
 
-type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'admin' | 'manage-wish';
+type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin' | 'manage-wish';
 
 function AppContent() {
   const getHashPage = (): PageId => {
@@ -194,6 +196,7 @@ function AppContent() {
           {page === 'search' && <SearchPage />}
           {page === 'display' && <DisplayPage onEnterKiosk={() => setIsKiosk(true)} isKiosk={false} />}
           {page === 'account' && <AccountPage />}
+          {page === 'about' && <AboutPage />}
           {page === 'manage-wish' && <ManageWishPage />}
           {page === 'admin' && <AdminPage />}
         </main>
