@@ -15,7 +15,7 @@ describe('AttributeInput', () => {
       />
     );
     suggestions.forEach((s) => {
-      expect(screen.getByRole('button', { name: new RegExp(s) })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: new RegExp(`\\b${s}\\b`) })).toBeInTheDocument();
     });
   });
 
@@ -29,7 +29,7 @@ describe('AttributeInput', () => {
         suggestions={['woman', 'man', 'non-binary']}
       />
     );
-    const manPill = screen.getByRole('button', { name: /man/ });
+    const manPill = screen.getByRole('button', { name: /\bman\b/ });
     fireEvent.click(manPill);
     expect(onChange).toHaveBeenCalledWith('woman, man');
   });
@@ -44,7 +44,7 @@ describe('AttributeInput', () => {
         suggestions={['woman', 'man', 'non-binary']}
       />
     );
-    const manPill = screen.getByRole('button', { name: /man/ });
+    const manPill = screen.getByRole('button', { name: /\bman\b/ });
     fireEvent.click(manPill);
     expect(onChange).toHaveBeenCalledWith('woman');
   });

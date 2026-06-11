@@ -92,6 +92,14 @@ export default function ManageWishPage() {
   }
 
   if (!wish) {
+    if (message) {
+      return (
+        <section>
+          <h1>Manage Wish</h1>
+          <div className="message success">{message}</div>
+        </section>
+      );
+    }
     return <section>Loading...</section>;
   }
 
