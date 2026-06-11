@@ -42,38 +42,25 @@ const buildAcceptedGenderSet = (searcherGenders, searcherOrientations) => {
     accepted.add(label);
   };
 
-  const addGenderVariants = ({ token, base, isTrans, isCis }) => {
-    addGender(token);
-    addGender(base);
-    if (isTrans) {
-      addGender(`trans-${base}`);
-    }
-    if (isCis) {
-      addGender(`cis-${base}`);
-    }
-  };
-
-  genders.forEach(addGenderVariants);
-
   const add = (items) => items.forEach((item) => addGender(item));
 
-  if (orientations.some((o) => /pan|queer/.test(o))) {
+  if (orientations.some((o) => /\b(pan|queer)\b/.test(o))) {
     add(['man', 'woman', 'nonbinary', 'cis-man', 'cis-woman', 'trans-man', 'trans-woman', 'men', 'women']);
   }
 
-  if (orientations.some((o) => /bi|bisexual/.test(o))) {
+  if (orientations.some((o) => /\b(bi|bisexual)\b/.test(o))) {
     add(['man', 'woman', 'cis-man', 'cis-woman', 'men', 'women']);
   }
 
-  if (orientations.some((o) => /lesb|lesbian/.test(o))) {
+  if (orientations.some((o) => /\b(lesb|lesbian)\b/.test(o))) {
     add(['woman', 'cis-woman', 'women']);
   }
 
-  if (orientations.some((o) => /gay|homosexual/.test(o))) {
+  if (orientations.some((o) => /\b(gay|homosexual)\b/.test(o))) {
     add(['man', 'cis-man', 'men']);
   }
 
-  if (orientations.some((o) => /straight/.test(o))) {
+  if (orientations.some((o) => /\b(straight)\b/.test(o))) {
     const hasMan = genders.some((g) => g.base === 'man');
     const hasWoman = genders.some((g) => g.base === 'woman');
     if (hasMan) add(['woman', 'cis-woman', 'women']);
@@ -89,6 +76,9 @@ const matchesGenderPreference = (searcherGenders, searcherOrientations, desired)
   }
   if (!searcherGenders || searcherGenders.length === 0) {
     return false;
+  }
+  if (!searcherOrientations || searcherOrientations.length === 0) {
+    return true;
   }
 
   const accepted = buildAcceptedGenderSet(searcherGenders, searcherOrientations);
@@ -137,16 +127,22 @@ const isCompatible = (wish, searcher) => {
   const desiredOrientations = parseJsonArray(wish.desired_orientations);
   const desiredRoles = parseJsonArray(wish.desired_roles);
   const creatorGenders = parseJsonArray(wish.creator_genders);
+  const creatorOrientations = parseJsonArray(wish.creator_orientations);
 
   // 1. Does the searcher want the wish creator?
   const searcherWantsCreatorGender = matchesGenderPreference(searcher.identity_genders, searcher.identity_orientations, creatorGenders);
 
   // 2. Does the wish creator want the searcher?
-  const creatorWantsSearcherGender = desiredGenders.length === 0 || searcher.identity_genders.some((item) => {
-    const descriptor = parseGenderDescriptor(item);
-    const searcherLabels = [descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, item.trim().toLowerCase()];
-    return desiredGenders.some(d => searcherLabels.includes(normalizeToken(d)));
-  });
+  let creatorWantsSearcherGender = false;
+  if (desiredGenders.length > 0) {
+    creatorWantsSearcherGender = searcher.identity_genders.some((item) => {
+      const descriptor = parseGenderDescriptor(item);
+      const searcherLabels = [descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, item.trim().toLowerCase()];
+      return desiredGenders.some(d => searcherLabels.includes(normalizeToken(d)));
+    });
+  } else {
+    creatorWantsSearcherGender = matchesGenderPreference(creatorGenders, creatorOrientations, searcher.identity_genders);
+  }
 
   return (
     searcherWantsCreatorGender &&

@@ -125,4 +125,69 @@ describe('Matchmaking logic', () => {
     });
     expect(resSearchSub.body.map(w => w.content)).not.toContain('Sub looking for dom');
   });
+
+  it('correctly uses implicit preferences when desired_genders is empty', async () => {
+    await request(app).post('/api/wishes').send({ 
+      content: 'Implicit Lesbian wish', 
+      creator_genders: 'woman', 
+      creator_orientations: 'lesbian'
+    });
+    
+    const resSearch1 = await request(app).get('/api/wishes').query({
+      sg: 'man',
+      so: 'straight',
+      q: 'Implicit Lesbian wish'
+    });
+    
+    expect(resSearch1.body).toHaveLength(0);
+  });
+
+  it('prevents straight users from matching their own gender implicitly', async () => {
+    await request(app).post('/api/wishes').send({ 
+      content: 'Straight Man wish', 
+      creator_genders: 'man', 
+      creator_orientations: 'straight'
+    });
+    
+    const resSearch1 = await request(app).get('/api/wishes').query({
+      sg: 'man',
+      so: 'straight',
+      q: 'Straight Man wish'
+    });
+    
+    expect(resSearch1.body).toHaveLength(0);
+  });
+
+  it('allows explicit desired_genders to override implicit orientation preferences', async () => {
+    await request(app).post('/api/wishes').send({ 
+      content: 'Lesbian looking for man', 
+      creator_genders: 'woman', 
+      creator_orientations: 'lesbian',
+      desired_genders: 'man'
+    });
+    
+    const resSearch1 = await request(app).get('/api/wishes').query({
+      sg: 'man',
+      so: 'straight',
+      q: 'Lesbian looking for man'
+    });
+    
+    expect(resSearch1.body).toHaveLength(1);
+  });
+
+  it('accepts all genders when orientation is not specified', async () => {
+    await request(app).post('/api/wishes').send({ 
+      content: 'No orientation wish', 
+      creator_genders: 'woman', 
+      creator_orientations: ''
+    });
+    
+    const resSearch1 = await request(app).get('/api/wishes').query({
+      sg: 'man',
+      so: 'straight',
+      q: 'No orientation wish'
+    });
+    
+    expect(resSearch1.body).toHaveLength(1);
+  });
 });
