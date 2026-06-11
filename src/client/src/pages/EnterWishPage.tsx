@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
 import InfoToggle from '../components/InfoToggle';
+import AttributeInput from '../components/AttributeInput';
+import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
 export default function EnterWishPage() {
   const { token } = useAuth();
@@ -90,26 +92,29 @@ export default function EnterWishPage() {
             </div>
             <label>
               Creator genders (anonymous only)
-              <input
+              <AttributeInput
                 value={creatorGenders}
-                onChange={(event) => setCreatorGenders(event.target.value)}
+                onChange={setCreatorGenders}
                 placeholder="e.g. woman, non-binary"
+                suggestions={SUGGESTED_GENDERS}
               />
             </label>
             <label>
               Creator orientations (anonymous only)
-              <input
+              <AttributeInput
                 value={creatorOrientations}
-                onChange={(event) => setCreatorOrientations(event.target.value)}
+                onChange={setCreatorOrientations}
                 placeholder="e.g. queer, straight"
+                suggestions={SUGGESTED_ORIENTATIONS}
               />
             </label>
             <label>
               Creator roles (anonymous only)
-              <input
+              <AttributeInput
                 value={creatorRoles}
-                onChange={(event) => setCreatorRoles(event.target.value)}
+                onChange={setCreatorRoles}
                 placeholder="e.g. speaker, volunteer"
+                suggestions={SUGGESTED_ROLES}
               />
             </label>
           </>
@@ -130,27 +135,30 @@ export default function EnterWishPage() {
               Leaving this blank means you're open to matching with anyone (based on your own orientation)! Explicitly entering a gender here will override your default orientation preferences.
             </InfoToggle>
           </div>
-          <input
+          <AttributeInput
             id="desiredGenders"
             value={desiredGenders}
-            onChange={(event) => setDesiredGenders(event.target.value)}
+            onChange={setDesiredGenders}
             placeholder="e.g. woman, non-binary"
+            suggestions={SUGGESTED_GENDERS}
           />
         </div>
         <label>
           Desired orientations for who can fulfill this wish
-          <input
+          <AttributeInput
             value={desiredOrientations}
-            onChange={(event) => setDesiredOrientations(event.target.value)}
+            onChange={setDesiredOrientations}
             placeholder="e.g. queer, straight"
+            suggestions={SUGGESTED_ORIENTATIONS}
           />
         </label>
         <label>
           Desired roles for who can fulfill this wish
-          <input
+          <AttributeInput
             value={desiredRoles}
-            onChange={(event) => setDesiredRoles(event.target.value)}
+            onChange={setDesiredRoles}
             placeholder="e.g. speaker, vendor"
+            suggestions={SUGGESTED_ROLES}
           />
         </label>
         <button type="submit">Submit Wish</button>

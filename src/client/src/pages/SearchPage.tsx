@@ -3,6 +3,8 @@ import { useAuth } from '../AuthContext';
 import WishCard from '../components/WishCard';
 import useFlagWish from '../hooks/useFlagWish';
 import InfoToggle from '../components/InfoToggle';
+import AttributeInput from '../components/AttributeInput';
+import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
 interface Wish {
   id: string;
@@ -104,26 +106,29 @@ export default function SearchPage() {
             </div>
             <label>
               Searcher genders
-              <input
+              <AttributeInput
                 value={manualGenders}
-                onChange={(event) => setManualGenders(event.target.value)}
+                onChange={setManualGenders}
                 placeholder="e.g. woman, cisgender man"
+                suggestions={SUGGESTED_GENDERS}
               />
             </label>
             <label>
               Searcher orientations
-              <input
+              <AttributeInput
                 value={manualOrientations}
-                onChange={(event) => setManualOrientations(event.target.value)}
+                onChange={setManualOrientations}
                 placeholder="e.g. lesbian, bisexual"
+                suggestions={SUGGESTED_ORIENTATIONS}
               />
             </label>
             <label>
               Searcher roles
-              <input
+              <AttributeInput
                 value={manualRoles}
-                onChange={(event) => setManualRoles(event.target.value)}
+                onChange={setManualRoles}
                 placeholder="e.g. top, bottom"
+                suggestions={SUGGESTED_ROLES}
               />
             </label>
             <p className="note-box">Leave these blank for keyword-only search across all wishes.</p>

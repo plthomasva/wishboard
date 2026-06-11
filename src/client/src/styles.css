@@ -155,6 +155,44 @@ textarea {
   resize: vertical;
 }
 
+.attribute-input-container {
+  display: grid;
+  gap: 8px;
+}
+
+.suggestion-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.pill-btn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 32px;
+  transition: all 0.2s ease;
+}
+
+.pill-btn:hover {
+  background: #e2e8f0;
+  color: #334155;
+  transform: translateY(0);
+}
+
+.pill-btn.selected {
+  background: #e8f0fe;
+  border-color: #1a73e8;
+  color: #1a73e8;
+  font-weight: 600;
+}
+
 button {
   appearance: none;
   border: none;

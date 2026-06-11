@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { generatePassphrase } from './passphrase.js';
 import InfoToggle from './components/InfoToggle';
+import AttributeInput from './components/AttributeInput';
+import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from './constants';
 
 export default function AccountPage() {
   const { user, token, login, register, logout, refreshUser } = useAuth();
@@ -245,26 +247,29 @@ export default function AccountPage() {
               </div>
               <label>
                 Identity genders
-                <input
+                <AttributeInput
                   value={identityGenders}
-                  onChange={(event) => setIdentityGenders(event.target.value)}
+                  onChange={setIdentityGenders}
                   placeholder="e.g. woman, non-binary"
+                  suggestions={SUGGESTED_GENDERS}
                 />
               </label>
               <label>
                 Identity orientations
-                <input
+                <AttributeInput
                   value={identityOrientations}
-                  onChange={(event) => setIdentityOrientations(event.target.value)}
+                  onChange={setIdentityOrientations}
                   placeholder="e.g. queer, straight"
+                  suggestions={SUGGESTED_ORIENTATIONS}
                 />
               </label>
               <label>
                 Identity roles
-                <input
+                <AttributeInput
                   value={identityRoles}
-                  onChange={(event) => setIdentityRoles(event.target.value)}
+                  onChange={setIdentityRoles}
                   placeholder="e.g. speaker, volunteer"
+                  suggestions={SUGGESTED_ROLES}
                 />
               </label>
             </>
@@ -318,26 +323,29 @@ export default function AccountPage() {
         </div>
         <label>
           Genders
-          <input
+          <AttributeInput
             value={editIdentityGenders}
-            onChange={(event) => setEditIdentityGenders(event.target.value)}
+            onChange={setEditIdentityGenders}
             placeholder="e.g. woman, non-binary"
+            suggestions={SUGGESTED_GENDERS}
           />
         </label>
         <label>
           Orientations
-          <input
+          <AttributeInput
             value={editIdentityOrientations}
-            onChange={(event) => setEditIdentityOrientations(event.target.value)}
+            onChange={setEditIdentityOrientations}
             placeholder="e.g. queer, straight"
+            suggestions={SUGGESTED_ORIENTATIONS}
           />
         </label>
         <label>
           Roles
-          <input
+          <AttributeInput
             value={editIdentityRoles}
-            onChange={(event) => setEditIdentityRoles(event.target.value)}
+            onChange={setEditIdentityRoles}
             placeholder="e.g. speaker, volunteer"
+            suggestions={SUGGESTED_ROLES}
           />
         </label>
         <button className="secondary-button" onClick={saveProfile} type="button">
