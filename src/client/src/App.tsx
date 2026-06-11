@@ -137,14 +137,34 @@ function AppContent() {
               </button>
             ))}
           </nav>
-          <div className="user-area">
+          <div className="user-area" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {user ? (
               <>
-                <span>{user.username}</span>
-                <button className="secondary-button" onClick={logout}>Logout</button>
+                <button 
+                  className="user-link-button" 
+                  onClick={() => navigate('account')}
+                  aria-label="My Account"
+                >
+                  <span aria-hidden="true" style={{ marginRight: '6px' }}>👤</span>
+                  {user.username}
+                </button>
+                <button className="compact-btn" onClick={logout}>
+                  Log out
+                </button>
               </>
             ) : (
-              <span>Guest</span>
+              <>
+                <div 
+                  style={{ display: 'flex', alignItems: 'center', fontWeight: 600, fontSize: '1.05rem', padding: '8px 12px', cursor: 'default' }}
+                  aria-label="Guest Account"
+                >
+                  <span aria-hidden="true" style={{ marginRight: '6px' }}>👤</span>
+                  Guest
+                </div>
+                <button className="compact-btn" onClick={() => navigate('account')}>
+                  Log in
+                </button>
+              </>
             )}
           </div>
         </header>

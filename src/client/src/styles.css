@@ -73,6 +73,42 @@ body {
   background: rgba(255, 255, 255, 0.16);
 }
 
+.user-link-button {
+  background: transparent;
+  color: white;
+  border: none;
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+  min-height: 48px;
+}
+
+.user-link-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  text-decoration: underline;
+}
+
+.compact-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background 0.2s;
+}
+
+.compact-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .content-area {
   flex: 1;
   padding: 24px;
