@@ -39,13 +39,13 @@ export default function SearchPage() {
       }
     } else {
       if (manualGenders.trim()) {
-        params.set('searcher_genders', manualGenders.trim());
+        params.set('sg', manualGenders.trim());
       }
       if (manualOrientations.trim()) {
-        params.set('searcher_orientations', manualOrientations.trim());
+        params.set('so', manualOrientations.trim());
       }
       if (manualRoles.trim()) {
-        params.set('searcher_roles', manualRoles.trim());
+        params.set('sr', manualRoles.trim());
       }
       if (!manualGenders.trim() && !manualOrientations.trim() && !manualRoles.trim()) {
         params.set('ignore_attributes', '1');

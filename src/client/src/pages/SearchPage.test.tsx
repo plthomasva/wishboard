@@ -41,9 +41,9 @@ describe('SearchPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
     await waitFor(() => expect(screen.getByText('Hello world')).toBeInTheDocument());
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('searcher_genders=woman'));
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('searcher_orientations=queer'));
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('searcher_roles=top'));
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('sg=woman'));
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('so=queer'));
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('sr=top'));
   });
 
   it('handles empty results', async () => {

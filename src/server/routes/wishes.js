@@ -219,9 +219,9 @@ router.get('/random', (req, res) => {
 router.get('/', (req, res) => {
   const searcher = getRequestUser(req);
   const query = (req.query.q || '').trim();
-  const searcherGenders = searcher?.identity_genders ?? normalizeArrayInput(req.query.searcher_genders);
-  const searcherOrientations = searcher?.identity_orientations ?? normalizeArrayInput(req.query.searcher_orientations);
-  const searcherRoles = searcher?.identity_roles ?? normalizeArrayInput(req.query.searcher_roles);
+  const searcherGenders = searcher?.identity_genders ?? normalizeArrayInput(req.query.sg);
+  const searcherOrientations = searcher?.identity_orientations ?? normalizeArrayInput(req.query.so);
+  const searcherRoles = searcher?.identity_roles ?? normalizeArrayInput(req.query.sr);
   const ignoreAttributes =
     req.query.ignore_attributes === '1' ||
     req.query.ignore_attributes === 'true' ||
