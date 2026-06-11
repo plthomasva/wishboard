@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { generatePassphrase } from './passphrase.js';
+import InfoToggle from './components/InfoToggle';
 
 export default function AccountPage() {
   const { user, token, login, register, logout, refreshUser } = useAuth();
@@ -236,6 +237,12 @@ export default function AccountPage() {
           </label>
           {effectiveMode === 'register' && (
             <>
+              <div className="label-with-info" style={{ marginTop: '12px', marginBottom: '8px' }}>
+                <strong style={{ display: 'block' }}>Identity Attributes</strong>
+                <InfoToggle>
+                  These attributes are automatically applied to any wishes you create, and are used by default when you search.
+                </InfoToggle>
+              </div>
               <label>
                 Identity genders
                 <input
@@ -303,7 +310,12 @@ export default function AccountPage() {
       </div>
 
       <div className="profile-edit">
-        <h2>Edit profile attributes</h2>
+        <div className="label-with-info" style={{ marginBottom: '16px' }}>
+          <h2 style={{ margin: 0 }}>Edit profile attributes</h2>
+          <InfoToggle>
+            Updating these attributes will change how you are matched with other users across all your wishes.
+          </InfoToggle>
+        </div>
         <label>
           Genders
           <input

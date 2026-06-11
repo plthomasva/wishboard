@@ -52,9 +52,16 @@ Offline wish board for conventions, built to run on a Raspberry Pi or similar lo
 
 - Users may register with identity metadata, including gender, orientation, and role.
 - Wishes can include creator identity metadata and desired fulfiller targets.
+- **Explicit Match Overrides**: If a user specifies a desired trait (e.g. a specific gender), it strictly overrides implicit rules.
+- **Implicit Rules**: If desired traits are left blank, the system relies on the creator's orientation. For example, a straight user implicitly matches only with binary opposite genders.
 - Search uses logged-in profile attributes by default when available.
 - Logged-in users can temporarily disable profile matching to perform broad keyword searches.
 - Anonymous searchers may provide temporary gender/orientation/role values for a one-off compatibility query.
+
+## User Interface
+
+- The web interface is **mobile-first** and features large tap targets suitable for kiosk touchscreens.
+- The UI is **self-documenting**: users can tap the inline info toggle (`ⓘ`) next to input fields to read conversational, non-intrusive help text explaining how matchmaking and attributes work.
 
 ## Remote access
 

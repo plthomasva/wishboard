@@ -74,14 +74,14 @@ const matchesGenderPreference = (searcherGenders, searcherOrientations, desired)
   if (!desired || desired.length === 0) {
     return true;
   }
-  if (!searcherGenders || searcherGenders.length === 0) {
-    return false;
-  }
   if (!searcherOrientations || searcherOrientations.length === 0) {
     return true;
   }
 
-  const accepted = buildAcceptedGenderSet(searcherGenders, searcherOrientations);
+  const accepted = buildAcceptedGenderSet(searcherGenders || [], searcherOrientations);
+  if (accepted.size === 0) {
+    return false;
+  }
   return desired.some((item) => {
     const descriptor = parseGenderDescriptor(item);
     return [descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, item.trim().toLowerCase()].some((label) => accepted.has(label));
@@ -122,7 +122,7 @@ const matchesPreference = (searcher, desired) => {
   return desired.some((item) => normalizedSearcher.includes(normalizeToken(item)));
 };
 
-const isCompatible = (wish, searcher) => {
+export const isCompatible = (wish, searcher) => {
   const desiredGenders = parseJsonArray(wish.desired_genders);
   const desiredOrientations = parseJsonArray(wish.desired_orientations);
   const desiredRoles = parseJsonArray(wish.desired_roles);

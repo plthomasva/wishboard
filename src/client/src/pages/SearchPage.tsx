@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext';
 import WishCard from '../components/WishCard';
 import useFlagWish from '../hooks/useFlagWish';
+import InfoToggle from '../components/InfoToggle';
 
 interface Wish {
   id: string;
@@ -79,17 +80,28 @@ export default function SearchPage() {
         </label>
 
         {user ? (
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={useProfileAttributes}
-              onChange={(event) => setUseProfileAttributes(event.target.checked)}
-            />
-            Filter results by my profile attributes
-          </label>
+          <div className="label-with-info" style={{ marginTop: '8px' }}>
+            <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={useProfileAttributes}
+                onChange={(event) => setUseProfileAttributes(event.target.checked)}
+              />
+              Filter results by my profile attributes
+            </label>
+            <InfoToggle>
+              When checked, we use your identity attributes to show only wishes from compatible creators. Uncheck this if you just want to do a broad keyword search across all wishes!
+            </InfoToggle>
+          </div>
         ) : (
           <fieldset className="filter-fieldset">
-            <legend>Temporary search attributes</legend>
+            <div className="label-with-info" style={{ marginBottom: '12px' }}>
+              <legend style={{ fontWeight: 'bold' }}>Temporary search attributes</legend>
+              <InfoToggle>
+                These let you perform a one-off compatibility search as a specific identity. 
+                Leaving these blank will do a broad keyword-only search across all wishes!
+              </InfoToggle>
+            </div>
             <label>
               Searcher genders
               <input

@@ -123,10 +123,10 @@ export function generateDemoData() {
     const randomUser = users[Math.floor(Math.random() * users.length)];
     const content = generateMadLibsWish();
     
-    // Randomize what this wish is looking for
-    const desiredGenders = JSON.stringify(getRandom(mockGenders, 3));
-    const desiredOrientations = JSON.stringify(getRandom(mockOrientations, 3));
-    const desiredRoles = JSON.stringify(getRandom(mockRoles, 3));
+    // Randomize what this wish is looking for, frequently leaving them blank to simulate normal user behavior
+    const desiredGenders = Math.random() > 0.4 ? '[]' : JSON.stringify(getRandom(mockGenders, 2));
+    const desiredOrientations = Math.random() > 0.6 ? '[]' : JSON.stringify(getRandom(mockOrientations, 2));
+    const desiredRoles = Math.random() > 0.7 ? '[]' : JSON.stringify(getRandom(mockRoles, 2));
     
     // Stagger dates over the last 30 days
     const timeOffset = Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000);

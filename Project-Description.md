@@ -29,8 +29,14 @@ The system now supports richer user and wish metadata for compatibility matching
 
 - Users may self-identify with gender, orientation, and role.
 - Wishes may include desired fulfiller gender(s), orientation(s), and role(s).
+- **Explicit vs. Implicit matching**: If a user specifies what they are looking for (e.g. a desired gender), this explicitly overrides any default rules. If left blank, the system relies on the user's orientation (e.g. "straight" individuals only match with binary opposite genders; "bisexual" matches multiple, etc.).
 - Search filters wish results by compatibility with the searching user's identity attributes when available.
 - Users can temporarily disable their own profile attributes to search more broadly.
+
+## User Interface & Accessibility
+
+- The UI is designed to be **mobile-first** and accessible on touch kiosks, using large touch targets.
+- The app is **self-documenting**: users can tap "info" toggle icons (`ⓘ`) next to complex fields (like Identity Attributes or Matchmaking) to read inline, conversational explanations of how the features work.
 
 ## Constraints and assumptions
 

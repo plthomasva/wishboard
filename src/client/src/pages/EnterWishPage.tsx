@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import InfoToggle from '../components/InfoToggle';
 
 export default function EnterWishPage() {
   const { token } = useAuth();
@@ -72,15 +73,21 @@ export default function EnterWishPage() {
         </label>
         {!token ? (
           <>
-            <label>
-              Optional passphrase
+            <div style={{ display: 'grid', gap: '8px' }}>
+              <div className="label-with-info">
+                <label htmlFor="passphrase">Optional passphrase</label>
+                <InfoToggle>
+                  This allows you to edit or delete your wish later. Leave it blank and we'll automatically generate a secure, memorable code phrase for you!
+                </InfoToggle>
+              </div>
               <input
+                id="passphrase"
                 type="text"
                 value={passphrase}
                 onChange={(event) => setPassphrase(event.target.value)}
                 placeholder="Leave blank for automatic code phrase"
               />
-            </label>
+            </div>
             <label>
               Creator genders (anonymous only)
               <input
@@ -108,17 +115,28 @@ export default function EnterWishPage() {
           </>
         ) : (
           <div className="note-box">
-            <p>Your account identity attributes are applied automatically to this wish.</p>
+            <div className="label-with-info">
+              <p style={{ margin: 0 }}>Your account identity attributes are applied automatically to this wish.</p>
+              <InfoToggle>
+                Any genders, orientations, or roles you set on your Account page are implicitly used to match you with compatible fulfillers.
+              </InfoToggle>
+            </div>
           </div>
         )}
-        <label>
-          Desired genders for who can fulfill this wish
+        <div style={{ display: 'grid', gap: '8px' }}>
+          <div className="label-with-info">
+            <label htmlFor="desiredGenders">Desired genders for who can fulfill this wish</label>
+            <InfoToggle>
+              Leaving this blank means you're open to matching with anyone (based on your own orientation)! Explicitly entering a gender here will override your default orientation preferences.
+            </InfoToggle>
+          </div>
           <input
+            id="desiredGenders"
             value={desiredGenders}
             onChange={(event) => setDesiredGenders(event.target.value)}
             placeholder="e.g. woman, non-binary"
           />
-        </label>
+        </div>
         <label>
           Desired orientations for who can fulfill this wish
           <input
