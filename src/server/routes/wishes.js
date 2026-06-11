@@ -2,56 +2,18 @@ import express from 'express';
 import crypto from 'crypto';
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
-import { getUserFromToken, getTokenFromRequestHeader, hashPassphrase, verifyPassphrase } from '../auth.js';
+import { getUserFromToken, getTokenFromRequestHeader, hashPassphrase, verifyPassphrase, parseJsonArray, normalizeArrayInput, createSalt } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
-const generateSalt = () => crypto.randomBytes(16).toString('hex');
-
-const normalizeArrayField = (value) => {
-  if (!value) {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.map(String).map((item) => item.trim()).filter(Boolean);
-  }
-  return String(value)
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-};
-
-const parseJsonArray = (value) => {
-  if (!value) {
-    return [];
-  }
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
 
 const getRequestUser = (req) => {
   const token = getTokenFromRequestHeader(req);
   return getUserFromToken(token);
 };
 
-const normalizeQueryArray = (value) => {
-  if (!value) {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap((item) => String(item).split(',')).map((item) => item.trim()).filter(Boolean);
-  }
-  return String(value)
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-};
 
 const normalizeToken = (value) => String(value || '').trim().toLowerCase();
 
@@ -208,17 +170,17 @@ router.post('/', (req, res) => {
 
   if (!userId) {
     secret = passphrase?.trim() || generatePassphrase();
-    const salt = generateSalt();
+    const salt = createSalt();
     const hash = hashPassphrase(secret, salt);
     secretHash = `${salt}:${hash}`;
   }
 
-  const creatorGenders = user?.identity_genders ?? normalizeArrayField(creator_genders);
-  const creatorOrientations = user?.identity_orientations ?? normalizeArrayField(creator_orientations);
-  const creatorRoles = user?.identity_roles ?? normalizeArrayField(creator_roles);
-  const desiredGenders = normalizeArrayField(desired_genders);
-  const desiredOrientations = normalizeArrayField(desired_orientations);
-  const desiredRoles = normalizeArrayField(desired_roles);
+  const creatorGenders = user?.identity_genders ?? normalizeArrayInput(creator_genders);
+  const creatorOrientations = user?.identity_orientations ?? normalizeArrayInput(creator_orientations);
+  const creatorRoles = user?.identity_roles ?? normalizeArrayInput(creator_roles);
+  const desiredGenders = normalizeArrayInput(desired_genders);
+  const desiredOrientations = normalizeArrayInput(desired_orientations);
+  const desiredRoles = normalizeArrayInput(desired_roles);
 
   const now = new Date().toISOString();
   db.prepare(
@@ -243,7 +205,7 @@ router.post('/', (req, res) => {
 
 router.get('/random', (req, res) => {
   const limit = Number(req.query.limit || 12);
-  const rows = db.prepare('SELECT id, content, creator_genders, creator_orientations FROM wishes WHERE flagged = 0 ORDER BY RANDOM() LIMIT ?').all(limit);
+  const rows = db.prepare('SELECT id, content, creator_genders, creator_orientations FROM wishes ORDER BY RANDOM() LIMIT ?').all(limit);
   res.json(
     rows.map((wish) => ({
       id: wish.id,
@@ -257,9 +219,9 @@ router.get('/random', (req, res) => {
 router.get('/', (req, res) => {
   const searcher = getRequestUser(req);
   const query = (req.query.q || '').trim();
-  const searcherGenders = searcher?.identity_genders ?? normalizeQueryArray(req.query.searcher_genders);
-  const searcherOrientations = searcher?.identity_orientations ?? normalizeQueryArray(req.query.searcher_orientations);
-  const searcherRoles = searcher?.identity_roles ?? normalizeQueryArray(req.query.searcher_roles);
+  const searcherGenders = searcher?.identity_genders ?? normalizeArrayInput(req.query.sg);
+  const searcherOrientations = searcher?.identity_orientations ?? normalizeArrayInput(req.query.so);
+  const searcherRoles = searcher?.identity_roles ?? normalizeArrayInput(req.query.sr);
   const ignoreAttributes =
     req.query.ignore_attributes === '1' ||
     req.query.ignore_attributes === 'true' ||
@@ -273,10 +235,10 @@ router.get('/', (req, res) => {
 
   const rows = query
     ? db
-        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes WHERE flagged = 0 AND content LIKE ? ORDER BY created_at DESC LIMIT 50')
+        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes WHERE content LIKE ? ORDER BY created_at DESC LIMIT 50')
         .all(`%${query}%`)
     : db
-        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes WHERE flagged = 0 ORDER BY created_at DESC LIMIT 50')
+        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes ORDER BY created_at DESC LIMIT 50')
         .all();
 
   const filtered = ignoreAttributes ? rows : rows.filter((wish) => isCompatible(wish, searcherProfile));
@@ -354,7 +316,7 @@ router.post('/:id/manage', (req, res) => {
 
 router.post('/:id/flag', (req, res) => {
   const { id } = req.params;
-  const result = db.prepare('UPDATE wishes SET flagged = flagged + 1 WHERE id = ?').run(id);
+  const result = db.prepare('UPDATE wishes SET flagged = 1 WHERE id = ?').run(id);
   if (result.changes === 0) {
     return res.status(404).json({ error: 'Wish not found.' });
   }

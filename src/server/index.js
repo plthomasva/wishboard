@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
+import { rateLimit } from 'express-rate-limit';
 import wishesRouter from './routes/wishes.js';
 import adminRouter from './routes/admin.js';
 import usersRouter from './routes/users.js';
@@ -12,6 +13,15 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: process.env.NODE_ENV === 'test' ? 100000 : 1000,
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
+app.use('/api', limiter);
 
 app.use('/api/users', usersRouter);
 app.use('/api/wishes', wishesRouter);

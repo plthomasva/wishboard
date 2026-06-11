@@ -1,11 +1,11 @@
 param (
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$AdminUsername = "pi",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$HostName = "raspberrypi.local",
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("prod", "dev", "dual")]
     [string]$Mode = "dev"
 )
@@ -42,7 +42,7 @@ try {
         throw "Deployment failed on the target device. Check the logs above."
     }
     
-    Write-Host "Deployment complete! The Pi is now rebooting into Kiosk mode." -ForegroundColor Green
+    Write-Host "Deployment complete!" -ForegroundColor Green
 }
 finally {
     # Cleanup local archive

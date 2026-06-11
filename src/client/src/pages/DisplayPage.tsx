@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import IdentityStickers from '../components/IdentityStickers';
+import WishCard from '../components/WishCard';
+import useFlagWish from '../hooks/useFlagWish';
 
 interface Wish {
   id: string;
@@ -71,6 +72,8 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
     return () => observer.disconnect();
   }, [isKiosk, wishes]);
 
+  const handleFlag = useFlagWish((id) => setWishes((prev) => prev.filter((wish) => wish.id !== id)));
+
   return (
     <section className="display-section">
       <div className="display-header-bar">
@@ -85,11 +88,13 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
       {error && <div className="message error">{error}</div>}
       <div className="display-grid" ref={gridRef}>
         {wishes.map((wish) => (
-          <article className="display-card" key={wish.id}>
-            <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
-            <span className="wish-id">#{wish.id}</span>
-            <p className="wish-text">{wish.content}</p>
-          </article>
+          <WishCard
+            key={wish.id}
+            wish={wish}
+            cardClass="display-card"
+            showFlag={!isKiosk}
+            onFlag={handleFlag}
+          />
         ))}
       </div>
     </section>

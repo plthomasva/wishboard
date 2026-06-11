@@ -58,6 +58,14 @@ describe('AdminPage', () => {
         return Promise.resolve({ ok: true });
       }
 
+      if (url.includes('/api/admin/wishes/') && url.endsWith('/clear-flag')) {
+        return Promise.resolve({ ok: true });
+      }
+
+      if (url.endsWith('/api/admin/wishes/clear-all-flags')) {
+        return Promise.resolve({ ok: true });
+      }
+
       if (url.includes('/api/admin/users/') && url.endsWith('/role')) {
         return Promise.resolve({ ok: true });
       }
@@ -282,5 +290,42 @@ describe('AdminPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /Promote/i }));
     });
     await waitFor(() => expect(screen.getByText('Failed to update role.')).toBeInTheDocument());
+  });
+
+  it('can clear flag on a single wish', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+
+    render(<AdminPage />);
+
+    await waitFor(() => expect(screen.getByText('Flagged wish')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Clear Flag/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Cleared flag for wish flagged-1')).toBeInTheDocument();
+    });
+    expect(global.fetch).toHaveBeenCalledWith('/api/admin/wishes/flagged-1/clear-flag', expect.any(Object));
+  });
+
+  it('can clear all flags in bulk', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<AdminPage />);
+
+    await waitFor(() => expect(screen.getByText('Flagged wish')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Clear All Flags/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Cleared all flags successfully.')).toBeInTheDocument();
+    });
+    expect(global.fetch).toHaveBeenCalledWith('/api/admin/wishes/clear-all-flags', expect.any(Object));
   });
 });

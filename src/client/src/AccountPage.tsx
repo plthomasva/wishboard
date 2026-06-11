@@ -342,7 +342,6 @@ export default function AccountPage() {
         <div className="wish-grid">
           {wishes.map((wish) => (
             <article className="wish-card" key={wish.id}>
-              <strong>{wish.id}</strong>
               <textarea
                 rows={4}
                 value={edits[wish.id] ?? wish.content}

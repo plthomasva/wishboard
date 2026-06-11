@@ -43,6 +43,33 @@ export default function AdminPage() {
     loadFlags();
   };
 
+  const clearFlag = async (id: string) => {
+    setMessage(null);
+    setError(null);
+    const response = await fetch(`/api/admin/wishes/${id}/clear-flag`, { method: 'POST', headers: authHeader });
+    if (!response.ok) {
+      setError('Failed to clear flag.');
+      return;
+    }
+    setMessage(`Cleared flag for wish ${id}`);
+    loadFlags();
+  };
+
+  const clearAllFlags = async () => {
+    if (!window.confirm('Are you sure you want to clear flags for all remaining wishes?')) {
+      return;
+    }
+    setMessage(null);
+    setError(null);
+    const response = await fetch('/api/admin/wishes/clear-all-flags', { method: 'POST', headers: authHeader });
+    if (!response.ok) {
+      setError('Failed to clear all flags.');
+      return;
+    }
+    setMessage('Cleared all flags successfully.');
+    loadFlags();
+  };
+
   const updateRole = async (id: string, role: string) => {
     setMessage(null);
     setError(null);
@@ -139,16 +166,21 @@ export default function AdminPage() {
               ) : (
                 flags.map((wish) => (
                   <article className="wish-card" key={wish.id}>
-                    <strong>{wish.id}</strong>
                     <p>{wish.content}</p>
                     <p className="microtext">Submitted by {wish.user_id || 'anonymous'}</p>
                     <div className="wish-actions">
+                      <button className="secondary-button" onClick={() => clearFlag(wish.id)}>Clear Flag</button>
                       <button onClick={() => removeWish(wish.id)}>Remove</button>
                     </div>
                   </article>
                 ))
               )}
             </div>
+            {flags.length > 0 && (
+              <div className="admin-bulk-actions">
+                <button className="secondary-button" onClick={clearAllFlags}>Clear All Flags</button>
+              </div>
+            )}
           </section>
 
           <section style={{ marginTop: '24px' }}>

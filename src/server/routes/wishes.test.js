@@ -83,8 +83,8 @@ describe('Matchmaking logic', () => {
 
     // 3. Search as a Straight Man
     const resSearch1 = await request(app).get('/api/wishes').query({
-      searcher_genders: 'man',
-      searcher_orientations: 'straight',
+      sg: 'man',
+      so: 'straight',
       q: 'wish'
     });
     
@@ -95,8 +95,8 @@ describe('Matchmaking logic', () => {
 
     // 4. Search as a Lesbian Woman
     const resSearch2 = await request(app).get('/api/wishes').query({
-      searcher_genders: 'woman',
-      searcher_orientations: 'lesbian',
+      sg: 'woman',
+      so: 'lesbian',
       q: 'wish'
     });
     
@@ -114,13 +114,13 @@ describe('Matchmaking logic', () => {
     });
 
     const resSearchDom = await request(app).get('/api/wishes').query({
-      searcher_roles: 'dom',
+      sr: 'dom',
       q: 'Sub'
     });
     expect(resSearchDom.body.map(w => w.content)).toContain('Sub looking for dom');
 
     const resSearchSub = await request(app).get('/api/wishes').query({
-      searcher_roles: 'sub',
+      sr: 'sub',
       q: 'Sub'
     });
     expect(resSearchSub.body.map(w => w.content)).not.toContain('Sub looking for dom');

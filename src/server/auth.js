@@ -26,7 +26,7 @@ export const createSessionToken = (userId) => {
   return token;
 };
 
-const parseJsonArray = (value) => {
+export const parseJsonArray = (value) => {
   if (!value) {
     return [];
   }
@@ -36,6 +36,17 @@ const parseJsonArray = (value) => {
   } catch {
     return [];
   }
+};
+
+export const normalizeArrayInput = (value) => {
+  if (!value) {
+    return [];
+  }
+  const array = Array.isArray(value) ? value : [value];
+  return array
+    .flatMap((item) => String(item).split(','))
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 export const getUserFromToken = (token) => {
