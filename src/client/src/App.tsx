@@ -6,6 +6,7 @@ import SearchPage from './pages/SearchPage';
 import DisplayPage from './pages/DisplayPage';
 import AdminPage from './pages/AdminPage';
 import AccountPage from './AccountPage';
+import ManageWishPage from './pages/ManageWishPage';
 import WiFiQrCode from './components/WiFiQrCode';
 
 const pages = [
@@ -17,7 +18,7 @@ const pages = [
   { id: 'admin', label: 'Admin' }
 ];
 
-type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'admin';
+type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'admin' | 'manage-wish';
 
 function AppContent() {
   const getHashPage = (): PageId => {
@@ -54,9 +55,20 @@ function AppContent() {
   const [kioskPassphrase, setKioskPassphrase] = useState('');
   const [kioskError, setKioskError] = useState<string | null>(null);
 
-  const { user, login, logout } = useAuth();
+  const { user, login, logout, setTokenExternally } = useAuth();
 
   useEffect(() => {
+    // Check for auto-login token in the URL
+    const searchParams = new URLSearchParams(window.location.search);
+    const token = searchParams.get('token');
+    if (token) {
+      setTokenExternally(token);
+      searchParams.delete('token');
+      const searchStr = searchParams.toString();
+      const newUrl = window.location.pathname + (searchStr ? `?${searchStr}` : '') + window.location.hash;
+      window.history.replaceState({}, '', newUrl);
+    }
+
     const handleHashChange = () => {
       setPage(getHashPage());
       if (checkIsKioskParam()) {
@@ -182,6 +194,7 @@ function AppContent() {
           {page === 'search' && <SearchPage />}
           {page === 'display' && <DisplayPage onEnterKiosk={() => setIsKiosk(true)} isKiosk={false} />}
           {page === 'account' && <AccountPage />}
+          {page === 'manage-wish' && <ManageWishPage />}
           {page === 'admin' && <AdminPage />}
         </main>
       )}

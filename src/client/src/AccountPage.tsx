@@ -4,6 +4,7 @@ import { generatePassphrase } from './passphrase.js';
 import InfoToggle from './components/InfoToggle';
 import AttributeInput from './components/AttributeInput';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from './constants';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function AccountPage() {
   const { user, token, login, register, logout, refreshUser } = useAuth();
@@ -22,6 +23,10 @@ export default function AccountPage() {
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [existingUsername, setExistingUsername] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
+
+  // Claim wish state
+  const [claimId, setClaimId] = useState('');
+  const [claimSecret, setClaimSecret] = useState('');
 
   const effectiveMode = existingUsername ? 'login' : mode;
 
@@ -210,6 +215,36 @@ export default function AccountPage() {
     loadWishes();
   };
 
+  const claimWish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    if (!claimId.trim() || !claimSecret.trim()) {
+      setError('Wish ID and Passphrase are required to claim a wish.');
+      return;
+    }
+
+    const response = await fetch(`/api/wishes/${claimId.trim()}/claim`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ secret: claimSecret.trim() })
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      setError(data.error || 'Unable to claim wish.');
+      return;
+    }
+
+    setMessage('Wish claimed successfully!');
+    setClaimId('');
+    setClaimSecret('');
+    loadWishes();
+  };
+
   if (!user) {
     return (
       <section>
@@ -377,6 +412,62 @@ export default function AccountPage() {
           ))}
         </div>
       )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '32px' }}>
+        <div className="profile-edit">
+          <div className="label-with-info" style={{ marginBottom: '16px' }}>
+            <h2 style={{ margin: 0 }}>Claim an Anonymous Wish</h2>
+            <InfoToggle>
+              Adopt a wish you created anonymously so you can manage it from your account.
+            </InfoToggle>
+          </div>
+          <form onSubmit={claimWish} style={{ display: 'grid', gap: '12px' }}>
+            <label>
+              Wish ID
+              <input
+                type="text"
+                value={claimId}
+                onChange={(e) => setClaimId(e.target.value)}
+                placeholder="e.g. abc123xy"
+              />
+            </label>
+            <label>
+              Passphrase
+              <input
+                type="text"
+                value={claimSecret}
+                onChange={(e) => setClaimSecret(e.target.value)}
+                placeholder="e.g. CorrectHorseBatteryStaple"
+              />
+            </label>
+            <button type="submit" className="secondary-button">Claim Wish</button>
+          </form>
+        </div>
+
+        {token && (
+          <div className="profile-edit" style={{ textAlign: 'center' }}>
+            <div className="label-with-info" style={{ marginBottom: '16px', justifyContent: 'center' }}>
+              <h2 style={{ margin: 0 }}>Easy Mobile Login</h2>
+              <InfoToggle>
+                Scan this QR code with your phone or save the link to instantly log back into your account without a passphrase.
+              </InfoToggle>
+            </div>
+            <div style={{ background: 'white', padding: '16px', display: 'inline-block', borderRadius: '12px' }}>
+              <QRCodeSVG 
+                value={`${window.location.origin}${window.location.pathname}?token=${token}#account`} 
+                size={160} 
+                includeMargin={false}
+              />
+            </div>
+            <p style={{ marginTop: '16px' }}>
+              <a href={`?token=${token}#account`}>
+                Bookmark this auto-login link
+              </a>
+            </p>
+          </div>
+        )}
+      </div>
+
     </section>
   );
 }

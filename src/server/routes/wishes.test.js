@@ -191,3 +191,52 @@ describe('Matchmaking logic', () => {
     expect(resSearch1.body).toHaveLength(1);
   });
 });
+
+describe('Claiming wishes', () => {
+  it('allows an authenticated user to claim an anonymous wish with the correct passphrase', async () => {
+    // 1. Create anonymous wish
+    const wishRes = await request(app).post('/api/wishes').send({ content: 'Anonymous wish' });
+    expect(wishRes.status).toBe(200);
+    const wishId = wishRes.body.id;
+    const secret = wishRes.body.secret;
+
+    // 2. Create and login user
+    await request(app).post('/api/users/register').send({ username: 'claimuser', passphrase: 'pwd' });
+    const loginRes = await request(app).post('/api/users/login').send({ username: 'claimuser', passphrase: 'pwd' });
+    const token = loginRes.body.token;
+
+    // 3. Claim the wish
+    const claimRes = await request(app)
+      .post(`/api/wishes/${wishId}/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret });
+    
+    expect(claimRes.status).toBe(200);
+    expect(claimRes.body.success).toBe(true);
+
+    // 4. Verify wish is now owned by the user
+    const userWishesRes = await request(app).get('/api/users/me/wishes').set('Authorization', `Bearer ${token}`);
+    expect(userWishesRes.body).toHaveLength(1);
+    expect(userWishesRes.body[0].id).toBe(wishId);
+  });
+
+  it('prevents claiming with wrong passphrase or without auth', async () => {
+    const wishRes = await request(app).post('/api/wishes').send({ content: 'Anon' });
+    const wishId = wishRes.body.id;
+
+    // Unauthenticated
+    const noAuth = await request(app).post(`/api/wishes/${wishId}/claim`).send({ secret: wishRes.body.secret });
+    expect(noAuth.status).toBe(401);
+
+    // Wrong passphrase
+    await request(app).post('/api/users/register').send({ username: 'u2', passphrase: 'p' });
+    const loginRes = await request(app).post('/api/users/login').send({ username: 'u2', passphrase: 'p' });
+    const token = loginRes.body.token;
+
+    const wrongPass = await request(app)
+      .post(`/api/wishes/${wishId}/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret: 'wrong' });
+    expect(wrongPass.status).toBe(403);
+  });
+});

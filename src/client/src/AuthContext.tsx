@@ -24,6 +24,7 @@ type AuthContextValue = {
   ) => Promise<{ success: boolean; error?: string; secret?: string; role?: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  setTokenExternally: (newToken: string) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -133,8 +134,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const setTokenExternally = (newToken: string) => {
+    setToken(newToken);
+    localStorage.setItem(storageKey, newToken);
+  };
+
   const value = useMemo(
-    () => ({ user, token, login, register, logout, refreshUser }),
+    () => ({ user, token, login, register, logout, refreshUser, setTokenExternally }),
     [user, token]
   );
 

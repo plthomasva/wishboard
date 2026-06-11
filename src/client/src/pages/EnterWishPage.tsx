@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import { QRCodeSVG } from 'qrcode.react';
 import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
@@ -14,7 +15,7 @@ export default function EnterWishPage() {
   const [desiredGenders, setDesiredGenders] = useState('');
   const [desiredOrientations, setDesiredOrientations] = useState('');
   const [desiredRoles, setDesiredRoles] = useState('');
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<{ id: string; secret?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const submitWish = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -48,8 +49,7 @@ export default function EnterWishPage() {
       return;
     }
 
-    const secretMessage = data.secret ? ` · Secret: ${data.secret}` : '';
-    setResult(`Wish saved! ID: ${data.id}${secretMessage}`);
+    setResult({ id: data.id, secret: data.secret });
     setContent('');
     setPassphrase('');
     setCreatorGenders('');
@@ -164,7 +164,33 @@ export default function EnterWishPage() {
         <button type="submit">Submit Wish</button>
       </form>
 
-      {result && <div className="message success">{result}</div>}
+      {result && (
+        <div className="message success" style={{ textAlign: 'center' }}>
+          <p><strong>Wish saved! ID: {result.id}</strong></p>
+          {result.secret && (
+            <>
+              <p>Your passphrase is: <strong>{result.secret}</strong></p>
+              <div style={{ margin: '16px 0' }}>
+                <QRCodeSVG 
+                  value={`${window.location.origin}${window.location.pathname}#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`} 
+                  size={150} 
+                  includeMargin={true}
+                  bgColor="#ffffff"
+                  fgColor="#0f172a"
+                />
+              </div>
+              <p>
+                <a href={`#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`}>
+                  Click here or bookmark this link to manage your wish later
+                </a>
+              </p>
+              <p style={{ fontSize: '0.9em', color: '#475569' }}>
+                Or scan the QR code with your phone to save it!
+              </p>
+            </>
+          )}
+        </div>
+      )}
       {error && <div className="message error">{error}</div>}
     </section>
   );

@@ -347,6 +347,44 @@ router.post('/:id/manage', (req, res) => {
   res.status(400).json({ error: 'Invalid update payload.' });
 });
 
+router.post('/:id/claim', (req, res) => {
+  const { id } = req.params;
+  const { secret } = req.body;
+  const user = getRequestUser(req);
+
+  if (!user) {
+    return res.status(401).json({ error: 'Must be logged in to claim a wish.' });
+  }
+
+  if (!secret) {
+    return res.status(400).json({ error: 'Passphrase is required.' });
+  }
+
+  const row = db.prepare('SELECT secret_hash, user_id FROM wishes WHERE id = ?').get(id);
+  if (!row) {
+    return res.status(404).json({ error: 'Wish not found.' });
+  }
+
+  if (row.user_id) {
+    return res.status(403).json({ error: 'This wish has already been claimed by a user.' });
+  }
+
+  if (!row.secret_hash) {
+    return res.status(403).json({ error: 'This wish cannot be claimed.' });
+  }
+
+  const [salt, hash] = row.secret_hash.split(':');
+  if (!verifyPassphrase(secret.trim(), salt, hash)) {
+    return res.status(403).json({ error: 'Invalid passphrase.' });
+  }
+
+  const now = new Date().toISOString();
+  // Assign to user and clear the secret_hash since it's now managed via user authentication
+  db.prepare('UPDATE wishes SET user_id = ?, secret_hash = NULL, updated_at = ? WHERE id = ?').run(user.id, now, id);
+
+  res.json({ success: true });
+});
+
 router.post('/:id/flag', (req, res) => {
   const { id } = req.params;
   const result = db.prepare('UPDATE wishes SET flagged = 1 WHERE id = ?').run(id);
