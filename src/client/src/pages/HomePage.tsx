@@ -1,5 +1,5 @@
 interface HomePageProps {
-  onNavigate: (page: 'enter' | 'search' | 'display' | 'remote' | 'account' | 'admin') => void;
+  onNavigate: (page: 'enter' | 'search' | 'display' | 'account' | 'admin') => void;
 }
 
 export default function HomePage({ onNavigate }: HomePageProps) {
@@ -11,7 +11,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         <button onClick={() => onNavigate('enter')}>Enter a Wish</button>
         <button onClick={() => onNavigate('search')}>Search Wishes</button>
         <button onClick={() => onNavigate('display')}>Big Screen Display</button>
-        <button onClick={() => onNavigate('remote')}>Remote Preview</button>
+
         <button onClick={() => onNavigate('account')}>My Account</button>
         <button onClick={() => onNavigate('admin')}>Admin</button>
       </div>

@@ -4,7 +4,6 @@ import HomePage from './pages/HomePage';
 import EnterWishPage from './pages/EnterWishPage';
 import SearchPage from './pages/SearchPage';
 import DisplayPage from './pages/DisplayPage';
-import RemotePreview from './pages/RemotePreview';
 import AdminPage from './pages/AdminPage';
 import AccountPage from './AccountPage';
 import WiFiQrCode from './components/WiFiQrCode';
@@ -14,12 +13,11 @@ const pages = [
   { id: 'enter', label: 'Enter a Wish' },
   { id: 'search', label: 'Search Wishes' },
   { id: 'display', label: 'Big Screen' },
-  { id: 'remote', label: 'Remote Preview' },
   { id: 'account', label: 'My Account' },
   { id: 'admin', label: 'Admin' }
 ];
 
-type PageId = 'home' | 'enter' | 'search' | 'display' | 'remote' | 'account' | 'admin';
+type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'admin';
 
 function AppContent() {
   const getHashPage = (): PageId => {
@@ -33,7 +31,7 @@ function AppContent() {
   const [page, setPage] = useState<PageId>(getHashPage);
   const [isKiosk, setIsKiosk] = useState(false);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
-  
+
   const [kioskUsername, setKioskUsername] = useState('');
   const [kioskPassphrase, setKioskPassphrase] = useState('');
   const [kioskError, setKioskError] = useState<string | null>(null);
@@ -125,7 +123,6 @@ function AppContent() {
           {page === 'enter' && <EnterWishPage />}
           {page === 'search' && <SearchPage />}
           {page === 'display' && <DisplayPage onEnterKiosk={() => setIsKiosk(true)} isKiosk={false} />}
-          {page === 'remote' && <RemotePreview />}
           {page === 'account' && <AccountPage />}
           {page === 'admin' && <AdminPage />}
         </main>

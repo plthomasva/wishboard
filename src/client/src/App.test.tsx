@@ -23,7 +23,6 @@ vi.mock('./pages/DisplayPage', () => ({
     </div>
   )
 }));
-vi.mock('./pages/RemotePreview', () => ({ default: () => <div>RemotePreview Mock</div> }));
 vi.mock('./pages/AdminPage', () => ({ default: () => <div>AdminPage Mock</div> }));
 vi.mock('./AccountPage', () => ({ default: () => <div>AccountPage Mock</div> }));
 

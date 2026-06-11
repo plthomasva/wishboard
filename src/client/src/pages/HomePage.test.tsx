@@ -12,5 +12,14 @@ describe('HomePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Enter a Wish/i }));
     expect(onNavigate).toHaveBeenCalledWith('enter');
+
+    fireEvent.click(screen.getByRole('button', { name: /Search Wishes/i }));
+    expect(onNavigate).toHaveBeenCalledWith('search');
+
+    fireEvent.click(screen.getByRole('button', { name: /Big Screen Display/i }));
+    expect(onNavigate).toHaveBeenCalledWith('display');
+
+    fireEvent.click(screen.getByRole('button', { name: /My Account/i }));
+    expect(onNavigate).toHaveBeenCalledWith('account');
   });
 });

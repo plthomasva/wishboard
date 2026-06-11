@@ -6,6 +6,7 @@ interface Position {
   bottom?: string;
   left?: string;
   right?: string;
+  transform?: string;
 }
 
 export default function WiFiQrCode() {
@@ -27,8 +28,8 @@ export default function WiFiQrCode() {
         { bottom: '2rem', left: '2rem' },
         { bottom: '2rem', right: '2rem' },
         // Add a few centered variants for fun
-        { top: '50%', left: '2rem', transform: 'translateY(-50%)' as any },
-        { top: '50%', right: '2rem', transform: 'translateY(-50%)' as any }
+        { top: '50%', left: '2rem', transform: 'translateY(-50%)' },
+        { top: '50%', right: '2rem', transform: 'translateY(-50%)' }
       ];
       setPosition(corners[Math.floor(Math.random() * corners.length)]);
       setIsVisible(true);
