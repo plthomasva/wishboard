@@ -66,6 +66,28 @@ describe('App Component', () => {
     expect(screen.queryByText('Big Screen')).not.toBeInTheDocument();
   });
 
+  it('enters kiosk mode automatically when ?kiosk=true parameter is present in hash', async () => {
+    window.location.hash = '#display?kiosk=true';
+    render(<App />);
+
+    expect(screen.getByText('DisplayPage Mock')).toBeInTheDocument();
+    expect(screen.getByText('Is Kiosk: Yes')).toBeInTheDocument();
+    expect(screen.queryByText('Big Screen')).not.toBeInTheDocument();
+  });
+
+  it('enters kiosk mode automatically when ?kiosk=true parameter is present in search query', async () => {
+    window.history.replaceState({}, '', '?kiosk=true#display');
+
+    render(<App />);
+
+    expect(screen.getByText('DisplayPage Mock')).toBeInTheDocument();
+    expect(screen.getByText('Is Kiosk: Yes')).toBeInTheDocument();
+    expect(screen.queryByText('Big Screen')).not.toBeInTheDocument();
+
+    // Clean up
+    window.history.replaceState({}, '', '/');
+  });
+
   it('shows credentials modal on Escape key press in kiosk mode and allows exit for admin user', async () => {
     loginMock.mockResolvedValue({ success: true, role: 'admin' });
 

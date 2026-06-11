@@ -182,7 +182,7 @@ while ! curl -s http://localhost:3000 > /dev/null; do
   sleep 1
 done
 while true; do
-  chromium --kiosk --noerrdialogs --disable-infobars --app=http://localhost:3000/#display --disable-translate --disable-features=Translate --fast --fast-start --password-store=basic
+  chromium --kiosk --noerrdialogs --disable-infobars --app=http://localhost:3000/#display?kiosk=true --disable-translate --disable-features=Translate --fast --fast-start --password-store=basic
   sleep 1
 done
 EOF
@@ -212,7 +212,7 @@ while ! curl -s http://localhost:3000 > /dev/null; do
   sleep 1
 done
 while true; do
-  chromium --kiosk --noerrdialogs --disable-infobars --app=http://localhost:3000/#display --disable-translate --disable-features=Translate --fast --fast-start --password-store=basic
+  chromium --kiosk --noerrdialogs --disable-infobars --app=http://localhost:3000/#display?kiosk=true --disable-translate --disable-features=Translate --fast --fast-start --password-store=basic
   sleep 1
 done
 EOF

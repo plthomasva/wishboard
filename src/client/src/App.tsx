@@ -24,12 +24,30 @@ function AppContent() {
     if (typeof window === 'undefined') {
       return 'home';
     }
-    const hash = window.location.hash.replace(/^#/, '');
-    return (pages.find((item) => item.id === hash)?.id as PageId) ?? 'home';
+    const hashPart = window.location.hash.split('?')[0].replace(/^#/, '');
+    return (pages.find((item) => item.id === hashPart)?.id as PageId) ?? 'home';
+  };
+
+  const checkIsKioskParam = (): boolean => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('kiosk') === 'true') {
+      return true;
+    }
+    const hashIndex = window.location.hash.indexOf('?');
+    if (hashIndex !== -1) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(hashIndex));
+      if (hashParams.get('kiosk') === 'true') {
+        return true;
+      }
+    }
+    return false;
   };
 
   const [page, setPage] = useState<PageId>(getHashPage);
-  const [isKiosk, setIsKiosk] = useState(false);
+  const [isKiosk, setIsKiosk] = useState<boolean>(checkIsKioskParam);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
 
   const [kioskUsername, setKioskUsername] = useState('');
@@ -39,7 +57,12 @@ function AppContent() {
   const { user, login, logout } = useAuth();
 
   useEffect(() => {
-    const handleHashChange = () => setPage(getHashPage());
+    const handleHashChange = () => {
+      setPage(getHashPage());
+      if (checkIsKioskParam()) {
+        setIsKiosk(true);
+      }
+    };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
@@ -70,6 +93,21 @@ function AppContent() {
           setShowExitPrompt(false);
           setKioskUsername('');
           setKioskPassphrase('');
+
+          // Remove the kiosk parameter from the URL to prevent re-entering on reload
+          if (window.location.hash.includes('kiosk=true')) {
+            const hashIndex = window.location.hash.indexOf('?');
+            if (hashIndex !== -1) {
+              window.location.hash = window.location.hash.substring(0, hashIndex);
+            }
+          }
+          const searchParams = new URLSearchParams(window.location.search);
+          if (searchParams.has('kiosk')) {
+            searchParams.delete('kiosk');
+            const searchStr = searchParams.toString();
+            const newUrl = window.location.pathname + (searchStr ? `?${searchStr}` : '') + window.location.hash;
+            window.history.replaceState({}, '', newUrl);
+          }
         } else {
           setKioskError('Access denied: You must be an admin to exit kiosk mode.');
         }
