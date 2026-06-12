@@ -4,6 +4,7 @@ import WishCard from '../components/WishCard';
 import useFlagWish from '../hooks/useFlagWish';
 import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
+import SendWishmailModal from '../components/SendWishmailModal';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
 interface Wish {
@@ -22,6 +23,7 @@ export default function SearchPage() {
   const [manualGenders, setManualGenders] = useState('');
   const [manualOrientations, setManualOrientations] = useState('');
   const [manualRoles, setManualRoles] = useState('');
+  const [mailWishId, setMailWishId] = useState<string | null>(null);
 
   useEffect(() => {
     setUseProfileAttributes(Boolean(user));
@@ -146,9 +148,14 @@ export default function SearchPage() {
             key={wish.id}
             wish={wish}
             onFlag={handleFlag}
+            onSendMail={setMailWishId}
           />
         ))}
       </div>
+
+      {mailWishId && (
+        <SendWishmailModal wishId={mailWishId} onClose={() => setMailWishId(null)} />
+      )}
     </section>
   );
 }

@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { generatePassphrase } from './passphrase.js';
 import InfoToggle from './components/InfoToggle';
 import AttributeInput from './components/AttributeInput';
+import WishCard from './components/WishCard';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from './constants';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -19,8 +20,7 @@ export default function AccountPage() {
   const [editIdentityRoles, setEditIdentityRoles] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number }>>([]);
-  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[] }>>([]);
   const [existingUsername, setExistingUsername] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
 
@@ -88,7 +88,6 @@ export default function AccountPage() {
     }
     const data = await response.json();
     setWishes(data);
-    setEdits(data.reduce((acc, wish) => ({ ...acc, [wish.id]: wish.content }), {}));
   };
 
   useEffect(() => {
@@ -175,25 +174,6 @@ export default function AccountPage() {
     setIdentityRoles('');
   };
 
-  const updateWish = async (id: string) => {
-    setError(null);
-    setMessage(null);
-    const response = await fetch(`/api/wishes/${id}/manage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ content: edits[id] })
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.error || 'Unable to update wish.');
-      return;
-    }
-    setMessage('Wish updated successfully.');
-    loadWishes();
-  };
 
   const deleteWish = async (id: string) => {
     setError(null);
@@ -396,19 +376,17 @@ export default function AccountPage() {
       ) : (
         <div className="wish-grid">
           {wishes.map((wish) => (
-            <article className="wish-card" key={wish.id}>
-              <textarea
-                rows={4}
-                value={edits[wish.id] ?? wish.content}
-                onChange={(event) => setEdits({ ...edits, [wish.id]: event.target.value })}
-              />
-              <div className="wish-actions">
-                <button onClick={() => updateWish(wish.id)}>Save</button>
+            <div key={wish.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <WishCard wish={wish} showFlag={false} />
+              <div className="wish-actions" style={{ marginTop: 0, justifyContent: 'flex-start', gap: '12px' }}>
+                <a href={`#manage-wish?id=${wish.id}`} className="button" style={{ textDecoration: 'none', background: '#1a73e8', color: 'white', padding: '10px 16px', borderRadius: '14px', fontWeight: 'bold' }}>
+                  Edit Wish
+                </a>
                 <button className="secondary-button" onClick={() => deleteWish(wish.id)}>
                   Delete
                 </button>
               </div>
-            </article>
+            </div>
           ))}
         </div>
       )}

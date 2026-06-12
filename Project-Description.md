@@ -32,10 +32,13 @@ The system now supports richer user and wish metadata for compatibility matching
 - **Explicit vs. Implicit matching**: If a user specifies what they are looking for (e.g. a desired gender), this explicitly overrides any default rules. If left blank, the system relies on the user's orientation (e.g. "straight" individuals only match with binary opposite genders; "bisexual" matches multiple, etc.).
 - Search filters wish results by compatibility with the searching user's identity attributes when available.
 - Users can temporarily disable their own profile attributes to search more broadly.
+- Users can add offline contact methods (FetLife, Phone, Email) to their wishes for direct off-platform communication.
+- Users can optionally enable **Wishmail**, allowing other attendees to send them private messages directly through the Wishboard without exposing real-world identities unless desired.
 
 ## User Interface & Accessibility
 
 - The UI is designed to be **mobile-first** and accessible on touch kiosks, using large touch targets.
+- The layout responsively presents exact, auto-scaling Wish Cards for previews and within the user's account history. This ensures users are always aware of exactly how their wish will visually scale and appear on the Big Board displays. Forms utilize interactive warnings and visual cues if the text begins overflowing the physical constraints.
 - The app is **self-documenting**: users can tap "info" toggle icons (`ⓘ`) next to complex fields (like Identity Attributes or Matchmaking) to read inline, conversational explanations of how the features work.
 
 ## Constraints and assumptions

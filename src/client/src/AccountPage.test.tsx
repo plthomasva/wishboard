@@ -217,7 +217,7 @@ describe('AccountPage', () => {
     expect(refreshUser).toHaveBeenCalled();
   });
 
-  it('allows user to edit and delete a wish', async () => {
+  it('renders Edit Wish link and allows user to delete a wish', async () => {
     const fetchMock = vi.fn((input, init) => {
       const url = typeof input === 'string' ? input : input.url;
       if (url.includes('/api/users/me/wishes')) {
@@ -241,18 +241,11 @@ describe('AccountPage', () => {
 
     render(<AccountPage />);
 
-    const textarea = await screen.findByDisplayValue('test wish');
-    fireEvent.change(textarea, { target: { value: 'updated wish' } });
+    expect(await screen.findByText('test wish')).toBeInTheDocument();
     
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-    fireEvent.click(saveButton);
-    
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/wishes/wish-1/manage', expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ content: 'updated wish' })
-      }));
-    });
+    // Check Edit link
+    const editLink = screen.getByRole('link', { name: 'Edit Wish' });
+    expect(editLink).toHaveAttribute('href', '#manage-wish?id=wish-1');
 
     const deleteButton = screen.getByRole('button', { name: 'Delete' });
     fireEvent.click(deleteButton);
@@ -286,30 +279,7 @@ describe('AccountPage', () => {
     expect(await screen.findByText('Username and passphrase are required to log in.')).toBeInTheDocument();
   });
 
-  it('shows error if updating a wish fails', async () => {
-    const fetchMock = vi.fn((input, init) => {
-      const url = typeof input === 'string' ? input : input.url;
-      if (url.includes('/api/users/me/wishes')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 'wish-2', content: 'test', flagged: 0 }]) });
-      }
-      if (url.includes('/api/wishes/wish-2/manage')) {
-        return Promise.resolve({ ok: false, json: () => Promise.resolve({ error: 'Update failed' }) });
-      }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
-    });
-    vi.stubGlobal('fetch', fetchMock);
 
-    useAuthMock.mockReturnValue({
-      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
-      token: 'fake-token',
-      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
-    });
-
-    render(<AccountPage />);
-    const saveButton = await screen.findByRole('button', { name: 'Save' });
-    fireEvent.click(saveButton);
-    expect(await screen.findByText('Update failed')).toBeInTheDocument();
-  });
 
   it('shows error if deleting a wish fails', async () => {
     const fetchMock = vi.fn((input, init) => {

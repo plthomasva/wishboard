@@ -3,10 +3,12 @@ import { useAuth } from '../AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
 import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
+import WishCard from '../components/WishCard';
+import WishFormFields from '../components/WishFormFields';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
 export default function EnterWishPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [content, setContent] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [creatorGenders, setCreatorGenders] = useState('');
@@ -15,6 +17,11 @@ export default function EnterWishPage() {
   const [desiredGenders, setDesiredGenders] = useState('');
   const [desiredOrientations, setDesiredOrientations] = useState('');
   const [desiredRoles, setDesiredRoles] = useState('');
+  
+  const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
+  const [wishmailEnabled, setWishmailEnabled] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
   const [result, setResult] = useState<{ id: string; secret?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +46,9 @@ export default function EnterWishPage() {
         creator_roles: creatorRoles,
         desired_genders: desiredGenders,
         desired_orientations: desiredOrientations,
-        desired_roles: desiredRoles
+        desired_roles: desiredRoles,
+        contacts,
+        wishmail_enabled: wishmailEnabled
       })
     });
 
@@ -58,114 +67,142 @@ export default function EnterWishPage() {
     setDesiredGenders('');
     setDesiredOrientations('');
     setDesiredRoles('');
+    setContacts([]);
+    setWishmailEnabled(false);
+    setIsOverflowing(false);
+  };
+
+  const previewWish = {
+    id: 'preview',
+    content: content || 'Your wish text will appear here',
+    creator_genders: (user ? user.identity_genders : (creatorGenders ? creatorGenders.split(',').map(s => s.trim()) : undefined)),
+    creator_orientations: (user ? user.identity_orientations : (creatorOrientations ? creatorOrientations.split(',').map(s => s.trim()) : undefined)),
+    contacts: contacts.filter(c => c.value.trim()),
+    wishmail_enabled: wishmailEnabled
   };
 
   return (
     <section>
       <h1>Enter a Wish</h1>
-      <form className="form-card" onSubmit={submitWish}>
-        <label>
-          What is your wish?
-          <textarea
-            rows={6}
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            placeholder="Type your wish here"
+      
+      <div className="wish-editor-layout">
+        <form className="form-card" onSubmit={submitWish}>
+          <WishFormFields
+            content={content}
+            setContent={setContent}
+            contacts={contacts}
+            setContacts={setContacts}
+            wishmailEnabled={wishmailEnabled}
+            setWishmailEnabled={setWishmailEnabled}
+            isOverflowing={isOverflowing}
           />
-        </label>
-        {!token ? (
-          <>
-            <div style={{ display: 'grid', gap: '8px' }}>
+
+          {!token ? (
+            <>
+              <div style={{ display: 'grid', gap: '8px' }}>
+                <div className="label-with-info">
+                  <label htmlFor="passphrase">Optional passphrase</label>
+                  <InfoToggle>
+                    This allows you to edit or delete your wish later. Leave it blank and we'll automatically generate a secure, memorable code phrase for you!
+                  </InfoToggle>
+                </div>
+                <input
+                  id="passphrase"
+                  type="text"
+                  value={passphrase}
+                  onChange={(event) => setPassphrase(event.target.value)}
+                  placeholder="Leave blank for automatic code phrase"
+                />
+              </div>
+              <label>
+                Creator genders (anonymous only)
+                <AttributeInput
+                  value={creatorGenders}
+                  onChange={setCreatorGenders}
+                  placeholder="e.g. woman, non-binary"
+                  suggestions={SUGGESTED_GENDERS}
+                />
+              </label>
+              <label>
+                Creator orientations (anonymous only)
+                <AttributeInput
+                  value={creatorOrientations}
+                  onChange={setCreatorOrientations}
+                  placeholder="e.g. queer, straight"
+                  suggestions={SUGGESTED_ORIENTATIONS}
+                />
+              </label>
+              <label>
+                Creator roles (anonymous only)
+                <AttributeInput
+                  value={creatorRoles}
+                  onChange={setCreatorRoles}
+                  placeholder="e.g. speaker, volunteer"
+                  suggestions={SUGGESTED_ROLES}
+                />
+              </label>
+            </>
+          ) : (
+            <div className="note-box">
               <div className="label-with-info">
-                <label htmlFor="passphrase">Optional passphrase</label>
+                <p style={{ margin: 0 }}>Your account identity attributes are applied automatically to this wish.</p>
                 <InfoToggle>
-                  This allows you to edit or delete your wish later. Leave it blank and we'll automatically generate a secure, memorable code phrase for you!
+                  Any genders, orientations, or roles you set on your Account page are implicitly used to match you with compatible fulfillers.
                 </InfoToggle>
               </div>
-              <input
-                id="passphrase"
-                type="text"
-                value={passphrase}
-                onChange={(event) => setPassphrase(event.target.value)}
-                placeholder="Leave blank for automatic code phrase"
-              />
             </div>
-            <label>
-              Creator genders (anonymous only)
-              <AttributeInput
-                value={creatorGenders}
-                onChange={setCreatorGenders}
-                placeholder="e.g. woman, non-binary"
-                suggestions={SUGGESTED_GENDERS}
-              />
-            </label>
-            <label>
-              Creator orientations (anonymous only)
-              <AttributeInput
-                value={creatorOrientations}
-                onChange={setCreatorOrientations}
-                placeholder="e.g. queer, straight"
-                suggestions={SUGGESTED_ORIENTATIONS}
-              />
-            </label>
-            <label>
-              Creator roles (anonymous only)
-              <AttributeInput
-                value={creatorRoles}
-                onChange={setCreatorRoles}
-                placeholder="e.g. speaker, volunteer"
-                suggestions={SUGGESTED_ROLES}
-              />
-            </label>
-          </>
-        ) : (
-          <div className="note-box">
+          )}
+          <div style={{ display: 'grid', gap: '8px' }}>
             <div className="label-with-info">
-              <p style={{ margin: 0 }}>Your account identity attributes are applied automatically to this wish.</p>
+              <label htmlFor="desiredGenders">Desired genders for who can fulfill this wish</label>
               <InfoToggle>
-                Any genders, orientations, or roles you set on your Account page are implicitly used to match you with compatible fulfillers.
+                Leaving this blank means you're open to matching with anyone (based on your own orientation)! Explicitly entering a gender here will override your default orientation preferences.
               </InfoToggle>
             </div>
+            <AttributeInput
+              id="desiredGenders"
+              value={desiredGenders}
+              onChange={setDesiredGenders}
+              placeholder="e.g. woman, non-binary"
+              suggestions={SUGGESTED_GENDERS}
+            />
           </div>
-        )}
-        <div style={{ display: 'grid', gap: '8px' }}>
-          <div className="label-with-info">
-            <label htmlFor="desiredGenders">Desired genders for who can fulfill this wish</label>
+          <label>
+            Desired orientations for who can fulfill this wish
+            <AttributeInput
+              value={desiredOrientations}
+              onChange={setDesiredOrientations}
+              placeholder="e.g. queer, straight"
+              suggestions={SUGGESTED_ORIENTATIONS}
+            />
+          </label>
+          <label>
+            Desired roles for who can fulfill this wish
+            <AttributeInput
+              value={desiredRoles}
+              onChange={setDesiredRoles}
+              placeholder="e.g. speaker, vendor"
+              suggestions={SUGGESTED_ROLES}
+            />
+          </label>
+          <button type="submit">Submit Wish</button>
+        </form>
+
+        <div className="wish-preview-container" style={{ position: 'sticky', top: '24px' }}>
+          <div className="label-with-info" style={{ borderBottom: '2px solid #e4e9f0', paddingBottom: '8px', marginBottom: '8px' }}>
+            <h3 style={{ margin: 0 }}>Card Preview</h3>
             <InfoToggle>
-              Leaving this blank means you're open to matching with anyone (based on your own orientation)! Explicitly entering a gender here will override your default orientation preferences.
+              Watch your card scale automatically! If text turns red, it won't fit on the board.
             </InfoToggle>
           </div>
-          <AttributeInput
-            id="desiredGenders"
-            value={desiredGenders}
-            onChange={setDesiredGenders}
-            placeholder="e.g. woman, non-binary"
-            suggestions={SUGGESTED_GENDERS}
-          />
+          <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+            <WishCard wish={previewWish} showFlag={false} onOverflowChange={setIsOverflowing} />
+          </div>
         </div>
-        <label>
-          Desired orientations for who can fulfill this wish
-          <AttributeInput
-            value={desiredOrientations}
-            onChange={setDesiredOrientations}
-            placeholder="e.g. queer, straight"
-            suggestions={SUGGESTED_ORIENTATIONS}
-          />
-        </label>
-        <label>
-          Desired roles for who can fulfill this wish
-          <AttributeInput
-            value={desiredRoles}
-            onChange={setDesiredRoles}
-            placeholder="e.g. speaker, vendor"
-            suggestions={SUGGESTED_ROLES}
-          />
-        </label>
-        <button type="submit">Submit Wish</button>
-      </form>
+      </div>
 
       {result && (
-        <div className="message success" style={{ textAlign: 'center' }}>
+        <div className="message success" style={{ textAlign: 'center', marginTop: '24px' }}>
           <p><strong>Wish saved! ID: {result.id}</strong></p>
           {result.secret && (
             <>

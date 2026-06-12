@@ -190,7 +190,7 @@ export const isCompatible = (wish, searcher) => {
 };
 
 router.post('/', (req, res) => {
-  const { content, passphrase, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles } = req.body;
+  const { content, passphrase, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled } = req.body;
   if (!content || !content.trim()) {
     return res.status(400).json({ error: 'Wish content is required.' });
   }
@@ -215,9 +215,12 @@ router.post('/', (req, res) => {
   const desiredOrientations = normalizeArrayInput(desired_orientations);
   const desiredRoles = normalizeArrayInput(desired_roles);
 
+  const parsedContacts = Array.isArray(contacts) ? contacts : [];
+  const wme = wishmail_enabled ? 1 : 0;
+
   const now = new Date().toISOString();
   db.prepare(
-    'INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   ).run(
     id,
     userId,
@@ -229,6 +232,8 @@ router.post('/', (req, res) => {
     JSON.stringify(desiredGenders),
     JSON.stringify(desiredOrientations),
     JSON.stringify(desiredRoles),
+    JSON.stringify(parsedContacts),
+    wme,
     now,
     now
   );
@@ -238,13 +243,15 @@ router.post('/', (req, res) => {
 
 router.get('/random', (req, res) => {
   const limit = Number(req.query.limit || 12);
-  const rows = db.prepare('SELECT id, content, creator_genders, creator_orientations FROM wishes ORDER BY RANDOM() LIMIT ?').all(limit);
+  const rows = db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled FROM wishes ORDER BY RANDOM() LIMIT ?').all(limit);
   res.json(
     rows.map((wish) => ({
       id: wish.id,
       content: wish.content,
       creator_genders: parseJsonArray(wish.creator_genders),
-      creator_orientations: parseJsonArray(wish.creator_orientations)
+      creator_orientations: parseJsonArray(wish.creator_orientations),
+      contacts: parseJsonArray(wish.contacts),
+      wishmail_enabled: Boolean(wish.wishmail_enabled)
     }))
   );
 });
@@ -268,10 +275,10 @@ router.get('/', (req, res) => {
 
   const rows = query
     ? db
-        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes WHERE content LIKE ? ORDER BY created_at DESC LIMIT 50')
+        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled FROM wishes WHERE content LIKE ? ORDER BY created_at DESC LIMIT 50')
         .all(`%${query}%`)
     : db
-        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes ORDER BY created_at DESC LIMIT 50')
+        .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled FROM wishes ORDER BY created_at DESC LIMIT 50')
         .all();
 
   const filtered = ignoreAttributes ? rows : rows.filter((wish) => isCompatible(wish, searcherProfile));
@@ -284,7 +291,9 @@ router.get('/', (req, res) => {
       creator_roles: parseJsonArray(wish.creator_roles),
       desired_genders: parseJsonArray(wish.desired_genders),
       desired_orientations: parseJsonArray(wish.desired_orientations),
-      desired_roles: parseJsonArray(wish.desired_roles)
+      desired_roles: parseJsonArray(wish.desired_roles),
+      contacts: parseJsonArray(wish.contacts),
+      wishmail_enabled: Boolean(wish.wishmail_enabled)
     }))
   );
 });
@@ -292,11 +301,13 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   const { id } = req.params;
   const row = db
-    .prepare('SELECT id, content, flagged, created_at, updated_at FROM wishes WHERE id = ?')
+    .prepare('SELECT id, content, flagged, contacts, wishmail_enabled, created_at, updated_at FROM wishes WHERE id = ?')
     .get(id);
   if (!row) {
     return res.status(404).json({ error: 'Wish not found.' });
   }
+  row.contacts = parseJsonArray(row.contacts);
+  row.wishmail_enabled = Boolean(row.wishmail_enabled);
   res.json(row);
 });
 
@@ -339,8 +350,11 @@ router.post('/:id/manage', (req, res) => {
   }
 
   if (content && content.trim()) {
+    const { contacts, wishmail_enabled } = req.body;
+    const parsedContacts = Array.isArray(contacts) ? contacts : [];
+    const wme = wishmail_enabled ? 1 : 0;
     const now = new Date().toISOString();
-    db.prepare('UPDATE wishes SET content = ?, updated_at = ? WHERE id = ?').run(content.trim(), now, id);
+    db.prepare('UPDATE wishes SET content = ?, contacts = ?, wishmail_enabled = ?, updated_at = ? WHERE id = ?').run(content.trim(), JSON.stringify(parsedContacts), wme, now, id);
     return res.json({ success: true });
   }
 

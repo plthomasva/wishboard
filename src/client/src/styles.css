@@ -277,7 +277,7 @@ button:hover {
   background-size: 100% 100%, 100% 24px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* Thumbtack / Pushpin */
@@ -822,4 +822,89 @@ button:hover {
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Wish Contacts & Mail Styles */
+.wish-card-inner-scale {
+  /* This container handles the scaling for all content inside the card */
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.text-overflow-hint .wish-text,
+.text-overflow-hint .wish-contacts-list {
+  color: #b91717; /* Turn dark red if it overflows at min font size */
+}
+
+.wish-contacts-list {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: Inter, sans-serif;
+  font-size: 0.8em; /* Relative to scaled root */
+  color: #556275;
+  border-top: 1px dashed rgba(0,0,0,0.1);
+  padding-top: 8px;
+}
+
+.wish-contact-item {
+  background: rgba(255, 255, 255, 0.5);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.send-mail-icon-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: #eef5ff;
+  border: 1px solid #1a73e8;
+  color: #1a73e8;
+  padding: 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  z-index: 10;
+  min-height: auto;
+}
+
+.send-mail-icon-btn:hover {
+  background: #1a73e8;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Wish Editor Layout */
+.wish-editor-layout {
+  display: grid;
+  gap: 32px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+@media (max-width: 800px) {
+  .wish-editor-layout {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+}
+
+@media (min-width: 801px) {
+  .wish-editor-layout {
+    grid-template-columns: 1fr 400px;
+  }
+}
+
+.overflowing-textarea {
+  border-color: #b91717 !important;
+  background-color: #fdf5f5 !important;
+  transition: all 0.2s ease;
 }

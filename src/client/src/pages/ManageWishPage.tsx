@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import InfoToggle from '../components/InfoToggle';
-import useFlagWish from '../hooks/useFlagWish';
+import WishCard from '../components/WishCard';
+import WishFormFields from '../components/WishFormFields';
+import { useAuth } from '../AuthContext';
 
 export default function ManageWishPage() {
-  const [wish, setWish] = useState<{ id: string; content: string; created_at: string } | null>(null);
+  const { token } = useAuth();
+  const [wish, setWish] = useState<{ id: string; content: string; contacts: any[]; wishmail_enabled: boolean; created_at: string; creator_genders?: string[]; creator_orientations?: string[] } | null>(null);
   const [content, setContent] = useState('');
+  const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
+  const [wishmailEnabled, setWishmailEnabled] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
   const [secret, setSecret] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -29,6 +35,8 @@ export default function ManageWishPage() {
           .then((data) => {
             setWish(data);
             setContent(data.content);
+            setContacts(data.contacts || []);
+            setWishmailEnabled(data.wishmail_enabled || false);
           })
           .catch((err) => {
             setError(err.message);
@@ -47,10 +55,15 @@ export default function ManageWishPage() {
     setError(null);
     setMessage(null);
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(`/api/wishes/${wish.id}/manage`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret, content })
+      headers,
+      body: JSON.stringify({ secret, content, contacts, wishmail_enabled: wishmailEnabled, action: 'update' })
     });
 
     if (!response.ok) {
@@ -58,6 +71,7 @@ export default function ManageWishPage() {
       setError(data.error || 'Failed to update wish.');
     } else {
       setMessage('Wish updated successfully!');
+      setWish({ ...wish, content, contacts, wishmail_enabled: wishmailEnabled });
     }
   };
 
@@ -67,9 +81,14 @@ export default function ManageWishPage() {
     setError(null);
     setMessage(null);
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(`/api/wishes/${wish.id}/manage`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ secret, action: 'delete' })
     });
 
@@ -103,47 +122,79 @@ export default function ManageWishPage() {
     return <section>Loading...</section>;
   }
 
+  const previewWish = {
+    id: wish.id,
+    content: content,
+    creator_genders: wish.creator_genders,
+    creator_orientations: wish.creator_orientations,
+    contacts: contacts.filter(c => c.value.trim()),
+    wishmail_enabled: wishmailEnabled
+  };
+
   return (
     <section>
-      <h1>Manage Your Wish</h1>
-      <p>Edit the content of your anonymous wish or delete it permanently.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ marginBottom: '8px' }}>Manage Your Wish</h1>
+          <p style={{ marginTop: 0 }}>Edit the content of your wish or delete it permanently.</p>
+        </div>
+        {wish.wishmail_enabled && (
+          <a href={`#wishmail-dashboard?id=${wish.id}${secret ? `&secret=${encodeURIComponent(secret)}` : ''}`} className="compact-btn" style={{ background: '#1a73e8', textDecoration: 'none' }}>
+            View Wishmail
+          </a>
+        )}
+      </div>
       
-      <form className="form-card" onSubmit={handleUpdate}>
-        <label>
-          Wish content
-          <textarea
-            rows={5}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+      <div className="wish-editor-layout">
+        <form className="form-card" onSubmit={handleUpdate} style={{ marginTop: 0 }}>
+          <WishFormFields
+            content={content}
+            setContent={setContent}
+            contacts={contacts}
+            setContacts={setContacts}
+            wishmailEnabled={wishmailEnabled}
+            setWishmailEnabled={setWishmailEnabled}
+            isOverflowing={isOverflowing}
           />
-        </label>
-        
-        <div style={{ display: 'grid', gap: '8px' }}>
-          <div className="label-with-info">
-            <label>Passphrase</label>
+          
+          <div style={{ display: 'grid', gap: '8px' }}>
+            <div className="label-with-info">
+              <label>Passphrase (if anonymous)</label>
+              <InfoToggle>
+                If you created this wish anonymously, the passphrase is required to save changes. If you are logged into your account, this isn't needed.
+              </InfoToggle>
+            </div>
+            <input
+              type="text"
+              value={secret}
+              onChange={(e) => setSecret(e.target.value)}
+              placeholder="Enter passphrase"
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <button type="submit">Save Changes</button>
+            <button type="button" className="secondary-button" onClick={handleDelete} style={{ background: '#fee2e2', color: '#b91c1c' }}>
+              Delete Wish
+            </button>
+          </div>
+        </form>
+
+        <div className="wish-preview-container" style={{ position: 'sticky', top: '24px' }}>
+          <div className="label-with-info" style={{ borderBottom: '2px solid #e4e9f0', paddingBottom: '8px', marginBottom: '8px' }}>
+            <h3 style={{ margin: 0 }}>Card Preview</h3>
             <InfoToggle>
-              This is the secret phrase generated when you created the wish. It is required to make any changes.
+              Watch your card scale automatically! If text turns red, it won't fit on the board.
             </InfoToggle>
           </div>
-          <input
-            type="text"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            placeholder="Enter passphrase"
-            required
-          />
+          <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+            <WishCard wish={previewWish} showFlag={false} onOverflowChange={setIsOverflowing} />
+          </div>
         </div>
+      </div>
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-          <button type="submit">Save Changes</button>
-          <button type="button" className="secondary-button" onClick={handleDelete} style={{ background: '#fee2e2', color: '#b91c1c' }}>
-            Delete Wish
-          </button>
-        </div>
-      </form>
-
-      {message && <div className="message success">{message}</div>}
-      {error && <div className="message error">{error}</div>}
+      {message && <div className="message success" style={{ marginTop: '24px' }}>{message}</div>}
+      {error && <div className="message error" style={{ marginTop: '24px' }}>{error}</div>}
     </section>
   );
 }

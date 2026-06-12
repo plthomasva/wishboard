@@ -7,6 +7,7 @@ import DisplayPage from './pages/DisplayPage';
 import AdminPage from './pages/AdminPage';
 import AccountPage from './AccountPage';
 import ManageWishPage from './pages/ManageWishPage';
+import WishmailDashboard from './pages/WishmailDashboard';
 import AboutPage from './pages/AboutPage';
 import WiFiQrCode from './components/WiFiQrCode';
 
@@ -20,7 +21,7 @@ const pages = [
   { id: 'admin', label: 'Admin' }
 ];
 
-type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin' | 'manage-wish';
+type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin' | 'manage-wish' | 'wishmail-dashboard';
 
 function AppContent() {
   const getHashPage = (): PageId => {
@@ -198,6 +199,7 @@ function AppContent() {
           {page === 'account' && <AccountPage />}
           {page === 'about' && <AboutPage />}
           {page === 'manage-wish' && <ManageWishPage />}
+          {page === 'wishmail-dashboard' && <WishmailDashboard />}
           {page === 'admin' && <AdminPage />}
         </main>
       )}

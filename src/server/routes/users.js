@@ -1,7 +1,7 @@
 import express from 'express';
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
-import { createSalt, hashPassphrase, createSessionToken, getUserFromRequest, getTokenFromRequestHeader, verifyPassphrase, normalizeArrayInput } from '../auth.js';
+import { createSalt, hashPassphrase, createSessionToken, getUserFromRequest, getTokenFromRequestHeader, verifyPassphrase, normalizeArrayInput, parseJsonArray } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
 
 const router = express.Router();
@@ -92,9 +92,9 @@ router.post('/login', (req, res) => {
     username: user.username,
     role: user.role,
     token,
-    identity_genders: user.identity_genders ? JSON.parse(user.identity_genders) : [],
-    identity_orientations: user.identity_orientations ? JSON.parse(user.identity_orientations) : [],
-    identity_roles: user.identity_roles ? JSON.parse(user.identity_roles) : []
+    identity_genders: parseJsonArray(user.identity_genders),
+    identity_orientations: parseJsonArray(user.identity_orientations),
+    identity_roles: parseJsonArray(user.identity_roles)
   });
 });
 
@@ -121,9 +121,16 @@ router.get('/me/wishes', (req, res) => {
   }
 
   const rows = db
-    .prepare('SELECT id, content, flagged, created_at, updated_at FROM wishes WHERE user_id = ? ORDER BY created_at DESC')
+    .prepare('SELECT id, content, contacts, wishmail_enabled, creator_genders, creator_orientations, flagged, created_at, updated_at FROM wishes WHERE user_id = ? ORDER BY created_at DESC')
     .all(user.id);
-  res.json(rows);
+    
+  const formattedRows = rows.map(row => ({
+    ...row,
+    contacts: parseJsonArray(row.contacts),
+    wishmail_enabled: Boolean(row.wishmail_enabled)
+  }));
+    
+  res.json(formattedRows);
 });
 
 export default router;
