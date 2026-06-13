@@ -25,7 +25,7 @@ sudo chown -R wishboard:wishboard /home/wishboard
 
 echo "Installing graphical kiosk dependencies..."
 sudo apt-get update
-sudo apt-get install -y imagemagick swaybg chromium network-manager
+sudo apt-get install -y imagemagick swaybg chromium network-manager iw
 
 echo "Configuring Wireless Access Point (Hotspot) for Mode: $MODE..."
 
@@ -55,6 +55,7 @@ WantedBy=multi-user.target
 EOF
   sudo systemctl daemon-reload
   sudo systemctl enable wifi-ap0.service
+  sudo systemctl start wifi-ap0.service
   
   if nmcli con show "Hotspot" > /dev/null 2>&1; then
     echo "Hotspot connection already exists. Deleting to recreate with correct interface."
