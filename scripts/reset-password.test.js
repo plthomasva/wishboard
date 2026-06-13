@@ -1,6 +1,6 @@
 /** @vitest-environment node */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
@@ -17,7 +17,7 @@ describe('reset-password script', () => {
   beforeEach(() => {
     dbPath = path.resolve(__dirname, `test-reset-db-${Date.now()}.sqlite`);
     db = new Database(dbPath);
-    
+
     db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -55,7 +55,7 @@ describe('reset-password script', () => {
   });
 
   it('resets the password when providing a username and a new passphrase', () => {
-    const output = execSync(`node ${scriptPath} testuser new-secure-pass`, {
+    const output = execFileSync('node', [scriptPath, 'testuser', 'new-secure-pass'], {
       env: { ...process.env, WISHBOARD_DB_PATH: dbPath },
       encoding: 'utf-8'
     });
@@ -72,14 +72,14 @@ describe('reset-password script', () => {
   });
 
   it('generates a new passphrase if omitted', () => {
-    const output = execSync(`node ${scriptPath} testuser`, {
+    const output = execFileSync('node', [scriptPath, 'testuser'], {
       env: { ...process.env, WISHBOARD_DB_PATH: dbPath },
       encoding: 'utf-8'
     });
 
     expect(output).toContain("Success! Passphrase for 'testuser' has been reset.");
     expect(output).toContain("New Passphrase: ");
-    
+
     // The output should contain something like "New Passphrase: word-word-word"
     const match = output.match(/New Passphrase: (\S+-\S+-\S+)/);
     expect(match).toBeTruthy();
@@ -95,7 +95,7 @@ describe('reset-password script', () => {
   it('fails and exits with code 1 if user does not exist', () => {
     let error;
     try {
-      execSync(`node ${scriptPath} non-existent-user`, {
+      execFileSync('node', [scriptPath, 'non-existent-user'], {
         env: { ...process.env, WISHBOARD_DB_PATH: dbPath },
         encoding: 'utf-8',
         stdio: 'pipe'
@@ -112,7 +112,7 @@ describe('reset-password script', () => {
   it('fails and prints usage if no arguments are provided', () => {
     let error;
     try {
-      execSync(`node ${scriptPath}`, {
+      execFileSync('node', [scriptPath], {
         env: { ...process.env, WISHBOARD_DB_PATH: dbPath },
         encoding: 'utf-8',
         stdio: 'pipe'
