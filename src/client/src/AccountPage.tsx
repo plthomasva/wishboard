@@ -492,13 +492,13 @@ export default function AccountPage() {
             </div>
             <div style={{ background: 'white', padding: '16px', display: 'inline-block', borderRadius: '12px' }}>
               <QRCodeSVG 
-                value={`${window.location.origin}${window.location.pathname}?token=${token}#account`} 
+                value={`${window.location.origin}${window.location.pathname}#account?token=${token}`} 
                 size={160} 
                 includeMargin={false}
               />
             </div>
             <p style={{ marginTop: '16px' }}>
-              <a href={`?token=${token}#account`}>
+              <a href={`#account?token=${token}`}>
                 Bookmark this auto-login link
               </a>
             </p>

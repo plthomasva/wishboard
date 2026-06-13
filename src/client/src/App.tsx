@@ -65,15 +65,18 @@ function AppContent() {
   const { user, login, logout, setTokenExternally } = useAuth();
 
   useEffect(() => {
-    // Check for auto-login token in the URL
-    const searchParams = new URLSearchParams(window.location.search);
-    const token = searchParams.get('token');
-    if (token) {
-      setTokenExternally(token);
-      searchParams.delete('token');
-      const searchStr = searchParams.toString();
-      const newUrl = window.location.pathname + (searchStr ? `?${searchStr}` : '') + window.location.hash;
-      window.history.replaceState({}, '', newUrl);
+    // Check for auto-login token in the URL hash
+    const hashIndex = window.location.hash.indexOf('?');
+    if (hashIndex !== -1) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(hashIndex));
+      const token = hashParams.get('token');
+      if (token) {
+        setTokenExternally(token);
+        hashParams.delete('token');
+        const hashStr = hashParams.toString();
+        const baseHash = window.location.hash.substring(0, hashIndex);
+        window.location.hash = baseHash + (hashStr ? `?${hashStr}` : '');
+      }
     }
 
     const handleHashChange = () => {
