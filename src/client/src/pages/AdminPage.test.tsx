@@ -223,6 +223,42 @@ describe('AdminPage', () => {
     expect(global.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/delete', expect.any(Object));
   });
 
+  it('can reset a user password', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    global.fetch = vi.fn().mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : '';
+      if (url.endsWith('/api/admin/flags')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      if (url.endsWith('/api/admin/users')) {
+        return Promise.resolve({ ok: true, json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }] });
+      }
+      if (url.includes('/api/admin/users/') && url.endsWith('/reset-password')) {
+        return Promise.resolve({ ok: true, json: async () => ({ success: true, newPassphrase: 'new-password-123' }) });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    render(<AdminPage />);
+
+    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
+
+    const resetButtons = screen.getAllByRole('button', { name: /Reset Password/i });
+    await act(async () => {
+      fireEvent.click(resetButtons[0]);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Passphrase successfully reset! The new passphrase is: new-password-123')).toBeInTheDocument();
+    });
+    expect(global.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/reset-password', expect.objectContaining({
+      method: 'POST'
+    }));
+  });
+
   it('can run demo seeder', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';

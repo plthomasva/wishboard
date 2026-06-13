@@ -256,4 +256,66 @@ describe('Admin routes', () => {
     
     spy.mockRestore();
   });
+
+  it('allows admin to reset a user passphrase', async () => {
+    // 1. Register a test user
+    const registerResponse = await request(app)
+      .post('/api/users/register')
+      .send({ username: 'test-reset-user', passphrase: 'old-password' })
+      .set('Accept', 'application/json');
+
+    expect(registerResponse.status).toBe(200);
+    const testUserId = registerResponse.body.id;
+
+    // 2. Login as admin
+    const adminToken = await loginAsAdmin();
+
+    // 3. Login as test user to create a session
+    const loginResponse = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'test-reset-user', passphrase: 'old-password' })
+      .set('Accept', 'application/json');
+    expect(loginResponse.status).toBe(200);
+
+    const activeSessionsBefore = db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId).count;
+    expect(activeSessionsBefore).toBe(2);
+
+    // 4. Reset password as admin
+    const resetResponse = await request(app)
+      .post(`/api/admin/users/${testUserId}/reset-password`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(resetResponse.status).toBe(200);
+    expect(resetResponse.body.success).toBe(true);
+    expect(typeof resetResponse.body.newPassphrase).toBe('string');
+    expect(resetResponse.body.newPassphrase.length).toBeGreaterThan(0);
+
+    // 5. Verify sessions were deleted
+    const activeSessionsAfter = db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId).count;
+    expect(activeSessionsAfter).toBe(0);
+
+    // 6. Verify old password doesn't work
+    const oldLoginResponse = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'test-reset-user', passphrase: 'old-password' })
+      .set('Accept', 'application/json');
+    expect(oldLoginResponse.status).toBe(401);
+
+    // 7. Verify new password works
+    const newLoginResponse = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'test-reset-user', passphrase: resetResponse.body.newPassphrase })
+      .set('Accept', 'application/json');
+    expect(newLoginResponse.status).toBe(200);
+  });
+
+  it('handles not found errors for resetting password', async () => {
+    const adminToken = await loginAsAdmin();
+    const response = await request(app)
+      .post('/api/admin/users/non-existent-user/reset-password')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe('User not found.');
+  });
 });

@@ -61,6 +61,35 @@ router.post('/users/:id/delete', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// POST /api/admin/users/:id/reset-password
+router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    let passphrase = req.body?.passphrase;
+
+    const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (!passphrase) {
+      const { generatePassphrase } = await import('../../client/src/passphrase.js');
+      passphrase = generatePassphrase();
+    }
+
+    const { createSalt, hashPassphrase } = await import('../auth.js');
+    const salt = createSalt();
+    const hash = hashPassphrase(passphrase, salt);
+
+    db.prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?').run(hash, salt, id);
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+
+    res.json({ success: true, newPassphrase: passphrase });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/admin/reset-demo
 // Protected by requireAdmin so only the 'admin' account can trigger it
 router.post('/reset-demo', requireAdmin, (req, res) => {

@@ -86,6 +86,24 @@ export default function AdminPage() {
     loadUsers();
   };
 
+  const resetPassphrase = async (id: string) => {
+    if (!window.confirm("Are you sure you want to reset this user's passphrase? Any active sessions will be terminated.")) {
+      return;
+    }
+    setMessage(null);
+    setError(null);
+    const response = await fetch(`/api/admin/users/${id}/reset-password`, {
+      method: 'POST',
+      headers: authHeader
+    });
+    if (!response.ok) {
+      setError('Failed to reset passphrase.');
+      return;
+    }
+    const data = await response.json();
+    setMessage(`Passphrase successfully reset! The new passphrase is: ${data.newPassphrase}`);
+  };
+
   const deleteUser = async (id: string) => {
     setMessage(null);
     setError(null);
@@ -201,7 +219,8 @@ export default function AdminPage() {
                   <article className="wish-card" key={account.id}>
                     <strong>{account.username}</strong>
                     <p>Role: {account.role}</p>
-                    <div className="wish-actions">
+                    <div className="wish-actions" style={{ flexWrap: 'wrap' }}>
+                      <button className="secondary-button" onClick={() => resetPassphrase(account.id)}>Reset Password</button>
                       {account.role !== 'admin' ? (
                         <button onClick={() => updateRole(account.id, 'admin')}>Promote</button>
                       ) : (
