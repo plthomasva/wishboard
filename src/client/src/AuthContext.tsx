@@ -7,6 +7,8 @@ type AuthUser = {
   identity_genders: string[];
   identity_orientations: string[];
   identity_roles: string[];
+  contacts: { type: string; value: string }[];
+  wishmail_enabled: boolean;
 };
 
 type AuthContextValue = {
@@ -20,7 +22,9 @@ type AuthContextValue = {
       genders?: string;
       orientations?: string;
       roles?: string;
-    }
+    },
+    contacts?: { type: string; value: string }[],
+    wishmailEnabled?: boolean
   ) => Promise<{ success: boolean; error?: string; secret?: string; role?: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -60,7 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: data.role,
       identity_genders: data.identity_genders || [],
       identity_orientations: data.identity_orientations || [],
-      identity_roles: data.identity_roles || []
+      identity_roles: data.identity_roles || [],
+      contacts: data.contacts || [],
+      wishmail_enabled: Boolean(data.wishmail_enabled)
     });
   };
 
@@ -88,7 +94,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: data.role,
       identity_genders: data.identity_genders || [],
       identity_orientations: data.identity_orientations || [],
-      identity_roles: data.identity_roles || []
+      identity_roles: data.identity_roles || [],
+      contacts: data.contacts || [],
+      wishmail_enabled: Boolean(data.wishmail_enabled)
     });
     return { success: true, role: data.role };
   };
@@ -96,7 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (
     username: string,
     passphrase?: string,
-    identityFields?: { genders?: string; orientations?: string; roles?: string }
+    identityFields?: { genders?: string; orientations?: string; roles?: string },
+    contacts?: { type: string; value: string }[],
+    wishmailEnabled?: boolean
   ) => {
     const response = await fetch('/api/users/register', {
       method: 'POST',
@@ -106,7 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         passphrase,
         identity_genders: identityFields?.genders,
         identity_orientations: identityFields?.orientations,
-        identity_roles: identityFields?.roles
+        identity_roles: identityFields?.roles,
+        contacts,
+        wishmail_enabled: wishmailEnabled
       })
     });
 
@@ -123,7 +135,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: data.role,
       identity_genders: data.identity_genders || [],
       identity_orientations: data.identity_orientations || [],
-      identity_roles: data.identity_roles || []
+      identity_roles: data.identity_roles || [],
+      contacts: data.contacts || [],
+      wishmail_enabled: Boolean(data.wishmail_enabled)
     });
     return { success: true, secret: data.secret, role: data.role };
   };

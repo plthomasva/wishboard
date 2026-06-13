@@ -76,6 +76,8 @@ const ensureColumn = (table, column, type) => {
 ensureColumn('users', 'identity_genders', 'TEXT');
 ensureColumn('users', 'identity_orientations', 'TEXT');
 ensureColumn('users', 'identity_roles', 'TEXT');
+ensureColumn('users', 'contacts', 'TEXT');
+ensureColumn('users', 'wishmail_enabled', 'INTEGER DEFAULT 0');
 ensureColumn('wishes', 'creator_genders', 'TEXT');
 ensureColumn('wishes', 'creator_orientations', 'TEXT');
 ensureColumn('wishes', 'creator_roles', 'TEXT');

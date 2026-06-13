@@ -829,8 +829,7 @@ button:hover {
   /* This container handles the scaling for all content inside the card */
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 
 .text-overflow-hint .wish-text,

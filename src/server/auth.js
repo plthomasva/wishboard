@@ -55,7 +55,7 @@ export const getUserFromToken = (token) => {
   }
   const row = db
     .prepare(
-      'SELECT u.id, u.username, u.role, u.identity_genders, u.identity_orientations, u.identity_roles FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?'
+      'SELECT u.id, u.username, u.role, u.identity_genders, u.identity_orientations, u.identity_roles, u.contacts, u.wishmail_enabled FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?'
     )
     .get(token, new Date().toISOString());
   if (!row) {
@@ -67,7 +67,9 @@ export const getUserFromToken = (token) => {
     role: row.role,
     identity_genders: parseJsonArray(row.identity_genders),
     identity_orientations: parseJsonArray(row.identity_orientations),
-    identity_roles: parseJsonArray(row.identity_roles)
+    identity_roles: parseJsonArray(row.identity_roles),
+    contacts: parseJsonArray(row.contacts),
+    wishmail_enabled: Boolean(row.wishmail_enabled)
   };
 };
 

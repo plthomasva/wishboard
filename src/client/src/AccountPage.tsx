@@ -18,6 +18,8 @@ export default function AccountPage() {
   const [editIdentityGenders, setEditIdentityGenders] = useState('');
   const [editIdentityOrientations, setEditIdentityOrientations] = useState('');
   const [editIdentityRoles, setEditIdentityRoles] = useState('');
+  const [contacts, setContacts] = useState<Array<{ type: string; value: string }>>([]);
+  const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[] }>>([]);
@@ -101,6 +103,8 @@ export default function AccountPage() {
     setEditIdentityGenders(user.identity_genders.join(', '));
     setEditIdentityOrientations(user.identity_orientations.join(', '));
     setEditIdentityRoles(user.identity_roles.join(', '));
+    setContacts(user.contacts || []);
+    setWishmailEnabled(user.wishmail_enabled || false);
   }, [user]);
 
   const saveProfile = async () => {
@@ -115,7 +119,9 @@ export default function AccountPage() {
       body: JSON.stringify({
         identity_genders: editIdentityGenders,
         identity_orientations: editIdentityOrientations,
-        identity_roles: editIdentityRoles
+        identity_roles: editIdentityRoles,
+        contacts,
+        wishmail_enabled: wishmailEnabled
       })
     });
 
@@ -363,6 +369,57 @@ export default function AccountPage() {
             suggestions={SUGGESTED_ROLES}
           />
         </label>
+        
+        <div style={{ marginTop: '24px', marginBottom: '16px' }}>
+          <h2 style={{ margin: 0 }}>Default Contact Methods</h2>
+          <p style={{ marginTop: '8px', fontSize: '0.9rem', color: '#556275' }}>These will be automatically added to any new wishes you create.</p>
+        </div>
+        
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'normal', marginBottom: '16px' }}>
+          <input 
+            type="checkbox" 
+            checked={wishmailEnabled} 
+            onChange={(e) => setWishmailEnabled(e.target.checked)} 
+            style={{ width: 'auto', minHeight: 'auto' }}
+          />
+          Enable Wishmail by default
+        </label>
+
+        <div style={{ marginBottom: '24px' }}>
+          {contacts.map((contact, index) => (
+            <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+              <select 
+                value={contact.type} 
+                onChange={(e) => {
+                  const newContacts = [...contacts];
+                  newContacts[index] = { ...newContacts[index], type: e.target.value };
+                  setContacts(newContacts);
+                }}
+                style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d7dee5', background: 'white' }}
+              >
+                <option value="FetLife">FetLife</option>
+                <option value="Phone">Phone</option>
+                <option value="Email">Email</option>
+              </select>
+              <input 
+                type="text" 
+                value={contact.value} 
+                onChange={(e) => {
+                  const newContacts = [...contacts];
+                  newContacts[index] = { ...newContacts[index], value: e.target.value };
+                  setContacts(newContacts);
+                }} 
+                placeholder="Username, number, etc."
+                style={{ minHeight: '36px', padding: '8px' }}
+              />
+              <button type="button" onClick={() => setContacts(contacts.filter((_, i) => i !== index))} style={{ minHeight: '36px', padding: '0 12px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>X</button>
+            </div>
+          ))}
+          <button type="button" onClick={() => setContacts([...contacts, { type: 'FetLife', value: '' }])} className="secondary-button" style={{ minHeight: '36px', padding: '6px 12px', fontSize: '0.9rem' }}>
+            + Add Contact Method
+          </button>
+        </div>
+
         <button className="secondary-button" onClick={saveProfile} type="button">
           Save attributes
         </button>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
 import InfoToggle from '../components/InfoToggle';
@@ -21,6 +21,13 @@ export default function EnterWishPage() {
   const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setContacts(user.contacts || []);
+      setWishmailEnabled(user.wishmail_enabled || false);
+    }
+  }, [user]);
 
   const [result, setResult] = useState<{ id: string; secret?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
