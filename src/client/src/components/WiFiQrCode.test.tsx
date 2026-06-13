@@ -60,6 +60,8 @@ describe('WiFiQrCode', () => {
     expect(screen.getByText(/wishboard2026/i)).toBeInTheDocument();
     
     // Verify the URL hint is present
-    expect(screen.getByText(/10\.42\.0\.1:3000/i)).toBeInTheDocument();
+    const domain = import.meta.env.VITE_WISHBOARD_DOMAIN || import.meta.env.VITE_WISHBOARD_AP_IP || '10.42.0.1:3000';
+    const url = domain.includes('painless-computing.com') ? `https://${domain}` : `http://${domain}`;
+    expect(screen.getByText(url)).toBeInTheDocument();
   });
 });
