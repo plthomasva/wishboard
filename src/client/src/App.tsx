@@ -29,7 +29,11 @@ function AppContent() {
       return 'home';
     }
     const hashPart = window.location.hash.split('?')[0].replace(/^#/, '');
-    return (pages.find((item) => item.id === hashPart)?.id as PageId) ?? 'home';
+    const validPages = ['home', 'enter', 'search', 'display', 'account', 'about', 'admin', 'manage-wish', 'wishmail-dashboard'];
+    if (validPages.includes(hashPart)) {
+      return hashPart as PageId;
+    }
+    return 'home';
   };
 
   const checkIsKioskParam = (): boolean => {

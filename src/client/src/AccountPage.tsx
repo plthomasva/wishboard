@@ -436,6 +436,9 @@ export default function AccountPage() {
             <div key={wish.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <WishCard wish={wish} showFlag={false} />
               <div className="wish-actions" style={{ marginTop: 0, justifyContent: 'flex-start', gap: '12px' }}>
+                <a href={`#wishmail-dashboard?id=${wish.id}`} className="button" style={{ textDecoration: 'none', background: '#3b82f6', color: 'white', padding: '10px 16px', borderRadius: '14px', fontWeight: 'bold' }}>
+                  View Wishmail
+                </a>
                 <a href={`#manage-wish?id=${wish.id}`} className="button" style={{ textDecoration: 'none', background: '#1a73e8', color: 'white', padding: '10px 16px', borderRadius: '14px', fontWeight: 'bold' }}>
                   Edit Wish
                 </a>

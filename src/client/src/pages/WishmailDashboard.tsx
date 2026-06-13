@@ -64,6 +64,26 @@ export default function WishmailDashboard() {
     }
   };
 
+  const deleteMail = async (mailId: string) => {
+    if (!wishId) return;
+    if (!confirm('Are you sure you want to delete this message?')) return;
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (secret) headers['x-wish-secret'] = secret;
+
+    const response = await fetch(`/api/wishes/${wishId}/mail/${mailId}`, {
+      method: 'DELETE',
+      headers
+    });
+
+    if (response.ok) {
+      setMails(mails.filter(m => m.id !== mailId));
+    } else {
+      alert('Failed to delete message.');
+    }
+  };
+
   if (error) {
     return (
       <section>
@@ -104,11 +124,16 @@ export default function WishmailDashboard() {
                 <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
                   {new Date(mail.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                 </span>
-                {!mail.read && (
-                  <button onClick={() => markRead(mail.id)} style={{ padding: '6px 12px', fontSize: '0.85rem', minHeight: 'auto', borderRadius: '99px' }}>
-                    Mark as Read
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {!mail.read && (
+                    <button onClick={() => markRead(mail.id)} style={{ padding: '6px 12px', fontSize: '0.85rem', minHeight: 'auto', borderRadius: '99px' }}>
+                      Mark as Read
+                    </button>
+                  )}
+                  <button onClick={() => deleteMail(mail.id)} className="secondary-button" style={{ padding: '6px 12px', fontSize: '0.85rem', minHeight: 'auto', borderRadius: '99px', background: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca' }}>
+                    Delete
                   </button>
-                )}
+                </div>
               </div>
               <p style={{ whiteSpace: 'pre-wrap', margin: '0 0 20px 0', fontSize: '1.05rem', color: '#1e293b', lineHeight: 1.6 }}>{mail.content}</p>
               

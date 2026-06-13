@@ -119,4 +119,40 @@ router.post('/:mailId/read', (req, res) => {
   res.json({ success: true });
 });
 
+// DELETE /api/wishes/:id/mail/:mailId
+// Delete a wishmail
+router.delete('/:mailId', (req, res) => {
+  const { id: wish_id, mailId } = req.params;
+  const secret = req.query.secret || req.headers['x-wish-secret'];
+  const user = getRequestUser(req);
+
+  const wish = db.prepare('SELECT user_id, secret_hash FROM wishes WHERE id = ?').get(wish_id);
+  if (!wish) {
+    return res.status(404).json({ error: 'Wish not found.' });
+  }
+
+  let authorized = false;
+  if (user && wish.user_id === user.id) {
+    authorized = true;
+  }
+
+  if (!authorized && secret && wish.secret_hash) {
+    const [salt, hash] = wish.secret_hash.split(':');
+    if (verifyPassphrase(secret.trim(), salt, hash)) {
+      authorized = true;
+    }
+  }
+
+  if (!authorized) {
+    return res.status(403).json({ error: 'Not authorized to manage wishmail.' });
+  }
+
+  const result = db.prepare('DELETE FROM wishmails WHERE id = ? AND wish_id = ?').run(mailId, wish_id);
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Wishmail not found.' });
+  }
+
+  res.json({ success: true });
+});
+
 export default router;
