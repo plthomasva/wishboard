@@ -61,6 +61,23 @@ describe('Authenticated wish creation', () => {
     expect(JSON.parse(row.creator_orientations)).toEqual(['queer']);
     expect(JSON.parse(row.creator_roles)).toEqual(['speaker']);
   });
+
+  it('saves contacts and wishmail_enabled flag', async () => {
+    const wishResponse = await request(app)
+      .post('/api/wishes')
+      .send({ 
+        content: 'Contact test',
+        contacts: [{ type: 'Email', value: 'test@example.com' }],
+        wishmail_enabled: true
+      })
+      .set('Accept', 'application/json');
+
+    expect(wishResponse.status).toBe(200);
+
+    const row = db.prepare('SELECT contacts, wishmail_enabled FROM wishes WHERE id = ?').get(wishResponse.body.id);
+    expect(JSON.parse(row.contacts)).toEqual([{ type: 'Email', value: 'test@example.com' }]);
+    expect(row.wishmail_enabled).toBe(1);
+  });
 });
 
 describe('Matchmaking logic', () => {
@@ -218,6 +235,26 @@ describe('Claiming wishes', () => {
     const userWishesRes = await request(app).get('/api/users/me/wishes').set('Authorization', `Bearer ${token}`);
     expect(userWishesRes.body).toHaveLength(1);
     expect(userWishesRes.body[0].id).toBe(wishId);
+  });
+
+  it('allows managing wish with contacts and wishmail_enabled', async () => {
+    const wishRes = await request(app).post('/api/wishes').send({ content: 'Manage test' });
+    const { id, secret } = wishRes.body;
+
+    const manageRes = await request(app).post(`/api/wishes/${id}/manage`).send({
+      secret,
+      content: 'Updated content',
+      contacts: [{ type: 'Phone', value: '123' }],
+      wishmail_enabled: true,
+      action: 'update'
+    });
+    
+    expect(manageRes.status).toBe(200);
+
+    const viewRes = await request(app).get(`/api/wishes/${id}`);
+    expect(viewRes.body.content).toBe('Updated content');
+    expect(viewRes.body.contacts).toEqual([{ type: 'Phone', value: '123' }]);
+    expect(viewRes.body.wishmail_enabled).toBe(true);
   });
 
   it('prevents claiming with wrong passphrase or without auth', async () => {

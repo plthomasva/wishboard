@@ -10,6 +10,7 @@ const secondaryGenders = ['Non-binary', 'Genderqueer', 'Agender', 'Transgender',
 const mockGenders = [...primaryGenders, ...secondaryGenders];
 const mockOrientations = ['Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Queer'];
 const mockRoles = ['Dominant', 'Submissive', 'Switch', 'Top', 'Bottom', 'Versatile'];
+const mockContactTypes = ['FetLife', 'Phone', 'Email'];
 
 // Mad Libs text generation fragments
 const textFragments = {
@@ -65,6 +66,18 @@ function getRandomGenders() {
   return selected;
 }
 
+function generateRandomContacts() {
+  const count = Math.floor(Math.random() * 3); // 0 to 2 contacts
+  const contacts = [];
+  const types = [...mockContactTypes].sort(() => 0.5 - Math.random());
+  for (let i=0; i<count; i++) {
+    const type = types[i];
+    const value = type === 'Phone' ? '555-010' + Math.floor(Math.random() * 10) : `demo_${type.toLowerCase()}_${Math.floor(Math.random()*1000)}`;
+    contacts.push({ type, value });
+  }
+  return contacts;
+}
+
 // Helper to generate a random Mad Libs wish
 function generateMadLibsWish() {
   const action = textFragments.actions[Math.floor(Math.random() * textFragments.actions.length)];
@@ -85,8 +98,8 @@ export function generateDemoData() {
 
   const users = [];
   const insertUser = db.prepare(`
-    INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   // 2. Generate 50 simulated users
@@ -100,12 +113,14 @@ export function generateDemoData() {
     const genders = JSON.stringify(getRandomGenders());
     const orientations = JSON.stringify(getRandom(mockOrientations));
     const roles = JSON.stringify(getRandom(mockRoles));
+    const contacts = generateRandomContacts();
+    const wishmailEnabledInt = Math.random() > 0.5 ? 1 : 0;
     const createdAt = new Date().toISOString();
 
-    insertUser.run(id, username, hash, salt, 'user', genders, orientations, roles, createdAt);
+    insertUser.run(id, username, hash, salt, 'user', genders, orientations, roles, JSON.stringify(contacts), wishmailEnabledInt, createdAt);
     
     // Keep in memory to assign wishes later
-    users.push({ id, genders, orientations, roles }); 
+    users.push({ id, genders, orientations, roles, contacts, wishmailEnabled: wishmailEnabledInt === 1 }); 
   }
 
   const insertWish = db.prepare(`
@@ -113,8 +128,9 @@ export function generateDemoData() {
       id, user_id, content, 
       creator_genders, creator_orientations, creator_roles, 
       desired_genders, desired_orientations, desired_roles, 
+      contacts, wishmail_enabled,
       created_at, updated_at, flagged
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   // 3. Distribute 100 wishes randomly across the 50 users
@@ -132,6 +148,19 @@ export function generateDemoData() {
     const timeOffset = Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000);
     const date = new Date(Date.now() - timeOffset).toISOString();
 
+    let wishContacts = [...randomUser.contacts];
+    let wishWishmail = randomUser.wishmailEnabled;
+    
+    // random override for wishmail
+    if (Math.random() > 0.8) wishWishmail = !wishWishmail;
+    
+    // random override for contacts (remove one or add one)
+    if (Math.random() > 0.7 && wishContacts.length > 0) {
+      wishContacts.pop();
+    } else if (Math.random() > 0.7) {
+      wishContacts.push({ type: 'FetLife', value: `wish_specific_${Math.floor(Math.random()*1000)}` });
+    }
+
     insertWish.run(
       id,
       randomUser.id,
@@ -142,6 +171,8 @@ export function generateDemoData() {
       desiredGenders,            
       desiredOrientations,
       desiredRoles,
+      JSON.stringify(wishContacts),
+      wishWishmail ? 1 : 0,
       date,                      
       date,                      
       0                          

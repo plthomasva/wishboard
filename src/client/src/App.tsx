@@ -7,6 +7,7 @@ import DisplayPage from './pages/DisplayPage';
 import AdminPage from './pages/AdminPage';
 import AccountPage from './AccountPage';
 import ManageWishPage from './pages/ManageWishPage';
+import WishmailDashboard from './pages/WishmailDashboard';
 import AboutPage from './pages/AboutPage';
 import WiFiQrCode from './components/WiFiQrCode';
 
@@ -20,7 +21,7 @@ const pages = [
   { id: 'admin', label: 'Admin' }
 ];
 
-type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin' | 'manage-wish';
+type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin' | 'manage-wish' | 'wishmail-dashboard';
 
 function AppContent() {
   const getHashPage = (): PageId => {
@@ -28,7 +29,11 @@ function AppContent() {
       return 'home';
     }
     const hashPart = window.location.hash.split('?')[0].replace(/^#/, '');
-    return (pages.find((item) => item.id === hashPart)?.id as PageId) ?? 'home';
+    const validPages = ['home', 'enter', 'search', 'display', 'account', 'about', 'admin', 'manage-wish', 'wishmail-dashboard'];
+    if (validPages.includes(hashPart)) {
+      return hashPart as PageId;
+    }
+    return 'home';
   };
 
   const checkIsKioskParam = (): boolean => {
@@ -60,15 +65,18 @@ function AppContent() {
   const { user, login, logout, setTokenExternally } = useAuth();
 
   useEffect(() => {
-    // Check for auto-login token in the URL
-    const searchParams = new URLSearchParams(window.location.search);
-    const token = searchParams.get('token');
-    if (token) {
-      setTokenExternally(token);
-      searchParams.delete('token');
-      const searchStr = searchParams.toString();
-      const newUrl = window.location.pathname + (searchStr ? `?${searchStr}` : '') + window.location.hash;
-      window.history.replaceState({}, '', newUrl);
+    // Check for auto-login token in the URL hash
+    const hashIndex = window.location.hash.indexOf('?');
+    if (hashIndex !== -1) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(hashIndex));
+      const token = hashParams.get('token');
+      if (token) {
+        setTokenExternally(token);
+        hashParams.delete('token');
+        const hashStr = hashParams.toString();
+        const baseHash = window.location.hash.substring(0, hashIndex);
+        window.location.hash = baseHash + (hashStr ? `?${hashStr}` : '');
+      }
     }
 
     const handleHashChange = () => {
@@ -198,6 +206,7 @@ function AppContent() {
           {page === 'account' && <AccountPage />}
           {page === 'about' && <AboutPage />}
           {page === 'manage-wish' && <ManageWishPage />}
+          {page === 'wishmail-dashboard' && <WishmailDashboard />}
           {page === 'admin' && <AdminPage />}
         </main>
       )}

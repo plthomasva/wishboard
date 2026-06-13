@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { generatePassphrase } from './passphrase.js';
 import InfoToggle from './components/InfoToggle';
 import AttributeInput from './components/AttributeInput';
+import WishCard from './components/WishCard';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from './constants';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -17,10 +18,11 @@ export default function AccountPage() {
   const [editIdentityGenders, setEditIdentityGenders] = useState('');
   const [editIdentityOrientations, setEditIdentityOrientations] = useState('');
   const [editIdentityRoles, setEditIdentityRoles] = useState('');
+  const [contacts, setContacts] = useState<Array<{ type: string; value: string }>>([]);
+  const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number }>>([]);
-  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[] }>>([]);
   const [existingUsername, setExistingUsername] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
 
@@ -88,7 +90,6 @@ export default function AccountPage() {
     }
     const data = await response.json();
     setWishes(data);
-    setEdits(data.reduce((acc, wish) => ({ ...acc, [wish.id]: wish.content }), {}));
   };
 
   useEffect(() => {
@@ -102,6 +103,8 @@ export default function AccountPage() {
     setEditIdentityGenders(user.identity_genders.join(', '));
     setEditIdentityOrientations(user.identity_orientations.join(', '));
     setEditIdentityRoles(user.identity_roles.join(', '));
+    setContacts(user.contacts || []);
+    setWishmailEnabled(user.wishmail_enabled || false);
   }, [user]);
 
   const saveProfile = async () => {
@@ -116,7 +119,9 @@ export default function AccountPage() {
       body: JSON.stringify({
         identity_genders: editIdentityGenders,
         identity_orientations: editIdentityOrientations,
-        identity_roles: editIdentityRoles
+        identity_roles: editIdentityRoles,
+        contacts,
+        wishmail_enabled: wishmailEnabled
       })
     });
 
@@ -175,25 +180,6 @@ export default function AccountPage() {
     setIdentityRoles('');
   };
 
-  const updateWish = async (id: string) => {
-    setError(null);
-    setMessage(null);
-    const response = await fetch(`/api/wishes/${id}/manage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ content: edits[id] })
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.error || 'Unable to update wish.');
-      return;
-    }
-    setMessage('Wish updated successfully.');
-    loadWishes();
-  };
 
   const deleteWish = async (id: string) => {
     setError(null);
@@ -383,6 +369,57 @@ export default function AccountPage() {
             suggestions={SUGGESTED_ROLES}
           />
         </label>
+        
+        <div style={{ marginTop: '24px', marginBottom: '16px' }}>
+          <h2 style={{ margin: 0 }}>Default Contact Methods</h2>
+          <p style={{ marginTop: '8px', fontSize: '0.9rem', color: '#556275' }}>These will be automatically added to any new wishes you create.</p>
+        </div>
+        
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'normal', marginBottom: '16px' }}>
+          <input 
+            type="checkbox" 
+            checked={wishmailEnabled} 
+            onChange={(e) => setWishmailEnabled(e.target.checked)} 
+            style={{ width: 'auto', minHeight: 'auto' }}
+          />
+          Enable Wishmail by default
+        </label>
+
+        <div style={{ marginBottom: '24px' }}>
+          {contacts.map((contact, index) => (
+            <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+              <select 
+                value={contact.type} 
+                onChange={(e) => {
+                  const newContacts = [...contacts];
+                  newContacts[index] = { ...newContacts[index], type: e.target.value };
+                  setContacts(newContacts);
+                }}
+                style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d7dee5', background: 'white' }}
+              >
+                <option value="FetLife">FetLife</option>
+                <option value="Phone">Phone</option>
+                <option value="Email">Email</option>
+              </select>
+              <input 
+                type="text" 
+                value={contact.value} 
+                onChange={(e) => {
+                  const newContacts = [...contacts];
+                  newContacts[index] = { ...newContacts[index], value: e.target.value };
+                  setContacts(newContacts);
+                }} 
+                placeholder="Username, number, etc."
+                style={{ minHeight: '36px', padding: '8px' }}
+              />
+              <button type="button" onClick={() => setContacts(contacts.filter((_, i) => i !== index))} style={{ minHeight: '36px', padding: '0 12px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>X</button>
+            </div>
+          ))}
+          <button type="button" onClick={() => setContacts([...contacts, { type: 'FetLife', value: '' }])} className="secondary-button" style={{ minHeight: '36px', padding: '6px 12px', fontSize: '0.9rem' }}>
+            + Add Contact Method
+          </button>
+        </div>
+
         <button className="secondary-button" onClick={saveProfile} type="button">
           Save attributes
         </button>
@@ -396,19 +433,20 @@ export default function AccountPage() {
       ) : (
         <div className="wish-grid">
           {wishes.map((wish) => (
-            <article className="wish-card" key={wish.id}>
-              <textarea
-                rows={4}
-                value={edits[wish.id] ?? wish.content}
-                onChange={(event) => setEdits({ ...edits, [wish.id]: event.target.value })}
-              />
-              <div className="wish-actions">
-                <button onClick={() => updateWish(wish.id)}>Save</button>
+            <div key={wish.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <WishCard wish={wish} showFlag={false} />
+              <div className="wish-actions" style={{ marginTop: 0, justifyContent: 'flex-start', gap: '12px' }}>
+                <a href={`#wishmail-dashboard?id=${wish.id}`} className="button" style={{ textDecoration: 'none', background: '#3b82f6', color: 'white', padding: '10px 16px', borderRadius: '14px', fontWeight: 'bold' }}>
+                  View Wishmail
+                </a>
+                <a href={`#manage-wish?id=${wish.id}`} className="button" style={{ textDecoration: 'none', background: '#1a73e8', color: 'white', padding: '10px 16px', borderRadius: '14px', fontWeight: 'bold' }}>
+                  Edit Wish
+                </a>
                 <button className="secondary-button" onClick={() => deleteWish(wish.id)}>
                   Delete
                 </button>
               </div>
-            </article>
+            </div>
           ))}
         </div>
       )}
@@ -454,13 +492,13 @@ export default function AccountPage() {
             </div>
             <div style={{ background: 'white', padding: '16px', display: 'inline-block', borderRadius: '12px' }}>
               <QRCodeSVG 
-                value={`${window.location.origin}${window.location.pathname}?token=${token}#account`} 
+                value={`${window.location.origin}${window.location.pathname}#account?token=${token}`} 
                 size={160} 
                 includeMargin={false}
               />
             </div>
             <p style={{ marginTop: '16px' }}>
-              <a href={`?token=${token}#account`}>
+              <a href={`#account?token=${token}`}>
                 Bookmark this auto-login link
               </a>
             </p>

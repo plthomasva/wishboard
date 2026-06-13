@@ -6,6 +6,10 @@ import React from 'react';
 // Setup fetch mock
 global.fetch = vi.fn();
 
+vi.mock('../AuthContext', () => ({
+  useAuth: () => ({ token: null })
+}));
+
 describe('ManageWishPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -67,7 +71,7 @@ describe('ManageWishPage', () => {
       json: async () => ({ success: true })
     } as any);
 
-    const textarea = screen.getByRole('textbox', { name: /Wish content/i });
+    const textarea = screen.getByRole('textbox', { name: /What is your wish\?/i });
     fireEvent.change(textarea, { target: { value: 'New content' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
@@ -75,7 +79,7 @@ describe('ManageWishPage', () => {
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith('/api/wishes/w3/manage', expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ secret: 'sec', content: 'New content' })
+        body: JSON.stringify({ secret: 'sec', content: 'New content', contacts: [], wishmail_enabled: false, action: 'update' })
       }));
       expect(screen.getByText('Wish updated successfully!')).toBeInTheDocument();
     });

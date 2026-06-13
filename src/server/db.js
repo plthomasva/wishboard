@@ -50,6 +50,20 @@ db.exec(`
     flagged INTEGER DEFAULT 0,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
   );
+
+  CREATE TABLE IF NOT EXISTS wishmails (
+    id TEXT PRIMARY KEY,
+    wish_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    return_contacts TEXT,
+    sender_id TEXT,
+    parent_mail_id TEXT,
+    read INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(wish_id) REFERENCES wishes(id) ON DELETE CASCADE,
+    FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY(parent_mail_id) REFERENCES wishmails(id) ON DELETE SET NULL
+  );
 `);
 
 const ensureColumn = (table, column, type) => {
@@ -62,12 +76,16 @@ const ensureColumn = (table, column, type) => {
 ensureColumn('users', 'identity_genders', 'TEXT');
 ensureColumn('users', 'identity_orientations', 'TEXT');
 ensureColumn('users', 'identity_roles', 'TEXT');
+ensureColumn('users', 'contacts', 'TEXT');
+ensureColumn('users', 'wishmail_enabled', 'INTEGER DEFAULT 0');
 ensureColumn('wishes', 'creator_genders', 'TEXT');
 ensureColumn('wishes', 'creator_orientations', 'TEXT');
 ensureColumn('wishes', 'creator_roles', 'TEXT');
 ensureColumn('wishes', 'desired_genders', 'TEXT');
 ensureColumn('wishes', 'desired_orientations', 'TEXT');
 ensureColumn('wishes', 'desired_roles', 'TEXT');
+ensureColumn('wishes', 'contacts', 'TEXT');
+ensureColumn('wishes', 'wishmail_enabled', 'INTEGER DEFAULT 0');
 
 const defaultAdminUsername = process.env.WISHBOARD_ADMIN_USERNAME || 'admin';
 const defaultAdminSecret = process.env.WISHBOARD_ADMIN_SECRET || 'admin-board';

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import WishCard from '../components/WishCard';
 import useFlagWish from '../hooks/useFlagWish';
+import SendWishmailModal from '../components/SendWishmailModal';
 
 interface Wish {
   id: string;
@@ -18,6 +19,7 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [capacity, setCapacity] = useState<number>(12);
+  const [mailWishId, setMailWishId] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -94,9 +96,14 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
             cardClass="display-card"
             showFlag={!isKiosk}
             onFlag={handleFlag}
+            onSendMail={setMailWishId}
           />
         ))}
       </div>
+
+      {mailWishId && (
+        <SendWishmailModal wishId={mailWishId} onClose={() => setMailWishId(null)} />
+      )}
     </section>
   );
 }

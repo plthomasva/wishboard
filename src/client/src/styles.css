@@ -248,7 +248,7 @@ button:hover {
   background-size: 30px 30px;
   background-position: 0 0, 15px 15px;
   border-radius: 12px;
-  padding: 32px;
+  padding: 16px;
   box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 1px solid #bcaaa4;
 }
@@ -277,7 +277,7 @@ button:hover {
   background-size: 100% 100%, 100% 24px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* Thumbtack / Pushpin */
@@ -377,8 +377,8 @@ button:hover {
 
 .wish-text {
   font-family: 'Kalam', 'Architects Daughter', 'Georgia', serif;
-  font-size: 1.15rem;
-  line-height: 24px;
+  font-size: 1em;
+  line-height: 1.4;
   color: #2c3e50;
   margin: 18px 0 0 0;
   word-wrap: break-word;
@@ -501,26 +501,26 @@ button:hover {
 }
 
 .sticker-heart {
-  width: 24px;
-  height: 24px;
+  width: 1.35em;
+  height: 1.35em;
   mask: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 37.5C20 37.5 5 26 5 14C5 8.5 9 5 14 5C17.5 5 20 7.5 20 10C20 7.5 22.5 5 26 5C31 5 35 8.5 35 14C35 26 20 37.5 20 37.5Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;
   -webkit-mask: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 37.5C20 37.5 5 26 5 14C5 8.5 9 5 14 5C17.5 5 20 7.5 20 10C20 7.5 22.5 5 26 5C31 5 35 8.5 35 14C35 26 20 37.5 20 37.5Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 
 .sticker-flag {
-  width: 28px;
-  height: 18px;
-  border-radius: 4px;
+  width: 1.6em;
+  height: 1em;
+  border-radius: 0.25em;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .sticker-icon {
-  width: 26px;
-  height: 26px;
+  width: 1.5em;
+  height: 1.5em;
   border-radius: 50%;
   background: white;
   color: #1a73e8;
-  border: 2px solid #e4e9f0;
+  border: 0.15em solid #e4e9f0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -528,8 +528,8 @@ button:hover {
 }
 
 .sticker-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 0.9em;
+  height: 0.9em;
 }
 
 .female-icon {
@@ -583,19 +583,6 @@ button:hover {
     grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
     gap: 40px;
   }
-  .display-card .wish-text {
-    font-size: 2.2rem;
-    line-height: 48px;
-  }
-  .display-card {
-    background: 
-      /* Red line at top margin */
-      linear-gradient(to bottom, transparent 60px, rgba(239, 83, 80, 0.3) 60px, rgba(239, 83, 80, 0.3) 62px, transparent 62px),
-      /* Blue ruled lines */
-      linear-gradient(to bottom, transparent 47px, rgba(33, 150, 243, 0.08) 47px, rgba(33, 150, 243, 0.08) 48px),
-      #fffdf3;
-    background-size: 100% 100%, 100% 48px;
-  }
   .display-card .wish-id {
     font-size: 1.2rem;
     top: 18px;
@@ -611,32 +598,11 @@ button:hover {
     height: 24px;
   }
   .display-card .identity-stickers {
-    gap: 20px;
-    margin-top: 24px;
+    gap: 0.8em;
+    margin-top: 1.2em;
     float: right;
-    margin-left: 20px;
-    margin-bottom: 12px;
-  }
-  .sticker-heart {
-    width: 64px;
-    height: 64px;
-  }
-  .sticker-flag {
-    width: 72px;
-    height: 48px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  }
-  .sticker-icon {
-    width: 64px;
-    height: 64px;
-    border: 4px solid #e4e9f0;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  }
-  .sticker-icon svg {
-    width: 40px;
-    height: 40px;
-    stroke-width: 3;
+    margin-left: 1em;
+    margin-bottom: 0.6em;
   }
 }
 
@@ -822,4 +788,94 @@ button:hover {
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Wish Contacts & Mail Styles */
+.wish-card-inner-scale {
+  /* This container handles the scaling for all content inside the card */
+  width: 100%;
+  height: max-content;
+  display: block;
+}
+
+.wish-card.text-overflow-hint .wish-text,
+.wish-card.text-overflow-hint .wish-contacts-list {
+  color: #b91717; /* Turn dark red if it overflows at min font size */
+}
+
+/* Force override red text in display mode regardless of overflow */
+.display-card .wish-text,
+.display-card .wish-contacts-list {
+  color: #2c3e50 !important;
+}
+
+.send-mail-icon-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #1a73e8;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease;
+  z-index: 10;
+}
+
+.send-mail-icon-btn:hover {
+  transform: scale(1.1);
+  color: #1557b0;
+  background: rgba(26, 115, 232, 0.1);
+}
+
+.wish-contacts-list {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: Inter, sans-serif;
+  font-size: 0.8em; /* Relative to scaled root */
+  color: #556275;
+  border-top: 1px dashed rgba(0,0,0,0.1);
+  padding-top: 8px;
+}
+
+.wish-contact-item {
+  background: rgba(255, 255, 255, 0.5);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+
+
+/* Wish Editor Layout */
+.wish-editor-layout {
+  display: grid;
+  gap: 32px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+@media (max-width: 800px) {
+  .wish-editor-layout {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+}
+
+@media (min-width: 801px) {
+  .wish-editor-layout {
+    grid-template-columns: 1fr 400px;
+  }
+}
+
+.overflowing-textarea {
+  border-color: #b91717 !important;
+  background-color: #fdf5f5 !important;
+  transition: all 0.2s ease;
 }

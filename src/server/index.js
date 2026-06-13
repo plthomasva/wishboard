@@ -6,6 +6,7 @@ import { rateLimit } from 'express-rate-limit';
 import wishesRouter from './routes/wishes.js';
 import adminRouter from './routes/admin.js';
 import usersRouter from './routes/users.js';
+import wishmailRouter from './routes/wishmail.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,7 @@ app.use('/api', limiter);
 
 app.use('/api/users', usersRouter);
 app.use('/api/wishes', wishesRouter);
+app.use('/api/wishes/:id/mail', wishmailRouter);
 app.use('/api/admin', adminRouter);
 
 const distPath = path.resolve(__dirname, '../../dist');
