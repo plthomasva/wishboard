@@ -46,7 +46,7 @@ router.post('/', (req, res) => {
 // Get wishmails for a wish
 router.get('/', (req, res) => {
   const { id: wish_id } = req.params;
-  const secret = req.query.secret || req.headers['x-wish-secret'];
+  const secret = req.headers['x-wish-secret'];
   const user = getRequestUser(req);
 
   const wish = db.prepare('SELECT user_id, secret_hash FROM wishes WHERE id = ?').get(wish_id);
@@ -123,7 +123,7 @@ router.post('/:mailId/read', (req, res) => {
 // Delete a wishmail
 router.delete('/:mailId', (req, res) => {
   const { id: wish_id, mailId } = req.params;
-  const secret = req.query.secret || req.headers['x-wish-secret'];
+  const secret = req.headers['x-wish-secret'];
   const user = getRequestUser(req);
 
   const wish = db.prepare('SELECT user_id, secret_hash FROM wishes WHERE id = ?').get(wish_id);
