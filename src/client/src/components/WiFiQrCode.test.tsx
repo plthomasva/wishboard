@@ -61,7 +61,11 @@ describe('WiFiQrCode', () => {
     
     // Verify the URL hint is present
     const domain = import.meta.env.VITE_WISHBOARD_DOMAIN || import.meta.env.VITE_WISHBOARD_AP_IP || '10.42.0.1:3000';
-    const url = domain.includes('painless-computing.com') ? `https://${domain}` : `http://${domain}`;
+    const parsed = new URL(domain.includes('://') ? domain : `http://${domain}`);
+    const hostname = parsed.hostname.toLowerCase();
+    const isPainlessDomain =
+      hostname === 'painless-computing.com' || hostname.endsWith('.painless-computing.com');
+    const url = isPainlessDomain ? `https://${domain}` : `http://${domain}`;
     expect(screen.getByText(url)).toBeInTheDocument();
   });
 
