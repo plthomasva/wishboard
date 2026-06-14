@@ -12,11 +12,21 @@ if (typeof globalThis !== 'undefined' && typeof globalThis.crypto?.getRandomValu
 const randomIndex = (max) => {
   if (max <= 1) return 0;
 
+  // 0x100000000 is 4294967296 (max value of 32-bit uint + 1)
+  const limit = 4294967296 - (4294967296 % max);
+  const bucketSize = Math.floor(limit / max);
+
   const typedArray = new Uint32Array(1);
-  cryptoProvider.getRandomValues(typedArray);
-  
-  const secureRandomFloat = typedArray[0] / 0x100000000;
-  return Math.floor(secureRandomFloat * max);
+
+  while (true) {
+    cryptoProvider.getRandomValues(typedArray);
+    const randomUint32 = typedArray[0];
+
+    // If the number falls into a complete bucket, safely divide to map to index
+    if (randomUint32 < limit) {
+      return Math.floor(randomUint32 / bucketSize);
+    }
+  }
 };
 const choose = (items) => items[randomIndex(items.length)];
 
