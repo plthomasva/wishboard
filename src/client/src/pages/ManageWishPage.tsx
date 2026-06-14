@@ -27,6 +27,10 @@ export default function ManageWishPage() {
       }
 
       if (wishId) {
+        if (!/^[a-zA-Z0-9-]+$/.test(wishId)) {
+          setError('Invalid wish ID format.');
+          return;
+        }
         fetch(`/api/wishes/${encodeURIComponent(wishId)}`)
           .then((res) => {
             if (res.ok) return res.json();

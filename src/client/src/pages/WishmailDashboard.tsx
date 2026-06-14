@@ -25,6 +25,10 @@ export default function WishmailDashboard() {
       const wSecret = params.get('secret');
 
       if (wId) {
+        if (!/^[a-zA-Z0-9-]+$/.test(wId)) {
+          setError('Invalid wish ID format.');
+          return;
+        }
         setWishId(wId);
         setSecret(wSecret);
 
