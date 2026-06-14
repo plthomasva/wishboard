@@ -184,7 +184,7 @@ export default function AccountPage() {
   const deleteWish = async (id: string) => {
     setError(null);
     setMessage(null);
-    const response = await fetch(`/api/wishes/${id}/manage`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(id)}/manage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -210,7 +210,7 @@ export default function AccountPage() {
       return;
     }
 
-    const response = await fetch(`/api/wishes/${claimId.trim()}/claim`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(claimId.trim())}/claim`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

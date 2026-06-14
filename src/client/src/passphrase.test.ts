@@ -33,14 +33,18 @@ describe('generatePassphrase', () => {
     // @ts-ignore
     delete globalThis.crypto;
     
-    const originalProcess = process;
-    // @ts-ignore
-    global.process = undefined;
+    const originalNodeVersion = process.versions?.node;
+    if (process.versions) {
+      // @ts-ignore
+      delete process.versions.node;
+    }
 
     vi.resetModules();
     await expect(import('./passphrase.js?error-fallback')).rejects.toThrow('No secure crypto available in this environment.');
     
     globalThis.crypto = originalCrypto;
-    global.process = originalProcess;
+    if (process.versions && originalNodeVersion) {
+      process.versions.node = originalNodeVersion;
+    }
   });
 });

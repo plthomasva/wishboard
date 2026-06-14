@@ -4,7 +4,7 @@ export default function useFlagWish(onSuccess: (id: string) => void) {
       return;
     }
     try {
-      const response = await fetch(`/api/wishes/${id}/flag`, { method: 'POST' });
+      const response = await fetch(`/api/wishes/${encodeURIComponent(id)}/flag`, { method: 'POST' });
       if (!response.ok) {
         throw new Error('Failed to flag the wish.');
       }

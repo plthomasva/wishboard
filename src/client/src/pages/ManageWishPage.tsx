@@ -27,7 +27,7 @@ export default function ManageWishPage() {
       }
 
       if (wishId) {
-        fetch(`/api/wishes/${wishId}`)
+        fetch(`/api/wishes/${encodeURIComponent(wishId)}`)
           .then((res) => {
             if (res.ok) return res.json();
             throw new Error('Wish not found');
@@ -60,7 +60,7 @@ export default function ManageWishPage() {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`/api/wishes/${wish.id}/manage`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wish.id)}/manage`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ secret, content, contacts, wishmail_enabled: wishmailEnabled, action: 'update' })
@@ -86,7 +86,7 @@ export default function ManageWishPage() {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`/api/wishes/${wish.id}/manage`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wish.id)}/manage`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ secret, action: 'delete' })

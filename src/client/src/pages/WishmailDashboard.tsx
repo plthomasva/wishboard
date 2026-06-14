@@ -32,7 +32,7 @@ export default function WishmailDashboard() {
         if (token) headers.Authorization = `Bearer ${token}`;
         if (wSecret) headers['x-wish-secret'] = wSecret;
 
-        fetch(`/api/wishes/${wId}/mail`, { headers })
+        fetch(`/api/wishes/${encodeURIComponent(wId)}/mail`, { headers })
           .then((res) => {
             if (!res.ok) throw new Error('Not authorized to view wishmail for this wish, or wish not found.');
             return res.json();
@@ -53,7 +53,7 @@ export default function WishmailDashboard() {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const response = await fetch(`/api/wishes/${wishId}/mail/${mailId}/read`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wishId)}/mail/${encodeURIComponent(mailId)}/read`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ secret: secret || undefined })
@@ -72,7 +72,7 @@ export default function WishmailDashboard() {
     if (token) headers.Authorization = `Bearer ${token}`;
     if (secret) headers['x-wish-secret'] = secret;
 
-    const response = await fetch(`/api/wishes/${wishId}/mail/${mailId}`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wishId)}/mail/${encodeURIComponent(mailId)}`, {
       method: 'DELETE',
       headers
     });

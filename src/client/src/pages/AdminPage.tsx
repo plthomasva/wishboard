@@ -34,7 +34,7 @@ export default function AdminPage() {
   const removeWish = async (id: string) => {
     setMessage(null);
     setError(null);
-    const response = await fetch(`/api/admin/wishes/${id}/remove`, { method: 'POST', headers: authHeader });
+    const response = await fetch(`/api/admin/wishes/${encodeURIComponent(id)}/remove`, { method: 'POST', headers: authHeader });
     if (!response.ok) {
       setError('Failed to remove wish.');
       return;
@@ -46,7 +46,7 @@ export default function AdminPage() {
   const clearFlag = async (id: string) => {
     setMessage(null);
     setError(null);
-    const response = await fetch(`/api/admin/wishes/${id}/clear-flag`, { method: 'POST', headers: authHeader });
+    const response = await fetch(`/api/admin/wishes/${encodeURIComponent(id)}/clear-flag`, { method: 'POST', headers: authHeader });
     if (!response.ok) {
       setError('Failed to clear flag.');
       return;
@@ -73,7 +73,7 @@ export default function AdminPage() {
   const updateRole = async (id: string, role: string) => {
     setMessage(null);
     setError(null);
-    const response = await fetch(`/api/admin/users/${id}/role`, {
+    const response = await fetch(`/api/admin/users/${encodeURIComponent(id)}/role`, {
       method: 'POST',
       headers: { ...authHeader, 'Content-Type': 'application/json' },
       body: JSON.stringify({ role })
@@ -92,7 +92,7 @@ export default function AdminPage() {
     }
     setMessage(null);
     setError(null);
-    const response = await fetch(`/api/admin/users/${id}/reset-password`, {
+    const response = await fetch(`/api/admin/users/${encodeURIComponent(id)}/reset-password`, {
       method: 'POST',
       headers: authHeader
     });
@@ -107,7 +107,7 @@ export default function AdminPage() {
   const deleteUser = async (id: string) => {
     setMessage(null);
     setError(null);
-    const response = await fetch(`/api/admin/users/${id}/delete`, { method: 'POST', headers: authHeader });
+    const response = await fetch(`/api/admin/users/${encodeURIComponent(id)}/delete`, { method: 'POST', headers: authHeader });
     if (!response.ok) {
       setError('Failed to delete user.');
       return;
