@@ -37,7 +37,7 @@ describe('App Component', () => {
       login: loginMock,
       logout: vi.fn()
     });
-    window.location.hash = '#home';
+    globalThis.window.location.hash = '#home';
   });
 
   it('renders navbar and navigates to different pages', async () => {
@@ -73,7 +73,7 @@ describe('App Component', () => {
   });
 
   it('enters kiosk mode automatically when ?kiosk=true parameter is present in hash', async () => {
-    window.location.hash = '#display?kiosk=true';
+    globalThis.window.location.hash = '#display?kiosk=true';
     render(<App />);
 
     expect(screen.getByText('DisplayPage Mock')).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('App Component', () => {
   });
 
   it('enters kiosk mode automatically when ?kiosk=true parameter is present in search query', async () => {
-    window.history.replaceState({}, '', '?kiosk=true#display');
+    globalThis.window.history.replaceState({}, '', '?kiosk=true#display');
 
     render(<App />);
 
@@ -91,7 +91,7 @@ describe('App Component', () => {
     expect(screen.queryByText('Big Screen')).not.toBeInTheDocument();
 
     // Clean up
-    window.history.replaceState({}, '', '/');
+    globalThis.window.history.replaceState({}, '', '/');
   });
 
   it('shows credentials modal on Escape key press in kiosk mode and allows exit for admin user', async () => {

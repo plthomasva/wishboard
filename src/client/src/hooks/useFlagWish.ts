@@ -1,6 +1,6 @@
 export default function useFlagWish(onSuccess: (id: string) => void) {
   return async (id: string) => {
-    if (!window.confirm('Are you sure you want to flag this wish as inappropriate?')) {
+    if (!globalThis.window.confirm('Are you sure you want to flag this wish as inappropriate?')) {
       return;
     }
     try {
@@ -10,7 +10,7 @@ export default function useFlagWish(onSuccess: (id: string) => void) {
       }
       onSuccess(id);
     } catch (err) {
-      window.alert((err as Error).message);
+      globalThis.window.alert((err as Error).message);
     }
   };
 }

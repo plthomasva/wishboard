@@ -29,14 +29,14 @@ describe('AuthContext', () => {
     localStorage.clear();
     
     // Dynamic fetch mock router to handle background calls and login/register cleanly
-    global.fetch = vi.fn().mockImplementation(async (url, options) => {
+    globalThis.fetch = vi.fn().mockImplementation(async (url, options) => {
       if (url === '/api/users/me') {
         const authHeader = options?.headers?.Authorization || '';
         const token = authHeader.replace('Bearer ', '');
         if (token && token !== 'invalid-token' && token !== 'no-token') {
           let username = 'mockuser';
           let role = 'user';
-          let identity_genders = [];
+          let identity_genders: string[] = [];
           if (token === 'new-token') {
             username = 'testuser';
             role = 'admin';
@@ -262,4 +262,25 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('user').textContent).toBe('no-user');
     expect(localStorage.getItem('wishboard-auth-token')).toBeNull();
   });
+  it('sets token externally', async () => {
+    let contextValue: any;
+    const GrabberComponent = () => {
+      contextValue = useAuth();
+      return null;
+    };
+
+    render(
+      <AuthProvider>
+        <GrabberComponent />
+      </AuthProvider>
+    );
+
+    await act(async () => {
+      contextValue.setTokenExternally('external-token');
+    });
+
+    expect(contextValue.token).toBe('external-token');
+    expect(localStorage.getItem('wishboard-auth-token')).toBe('external-token');
+  });
 });
+

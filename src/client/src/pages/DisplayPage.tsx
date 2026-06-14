@@ -40,8 +40,8 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
     };
 
     loadWishes();
-    const handle = window.setInterval(loadWishes, 12000);
-    return () => window.clearInterval(handle);
+    const handle = globalThis.window.setInterval(loadWishes, 12000);
+    return () => globalThis.window.clearInterval(handle);
   }, [capacity, isKiosk]);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
       const height = gridRef.current.clientHeight;
       
       // Determine card min-width and gap based on screen size (matches styles.css media queries)
-      const isLargeScreen = window.innerWidth >= 1600;
+      const isLargeScreen = globalThis.window.innerWidth >= 1600;
       const gap = isLargeScreen ? 40 : 24;
       const cardWidth = isLargeScreen ? 500 : 240;
       

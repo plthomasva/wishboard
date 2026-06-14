@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+// @ts-ignore
+// @ts-ignore
 import { generatePassphrase } from './passphrase.js';
 
 describe('generatePassphrase', () => {
@@ -7,7 +9,7 @@ describe('generatePassphrase', () => {
     expect(passphrase).toBeTypeOf('string');
     const parts = passphrase.split('-');
     expect(parts).toHaveLength(3);
-    expect(parts.every((segment) => segment.trim().length > 0)).toBe(true);
+    expect(parts.every((segment: string) => segment.trim().length > 0)).toBe(true);
   });
 
   it('always returns a string with two hyphens', () => {
@@ -19,9 +21,10 @@ describe('generatePassphrase', () => {
   it('uses node crypto if globalThis.crypto is undefined', async () => {
     const originalCrypto = globalThis.crypto;
     // @ts-ignore
-    delete globalThis.crypto;
+    delete (globalThis as any).crypto;
     
     vi.resetModules();
+    // @ts-ignore
     const { generatePassphrase } = await import('./passphrase.js?node-fallback');
     expect(generatePassphrase()).toBeTypeOf('string');
     
@@ -31,20 +34,53 @@ describe('generatePassphrase', () => {
   it('throws an error if no crypto is available', async () => {
     const originalCrypto = globalThis.crypto;
     // @ts-ignore
-    delete globalThis.crypto;
+    delete (globalThis as any).crypto;
     
     const originalNodeVersion = process.versions?.node;
     if (process.versions) {
       // @ts-ignore
-      delete process.versions.node;
+      delete (process.versions as any).node;
     }
 
     vi.resetModules();
+    // @ts-ignore
     await expect(import('./passphrase.js?error-fallback')).rejects.toThrow('No secure crypto available in this environment.');
     
     globalThis.crypto = originalCrypto;
     if (process.versions && originalNodeVersion) {
       process.versions.node = originalNodeVersion;
     }
+  });
+});
+
+describe('randomIndex', () => {
+  it('returns 0 if max is <= 1', async () => {
+    const { randomIndex } = await import('./passphrase.js') // @ts-ignore;
+    expect(randomIndex(1)).toBe(0);
+    expect(randomIndex(0)).toBe(0);
+    expect(randomIndex(-5)).toBe(0);
+  });
+
+  it('retries when random value is >= limit', async () => {
+    let callCount = 0;
+    vi.stubGlobal('crypto', {
+      getRandomValues: (array: any) => {
+        if (callCount === 0) {
+          array[0] = 4294967295; // Forces retry for max=3
+        } else {
+          array[0] = 0; // Valid
+        }
+        callCount++;
+        return array;
+      }
+    });
+
+    // @ts-ignore
+    const { randomIndex } = await import('./passphrase.js?test=retry');
+
+    expect(randomIndex(3)).toBe(0);
+    expect(callCount).toBe(2);
+
+    vi.unstubAllGlobals();
   });
 });

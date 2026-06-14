@@ -37,3 +37,5 @@ export const generatePassphrase = () => {
 
   return `${choose(adjectives)}-${choose(nouns)}-${choose(colors)}`;
 };
+
+export { randomIndex };

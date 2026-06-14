@@ -9,37 +9,37 @@ class ResizeObserverMock {
   disconnect() {}
 }
 
-const realSetInterval = global.setInterval;
-const realClearInterval = global.clearInterval;
+const realSetInterval = globalThis.setInterval;
+const realClearInterval = globalThis.clearInterval;
 
 describe('DisplayPage', () => {
   beforeEach(() => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
         { id: 'wish-1', content: 'Big screen wish', creator_genders: ['man'], creator_orientations: ['straight'] }
       ]
     }) as any;
-    global.setInterval = vi.fn(() => 1) as any;
-    global.clearInterval = vi.fn() as any;
+    globalThis.setInterval = vi.fn(() => 1) as any;
+    globalThis.clearInterval = vi.fn() as any;
     vi.stubGlobal('ResizeObserver', ResizeObserverMock);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    global.setInterval = realSetInterval;
-    global.clearInterval = realClearInterval;
+    globalThis.setInterval = realSetInterval;
+    globalThis.clearInterval = realClearInterval;
   });
 
   it('loads and renders wishes from the random endpoint with default limit=12 when not in kiosk mode', async () => {
     render(<DisplayPage isKiosk={false} />);
 
     await waitFor(() => expect(screen.getByText('Big screen wish')).toBeInTheDocument());
-    expect(global.fetch).toHaveBeenCalledWith('/api/wishes/random?limit=12');
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes/random?limit=12');
   });
 
   it('displays an error message when the API fetch fails', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error('Network failure')) as any;
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network failure')) as any;
     
     render(<DisplayPage />);
     
@@ -47,7 +47,7 @@ describe('DisplayPage', () => {
   });
 
   it('displays a generic error if the response is not ok', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false
     }) as any;
     
@@ -87,7 +87,7 @@ describe('DisplayPage', () => {
 
     // We should expect a fetch with limit=9 due to the 3x3 grid
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/wishes/random?limit=9');
+      expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes/random?limit=9');
     });
 
     // Cleanup prototype overrides
@@ -98,7 +98,7 @@ describe('DisplayPage', () => {
 
   it('flags a wish and removes it from the display list when confirmed', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    global.fetch = vi.fn().mockImplementation((url, init) => {
+    globalThis.fetch = vi.fn().mockImplementation((url, init) => {
       if (url === '/api/wishes/random?limit=12') {
         return Promise.resolve({
           ok: true,
@@ -123,10 +123,10 @@ describe('DisplayPage', () => {
     fireEvent.click(flagBtn);
 
     // Verify confirm was called
-    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to flag this wish as inappropriate?');
+    expect(globalThis.window.confirm).toHaveBeenCalledWith('Are you sure you want to flag this wish as inappropriate?');
 
     // Verify fetch flag endpoint was called
-    expect(global.fetch).toHaveBeenCalledWith('/api/wishes/wish-1/flag', { method: 'POST' });
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes/wish-1/flag', { method: 'POST' });
 
     // Verify the wish was removed from the UI
     await waitFor(() => expect(screen.queryByText('Flag me')).not.toBeInTheDocument());
@@ -134,7 +134,7 @@ describe('DisplayPage', () => {
 
   it('does not flag a wish if confirmation is cancelled', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
         { id: 'wish-1', content: 'Cancel flag wish', creator_genders: [], creator_orientations: [] }
@@ -148,19 +148,19 @@ describe('DisplayPage', () => {
     const flagBtn = screen.getByTitle('Flag as inappropriate');
     fireEvent.click(flagBtn);
 
-    expect(window.confirm).toHaveBeenCalled();
-    expect(global.fetch).toHaveBeenCalledTimes(1); // only the initial load fetch
+    expect(globalThis.window.confirm).toHaveBeenCalled();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1); // only the initial load fetch
     expect(screen.getByText('Cancel flag wish')).toBeInTheDocument();
   });
 
   it('handles flagging failure by showing an alert', async () => {
-    global.setInterval = realSetInterval;
-    global.clearInterval = realClearInterval;
+    globalThis.setInterval = realSetInterval;
+    globalThis.clearInterval = realClearInterval;
 
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
-    global.fetch = vi.fn().mockImplementation((url) => {
+    globalThis.fetch = vi.fn().mockImplementation((url) => {
       if (url === '/api/wishes/random?limit=12') {
         return Promise.resolve({
           ok: true,

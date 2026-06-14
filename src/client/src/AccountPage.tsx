@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
+// @ts-ignore
 import { generatePassphrase } from './passphrase.js';
 import InfoToggle from './components/InfoToggle';
 import AttributeInput from './components/AttributeInput';

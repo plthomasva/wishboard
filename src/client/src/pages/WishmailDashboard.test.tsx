@@ -9,7 +9,7 @@ vi.mock('../AuthContext', () => ({
 }));
 
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+globalThis.fetch = mockFetch;
 
 describe('WishmailDashboard', () => {
   beforeEach(() => {
@@ -50,7 +50,7 @@ describe('WishmailDashboard', () => {
   });
 
   it('displays error if no wish ID is provided', () => {
-    window.location.hash = '#wishmail';
+    globalThis.window.location.hash = '#wishmail';
     render(<WishmailDashboard />);
     expect(screen.getByText('No wish ID provided.')).toBeInTheDocument();
   });

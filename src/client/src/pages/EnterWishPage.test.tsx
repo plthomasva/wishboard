@@ -8,7 +8,7 @@ vi.mock('../AuthContext', () => ({
 
 describe('EnterWishPage', () => {
   beforeEach(() => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ id: 'wish-1', secret: 'secret-code' })
     }) as any;
@@ -26,13 +26,13 @@ describe('EnterWishPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Submit Wish/i }));
 
     await waitFor(() => expect(screen.getByText(/Wish saved! ID:/i)).toBeInTheDocument());
-    expect(global.fetch).toHaveBeenCalledWith('/api/wishes', expect.objectContaining({ method: 'POST' }));
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes', expect.objectContaining({ method: 'POST' }));
   });
 
 
 
   it('shows error if API request fails', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       json: async () => ({ error: 'Server error' })
     }) as any;

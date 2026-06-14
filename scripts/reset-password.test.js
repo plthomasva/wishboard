@@ -1,23 +1,11 @@
 /** @vitest-environment node */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { execFileSync } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import Database from 'better-sqlite3';
-import fs from 'fs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const scriptPath = path.resolve(__dirname, 'reset-password.js');
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { resetPassword } from './reset-password.js';
+import db from '../src/server/db.js';
 
 describe('reset-password script', () => {
-  let dbPath;
-  let db;
-
   beforeEach(() => {
-    dbPath = path.resolve(__dirname, `test-reset-db-${Date.now()}.sqlite`);
-    db = new Database(dbPath);
-
+    // db is already initialized with :memory: from vitest setup
     db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -25,6 +13,9 @@ describe('reset-password script', () => {
         passphrase_hash TEXT NOT NULL,
         passphrase_salt TEXT NOT NULL,
         role TEXT NOT NULL DEFAULT 'user',
+        identity_genders TEXT,
+        identity_orientations TEXT,
+        identity_roles TEXT,
         created_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS sessions (
@@ -46,24 +37,17 @@ describe('reset-password script', () => {
   });
 
   afterEach(() => {
-    if (db) {
-      db.close();
-    }
-    if (fs.existsSync(dbPath)) {
-      try {
-        fs.unlinkSync(dbPath);
-      } catch (e) {
-        if (e.code !== 'EBUSY') throw e;
-      }
-    }
+    db.exec(`
+      DELETE FROM sessions;
+      DELETE FROM users;
+    `);
   });
 
-  it('resets the password when providing a username and a new passphrase', () => {
-    const output = execFileSync('node', [scriptPath, 'testuser', 'new-secure-pass'], {
-      env: { ...process.env, WISHBOARD_DB_PATH: dbPath },
-      encoding: 'utf-8'
-    });
-
+  it('resets the password when providing a username and a new passphrase', async () => {
+    let output = '';
+    const success = await resetPassword(['testuser', 'new-secure-pass'], (msg) => output += msg + '\n', () => {});
+    
+    expect(success).toBe(true);
     expect(output).toContain("Success! Passphrase for 'testuser' has been reset.");
     expect(output).toContain("New Passphrase: new-secure-pass");
 
@@ -75,19 +59,16 @@ describe('reset-password script', () => {
     expect(sessions).toBe(0);
   });
 
-  it('generates a new passphrase if omitted', () => {
-    const output = execFileSync('node', [scriptPath, 'testuser'], {
-      env: { ...process.env, WISHBOARD_DB_PATH: dbPath },
-      encoding: 'utf-8'
-    });
+  it('generates a new passphrase if omitted', async () => {
+    let output = '';
+    const success = await resetPassword(['testuser'], (msg) => output += msg + '\n', () => {});
 
+    expect(success).toBe(true);
     expect(output).toContain("Success! Passphrase for 'testuser' has been reset.");
     expect(output).toContain("New Passphrase: ");
 
-    // The output should contain something like "New Passphrase: word-word-word"
     const match = output.match(/New Passphrase: (\S+-\S+-\S+)/);
     expect(match).toBeTruthy();
-    const generatedPassphrase = match[1];
 
     const user = db.prepare('SELECT passphrase_hash, passphrase_salt FROM users WHERE username = ?').get('testuser');
     expect(user.passphrase_hash).not.toBe('oldhash');
@@ -96,37 +77,19 @@ describe('reset-password script', () => {
     expect(sessions).toBe(0);
   });
 
-  it('fails and exits with code 1 if user does not exist', () => {
-    let error;
-    try {
-      execFileSync('node', [scriptPath, 'non-existent-user'], {
-        env: { ...process.env, WISHBOARD_DB_PATH: dbPath },
-        encoding: 'utf-8',
-        stdio: 'pipe'
-      });
-    } catch (err) {
-      error = err;
-    }
+  it('fails and returns false if user does not exist', async () => {
+    let errorOutput = '';
+    const success = await resetPassword(['non-existent-user'], () => {}, (msg) => errorOutput += msg + '\n');
 
-    expect(error).toBeDefined();
-    expect(error.status).toBe(1);
-    expect(error.stderr).toContain("Error: User 'non-existent-user' not found in the database.");
+    expect(success).toBe(false);
+    expect(errorOutput).toContain("Error: User 'non-existent-user' not found in the database.");
   });
 
-  it('fails and prints usage if no arguments are provided', () => {
-    let error;
-    try {
-      execFileSync('node', [scriptPath], {
-        env: { ...process.env, WISHBOARD_DB_PATH: dbPath },
-        encoding: 'utf-8',
-        stdio: 'pipe'
-      });
-    } catch (err) {
-      error = err;
-    }
+  it('fails and prints usage if no arguments are provided', async () => {
+    let errorOutput = '';
+    const success = await resetPassword([], () => {}, (msg) => errorOutput += msg + '\n');
 
-    expect(error).toBeDefined();
-    expect(error.status).toBe(1);
-    expect(error.stderr).toContain("Usage: node reset-password.js <username> [new_passphrase]");
+    expect(success).toBe(false);
+    expect(errorOutput).toContain("Usage: node reset-password.js <username> [new_passphrase]");
   });
 });

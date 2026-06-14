@@ -17,7 +17,7 @@ vi.mock('../AuthContext', () => ({
 
 describe('SearchPage', () => {
   beforeEach(() => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
         { id: 'wish-1', content: 'Hello world', creator_genders: ['woman'], creator_orientations: ['queer'] }
@@ -41,13 +41,13 @@ describe('SearchPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
     await waitFor(() => expect(screen.getByText('Hello world')).toBeInTheDocument());
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('sg=woman'));
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('so=queer'));
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('sr=top'));
+    expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('sg=woman'));
+    expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('so=queer'));
+    expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('sr=top'));
   });
 
   it('handles empty results', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => []
     }) as any;
@@ -56,12 +56,12 @@ describe('SearchPage', () => {
     fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'unknown' } });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
   });
 
   it('handles API errors', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       json: async () => ({ error: 'Search failed' })
     }) as any;
@@ -77,12 +77,12 @@ describe('SearchPage', () => {
     render(<SearchPage />);
     fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
   });
 
   it('flags a search result wish and removes it from the list when confirmed', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    global.fetch = vi.fn().mockImplementation((url, init) => {
+    globalThis.fetch = vi.fn().mockImplementation((url, init) => {
       if (url.startsWith('/api/wishes?')) {
         return Promise.resolve({
           ok: true,
@@ -111,10 +111,10 @@ describe('SearchPage', () => {
     fireEvent.click(flagBtn);
 
     // Verify confirm was called
-    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to flag this wish as inappropriate?');
+    expect(globalThis.window.confirm).toHaveBeenCalledWith('Are you sure you want to flag this wish as inappropriate?');
 
     // Verify fetch flag endpoint was called
-    expect(global.fetch).toHaveBeenCalledWith('/api/wishes/wish-1/flag', { method: 'POST' });
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes/wish-1/flag', { method: 'POST' });
 
     // Verify the wish was removed from the UI
     await waitFor(() => expect(screen.queryByText('Search result wish')).not.toBeInTheDocument());
@@ -131,10 +131,10 @@ describe('SearchPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
     // Since profile attributes are enabled, it does NOT set ignore_attributes=1
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/wishes?'));
-    expect(global.fetch).not.toHaveBeenCalledWith(expect.stringContaining('ignore_attributes=1'));
+    expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/wishes?'));
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(expect.stringContaining('ignore_attributes=1'));
   });
 
   it('allows disabling profile attribute filtering when logged in', async () => {
@@ -147,8 +147,8 @@ describe('SearchPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
     // Since profile attributes are disabled, it sets ignore_attributes=1
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('ignore_attributes=1'));
+    expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('ignore_attributes=1'));
   });
 });

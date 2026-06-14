@@ -1,7 +1,7 @@
 /** @vitest-environment node */
 process.env.WISHBOARD_DB_PATH = ':memory:';
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
@@ -144,4 +144,48 @@ describe('User registration and login', () => {
     expect(JSON.parse(row.identity_orientations)).toEqual(['bisexual']);
     expect(JSON.parse(row.identity_roles)).toEqual(['switch']);
   });
+  it('handles missing usernames in /exists and /register', async () => {
+    const exists = await request(app).get('/api/users/exists');
+    expect(exists.status).toBe(400);
+
+    const register = await request(app).post('/api/users/register').send({});
+    expect(register.status).toBe(400);
+  });
+
+  it('handles registering an already existing username', async () => {
+    await request(app).post('/api/users/register').send({ username: 'duplicate' });
+    const duplicate = await request(app).post('/api/users/register').send({ username: 'duplicate' });
+    expect(duplicate.status).toBe(409);
+  });
+
+  it('handles missing credentials in /login', async () => {
+    const login1 = await request(app).post('/api/users/login').send({ username: 'u' });
+    expect(login1.status).toBe(400);
+
+    const login2 = await request(app).post('/api/users/login').send({ passphrase: 'p' });
+    expect(login2.status).toBe(400);
+  });
+
+  it('handles unauthenticated requests to protected endpoints', async () => {
+    const putMe = await request(app).put('/api/users/me').send({});
+    expect(putMe.status).toBe(401);
+
+    const getMe = await request(app).get('/api/users/me');
+    expect(getMe.status).toBe(401);
+
+    const getWishes = await request(app).get('/api/users/me/wishes');
+    expect(getWishes.status).toBe(401);
+  });
+
+  it('handles logout by deleting the session', async () => {
+    const register = await request(app).post('/api/users/register').send({ username: 'logoutuser' });
+    const token = register.body.token;
+
+    const logout = await request(app).post('/api/users/logout').set('Authorization', `Bearer ${token}`);
+    expect(logout.status).toBe(200);
+
+    const getMe = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
+    expect(getMe.status).toBe(401);
+  });
 });
+
