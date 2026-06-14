@@ -17,7 +17,7 @@ describe('Server index.js', () => {
     }
     const indexPath = path.join(distPath, 'index.html');
     if (!fs.existsSync(indexPath)) {
-      fs.writeFileSync(indexPath, '<html>Mock HTML</html>');
+      fs.writeFileSync(indexPath, '<html><head><title>Wishboard</title></head><body>Mock HTML</body></html>');
     }
 
     const res = await request(app).get('/some-random-client-route');
