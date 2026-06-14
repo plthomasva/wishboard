@@ -4,7 +4,11 @@ set -e
 echo "=== Wishboard Raspberry Pi Kiosk Setup Script ==="
 
 MODE="${1:-prod}"
+DOMAIN_NAME="${2:-wishboard.painless-computing.com}"
+AP_IP="10.42.0.1"
+
 echo "Deployment Mode: $MODE"
+echo "Domain Name: $DOMAIN_NAME"
 
 # 1. Create wishboard user if it doesn't exist
 if id "wishboard" &>/dev/null; then
@@ -25,7 +29,7 @@ sudo chown -R wishboard:wishboard /home/wishboard
 
 echo "Installing graphical kiosk dependencies..."
 sudo apt-get update
-sudo apt-get install -y imagemagick swaybg chromium network-manager iw
+sudo apt-get install -y imagemagick swaybg chromium network-manager iw nginx
 
 echo "Configuring Wireless Access Point (Hotspot) for Mode: $MODE..."
 
@@ -105,6 +109,75 @@ echo "Network fully restored to standard client mode."
 EOF
 sudo chmod +x /home/pi/restore-network.sh
 sudo chown pi:pi /home/pi/restore-network.sh || true
+
+echo "Configuring DNS and Nginx Reverse Proxy..."
+
+# Always configure Nginx for external port forwarding
+BASE_DOMAIN=$(echo "$DOMAIN_NAME" | grep -oE '[^.]+\.[^.]+$')
+CERT_DIR="/etc/letsencrypt/live/$BASE_DOMAIN"
+if [ ! -d "$CERT_DIR" ]; then
+    ALT_DIR=$(ls -d /etc/letsencrypt/live/*/ 2>/dev/null | head -n 1)
+    if [ ! -z "$ALT_DIR" ]; then
+        CERT_DIR=${ALT_DIR%/}
+    fi
+fi
+
+NGINX_CONF="/etc/nginx/sites-available/wishboard"
+sudo tee "$NGINX_CONF" > /dev/null <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $DOMAIN_NAME;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name $DOMAIN_NAME;
+
+    ssl_certificate $CERT_DIR/fullchain.pem;
+    ssl_certificate_key $CERT_DIR/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+
+if [ ! -f "/etc/nginx/sites-enabled/wishboard" ]; then
+    sudo ln -s "$NGINX_CONF" "/etc/nginx/sites-enabled/wishboard"
+fi
+sudo systemctl reload nginx || true
+echo "Nginx reverse proxy for $DOMAIN_NAME configured."
+
+# Configure local DNS hijacking only in prod/dual
+if [ "$MODE" = "dev" ]; then
+    echo "Dev Mode: Disabling local DNS redirection..."
+    sudo rm -f "/etc/NetworkManager/dnsmasq-shared.d/wishboard.conf"
+    sudo systemctl reload NetworkManager || true
+    echo "Local DNS redirection disabled."
+else
+    echo "Prod/Dual Mode: Configuring local DNS redirection for domain $DOMAIN_NAME at IP $AP_IP..."
+    DNS_CONF="/etc/NetworkManager/dnsmasq-shared.d/wishboard.conf"
+    if [ -d "/etc/NetworkManager/dnsmasq-shared.d" ]; then
+        echo "address=/$DOMAIN_NAME/$AP_IP" | sudo tee "$DNS_CONF" > /dev/null
+    elif [ -d "/etc/dnsmasq.d" ]; then
+        echo "address=/$DOMAIN_NAME/$AP_IP" | sudo tee "/etc/dnsmasq.d/wishboard.conf" > /dev/null
+    fi
+    sudo systemctl reload NetworkManager || true
+    echo "Local DNS redirection enabled."
+fi
 
 echo "Generating fallback background image..."
 sudo -u wishboard convert -size 1920x1080 xc:black -font DejaVu-Sans -pointsize 48 -fill white -gravity center -draw "text 0,0 'Please contact the Wishboard Administrator'" /home/wishboard/background.png || echo "Fallback background creation skipped (imagemagick failed or font missing)."

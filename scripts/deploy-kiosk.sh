@@ -4,10 +4,11 @@ set -e
 ADMIN_USERNAME="${1:-pi}"
 HOST_NAME="${2:-raspberrypi.local}"
 MODE="${3:-dev}"
+DOMAIN_NAME="${4:-wishboard.painless-computing.com}"
 
 if [[ ! "$MODE" =~ ^(prod|dev|dual)$ ]]; then
     echo "Error: Mode must be 'prod', 'dev', or 'dual'"
-    echo "Usage: ./scripts/deploy-kiosk.sh [user] [host] [mode]"
+    echo "Usage: ./scripts/deploy-kiosk.sh [user] [host] [mode] [domain]"
     exit 1
 fi
 
@@ -26,11 +27,11 @@ scp wishboard.tar.gz "${ADMIN_USERNAME}@${HOST_NAME}:/tmp/wishboard.tar.gz"
 
 echo -e "\033[1;33m3. Executing setup script (creating user and configs)...\033[0m"
 # Ensure line endings don't break bash execution by stripping \r using sed
-ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' /tmp/setup-kiosk.sh && sudo bash /tmp/setup-kiosk.sh ${MODE}"
+ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' /tmp/setup-kiosk.sh && sudo bash /tmp/setup-kiosk.sh ${MODE} ${DOMAIN_NAME}"
 
 echo -e "\033[1;33m4. Extracting codebase and building...\033[0m"
 # Execute the remote build script
-ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh"
+ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh ${MODE} ${DOMAIN_NAME}"
 
 echo -e "\033[1;32mDeployment complete! Services restarted.\033[0m"
 
