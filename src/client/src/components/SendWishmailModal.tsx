@@ -30,7 +30,7 @@ export default function SendWishmailModal({ wishId, onClose }: SendWishmailModal
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`/api/wishes/${wishId}/mail`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wishId)}/mail`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
