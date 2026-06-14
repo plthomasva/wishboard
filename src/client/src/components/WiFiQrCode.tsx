@@ -50,6 +50,21 @@ export default function WiFiQrCode() {
 
   const wifiString = 'WIFI:T:WPA;S:Wishboard_WiFi;P:wishboard2026;;';
 
+  const domain = import.meta.env.VITE_WISHBOARD_DOMAIN || import.meta.env.VITE_WISHBOARD_AP_IP || '10.42.0.1:3000';
+  const normalizedInput = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(domain) ? domain : `http://${domain}`;
+  let url: string;
+  try {
+    const parsed = new URL(normalizedInput);
+    const hostName = parsed.hostname.toLowerCase();
+    const isWishboardDomain =
+      hostName === 'painless-computing.com' || hostName.endsWith('.painless-computing.com');
+    const protocol = isWishboardDomain ? 'https:' : 'http:';
+    url = `${protocol}//${parsed.host}`;
+  } catch {
+    // Fallback for malformed env values
+    url = `http://${domain}`;
+  }
+
   return (
     <div
       style={{
@@ -82,7 +97,7 @@ export default function WiFiQrCode() {
         </p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>
           Then visit:<br />
-          <strong style={{ color: '#38bdf8', fontSize: '1.1rem' }}>http://10.42.0.1:3000</strong>
+          <strong style={{ color: '#38bdf8', fontSize: '1.1rem' }}>{url}</strong>
         </p>
       </div>
     </div>

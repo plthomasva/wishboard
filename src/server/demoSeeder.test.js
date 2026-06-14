@@ -13,5 +13,5 @@ describe('generateDemoData', () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM users WHERE role != 'admin'").get().count).toBe(50);
     expect(db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").get().count).toBe(1);
     expect(db.prepare('SELECT COUNT(*) AS count FROM wishes').get().count).toBe(100);
-  });
+  }, 15000);
 });

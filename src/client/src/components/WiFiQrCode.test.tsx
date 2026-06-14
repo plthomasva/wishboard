@@ -60,6 +60,26 @@ describe('WiFiQrCode', () => {
     expect(screen.getByText(/wishboard2026/i)).toBeInTheDocument();
     
     // Verify the URL hint is present
-    expect(screen.getByText(/10\.42\.0\.1:3000/i)).toBeInTheDocument();
+    const domain = import.meta.env.VITE_WISHBOARD_DOMAIN || import.meta.env.VITE_WISHBOARD_AP_IP || '10.42.0.1:3000';
+    const parsed = new URL(domain.includes('://') ? domain : `http://${domain}`);
+    const hostname = parsed.hostname.toLowerCase();
+    const isPainlessDomain =
+      hostname === 'painless-computing.com' || hostname.endsWith('.painless-computing.com');
+    const url = isPainlessDomain ? `https://${domain}` : `http://${domain}`;
+    expect(screen.getByText(url)).toBeInTheDocument();
+  });
+
+  it('displays https URL for painless-computing.com domains', () => {
+    const originalDomain = import.meta.env.VITE_WISHBOARD_DOMAIN;
+    import.meta.env.VITE_WISHBOARD_DOMAIN = 'wishboard.painless-computing.com';
+    
+    render(<WiFiQrCode />);
+    act(() => {
+      vi.advanceTimersByTime(10000);
+    });
+
+    expect(screen.getByText('https://wishboard.painless-computing.com')).toBeInTheDocument();
+    
+    import.meta.env.VITE_WISHBOARD_DOMAIN = originalDomain;
   });
 });

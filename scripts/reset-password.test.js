@@ -50,7 +50,11 @@ describe('reset-password script', () => {
       db.close();
     }
     if (fs.existsSync(dbPath)) {
-      fs.unlinkSync(dbPath);
+      try {
+        fs.unlinkSync(dbPath);
+      } catch (e) {
+        if (e.code !== 'EBUSY') throw e;
+      }
     }
   });
 

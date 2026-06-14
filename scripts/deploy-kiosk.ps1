@@ -7,7 +7,10 @@ param (
     
     [Parameter(Mandatory = $false)]
     [ValidateSet("prod", "dev", "dual")]
-    [string]$Mode = "dev"
+    [string]$Mode = "dev",
+    
+    [Parameter(Mandatory = $false)]
+    [string]$DomainName = "wishboard.painless-computing.com"
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,14 +32,14 @@ try {
 
     Write-Host "3. Executing setup script (creating user and configs)..." -ForegroundColor Yellow
     # Ensure DOS line endings don't break bash execution by stripping \r using sed
-    ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/setup-kiosk.sh && sudo bash /tmp/setup-kiosk.sh $Mode"
+    ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/setup-kiosk.sh && sudo bash /tmp/setup-kiosk.sh $Mode $DomainName"
     if ($LASTEXITCODE -ne 0) {
         throw "Setup script failed on the target device."
     }
 
     Write-Host "4. Extracting codebase and building..." -ForegroundColor Yellow
     # Execute the remote build script
-    ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh"
+    ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh $Mode $DomainName"
     
     if ($LASTEXITCODE -ne 0) {
         throw "Deployment failed on the target device. Check the logs above."

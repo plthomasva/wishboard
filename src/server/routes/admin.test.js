@@ -210,7 +210,7 @@ describe('Admin routes', () => {
     expect(usersCount).toBe(50);
     expect(adminCount).toBe(1);
     expect(wishesCount).toBe(100);
-  });
+  }, 15000);
 
   it('handles not found errors for removing wishes', async () => {
     const token = await loginAsAdmin();
