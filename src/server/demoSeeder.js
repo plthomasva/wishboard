@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+const secureRandom = () => crypto.randomBytes(4).readUInt32LE(0) / 0x100000000;
 import { customAlphabet } from 'nanoid';
 import db from './db.js';
 import { createSalt, hashPassphrase } from './auth.js';
@@ -50,29 +52,29 @@ const textFragments = {
 
 // Helper to grab 1-2 random items from an array
 function getRandom(arr, maxCount = 2) {
-  const count = Math.floor(Math.random() * maxCount) + 1;
-  const shuffled = [...arr].sort(() => 0.5 - Math.random());
+  const count = Math.floor(secureRandom() * maxCount) + 1;
+  const shuffled = [...arr].sort(() => 0.5 - secureRandom());
   return shuffled.slice(0, count);
 }
 
 function getRandomGenders() {
   const selected = [];
-  if (Math.random() > 0.3) { // 70% chance to have a primary gender
-    selected.push(primaryGenders[Math.floor(Math.random() * primaryGenders.length)]);
+  if (secureRandom() > 0.3) { // 70% chance to have a primary gender
+    selected.push(primaryGenders[Math.floor(secureRandom() * primaryGenders.length)]);
   }
-  if (Math.random() > 0.5) { // 50% chance to have a secondary gender
-    selected.push(secondaryGenders[Math.floor(Math.random() * secondaryGenders.length)]);
+  if (secureRandom() > 0.5) { // 50% chance to have a secondary gender
+    selected.push(secondaryGenders[Math.floor(secureRandom() * secondaryGenders.length)]);
   }
   return selected;
 }
 
 function generateRandomContacts() {
-  const count = Math.floor(Math.random() * 3); // 0 to 2 contacts
+  const count = Math.floor(secureRandom() * 3); // 0 to 2 contacts
   const contacts = [];
-  const types = [...mockContactTypes].sort(() => 0.5 - Math.random());
+  const types = [...mockContactTypes].sort(() => 0.5 - secureRandom());
   for (let i=0; i<count; i++) {
     const type = types[i];
-    const value = type === 'Phone' ? '555-010' + Math.floor(Math.random() * 10) : `demo_${type.toLowerCase()}_${Math.floor(Math.random()*1000)}`;
+    const value = type === 'Phone' ? '555-010' + Math.floor(secureRandom() * 10) : `demo_${type.toLowerCase()}_${Math.floor(secureRandom()*1000)}`;
     contacts.push({ type, value });
   }
   return contacts;
@@ -80,9 +82,9 @@ function generateRandomContacts() {
 
 // Helper to generate a random Mad Libs wish
 function generateMadLibsWish() {
-  const action = textFragments.actions[Math.floor(Math.random() * textFragments.actions.length)];
-  const subject = textFragments.subjects[Math.floor(Math.random() * textFragments.subjects.length)];
-  const context = textFragments.contexts[Math.floor(Math.random() * textFragments.contexts.length)];
+  const action = textFragments.actions[Math.floor(secureRandom() * textFragments.actions.length)];
+  const subject = textFragments.subjects[Math.floor(secureRandom() * textFragments.subjects.length)];
+  const context = textFragments.contexts[Math.floor(secureRandom() * textFragments.contexts.length)];
   return `${action} ${subject} ${context}`;
 }
 
@@ -114,7 +116,7 @@ export function generateDemoData() {
     const orientations = JSON.stringify(getRandom(mockOrientations));
     const roles = JSON.stringify(getRandom(mockRoles));
     const contacts = generateRandomContacts();
-    const wishmailEnabledInt = Math.random() > 0.5 ? 1 : 0;
+    const wishmailEnabledInt = secureRandom() > 0.5 ? 1 : 0;
     const createdAt = new Date().toISOString();
 
     insertUser.run(id, username, hash, salt, 'user', genders, orientations, roles, JSON.stringify(contacts), wishmailEnabledInt, createdAt);
@@ -136,29 +138,29 @@ export function generateDemoData() {
   // 3. Distribute 100 wishes randomly across the 50 users
   for (let i = 0; i < 100; i++) {
     const id = idGenerator();
-    const randomUser = users[Math.floor(Math.random() * users.length)];
+    const randomUser = users[Math.floor(secureRandom() * users.length)];
     const content = generateMadLibsWish();
     
     // Randomize what this wish is looking for, frequently leaving them blank to simulate normal user behavior
-    const desiredGenders = Math.random() > 0.4 ? '[]' : JSON.stringify(getRandom(mockGenders, 2));
-    const desiredOrientations = Math.random() > 0.6 ? '[]' : JSON.stringify(getRandom(mockOrientations, 2));
-    const desiredRoles = Math.random() > 0.7 ? '[]' : JSON.stringify(getRandom(mockRoles, 2));
+    const desiredGenders = secureRandom() > 0.4 ? '[]' : JSON.stringify(getRandom(mockGenders, 2));
+    const desiredOrientations = secureRandom() > 0.6 ? '[]' : JSON.stringify(getRandom(mockOrientations, 2));
+    const desiredRoles = secureRandom() > 0.7 ? '[]' : JSON.stringify(getRandom(mockRoles, 2));
     
     // Stagger dates over the last 30 days
-    const timeOffset = Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000);
+    const timeOffset = Math.floor(secureRandom() * 30 * 24 * 60 * 60 * 1000);
     const date = new Date(Date.now() - timeOffset).toISOString();
 
     let wishContacts = [...randomUser.contacts];
     let wishWishmail = randomUser.wishmailEnabled;
     
     // random override for wishmail
-    if (Math.random() > 0.8) wishWishmail = !wishWishmail;
+    if (secureRandom() > 0.8) wishWishmail = !wishWishmail;
     
     // random override for contacts (remove one or add one)
-    if (Math.random() > 0.7 && wishContacts.length > 0) {
+    if (secureRandom() > 0.7 && wishContacts.length > 0) {
       wishContacts.pop();
-    } else if (Math.random() > 0.7) {
-      wishContacts.push({ type: 'FetLife', value: `wish_specific_${Math.floor(Math.random()*1000)}` });
+    } else if (secureRandom() > 0.7) {
+      wishContacts.push({ type: 'FetLife', value: `wish_specific_${Math.floor(secureRandom()*1000)}` });
     }
 
     insertWish.run(
