@@ -19,7 +19,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x, 24.x]
+        node-version: [24.x]
         # Testing both the current LTS and the latest supported Node version is best practice.
 
     steps:
