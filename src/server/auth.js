@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import db from './db.js';
 
 const TOKEN_EXPIRY_MS = 1000 * 60 * 60 * 24 * 7;
