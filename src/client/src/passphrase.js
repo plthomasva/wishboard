@@ -12,21 +12,11 @@ if (typeof globalThis !== 'undefined' && typeof globalThis.crypto?.getRandomValu
 const randomIndex = (max) => {
   if (max <= 1) return 0;
 
-  // Calculate the largest multiple of 'max' that fits in a 32-bit integer
-  const limit = 0x100000000 - (0x100000000 % max);
-  
   const typedArray = new Uint32Array(1);
-
-  while (true) {
-    cryptoProvider.getRandomValues(typedArray);
-    const randomUint32 = typedArray[0];
-
-    // If the number is within the uniform range, map it and return
-    if (randomUint32 < limit) {
-      return randomUint32 % max;
-    }
-    // Otherwise, loop and "re-roll" (highly rare, so minimal performance hit)
-  }
+  cryptoProvider.getRandomValues(typedArray);
+  
+  const secureRandomFloat = typedArray[0] / 0x100000000;
+  return Math.floor(secureRandomFloat * max);
 };
 const choose = (items) => items[randomIndex(items.length)];
 
