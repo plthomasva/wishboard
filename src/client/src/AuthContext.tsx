@@ -34,7 +34,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const storageKey = 'wishboard-auth-token';
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(storageKey));
   const [user, setUser] = useState<AuthUser | null>(null);
 

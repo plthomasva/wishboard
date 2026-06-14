@@ -24,7 +24,7 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[] }>>([]);
   const [existingUsername, setExistingUsername] = useState(false);
-  const [checkingUsername, setCheckingUsername] = useState(false);
+
 
   // Claim wish state
   const [claimId, setClaimId] = useState('');
@@ -38,34 +38,28 @@ export default function AccountPage() {
 
     if (!name) {
       setExistingUsername(false);
-      setCheckingUsername(false);
       setMode('register');
       return;
     }
 
-    setCheckingUsername(true);
-    const timer = window.setTimeout(async () => {
+    const timer = globalThis.setTimeout(async () => {
       try {
         const response = await fetch(`/api/users/exists?username=${encodeURIComponent(name)}`);
         if (!active) {
           return;
         }
-        if (!response.ok) {
-          setExistingUsername(false);
-          setMode('register');
-        } else {
+        if (response.ok) {
           const data = await response.json();
           setExistingUsername(Boolean(data.exists));
           setMode(data.exists ? 'login' : 'register');
+        } else {
+          setExistingUsername(false);
+          setMode('register');
         }
       } catch {
         if (active) {
           setExistingUsername(false);
           setMode('register');
-        }
-      } finally {
-        if (active) {
-          setCheckingUsername(false);
         }
       }
     }, 250);
@@ -137,7 +131,7 @@ export default function AccountPage() {
     }
   };
 
-  const onLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+  const onLogin = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setMessage(null);
@@ -155,7 +149,7 @@ export default function AccountPage() {
     setPassphrase('');
   };
 
-  const onRegister = async (event: React.FormEvent<HTMLFormElement>) => {
+  const onRegister = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setMessage(null);
@@ -201,7 +195,7 @@ export default function AccountPage() {
     loadWishes();
   };
 
-  const claimWish = async (e: React.FormEvent) => {
+  const claimWish = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setError(null);
     setMessage(null);
@@ -246,11 +240,11 @@ export default function AccountPage() {
         </div>
         <form className="form-card" onSubmit={effectiveMode === 'login' ? onLogin : onRegister}>
           <label>
-            Username
+            Username{' '}
             <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Choose a username" />
           </label>
           <label>
-            Passphrase
+            Passphrase{' '}
             <input
               type="text"
               value={passphrase}
@@ -382,11 +376,12 @@ export default function AccountPage() {
             onChange={(e) => setWishmailEnabled(e.target.checked)} 
             style={{ width: 'auto', minHeight: 'auto' }}
           />
-          Enable Wishmail by default
+          {' '}Enable Wishmail by default
         </label>
 
         <div style={{ marginBottom: '24px' }}>
           {contacts.map((contact, index) => (
+            /* eslint-disable-next-line react/no-array-index-key */
             <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
               <select 
                 value={contact.type} 
@@ -461,7 +456,7 @@ export default function AccountPage() {
           </div>
           <form onSubmit={claimWish} style={{ display: 'grid', gap: '12px' }}>
             <label>
-              Wish ID
+              Wish ID{' '}
               <input
                 type="text"
                 value={claimId}
@@ -470,7 +465,7 @@ export default function AccountPage() {
               />
             </label>
             <label>
-              Passphrase
+              Passphrase{' '}
               <input
                 type="text"
                 value={claimSecret}
@@ -492,9 +487,8 @@ export default function AccountPage() {
             </div>
             <div style={{ background: 'white', padding: '16px', display: 'inline-block', borderRadius: '12px' }}>
               <QRCodeSVG 
-                value={`${window.location.origin}${window.location.pathname}#account?token=${token}`} 
+                value={`${globalThis.location.origin}${globalThis.location.pathname}#account?token=${token}`} 
                 size={160} 
-                includeMargin={false}
               />
             </div>
             <p style={{ marginTop: '16px' }}>
