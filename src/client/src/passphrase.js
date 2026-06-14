@@ -3,7 +3,7 @@ let cryptoProvider;
 if (typeof globalThis !== 'undefined' && typeof globalThis.crypto?.getRandomValues === 'function') {
   cryptoProvider = globalThis.crypto;
 } else if (typeof process !== 'undefined' && process.versions?.node) {
-  const nodeCrypto = await import(/* @vite-ignore */ 'crypto');
+  const nodeCrypto = await import(/* @vite-ignore */ 'node:crypto');
   cryptoProvider = nodeCrypto.webcrypto;
 } else {
   throw new Error('No secure crypto available in this environment.');

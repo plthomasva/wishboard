@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { customAlphabet } from 'nanoid';
 import db from './db.js';
 import { createSalt, hashPassphrase } from './auth.js';

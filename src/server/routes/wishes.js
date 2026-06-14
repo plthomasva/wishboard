@@ -1,5 +1,5 @@
 import express from 'express';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
 import { getUserFromToken, getTokenFromRequestHeader, hashPassphrase, verifyPassphrase, parseJsonArray, normalizeArrayInput, createSalt } from '../auth.js';
