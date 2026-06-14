@@ -64,4 +64,18 @@ describe('WiFiQrCode', () => {
     const url = domain.includes('painless-computing.com') ? `https://${domain}` : `http://${domain}`;
     expect(screen.getByText(url)).toBeInTheDocument();
   });
+
+  it('displays https URL for painless-computing.com domains', () => {
+    const originalDomain = import.meta.env.VITE_WISHBOARD_DOMAIN;
+    import.meta.env.VITE_WISHBOARD_DOMAIN = 'wishboard.painless-computing.com';
+    
+    render(<WiFiQrCode />);
+    act(() => {
+      vi.advanceTimersByTime(10000);
+    });
+
+    expect(screen.getByText('https://wishboard.painless-computing.com')).toBeInTheDocument();
+    
+    import.meta.env.VITE_WISHBOARD_DOMAIN = originalDomain;
+  });
 });
