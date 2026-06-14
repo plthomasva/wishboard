@@ -71,8 +71,8 @@ export default function SearchPage() {
 
   return (
     <section>
-      <h1>Search Wishes</h1>
-      <form className="form-card" onSubmit={search}>
+      <h1 style={{ maxWidth: '800px', margin: '0 auto' }}>Search Wishes</h1>
+      <form className="form-card" onSubmit={search} style={{ maxWidth: '800px', margin: '18px auto 24px' }}>
         <label>
           Search phrase
           <input

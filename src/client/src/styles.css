@@ -278,6 +278,7 @@ button:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   overflow: hidden;
+  container-type: inline-size;
 }
 
 /* Thumbtack / Pushpin */
@@ -614,7 +615,8 @@ button:hover {
   margin-bottom: 12px;
 }
 
-.app-shell.page-display .content-area {
+.app-shell.page-display .content-area,
+.app-shell.page-search .content-area {
   max-width: 100%;
   padding: 16px 24px;
   margin: 0;
@@ -801,12 +803,6 @@ button:hover {
 .wish-card.text-overflow-hint .wish-text,
 .wish-card.text-overflow-hint .wish-contacts-list {
   color: #b91717; /* Turn dark red if it overflows at min font size */
-}
-
-/* Force override red text in display mode regardless of overflow */
-.display-card .wish-text,
-.display-card .wish-contacts-list {
-  color: #2c3e50 !important;
 }
 
 .send-mail-icon-btn {

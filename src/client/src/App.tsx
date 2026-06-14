@@ -141,7 +141,7 @@ function AppContent() {
     }
   };
 
-  const shellClass = `app-shell ${page === 'display' ? 'page-display' : ''} ${isKiosk ? 'kiosk-mode' : ''}`;
+  const shellClass = `app-shell ${page === 'display' ? 'page-display' : ''} ${page === 'search' ? 'page-search' : ''} ${isKiosk ? 'kiosk-mode' : ''}`;
 
   return (
     <div className={shellClass}>

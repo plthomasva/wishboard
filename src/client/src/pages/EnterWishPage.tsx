@@ -203,7 +203,7 @@ export default function EnterWishPage() {
             </InfoToggle>
           </div>
           <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-            <WishCard wish={previewWish} showFlag={false} onOverflowChange={setIsOverflowing} />
+            <WishCard wish={previewWish} showFlag={false} onOverflowChange={setIsOverflowing} isEditorPreview={true} />
           </div>
         </div>
       </div>

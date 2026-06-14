@@ -24,9 +24,10 @@ interface WishCardProps {
   onFlag?: (id: string) => void;
   onSendMail?: (id: string) => void;
   onOverflowChange?: (isOverflowing: boolean) => void;
+  isEditorPreview?: boolean;
 }
 
-export default function WishCard({ wish, cardClass = 'wish-card', showFlag = true, onFlag, onSendMail, onOverflowChange }: WishCardProps) {
+export default function WishCard({ wish, cardClass = 'wish-card', showFlag = true, onFlag, onSendMail, onOverflowChange, isEditorPreview = false }: WishCardProps) {
   // Use lower max font size for the card, and minimum 10px so we have enough room to scale down
   const { containerRef, contentRef, isOverflowing } = useTextFit({
     minFontSize: 10,
@@ -42,7 +43,7 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
 
   return (
     <article
-      className={`${cardClass} ${isOverflowing ? 'text-overflow-hint' : ''}`}
+      className={`${cardClass} ${isOverflowing && isEditorPreview ? 'text-overflow-hint' : ''}`}
       key={wish.id}
       ref={containerRef as React.RefObject<HTMLDivElement>}
     >
