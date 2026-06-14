@@ -24,6 +24,14 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
+const frontendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: process.env.NODE_ENV === 'test' ? 100000 : 1000,
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
+
 app.use('/api/users', usersRouter);
 app.use('/api/wishes', wishesRouter);
 app.use('/api/wishes/:id/mail', wishmailRouter);
@@ -32,7 +40,7 @@ app.use('/api/admin', adminRouter);
 const distPath = path.resolve(__dirname, '../../dist');
 app.use(express.static(distPath));
 
-app.get('*path', (req, res) => {
+app.get('*path', frontendLimiter, (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
