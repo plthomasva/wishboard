@@ -4,9 +4,9 @@ import DisplayPage from './DisplayPage';
 
 // Mock ResizeObserver for jsdom
 class ResizeObserverMock {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe() { /* noop */ }
+  unobserve() { /* noop */ }
+  disconnect() { /* noop */ }
 }
 
 const realSetInterval = globalThis.setInterval;
@@ -65,17 +65,17 @@ describe('DisplayPage', () => {
     
     const originalClientWidth = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
     const originalClientHeight = Object.getOwnPropertyDescriptor(Element.prototype, 'clientHeight');
-    const originalInnerWidth = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+    const originalInnerWidth = Object.getOwnPropertyDescriptor(globalThis.window, 'innerWidth');
 
     Object.defineProperty(Element.prototype, 'clientWidth', { configurable: true, value: 800 });
     Object.defineProperty(Element.prototype, 'clientHeight', { configurable: true, value: 600 });
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
+    Object.defineProperty(globalThis.window, 'innerWidth', { configurable: true, value: 1200 });
 
     let observerCallback: ResizeObserverCallback | null = null;
     vi.stubGlobal('ResizeObserver', class {
       constructor(callback: ResizeObserverCallback) { observerCallback = callback; }
-      observe() {}
-      disconnect() {}
+      observe() { /* noop */ }
+      disconnect() { /* noop */ }
     });
 
     render(<DisplayPage isKiosk={true} />);
@@ -93,11 +93,11 @@ describe('DisplayPage', () => {
     // Cleanup prototype overrides
     if (originalClientWidth) Object.defineProperty(Element.prototype, 'clientWidth', originalClientWidth);
     if (originalClientHeight) Object.defineProperty(Element.prototype, 'clientHeight', originalClientHeight);
-    if (originalInnerWidth) Object.defineProperty(window, 'innerWidth', originalInnerWidth);
+    if (originalInnerWidth) Object.defineProperty(globalThis.window, 'innerWidth', originalInnerWidth);
   });
 
   it('flags a wish and removes it from the display list when confirmed', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.spyOn(globalThis.window, 'confirm').mockReturnValue(true);
     globalThis.fetch = vi.fn().mockImplementation((url, init) => {
       if (url === '/api/wishes/random?limit=12') {
         return Promise.resolve({
@@ -133,7 +133,7 @@ describe('DisplayPage', () => {
   });
 
   it('does not flag a wish if confirmation is cancelled', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    vi.spyOn(globalThis.window, 'confirm').mockReturnValue(false);
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
@@ -157,8 +157,8 @@ describe('DisplayPage', () => {
     globalThis.setInterval = realSetInterval;
     globalThis.clearInterval = realClearInterval;
 
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.spyOn(globalThis.window, 'confirm').mockReturnValue(true);
+    const alertSpy = vi.spyOn(globalThis.window, 'alert').mockImplementation(() => {});
 
     globalThis.fetch = vi.fn().mockImplementation((url) => {
       if (url === '/api/wishes/random?limit=12') {
