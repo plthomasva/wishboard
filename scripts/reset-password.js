@@ -34,9 +34,8 @@ export async function resetPassword(args, consoleLog = console.log, consoleError
   return true;
 }
 
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  resetPassword(process.argv.slice(2)).then((success) => {
-    if (!success) process.exit(1);
-  });
+  const success = await resetPassword(process.argv.slice(2));
+  if (!success) process.exit(1);
 }
