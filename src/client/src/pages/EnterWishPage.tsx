@@ -3,7 +3,7 @@ import { useAuth } from '../AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
 import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
-import WishCard from '../components/WishCard';
+import WishPreview from '../components/WishPreview';
 import WishFormFields from '../components/WishFormFields';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
@@ -195,17 +195,7 @@ export default function EnterWishPage() {
           <button type="submit">Submit Wish</button>
         </form>
 
-        <div className="wish-preview-container" style={{ position: 'sticky', top: '24px' }}>
-          <div className="label-with-info" style={{ borderBottom: '2px solid #e4e9f0', paddingBottom: '8px', marginBottom: '8px' }}>
-            <h3 style={{ margin: 0 }}>Card Preview</h3>
-            <InfoToggle>
-              Watch your card scale automatically! If text turns red, it won't fit on the board.
-            </InfoToggle>
-          </div>
-          <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-            <WishCard wish={previewWish} showFlag={false} onOverflowChange={setIsOverflowing} isEditorPreview={true} />
-          </div>
-        </div>
+        <WishPreview wish={previewWish} onOverflowChange={setIsOverflowing} />
       </div>
 
       {result && (

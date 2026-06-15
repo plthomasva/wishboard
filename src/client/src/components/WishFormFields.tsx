@@ -1,5 +1,6 @@
 import React from 'react';
 import InfoToggle from './InfoToggle';
+import ContactEditor from './ContactEditor';
 
 interface Contact {
   type: string;
@@ -25,17 +26,6 @@ export default function WishFormFields({
   setWishmailEnabled,
   isOverflowing
 }: WishFormFieldsProps) {
-  const addContact = () => setContacts([...contacts, { type: 'FetLife', value: '' }]);
-  
-  const updateContact = (index: number, field: 'type' | 'value', val: string) => {
-    const newContacts = [...contacts];
-    newContacts[index] = { ...newContacts[index], [field]: val };
-    setContacts(newContacts);
-  };
-  
-  const removeContact = (index: number) => {
-    setContacts(contacts.filter((_, i) => i !== index));
-  };
 
   return (
     <>
@@ -74,30 +64,7 @@ export default function WishFormFields({
 
           <div>
             <p style={{ margin: '8px 0', fontWeight: 600, fontSize: '0.9rem' }}>Contact Methods</p>
-            {contacts.map((contact, index) => (
-              <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                <select 
-                  value={contact.type} 
-                  onChange={(e) => updateContact(index, 'type', e.target.value)}
-                  style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d7dee5', background: 'white' }}
-                >
-                  <option value="FetLife">FetLife</option>
-                  <option value="Phone">Phone</option>
-                  <option value="Email">Email</option>
-                </select>
-                <input 
-                  type="text" 
-                  value={contact.value} 
-                  onChange={(e) => updateContact(index, 'value', e.target.value)} 
-                  placeholder="Username, number, etc."
-                  style={{ minHeight: '36px', padding: '8px' }}
-                />
-                <button type="button" onClick={() => removeContact(index)} style={{ minHeight: '36px', padding: '0 12px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>X</button>
-              </div>
-            ))}
-            <button type="button" onClick={addContact} className="secondary-button" style={{ minHeight: '36px', padding: '6px 12px', fontSize: '0.9rem' }}>
-              + Add Contact Method
-            </button>
+            <ContactEditor contacts={contacts} setContacts={setContacts} />
           </div>
         </div>
       </fieldset>

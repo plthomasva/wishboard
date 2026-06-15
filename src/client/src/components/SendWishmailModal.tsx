@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import ContactEditor from './ContactEditor';
 
 interface SendWishmailModalProps {
   wishId: string;
@@ -13,13 +14,6 @@ export default function SendWishmailModal({ wishId, onClose }: SendWishmailModal
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const addContact = () => setContacts([...contacts, { type: 'FetLife', value: '' }]);
-  const updateContact = (index: number, field: 'type' | 'value', val: string) => {
-    const newContacts = [...contacts];
-    newContacts[index] = { ...newContacts[index], [field]: val };
-    setContacts(newContacts);
-  };
-  const removeContact = (index: number) => setContacts(contacts.filter((_, i) => i !== index));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,30 +68,7 @@ export default function SendWishmailModal({ wishId, onClose }: SendWishmailModal
               <legend style={{ fontWeight: 600, padding: '0 8px' }}>Return Contacts (Optional)</legend>
               <p className="microtext" style={{ marginTop: 0 }}>Provide a way for them to reply to you.</p>
 
-              {contacts.map((contact, index) => (
-                <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                  <select
-                    value={contact.type}
-                    onChange={(e) => updateContact(index, 'type', e.target.value)}
-                    style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d7dee5', background: 'white' }}
-                  >
-                    <option value="FetLife">FetLife</option>
-                    <option value="Phone">Phone</option>
-                    <option value="Email">Email</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={contact.value}
-                    onChange={(e) => updateContact(index, 'value', e.target.value)}
-                    placeholder="Username, number, etc."
-                    style={{ minHeight: '36px', padding: '8px' }}
-                  />
-                  <button type="button" onClick={() => removeContact(index)} style={{ minHeight: '36px', padding: '0 12px', background: '#e53e3e' }}>X</button>
-                </div>
-              ))}
-              <button type="button" onClick={addContact} className="secondary-button" style={{ minHeight: '36px', padding: '6px 12px', fontSize: '0.9rem' }}>
-                + Add Return Contact
-              </button>
+              <ContactEditor contacts={contacts} setContacts={setContacts} addButtonLabel="+ Add Return Contact" />
             </fieldset>
 
             <div className="kiosk-modal-actions">
