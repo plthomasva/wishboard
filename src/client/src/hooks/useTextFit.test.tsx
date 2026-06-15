@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import React, { useRef } from 'react';
 import { useTextFit } from './useTextFit';
@@ -45,7 +45,9 @@ describe('useTextFit', () => {
       Object.defineProperty(container, 'scrollHeight', { value: 200 });
       Object.defineProperty(container, 'clientHeight', { value: 100 });
       
-      observerCallback([{ target: container }]);
+      act(() => {
+        observerCallback([{ target: container }]);
+      });
       expect(content.style.fontSize).toBe('10px'); // It should scale down to minFontSize
     }
   });
