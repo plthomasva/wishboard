@@ -95,7 +95,7 @@ function generateMadLibsWish() {
   return `${action} ${subject} ${context}`;
 }
 
-export function generateDemoData() {
+function clearDemoData() {
   // 1. Clear existing demo/user data (Keep the default admin's session)
   // Remove wishes and non-admin users first, then prune sessions that no
   // longer belong to any remaining user (this preserves the admin's session)
@@ -104,7 +104,9 @@ export function generateDemoData() {
 
   // Remove sessions for user_ids that no longer exist (keeps admin session)
   db.prepare('DELETE FROM sessions WHERE user_id NOT IN (SELECT id FROM users)').run();
+}
 
+function generateDemoUsers() {
   const users = [];
   const insertUser = db.prepare(`
     INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled, created_at)
@@ -131,7 +133,10 @@ export function generateDemoData() {
     // Keep in memory to assign wishes later
     users.push({ id, genders, orientations, roles, contacts, wishmailEnabled: wishmailEnabledInt === 1 }); 
   }
+  return users;
+}
 
+function generateDemoWishes(users) {
   const insertWish = db.prepare(`
     INSERT INTO wishes (
       id, user_id, content, 
@@ -187,6 +192,12 @@ export function generateDemoData() {
       0                          
     ); // NOSONAR
   }
+}
+
+export function generateDemoData() {
+  clearDemoData();
+  const users = generateDemoUsers();
+  generateDemoWishes(users);
 
   return { usersCreated: 50, wishesCreated: 100 };
 }
