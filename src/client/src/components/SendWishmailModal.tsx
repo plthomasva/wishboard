@@ -15,7 +15,7 @@ export default function SendWishmailModal({ wishId, onClose }: Readonly<SendWish
   const [success, setSuccess] = useState(false);
 
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
@@ -53,7 +53,7 @@ export default function SendWishmailModal({ wishId, onClose }: Readonly<SendWish
             {error && <div className="kiosk-modal-error">{error}</div>}
 
             <label>
-              Your Message
+              Your Message{' '}
               <textarea
                 rows={4}
                 required

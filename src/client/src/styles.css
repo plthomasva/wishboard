@@ -94,7 +94,7 @@ body {
 }
 
 .compact-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.2);
   color: white;
   border: none;
   padding: 10px 16px;
@@ -189,7 +189,7 @@ textarea {
 .pill-btn.selected {
   background: #e8f0fe;
   border-color: #1a73e8;
-  color: #1a73e8;
+  color: #0d47a1;
   font-weight: 600;
 }
 
@@ -366,7 +366,7 @@ button:hover {
 }
 
 .flag-wish-btn:hover {
-  color: #e53e3e;
+  color: #c53030;
   background-color: rgba(229, 62, 62, 0.1);
   transform: scale(1.05);
 }
@@ -440,7 +440,7 @@ button:hover {
 
 .secondary-button {
   background: #f1f3f5;
-  color: #1a73e8;
+  color: #155bb5;
   border: 1px solid #94a3b8;
 }
 
@@ -540,7 +540,7 @@ button:hover {
 }
 
 .male-icon {
-  color: #1e88e5;
+  color: #1565c0;
   border-color: #e3f2fd;
   background: #f0f7ff;
 }
@@ -769,7 +769,7 @@ button:hover {
 
 .info-toggle-btn:hover,
 .info-toggle-btn[aria-expanded="true"] {
-  color: #1a73e8;
+  color: #155bb5;
   background: #e8f0fe;
   transform: none; /* Override default button hover */
 }
@@ -824,7 +824,7 @@ button:hover {
 
 .send-mail-icon-btn:hover {
   transform: scale(1.1);
-  color: #1557b0;
+  color: #0d47a1;
   background: rgba(26, 115, 232, 0.1);
 }
 

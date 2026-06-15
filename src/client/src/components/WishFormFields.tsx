@@ -30,7 +30,7 @@ export default function WishFormFields({
   return (
     <>
       <label>
-        What is your wish?
+        What is your wish?{' '}
         <textarea
           rows={6}
           value={content}
@@ -59,7 +59,7 @@ export default function WishFormFields({
               onChange={(e) => setWishmailEnabled(e.target.checked)} 
               style={{ width: 'auto', minHeight: 'auto' }}
             />
-            Enable Wishmail (allow others to message you about this wish)
+            {' '}Enable Wishmail (allow others to message you about this wish)
           </label>
 
           <div>

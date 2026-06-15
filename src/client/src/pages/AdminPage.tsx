@@ -130,7 +130,7 @@ export default function AdminPage() {
     loadFlags();
   };
 
-  const onLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+  const onLogin = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setMessage(null);
@@ -162,19 +162,7 @@ export default function AdminPage() {
       {message && <div className="message success">{message}</div>}
       {error && <div className="message error">{error}</div>}
 
-      {user?.role !== 'admin' ? (
-        <form className="form-card" onSubmit={onLogin}>
-          <label>
-            Admin username
-            <input value={username} onChange={(event) => setUsername(event.target.value)} />
-          </label>
-          <label>
-            Admin passphrase
-            <input type="password" value={passphrase} onChange={(event) => setPassphrase(event.target.value)} />
-          </label>
-          <button type="submit">Login as Admin</button>
-        </form>
-      ) : (
+      {user?.role === 'admin' ? (
         <>
           <section>
             <h2>Flagged Wishes</h2>
@@ -221,10 +209,10 @@ export default function AdminPage() {
                     <p>Role: {account.role}</p>
                     <div className="wish-actions" style={{ flexWrap: 'wrap' }}>
                       <button className="secondary-button" onClick={() => resetPassphrase(account.id)}>Reset Password</button>
-                      {account.role !== 'admin' ? (
-                        <button onClick={() => updateRole(account.id, 'admin')}>Promote</button>
-                      ) : (
+                      {account.role === 'admin' ? (
                         <button onClick={() => updateRole(account.id, 'user')}>Demote</button>
+                      ) : (
+                        <button onClick={() => updateRole(account.id, 'admin')}>Promote</button>
                       )}
                       <button className="secondary-button" onClick={() => deleteUser(account.id)}>
                         Delete
@@ -236,6 +224,18 @@ export default function AdminPage() {
             )}
           </section>
         </>
+      ) : (
+        <form className="form-card" onSubmit={onLogin}>
+          <label>
+            Admin username{' '}
+            <input value={username} onChange={(event) => setUsername(event.target.value)} />
+          </label>
+          <label>
+            Admin passphrase{' '}
+            <input type="password" value={passphrase} onChange={(event) => setPassphrase(event.target.value)} />
+          </label>
+          <button type="submit">Login as Admin</button>
+        </form>
       )}
     </section>
   );

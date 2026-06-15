@@ -32,7 +32,7 @@ export default function EnterWishPage() {
   const [result, setResult] = useState<{ id: string; secret?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const submitWish = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submitWish = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setResult(null);
@@ -107,7 +107,16 @@ export default function EnterWishPage() {
             isOverflowing={isOverflowing}
           />
 
-          {!token ? (
+          {token ? (
+            <div className="note-box">
+              <div className="label-with-info">
+                <p style={{ margin: 0 }}>Your account identity attributes are applied automatically to this wish.</p>
+                <InfoToggle>
+                  Any genders, orientations, or roles you set on your Account page are implicitly used to match you with compatible fulfillers.
+                </InfoToggle>
+              </div>
+            </div>
+          ) : (
             <>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <div className="label-with-info">
@@ -152,15 +161,6 @@ export default function EnterWishPage() {
                 />
               </label>
             </>
-          ) : (
-            <div className="note-box">
-              <div className="label-with-info">
-                <p style={{ margin: 0 }}>Your account identity attributes are applied automatically to this wish.</p>
-                <InfoToggle>
-                  Any genders, orientations, or roles you set on your Account page are implicitly used to match you with compatible fulfillers.
-                </InfoToggle>
-              </div>
-            </div>
           )}
           <div style={{ display: 'grid', gap: '8px' }}>
             <div className="label-with-info">

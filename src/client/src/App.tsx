@@ -23,36 +23,37 @@ const pages = [
 
 type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin' | 'manage-wish' | 'wishmail-dashboard';
 
-function AppContent() {
-  const getHashPage = (): PageId => {
-    if (typeof globalThis === 'undefined') {
-      return 'home';
-    }
-    const hashPart = globalThis.location.hash.split('?')[0].replace(/^#/, '');
-    const validPages = ['home', 'enter', 'search', 'display', 'account', 'about', 'admin', 'manage-wish', 'wishmail-dashboard'];
-    if (validPages.includes(hashPart)) {
-      return hashPart as PageId;
-    }
+const getHashPage = (): PageId => {
+  if (typeof globalThis === 'undefined') {
     return 'home';
-  };
+  }
+  const hashPart = globalThis.location.hash.split('?')[0].replace(/^#/, '');
+  const validPages = ['home', 'enter', 'search', 'display', 'account', 'about', 'admin', 'manage-wish', 'wishmail-dashboard'];
+  if (validPages.includes(hashPart)) {
+    return hashPart as PageId;
+  }
+  return 'home';
+};
 
-  const checkIsKioskParam = (): boolean => {
-    if (typeof globalThis === 'undefined') {
-      return false;
-    }
-    const searchParams = new URLSearchParams(globalThis.location.search);
-    if (searchParams.get('kiosk') === 'true') {
+const checkIsKioskParam = (): boolean => {
+  if (typeof globalThis === 'undefined') {
+    return false;
+  }
+  const searchParams = new URLSearchParams(globalThis.location.search);
+  if (searchParams.get('kiosk') === 'true') {
+    return true;
+  }
+  const hashIndex = globalThis.location.hash.indexOf('?');
+  if (hashIndex !== -1) {
+    const hashParams = new URLSearchParams(globalThis.location.hash.substring(hashIndex));
+    if (hashParams.get('kiosk') === 'true') {
       return true;
     }
-    const hashIndex = globalThis.location.hash.indexOf('?');
-    if (hashIndex !== -1) {
-      const hashParams = new URLSearchParams(globalThis.location.hash.substring(hashIndex));
-      if (hashParams.get('kiosk') === 'true') {
-        return true;
-      }
-    }
-    return false;
-  };
+  }
+  return false;
+};
+
+function AppContent() {
 
   const [page, setPage] = useState<PageId>(getHashPage);
   const [isKiosk, setIsKiosk] = useState<boolean>(checkIsKioskParam);
@@ -104,7 +105,7 @@ function AppContent() {
     setPage(pageId);
   };
 
-  const handleExitKiosk = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleExitKiosk = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setKioskError(null);
     try {
@@ -137,6 +138,7 @@ function AppContent() {
         setKioskError(res.error || 'Invalid credentials.');
       }
     } catch (err) {
+      console.error(err);
       setKioskError('An error occurred during authentication.');
     }
   };
@@ -180,7 +182,7 @@ function AppContent() {
                   style={{ display: 'flex', alignItems: 'center', fontWeight: 600, fontSize: '1.05rem', padding: '8px 12px', cursor: 'default' }}
                   aria-label="Guest Account"
                 >
-                  <span aria-hidden="true" style={{ marginRight: '6px' }}>👤</span>
+                  <span aria-hidden="true" style={{ marginRight: '6px' }}>👤</span>{' '}
                   Guest
                 </div>
                 <button className="compact-btn" onClick={() => navigate('account')}>
@@ -219,7 +221,7 @@ function AppContent() {
             <form onSubmit={handleExitKiosk}>
               {kioskError && <div className="kiosk-modal-error">{kioskError}</div>}
               <label>
-                Admin Username
+                Admin Username{' '}
                 <input
                   type="text"
                   required
@@ -230,7 +232,7 @@ function AppContent() {
                 />
               </label>
               <label>
-                Passphrase
+                Passphrase{' '}
                 <input
                   type="password"
                   required
