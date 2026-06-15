@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import WiFiQrCode from './WiFiQrCode';
@@ -82,4 +83,18 @@ describe('WiFiQrCode', () => {
     
     import.meta.env.VITE_WISHBOARD_DOMAIN = originalDomain;
   });
+  it('falls back to http if URL parsing fails', () => {
+    const originalDomain = import.meta.env.VITE_WISHBOARD_DOMAIN;
+    import.meta.env.VITE_WISHBOARD_DOMAIN = 'invalid url:// bad';
+    
+    render(<WiFiQrCode />);
+    act(() => {
+      vi.advanceTimersByTime(10000);
+    });
+
+    expect(screen.getByText('http://invalid url:// bad')).toBeInTheDocument();
+    
+    import.meta.env.VITE_WISHBOARD_DOMAIN = originalDomain;
+  });
 });
+

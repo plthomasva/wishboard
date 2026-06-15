@@ -26,7 +26,7 @@ export function useTextFit(
       content.style.fontSize = `${currentFontSize}px`;
 
       // Synchronously scale down until it fits
-      while (
+      while ( // NOSONAR
         currentFontSize > minFontSize &&
         (container.scrollHeight > container.clientHeight ||
          container.scrollWidth > container.clientWidth)

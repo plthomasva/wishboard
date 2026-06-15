@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext';
+import { isValidId, isValidSecret } from '../utils/validation';
 
 interface Wishmail {
   id: string;
@@ -18,42 +19,54 @@ export default function WishmailDashboard() {
   const [secret, setSecret] = useState<string | null>(null);
 
   useEffect(() => {
-    const hashIndex = window.location.hash.indexOf('?');
-    if (hashIndex !== -1) {
-      const params = new URLSearchParams(window.location.hash.substring(hashIndex));
-      const wId = params.get('id');
-      const wSecret = params.get('secret');
-
-      if (wId) {
-        setWishId(wId);
-        setSecret(wSecret);
-
-        const headers: Record<string, string> = {};
-        if (token) headers.Authorization = `Bearer ${token}`;
-        if (wSecret) headers['x-wish-secret'] = wSecret;
-
-        fetch(`/api/wishes/${wId}/mail`, { headers })
-          .then((res) => {
-            if (!res.ok) throw new Error('Not authorized to view wishmail for this wish, or wish not found.');
-            return res.json();
-          })
-          .then((data) => setMails(data))
-          .catch((err) => setError(err.message));
-      } else {
-        setError('No wish ID provided.');
-      }
-    } else {
+    const hashIndex = globalThis.location.hash.indexOf('?');
+    if (hashIndex === -1) {
       setError('No wish ID provided.');
+      return;
     }
+
+    const params = new URLSearchParams(globalThis.location.hash.substring(hashIndex));
+    const wId = params.get('id');
+    const wSecret = params.get('secret');
+
+    if (!wId) {
+      setError('No wish ID provided.');
+      return;
+    }
+
+    if (!isValidId(wId)) {
+      setError('Invalid wish ID format.');
+      return;
+    }
+
+    if (wSecret && !isValidSecret(wSecret)) {
+      setError('Invalid secret format.');
+      return;
+    }
+
+    setWishId(wId);
+    setSecret(wSecret);
+
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (wSecret) headers['x-wish-secret'] = wSecret;
+
+    fetch(`/api/wishes/${encodeURIComponent(wId)}/mail`, { headers })
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Not authorized to view wishmail for this wish, or wish not found.');
+      })
+      .then((data) => setMails(data))
+      .catch((err) => setError(err.message));
   }, [token]);
 
   const markRead = async (mailId: string) => {
-    if (!wishId) return;
+    if (!wishId || !isValidId(wishId) || !isValidId(mailId)) return;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const response = await fetch(`/api/wishes/${wishId}/mail/${mailId}/read`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wishId)}/mail/${encodeURIComponent(mailId)}/read`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ secret: secret || undefined })
@@ -65,14 +78,14 @@ export default function WishmailDashboard() {
   };
 
   const deleteMail = async (mailId: string) => {
-    if (!wishId) return;
+    if (!wishId || !isValidId(wishId) || !isValidId(mailId)) return;
     if (!confirm('Are you sure you want to delete this message?')) return;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
     if (secret) headers['x-wish-secret'] = secret;
 
-    const response = await fetch(`/api/wishes/${wishId}/mail/${mailId}`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wishId)}/mail/${encodeURIComponent(mailId)}`, {
       method: 'DELETE',
       headers
     });
@@ -101,7 +114,7 @@ export default function WishmailDashboard() {
           <h1 style={{ margin: 0 }}>Wishmail</h1>
           <p style={{ marginTop: '8px', color: '#556275' }}>Messages sent to your wish by other attendees.</p>
         </div>
-        <a href={`#manage-wish?id=${wishId}${secret ? `&secret=${encodeURIComponent(secret)}` : ''}`} className="compact-btn" style={{ display: 'inline-flex', alignItems: 'center', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', textDecoration: 'none' }}>
+        <a href={'#manage-wish?id=' + wishId + (secret ? '&secret=' + encodeURIComponent(secret) : '')} className="compact-btn" style={{ display: 'inline-flex', alignItems: 'center', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', textDecoration: 'none' }}>
           Back to Wish
         </a>
       </div>
@@ -142,6 +155,7 @@ export default function WishmailDashboard() {
                   <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Return Contacts</span>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     {mail.return_contacts.map((c, i) => (
+                      /* eslint-disable-next-line react/no-array-index-key */
                       <span key={i} style={{ background: '#f8fafc', padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem', color: '#334155' }}>
                         <strong style={{ color: '#0f172a' }}>{c.type}:</strong> {c.value}
                       </span>

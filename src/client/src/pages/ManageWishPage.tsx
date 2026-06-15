@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { isValidId, isValidSecret } from '../utils/validation';
 import InfoToggle from '../components/InfoToggle';
 import WishCard from '../components/WishCard';
 import WishFormFields from '../components/WishFormFields';
@@ -16,40 +17,51 @@ export default function ManageWishPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const hashIndex = window.location.hash.indexOf('?');
-    if (hashIndex !== -1) {
-      const params = new URLSearchParams(window.location.hash.substring(hashIndex));
-      const wishId = params.get('id');
-      const wishSecret = params.get('secret');
-
-      if (wishSecret) {
-        setSecret(wishSecret);
-      }
-
-      if (wishId) {
-        fetch(`/api/wishes/${wishId}`)
-          .then((res) => {
-            if (res.ok) return res.json();
-            throw new Error('Wish not found');
-          })
-          .then((data) => {
-            setWish(data);
-            setContent(data.content);
-            setContacts(data.contacts || []);
-            setWishmailEnabled(data.wishmail_enabled || false);
-          })
-          .catch((err) => {
-            setError(err.message);
-          });
-      } else {
-        setError('No wish ID provided.');
-      }
-    } else {
+    const hashIndex = globalThis.location.hash.indexOf('?');
+    if (hashIndex === -1) {
       setError('No wish ID provided.');
+      return;
     }
+
+    const params = new URLSearchParams(globalThis.location.hash.substring(hashIndex));
+    const wishId = params.get('id');
+    const wishSecret = params.get('secret');
+
+    if (wishSecret) {
+      if (!isValidSecret(wishSecret)) {
+        setError('Invalid secret format.');
+        return;
+      }
+      setSecret(wishSecret);
+    }
+
+    if (!wishId) {
+      setError('No wish ID provided.');
+      return;
+    }
+
+    if (!isValidId(wishId)) {
+      setError('Invalid wish ID format.');
+      return;
+    }
+
+    fetch(`/api/wishes/${encodeURIComponent(wishId)}`)
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Wish not found');
+      })
+      .then((data) => {
+        setWish(data);
+        setContent(data.content);
+        setContacts(data.contacts || []);
+        setWishmailEnabled(data.wishmail_enabled || false);
+      })
+      .catch((err) => {
+        setError(err.message);
+      });
   }, []);
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!wish) return;
     setError(null);
@@ -60,18 +72,18 @@ export default function ManageWishPage() {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`/api/wishes/${wish.id}/manage`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wish.id)}/manage`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ secret, content, contacts, wishmail_enabled: wishmailEnabled, action: 'update' })
     });
 
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.error || 'Failed to update wish.');
-    } else {
+    if (response.ok) {
       setMessage('Wish updated successfully!');
       setWish({ ...wish, content, contacts, wishmail_enabled: wishmailEnabled });
+    } else {
+      const data = await response.json();
+      setError(data.error || 'Failed to update wish.');
     }
   };
 
@@ -86,18 +98,18 @@ export default function ManageWishPage() {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`/api/wishes/${wish.id}/manage`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wish.id)}/manage`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ secret, action: 'delete' })
     });
 
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.error || 'Failed to delete wish.');
-    } else {
+    if (response.ok) {
       setMessage('Wish deleted successfully.');
       setWish(null);
+    } else {
+      const data = await response.json();
+      setError(data.error || 'Failed to delete wish.');
     }
   };
 
@@ -139,7 +151,7 @@ export default function ManageWishPage() {
           <p style={{ marginTop: 0 }}>Edit the content of your wish or delete it permanently.</p>
         </div>
         {wish.wishmail_enabled && (
-          <a href={`#wishmail-dashboard?id=${wish.id}${secret ? `&secret=${encodeURIComponent(secret)}` : ''}`} className="compact-btn" style={{ background: '#1a73e8', textDecoration: 'none' }}>
+          <a href={'#wishmail-dashboard?id=' + wish.id + (secret ? '&secret=' + encodeURIComponent(secret) : '')} className="compact-btn" style={{ background: '#1a73e8', textDecoration: 'none' }}>
             View Wishmail
           </a>
         )}
@@ -159,12 +171,13 @@ export default function ManageWishPage() {
           
           <div style={{ display: 'grid', gap: '8px' }}>
             <div className="label-with-info">
-              <label>Passphrase (if anonymous)</label>
+              <label htmlFor="passphrase-input">Passphrase (if anonymous)</label>
               <InfoToggle>
                 If you created this wish anonymously, the passphrase is required to save changes. If you are logged into your account, this isn't needed.
               </InfoToggle>
             </div>
             <input
+              id="passphrase-input"
               type="text"
               value={secret}
               onChange={(e) => setSecret(e.target.value)}

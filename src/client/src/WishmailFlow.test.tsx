@@ -6,13 +6,13 @@ import App from './App';
 describe('Wishmail UI Flow', () => {
   beforeEach(() => {
     // Reset hash
-    window.location.hash = '';
+    globalThis.window.location.hash = '';
 
     // Create a mini fake backend
     let wishes: any[] = [];
     let mails: any[] = [];
     
-    global.fetch = vi.fn().mockImplementation(async (url: string, options: any) => {
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string, options: any) => {
       if (url.startsWith('/api/users/exists')) {
         return { ok: true, json: async () => ({ exists: true }) };
       }
@@ -107,7 +107,7 @@ describe('Wishmail UI Flow', () => {
     });
 
     // 4. Simulate receiving a wishmail (by injecting it into our fake backend)
-    await global.fetch('/api/wishes/w1/mail', { method: 'POST', body: JSON.stringify({ content: 'Hello there' }) });
+    await globalThis.fetch('/api/wishes/w1/mail', { method: 'POST', body: JSON.stringify({ content: 'Hello there' }) });
 
     // 5. Click View Wishmail
     fireEvent.click(screen.getByText('View Wishmail'));
@@ -118,7 +118,7 @@ describe('Wishmail UI Flow', () => {
     });
 
     // 6. Delete the wishmail
-    // Since window.confirm is used, we must mock it
+    // Since globalThis.window.confirm is used, we must mock it
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));

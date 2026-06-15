@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import SendWishmailModal from './SendWishmailModal';
 import React from 'react';
 import * as AuthContext from '../AuthContext';
@@ -9,7 +9,7 @@ vi.mock('../AuthContext', () => ({
 }));
 
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+globalThis.fetch = mockFetch;
 
 describe('SendWishmailModal', () => {
   beforeEach(() => {
@@ -85,4 +85,29 @@ describe('SendWishmailModal', () => {
     
     expect(screen.queryAllByRole('combobox').length).toBe(0);
   });
+  it('submits successfully without auth token', async () => {
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null } as any);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    render(<SendWishmailModal wishId="w2" onClose={vi.fn()} />);
+    
+    fireEvent.change(screen.getByPlaceholderText('What would you like to say to the wish creator?'), { target: { value: 'Anon msg' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send Message' }));
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/wishes/w2/mail', expect.objectContaining({
+      headers: { 'Content-Type': 'application/json' }
+    }));
+  });
+
+  it('handles default error message if error payload is empty', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) });
+    render(<SendWishmailModal wishId="w3" onClose={vi.fn()} />);
+    
+    fireEvent.change(screen.getByPlaceholderText('What would you like to say to the wish creator?'), { target: { value: 'Bad msg' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send Message' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to send message.')).toBeInTheDocument();
+    });
+  });
 });
+

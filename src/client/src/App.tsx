@@ -28,7 +28,7 @@ function AppContent() {
     if (typeof window === 'undefined') {
       return 'home';
     }
-    const hashPart = window.location.hash.split('?')[0].replace(/^#/, '');
+    const hashPart = globalThis.window.location.hash.split('?')[0].replace(/^#/, '');
     const validPages = ['home', 'enter', 'search', 'display', 'account', 'about', 'admin', 'manage-wish', 'wishmail-dashboard'];
     if (validPages.includes(hashPart)) {
       return hashPart as PageId;
@@ -40,13 +40,13 @@ function AppContent() {
     if (typeof window === 'undefined') {
       return false;
     }
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(globalThis.window.location.search);
     if (searchParams.get('kiosk') === 'true') {
       return true;
     }
-    const hashIndex = window.location.hash.indexOf('?');
+    const hashIndex = globalThis.window.location.hash.indexOf('?');
     if (hashIndex !== -1) {
-      const hashParams = new URLSearchParams(window.location.hash.substring(hashIndex));
+      const hashParams = new URLSearchParams(globalThis.window.location.hash.substring(hashIndex));
       if (hashParams.get('kiosk') === 'true') {
         return true;
       }
@@ -66,16 +66,16 @@ function AppContent() {
 
   useEffect(() => {
     // Check for auto-login token in the URL hash
-    const hashIndex = window.location.hash.indexOf('?');
+    const hashIndex = globalThis.window.location.hash.indexOf('?');
     if (hashIndex !== -1) {
-      const hashParams = new URLSearchParams(window.location.hash.substring(hashIndex));
+      const hashParams = new URLSearchParams(globalThis.window.location.hash.substring(hashIndex));
       const token = hashParams.get('token');
       if (token) {
         setTokenExternally(token);
         hashParams.delete('token');
         const hashStr = hashParams.toString();
-        const baseHash = window.location.hash.substring(0, hashIndex);
-        window.location.hash = baseHash + (hashStr ? `?${hashStr}` : '');
+        const baseHash = globalThis.window.location.hash.substring(0, hashIndex);
+        globalThis.window.location.hash = baseHash + (hashStr ? `?${hashStr}` : '');
       }
     }
 
@@ -85,8 +85,8 @@ function AppContent() {
         setIsKiosk(true);
       }
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    globalThis.window.addEventListener('hashchange', handleHashChange);
+    return () => globalThis.window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   useEffect(() => {
@@ -95,12 +95,12 @@ function AppContent() {
         setShowExitPrompt(true);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    globalThis.window.addEventListener('keydown', handleKeyDown);
+    return () => globalThis.window.removeEventListener('keydown', handleKeyDown);
   }, [isKiosk]);
 
   const navigate = (pageId: PageId) => {
-    window.location.hash = `#${pageId}`;
+    globalThis.window.location.hash = `#${pageId}`;
     setPage(pageId);
   };
 
@@ -117,18 +117,18 @@ function AppContent() {
           setKioskPassphrase('');
 
           // Remove the kiosk parameter from the URL to prevent re-entering on reload
-          if (window.location.hash.includes('kiosk=true')) {
-            const hashIndex = window.location.hash.indexOf('?');
+          if (globalThis.window.location.hash.includes('kiosk=true')) {
+            const hashIndex = globalThis.window.location.hash.indexOf('?');
             if (hashIndex !== -1) {
-              window.location.hash = window.location.hash.substring(0, hashIndex);
+              globalThis.window.location.hash = globalThis.window.location.hash.substring(0, hashIndex);
             }
           }
-          const searchParams = new URLSearchParams(window.location.search);
+          const searchParams = new URLSearchParams(globalThis.window.location.search);
           if (searchParams.has('kiosk')) {
             searchParams.delete('kiosk');
             const searchStr = searchParams.toString();
-            const newUrl = window.location.pathname + (searchStr ? `?${searchStr}` : '') + window.location.hash;
-            window.history.replaceState({}, '', newUrl);
+            const newUrl = globalThis.window.location.pathname + (searchStr ? `?${searchStr}` : '') + globalThis.window.location.hash;
+            globalThis.window.history.replaceState({}, '', newUrl);
           }
         } else {
           setKioskError('Access denied: You must be an admin to exit kiosk mode.');

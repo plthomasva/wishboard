@@ -30,7 +30,7 @@ export default function SendWishmailModal({ wishId, onClose }: SendWishmailModal
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`/api/wishes/${wishId}/mail`, {
+    const response = await fetch(`/api/wishes/${encodeURIComponent(wishId)}/mail`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -57,7 +57,7 @@ export default function SendWishmailModal({ wishId, onClose }: SendWishmailModal
         ) : (
           <form onSubmit={handleSubmit}>
             {error && <div className="kiosk-modal-error">{error}</div>}
-            
+
             <label>
               Your Message
               <textarea
@@ -73,11 +73,11 @@ export default function SendWishmailModal({ wishId, onClose }: SendWishmailModal
             <fieldset style={{ border: '1px solid #d7dee5', borderRadius: '12px', padding: '16px', background: '#f8fafc', marginTop: '16px' }}>
               <legend style={{ fontWeight: 600, padding: '0 8px' }}>Return Contacts (Optional)</legend>
               <p className="microtext" style={{ marginTop: 0 }}>Provide a way for them to reply to you.</p>
-              
+
               {contacts.map((contact, index) => (
                 <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                  <select 
-                    value={contact.type} 
+                  <select
+                    value={contact.type}
                     onChange={(e) => updateContact(index, 'type', e.target.value)}
                     style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d7dee5', background: 'white' }}
                   >
@@ -85,10 +85,10 @@ export default function SendWishmailModal({ wishId, onClose }: SendWishmailModal
                     <option value="Phone">Phone</option>
                     <option value="Email">Email</option>
                   </select>
-                  <input 
-                    type="text" 
-                    value={contact.value} 
-                    onChange={(e) => updateContact(index, 'value', e.target.value)} 
+                  <input
+                    type="text"
+                    value={contact.value}
+                    onChange={(e) => updateContact(index, 'value', e.target.value)}
                     placeholder="Username, number, etc."
                     style={{ minHeight: '36px', padding: '8px' }}
                   />

@@ -6,3 +6,9 @@ npm-debug.log*
 .DS_Store
 coverage
 :memory:
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

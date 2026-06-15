@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import ResizeObserver from 'resize-observer-polyfill';
 
-global.ResizeObserver = ResizeObserver;
+globalThis.ResizeObserver = ResizeObserver;
 if (typeof window !== 'undefined') {
-  window.ResizeObserver = ResizeObserver;
+  globalThis.window.ResizeObserver = ResizeObserver;
 }

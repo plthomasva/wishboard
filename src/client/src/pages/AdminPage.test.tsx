@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import AdminPage from './AdminPage';
 
@@ -21,7 +21,7 @@ describe('AdminPage', () => {
     mockToken = null;
     loginMock.mockReset();
     
-    global.fetch = vi.fn().mockImplementation((input, options) => {
+    globalThis.fetch = vi.fn().mockImplementation((input, options) => {
       const url = typeof input === 'string' ? input : '';
       
       if (url.endsWith('/api/admin/flags')) {
@@ -165,7 +165,7 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Removed wish flagged-1')).toBeInTheDocument();
     });
-    expect(global.fetch).toHaveBeenCalledWith('/api/admin/wishes/flagged-1/remove', expect.any(Object));
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/wishes/flagged-1/remove', expect.any(Object));
   });
 
   it('can promote and demote a user', async () => {
@@ -184,7 +184,7 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Updated user role for user-1')).toBeInTheDocument();
     });
-    expect(global.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/role', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/role', expect.objectContaining({
       method: 'POST',
       body: JSON.stringify({ role: 'admin' })
     }));
@@ -197,7 +197,7 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Updated user role for admin-2')).toBeInTheDocument();
     });
-    expect(global.fetch).toHaveBeenCalledWith('/api/admin/users/admin-2/role', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/users/admin-2/role', expect.objectContaining({
       method: 'POST',
       body: JSON.stringify({ role: 'user' })
     }));
@@ -220,7 +220,7 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Deleted user user-1')).toBeInTheDocument();
     });
-    expect(global.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/delete', expect.any(Object));
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/delete', expect.any(Object));
   });
 
   it('can reset a user password', async () => {
@@ -228,7 +228,7 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    global.fetch = vi.fn().mockImplementation((input) => {
+    globalThis.fetch = vi.fn().mockImplementation((input) => {
       const url = typeof input === 'string' ? input : '';
       if (url.endsWith('/api/admin/flags')) {
         return Promise.resolve({ ok: true, json: async () => [] });
@@ -254,7 +254,7 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Passphrase successfully reset! The new passphrase is: new-password-123')).toBeInTheDocument();
     });
-    expect(global.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/reset-password', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/reset-password', expect.objectContaining({
       method: 'POST'
     }));
   });
@@ -274,14 +274,14 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Seeder completed: 50 users and 100 wishes created.')).toBeInTheDocument();
     });
-    expect(global.fetch).toHaveBeenCalledWith('/api/admin/reset-demo', expect.any(Object));
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/reset-demo', expect.any(Object));
   });
 
   it('handles fetch errors gracefully when loading dashboard', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
 
-    global.fetch = vi.fn().mockResolvedValue({ ok: false });
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
 
     render(<AdminPage />);
 
@@ -294,7 +294,7 @@ describe('AdminPage', () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
 
-    global.fetch = vi.fn().mockImplementation((input) => {
+    globalThis.fetch = vi.fn().mockImplementation((input) => {
       const url = typeof input === 'string' ? input : '';
       if (url.endsWith('/api/admin/flags')) {
         return Promise.resolve({ ok: true, json: async () => [] });
@@ -343,7 +343,7 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Cleared flag for wish flagged-1')).toBeInTheDocument();
     });
-    expect(global.fetch).toHaveBeenCalledWith('/api/admin/wishes/flagged-1/clear-flag', expect.any(Object));
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/wishes/flagged-1/clear-flag', expect.any(Object));
   });
 
   it('can clear all flags in bulk', async () => {
@@ -362,6 +362,6 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Cleared all flags successfully.')).toBeInTheDocument();
     });
-    expect(global.fetch).toHaveBeenCalledWith('/api/admin/wishes/clear-all-flags', expect.any(Object));
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/wishes/clear-all-flags', expect.any(Object));
   });
 });
