@@ -102,6 +102,7 @@ describe('AccountPage Coverage', () => {
   });
 
   it('handles registration failure from AuthContext', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ exists: false }) });
     const mockRegister = vi.fn().mockResolvedValue({ success: false, error: 'Registration failed from server' });
     vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null, token: null, login: vi.fn(), register: mockRegister, logout: vi.fn(), refreshUser: vi.fn() } as any);
 
@@ -177,6 +178,10 @@ describe('AccountPage Coverage', () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] }); // loadWishes
 
     render(<AccountPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/No wishes yet/)).toBeInTheDocument();
+    });
 
     // Change existing contact
     const typeSelects = screen.getAllByRole('combobox');

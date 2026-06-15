@@ -96,6 +96,10 @@ describe('SendWishmailModal', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/wishes/w2/mail', expect.objectContaining({
       headers: { 'Content-Type': 'application/json' }
     }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Message sent successfully!')).toBeInTheDocument();
+    });
   });
 
   it('handles default error message if error payload is empty', async () => {
