@@ -18,7 +18,7 @@ const randomIndex = (max) => {
 
   const typedArray = new Uint32Array(1);
 
-  while (true) {
+  while (true) { // NOSONAR
     cryptoProvider.getRandomValues(typedArray);
     const randomUint32 = typedArray[0];
 
