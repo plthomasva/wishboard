@@ -34,6 +34,17 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const storageKey = 'wishboard-auth-token';
 
+const mapToAuthUser = (data: any): AuthUser => ({
+  id: data.id,
+  username: data.username,
+  role: data.role,
+  identity_genders: data.identity_genders || [],
+  identity_orientations: data.identity_orientations || [],
+  identity_roles: data.identity_roles || [],
+  contacts: data.contacts || [],
+  wishmail_enabled: Boolean(data.wishmail_enabled)
+});
+
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(storageKey)); // NOSONAR
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -58,16 +69,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     }
 
     const data = await response.json();
-    setUser({
-      id: data.id,
-      username: data.username,
-      role: data.role,
-      identity_genders: data.identity_genders || [],
-      identity_orientations: data.identity_orientations || [],
-      identity_roles: data.identity_roles || [],
-      contacts: data.contacts || [],
-      wishmail_enabled: Boolean(data.wishmail_enabled)
-    });
+    setUser(mapToAuthUser(data));
   };
 
   useEffect(() => {
@@ -88,16 +90,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
     setToken(data.token);
     localStorage.setItem(storageKey, data.token); // NOSONAR
-    setUser({
-      id: data.id,
-      username: data.username,
-      role: data.role,
-      identity_genders: data.identity_genders || [],
-      identity_orientations: data.identity_orientations || [],
-      identity_roles: data.identity_roles || [],
-      contacts: data.contacts || [],
-      wishmail_enabled: Boolean(data.wishmail_enabled)
-    });
+    setUser(mapToAuthUser(data));
     return { success: true, role: data.role };
   };
 
@@ -129,16 +122,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
     setToken(data.token);
     localStorage.setItem(storageKey, data.token); // NOSONAR
-    setUser({
-      id: data.id,
-      username: data.username,
-      role: data.role,
-      identity_genders: data.identity_genders || [],
-      identity_orientations: data.identity_orientations || [],
-      identity_roles: data.identity_roles || [],
-      contacts: data.contacts || [],
-      wishmail_enabled: Boolean(data.wishmail_enabled)
-    });
+    setUser(mapToAuthUser(data));
     return { success: true, secret: data.secret, role: data.role };
   };
 
