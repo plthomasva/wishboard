@@ -38,6 +38,11 @@ export default function WishmailDashboard() {
       return;
     }
 
+    if (wSecret && !/^[a-zA-Z0-9_-]+$/.test(wSecret)) {
+      setError('Invalid secret format.');
+      return;
+    }
+
     setWishId(wId);
     setSecret(wSecret);
 

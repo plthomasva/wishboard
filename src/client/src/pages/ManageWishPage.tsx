@@ -27,6 +27,10 @@ export default function ManageWishPage() {
     const wishSecret = params.get('secret');
 
     if (wishSecret) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(wishSecret)) {
+        setError('Invalid secret format.');
+        return;
+      }
       setSecret(wishSecret);
     }
 

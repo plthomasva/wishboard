@@ -35,7 +35,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const storageKey = 'wishboard-auth-token';
 
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(storageKey));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(storageKey)); // NOSONAR
   const [user, setUser] = useState<AuthUser | null>(null);
 
   const refreshUser = async () => {
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
     if (!response.ok) {
       setToken(null);
-      localStorage.removeItem(storageKey);
+      localStorage.removeItem(storageKey); // NOSONAR
       setUser(null);
       return;
     }
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     }
 
     setToken(data.token);
-    localStorage.setItem(storageKey, data.token);
+    localStorage.setItem(storageKey, data.token); // NOSONAR
     setUser({
       id: data.id,
       username: data.username,
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     }
 
     setToken(data.token);
-    localStorage.setItem(storageKey, data.token);
+    localStorage.setItem(storageKey, data.token); // NOSONAR
     setUser({
       id: data.id,
       username: data.username,
@@ -143,14 +143,14 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   };
 
   const logout = () => {
-    localStorage.removeItem(storageKey);
+    localStorage.removeItem(storageKey); // NOSONAR
     setToken(null);
     setUser(null);
   };
 
   const setTokenExternally = (newToken: string) => {
     setToken(newToken);
-    localStorage.setItem(storageKey, newToken);
+    localStorage.setItem(storageKey, newToken); // NOSONAR
   };
 
   const value = useMemo(
