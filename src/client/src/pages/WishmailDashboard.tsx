@@ -61,7 +61,7 @@ export default function WishmailDashboard() {
   }, [token]);
 
   const markRead = async (mailId: string) => {
-    if (!wishId || !isValidId(mailId)) return;
+    if (!wishId || !isValidId(wishId) || !isValidId(mailId)) return;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -78,7 +78,7 @@ export default function WishmailDashboard() {
   };
 
   const deleteMail = async (mailId: string) => {
-    if (!wishId || !isValidId(mailId)) return;
+    if (!wishId || !isValidId(wishId) || !isValidId(mailId)) return;
     if (!confirm('Are you sure you want to delete this message?')) return;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
