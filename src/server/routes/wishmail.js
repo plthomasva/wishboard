@@ -47,7 +47,7 @@ router.post('/', (req, res) => {
   const { content, return_contacts } = req.body;
   const user = getRequestUser(req);
 
-  if (!content || !content.trim()) {
+  if (!content?.trim()) {
     return res.status(400).json({ error: 'Mail content is required.' });
   }
 

@@ -5,7 +5,7 @@ const TOKEN_EXPIRY_MS = 1000 * 60 * 60 * 24 * 7;
 
 const getTokenFromRequest = (req) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader?.startsWith('Bearer ')) {
     return null;
   }
   return authHeader.slice(7).trim();
@@ -86,7 +86,7 @@ export const requireAuth = (req, res, next) => {
 
 export const requireAdmin = (req, res, next) => {
   const user = getUserFromRequest(req);
-  if (!user || user.role !== 'admin') {
+  if (user?.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required.' });
   }
   req.user = user;

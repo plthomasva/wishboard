@@ -9,8 +9,8 @@ DOMAIN_NAME="${2:-wishboard.painless-computing.com}"
 echo "Deployment Mode: $MODE, Domain: $DOMAIN_NAME"
 REQUIRED_MB=800
 AVAILABLE_MB=$(df -m /home | awk 'NR==2 {print $4}')
-if [ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]; then
-    echo "ERROR: Not enough disk space. Available: ${AVAILABLE_MB} MB, Required: ${REQUIRED_MB} MB"
+if [[ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]]; then
+    echo "ERROR: Not enough disk space. Available: ${AVAILABLE_MB} MB, Required: ${REQUIRED_MB} MB" >&2
     exit 1
 fi
 echo "Disk space OK (${AVAILABLE_MB} MB available)."
@@ -29,7 +29,7 @@ echo "Installing NPM dependencies..."
 sudo -u wishboard bash -c 'cd /home/wishboard/wishboard && npm install'
 
 echo "Configuring environment variables..."
-if [ "$MODE" = "prod" ] || [ "$MODE" = "dual" ]; then
+if [[ "$MODE" = "prod" ]] || [[ "$MODE" = "dual" ]]; then
     sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_DOMAIN=$DOMAIN_NAME' > /home/wishboard/wishboard/.env"
     sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_AP_IP=10.42.0.1' >> /home/wishboard/wishboard/.env"
 else

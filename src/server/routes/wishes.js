@@ -1,5 +1,5 @@
 import express from 'express';
-import crypto from 'node:crypto';
+
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
 import { getUserFromToken, getTokenFromRequestHeader, hashPassphrase, verifyPassphrase, parseJsonArray, normalizeArrayInput, createSalt } from '../auth.js';
@@ -21,15 +21,14 @@ const parseGenderDescriptor = (value) => {
   const token = normalizeToken(value);
   const isTrans = token.includes('trans');
   const isCis = token.includes('cis');
-  const base = token.includes('woman') || token.includes('female')
-    ? 'woman'
-    : token.includes('man') || token.includes('male')
-    ? 'man'
-    : token.includes('non') && token.includes('binary')
-    ? 'nonbinary'
-    : token.includes('enby')
-    ? 'nonbinary'
-    : token;
+  let base = token;
+  if (token.includes('woman') || token.includes('female')) {
+    base = 'woman';
+  } else if (token.includes('man') || token.includes('male')) {
+    base = 'man';
+  } else if ((token.includes('non') && token.includes('binary')) || token.includes('enby')) {
+    base = 'nonbinary';
+  }
   return { token, base, isTrans, isCis };
 };
 
@@ -130,11 +129,11 @@ const matchesRolePreference = (searcherRoles, desired) => {
     return false;
   }
 
-  const normalizedSearcher = searcherRoles.map(normalizeToken);
+  const normalizedSearcher = new Set(searcherRoles.map(normalizeToken));
   const normalizedDesired = desired.map(normalizeToken);
 
   return normalizedDesired.some((desiredRole) => {
-    return normalizedSearcher.includes(desiredRole);
+    return normalizedSearcher.has(desiredRole);
   });
 };
 
@@ -145,8 +144,8 @@ const matchesPreference = (searcher, desired) => {
   if (!searcher || searcher.length === 0) {
     return false;
   }
-  const normalizedSearcher = searcher.map(normalizeToken);
-  return desired.some((item) => normalizedSearcher.includes(normalizeToken(item)));
+  const normalizedSearcher = new Set(searcher.map(normalizeToken));
+  return desired.some((item) => normalizedSearcher.has(normalizeToken(item)));
 };
 
 export const isCompatible = (wish, searcher) => {
@@ -174,8 +173,8 @@ export const isCompatible = (wish, searcher) => {
   if (desiredGenders.length > 0) {
     creatorWantsSearcherGender = searcherGenders.some((item) => {
       const descriptor = parseGenderDescriptor(item);
-      const searcherLabels = [descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, item.trim().toLowerCase()];
-      return desiredGenders.some(d => searcherLabels.includes(normalizeToken(d)));
+      const searcherLabels = new Set([descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, item.trim().toLowerCase()]);
+      return desiredGenders.some(d => searcherLabels.has(normalizeToken(d)));
     });
   } else {
     creatorWantsSearcherGender = matchesGenderPreference(creatorGenders, creatorOrientations, searcherGenders);
@@ -191,7 +190,7 @@ export const isCompatible = (wish, searcher) => {
 
 router.post('/', (req, res) => {
   const { content, passphrase, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled } = req.body;
-  if (!content || !content.trim()) {
+  if (!content?.trim()) {
     return res.status(400).json({ error: 'Wish content is required.' });
   }
 
@@ -321,27 +320,14 @@ router.post('/:id/manage', (req, res) => {
     return res.status(404).json({ error: 'Wish not found.' });
   }
 
-  let authorized = false;
-  if (user && row.user_id === user.id) {
-    authorized = true;
-  }
+  const isOwner = user && row.user_id === user.id;
+  const isAuthorized = isOwner || (secret && row.secret_hash && verifyPassphrase(secret.trim(), ...row.secret_hash.split(':')));
 
-  if (!authorized) {
-    if (!secret) {
+  if (!isAuthorized) {
+    if (!secret && !isOwner && row.secret_hash) {
       return res.status(401).json({ error: 'Secret token required for wish management.' });
     }
-    if (!row.secret_hash) {
-      return res.status(403).json({ error: 'Invalid secret token.' });
-    }
-    const [salt, hash] = row.secret_hash.split(':');
-    if (!verifyPassphrase(secret.trim(), salt, hash)) {
-      return res.status(403).json({ error: 'Invalid secret token.' });
-    }
-    authorized = true;
-  }
-
-  if (!authorized) {
-    return res.status(403).json({ error: 'Not authorized to manage this wish.' });
+    return res.status(403).json({ error: 'Invalid secret token or unauthorized.' });
   }
 
   if (action === 'delete') {
@@ -349,7 +335,7 @@ router.post('/:id/manage', (req, res) => {
     return res.json({ success: true });
   }
 
-  if (content && content.trim()) {
+  if (content?.trim()) {
     const { contacts, wishmail_enabled } = req.body;
     const parsedContacts = Array.isArray(contacts) ? contacts : [];
     const wme = wishmail_enabled ? 1 : 0;

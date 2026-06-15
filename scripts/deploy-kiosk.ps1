@@ -1,14 +1,14 @@
 param (
     [Parameter(Mandatory = $false)]
     [string]$AdminUsername = "pi",
-    
+
     [Parameter(Mandatory = $false)]
     [string]$HostName = "raspberrypi.local",
-    
+
     [Parameter(Mandatory = $false)]
     [ValidateSet("prod", "dev", "dual")]
     [string]$Mode = "dev",
-    
+
     [Parameter(Mandatory = $false)]
     [string]$DomainName = "wishboard.painless-computing.com"
 )
@@ -40,11 +40,11 @@ try {
     Write-Host "4. Extracting codebase and building..." -ForegroundColor Yellow
     # Execute the remote build script
     ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh $Mode $DomainName"
-    
+
     if ($LASTEXITCODE -ne 0) {
         throw "Deployment failed on the target device. Check the logs above."
     }
-    
+
     Write-Host "Deployment complete!" -ForegroundColor Green
 }
 finally {

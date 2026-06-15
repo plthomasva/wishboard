@@ -1,6 +1,6 @@
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 import wishesRouter from './routes/wishes.js';
@@ -11,8 +11,36 @@ import wishmailRouter from './routes/wishmail.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
+app.disable('x-powered-by');
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS
+  ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : ['http://localhost:3000', 'http://localhost:5173']);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    try {
+      const originUrl = new URL(origin);
+      if (originUrl.hostname.endsWith('.local')) {
+        return callback(null, true);
+      }
+    } catch (err) {
+      // Ignore invalid origin URLs
+    }
+    
+    // By returning false instead of an Error, we simply omit CORS headers.
+    // The browser doesn't need CORS headers for same-origin requests, so they succeed!
+    // Real cross-origin requests will naturally be blocked by the browser.
+    return callback(null, false);
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 const limiter = rateLimit({

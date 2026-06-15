@@ -79,11 +79,14 @@ export default function EnterWishPage() {
     setIsOverflowing(false);
   };
 
+  const parsedCreatorGenders = creatorGenders ? creatorGenders.split(',').map(s => s.trim()) : undefined;
+  const parsedCreatorOrientations = creatorOrientations ? creatorOrientations.split(',').map(s => s.trim()) : undefined;
+
   const previewWish = {
     id: 'preview',
     content: content || 'Your wish text will appear here',
-    creator_genders: (user ? user.identity_genders : (creatorGenders ? creatorGenders.split(',').map(s => s.trim()) : undefined)),
-    creator_orientations: (user ? user.identity_orientations : (creatorOrientations ? creatorOrientations.split(',').map(s => s.trim()) : undefined)),
+    creator_genders: user ? user.identity_genders : parsedCreatorGenders,
+    creator_orientations: user ? user.identity_orientations : parsedCreatorOrientations,
     contacts: contacts.filter(c => c.value.trim()),
     wishmail_enabled: wishmailEnabled
   };
@@ -206,9 +209,9 @@ export default function EnterWishPage() {
               <p>Your passphrase is: <strong>{result.secret}</strong></p>
               <div style={{ margin: '16px 0' }}>
                 <QRCodeSVG 
-                  value={`${globalThis.window.location.origin}${globalThis.window.location.pathname}#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`} 
+                  value={`${globalThis.location.origin}${globalThis.location.pathname}#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`} 
                   size={150} 
-                  includeMargin={true}
+
                   bgColor="#ffffff"
                   fgColor="#0f172a"
                 />

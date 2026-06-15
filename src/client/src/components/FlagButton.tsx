@@ -5,7 +5,7 @@ interface FlagButtonProps {
   title?: string;
 }
 
-export default function FlagButton({ onFlag, title = 'Flag as inappropriate' }: FlagButtonProps) {
+export default function FlagButton({ onFlag, title = 'Flag as inappropriate' }: Readonly<FlagButtonProps>) {
   return (
     <button
       className="flag-wish-btn"

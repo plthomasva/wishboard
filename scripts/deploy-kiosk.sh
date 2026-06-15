@@ -7,8 +7,8 @@ MODE="${3:-dev}"
 DOMAIN_NAME="${4:-wishboard.painless-computing.com}"
 
 if [[ ! "$MODE" =~ ^(prod|dev|dual)$ ]]; then
-    echo "Error: Mode must be 'prod', 'dev', or 'dual'"
-    echo "Usage: ./scripts/deploy-kiosk.sh [user] [host] [mode] [domain]"
+    echo "Error: Mode must be 'prod', 'dev', or 'dual'" >&2
+    echo "Usage: ./scripts/deploy-kiosk.sh [user] [host] [mode] [domain]" >&2
     exit 1
 fi
 

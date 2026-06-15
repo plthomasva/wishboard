@@ -33,9 +33,9 @@ sudo apt-get install -y imagemagick swaybg chromium network-manager iw nginx
 
 echo "Configuring Wireless Access Point (Hotspot) for Mode: $MODE..."
 
-if [ "$MODE" = "dev" ]; then
+if [[ "$MODE" = "dev" ]]; then
   echo "Dev Mode: Skipping all network modifications. Using existing connections."
-elif [ "$MODE" = "dual" ]; then
+elif [[ "$MODE" = "dual" ]]; then
   # Create a virtual AP interface for dual mode concurrency
   echo "Setting up virtual ap0 interface for AP/STA concurrency..."
   sudo tee /usr/local/bin/enable-ap0.sh > /dev/null << 'EOF'
@@ -115,9 +115,9 @@ echo "Configuring DNS and Nginx Reverse Proxy..."
 # Always configure Nginx for external port forwarding
 BASE_DOMAIN=$(echo "$DOMAIN_NAME" | grep -oE '[^.]+\.[^.]+$')
 CERT_DIR="/etc/letsencrypt/live/$BASE_DOMAIN"
-if [ ! -d "$CERT_DIR" ]; then
+if [[ ! -d "$CERT_DIR" ]]; then
     ALT_DIR=$(ls -d /etc/letsencrypt/live/*/ 2>/dev/null | head -n 1)
-    if [ ! -z "$ALT_DIR" ]; then
+    if [[ ! -z "$ALT_DIR" ]]; then
         CERT_DIR=${ALT_DIR%/}
     fi
 fi
@@ -155,14 +155,14 @@ server {
 }
 EOF
 
-if [ ! -f "/etc/nginx/sites-enabled/wishboard" ]; then
+if [[ ! -f "/etc/nginx/sites-enabled/wishboard" ]]; then
     sudo ln -s "$NGINX_CONF" "/etc/nginx/sites-enabled/wishboard"
 fi
 sudo systemctl reload nginx || true
 echo "Nginx reverse proxy for $DOMAIN_NAME configured."
 
 # Configure local DNS hijacking only in prod/dual
-if [ "$MODE" = "dev" ]; then
+if [[ "$MODE" = "dev" ]]; then
     echo "Dev Mode: Disabling local DNS redirection..."
     sudo rm -f "/etc/NetworkManager/dnsmasq-shared.d/wishboard.conf"
     sudo systemctl reload NetworkManager || true
@@ -170,9 +170,9 @@ if [ "$MODE" = "dev" ]; then
 else
     echo "Prod/Dual Mode: Configuring local DNS redirection for domain $DOMAIN_NAME at IP $AP_IP..."
     DNS_CONF="/etc/NetworkManager/dnsmasq-shared.d/wishboard.conf"
-    if [ -d "/etc/NetworkManager/dnsmasq-shared.d" ]; then
+    if [[ -d "/etc/NetworkManager/dnsmasq-shared.d" ]]; then
         echo "address=/$DOMAIN_NAME/$AP_IP" | sudo tee "$DNS_CONF" > /dev/null
-    elif [ -d "/etc/dnsmasq.d" ]; then
+    elif [[ -d "/etc/dnsmasq.d" ]]; then
         echo "address=/$DOMAIN_NAME/$AP_IP" | sudo tee "/etc/dnsmasq.d/wishboard.conf" > /dev/null
     fi
     sudo systemctl reload NetworkManager || true
@@ -211,14 +211,14 @@ echo "Configuring auto-login in LightDM..."
 LIGHTDM_CONF="/etc/lightdm/lightdm.conf"
 
 # Detect whether to use Wayland (labwc) or X11 (openbox)
-if [ -x "$(command -v labwc)" ]; then
+if [[ -x "$(command -v labwc)" ]]; then
   KIOSK_SESSION="labwc"
 else
   KIOSK_SESSION="openbox"
 fi
 echo "Detected graphics stack. Using session: $KIOSK_SESSION"
 
-if [ -f "$LIGHTDM_CONF" ]; then
+if [[ -f "$LIGHTDM_CONF" ]]; then
   # Remove existing autologin settings to prevent conflicts
   sudo sed -i '/^autologin-user=/d' "$LIGHTDM_CONF"
   sudo sed -i '/^autologin-user-timeout=/d' "$LIGHTDM_CONF"
@@ -235,11 +235,11 @@ fi
 echo "Disabling TTY1 autologin for security..."
 TTY_OVERRIDE="/etc/systemd/system/getty@tty1.service.d/autologin.conf"
 TTY_RASPI="/etc/systemd/system/getty@tty1.service.d/override.conf"
-if [ -f "$TTY_OVERRIDE" ]; then
+if [[ -f "$TTY_OVERRIDE" ]]; then
   sudo rm -f "$TTY_OVERRIDE"
   echo "Removed $TTY_OVERRIDE"
 fi
-if [ -f "$TTY_RASPI" ]; then
+if [[ -f "$TTY_RASPI" ]]; then
   sudo rm -f "$TTY_RASPI"
   echo "Removed $TTY_RASPI"
 fi
@@ -315,7 +315,7 @@ while true; do
   
   if [[ "$ACTIVE_TTY" =~ ^tty[1-6]$ ]]; then
     IDLE_COUNT=$((IDLE_COUNT + 10))
-    if [ "$IDLE_COUNT" -ge 60 ]; then
+    if [[ "$IDLE_COUNT" -ge 60 ]]; then
       echo "TTY idle timeout reached. Switching back to graphical session."
       chvt 7 || true
       IDLE_COUNT=0
@@ -323,22 +323,22 @@ while true; do
   else
     # We are on a GUI. Check loginctl for active session status
     ACTIVE_SESSION=$(loginctl show-seat seat0 -p ActiveSession --value 2>/dev/null || echo "")
-    if [ -n "$ACTIVE_SESSION" ]; then
+    if [[ -n "$ACTIVE_SESSION" ]]; then
       SESSION_USER=$(loginctl show-session "$ACTIVE_SESSION" -p Name --value 2>/dev/null || echo "")
       IDLE_HINT=$(loginctl show-session "$ACTIVE_SESSION" -p IdleHint --value 2>/dev/null || echo "no")
       
-      if [ "$SESSION_USER" != "wishboard" ]; then
-        if [ "$SESSION_USER" = "lightdm" ]; then
+      if [[ "$SESSION_USER" != "wishboard" ]]; then
+        if [[ "$SESSION_USER" = "lightdm" ]]; then
            # Greeter is active, count up unconditionally since they should log in or leave
            IDLE_COUNT=$((IDLE_COUNT + 10))
-        elif [ "$IDLE_HINT" = "yes" ]; then
+        elif [[ "$IDLE_HINT" = "yes" ]]; then
            # Pi user is logged in but systemd marked them idle
            IDLE_COUNT=$((IDLE_COUNT + 10))
         else
            IDLE_COUNT=0
         fi
         
-        if [ "$IDLE_COUNT" -ge 60 ]; then
+        if [[ "$IDLE_COUNT" -ge 60 ]]; then
            echo "Non-kiosk session is idle. Forcing switch to wishboard."
            dm-tool switch-to-user wishboard || chvt 7
            IDLE_COUNT=0
