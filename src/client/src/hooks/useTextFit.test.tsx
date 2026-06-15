@@ -42,8 +42,8 @@ describe('useTextFit', () => {
     
     if (observerCallback) {
       const container = screen.getByTestId('container');
-      Object.defineProperty(container, 'scrollHeight', { value: 200 });
-      Object.defineProperty(container, 'clientHeight', { value: 100 });
+      Object.defineProperty(container, 'scrollHeight', { value: 200, configurable: true });
+      Object.defineProperty(container, 'clientHeight', { value: 100, configurable: true });
       
       act(() => {
         observerCallback([{ target: container }]);
