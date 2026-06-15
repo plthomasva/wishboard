@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { isValidId, isValidSecret } from '../utils/validation';
 import InfoToggle from '../components/InfoToggle';
 import WishCard from '../components/WishCard';
 import WishFormFields from '../components/WishFormFields';
@@ -27,7 +28,7 @@ export default function ManageWishPage() {
     const wishSecret = params.get('secret');
 
     if (wishSecret) {
-      if (!/^[a-zA-Z0-9_-]+$/.test(wishSecret)) {
+      if (!isValidSecret(wishSecret)) {
         setError('Invalid secret format.');
         return;
       }
@@ -39,7 +40,7 @@ export default function ManageWishPage() {
       return;
     }
 
-    if (!/^[a-zA-Z0-9-]+$/.test(wishId)) {
+    if (!isValidId(wishId)) {
       setError('Invalid wish ID format.');
       return;
     }
