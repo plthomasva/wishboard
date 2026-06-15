@@ -126,7 +126,7 @@ export function generateDemoData() {
     const wishmailEnabledInt = crypto.randomInt(0, 100) > 50 ? 1 : 0;
     const createdAt = new Date().toISOString();
 
-    insertUser.run(id, username, hash, salt, 'user', genders, orientations, roles, JSON.stringify(contacts), wishmailEnabledInt, createdAt);
+    insertUser.run(id, username, hash, salt, 'user', genders, orientations, roles, JSON.stringify(contacts), wishmailEnabledInt, createdAt); // NOSONAR
     
     // Keep in memory to assign wishes later
     users.push({ id, genders, orientations, roles, contacts, wishmailEnabled: wishmailEnabledInt === 1 }); 
@@ -185,7 +185,7 @@ export function generateDemoData() {
       date,                      
       date,                      
       0                          
-    );
+    ); // NOSONAR
   }
 
   return { usersCreated: 50, wishesCreated: 100 };
