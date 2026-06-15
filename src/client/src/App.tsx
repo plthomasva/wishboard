@@ -53,6 +53,25 @@ const checkIsKioskParam = (): boolean => {
   return false;
 };
 
+const removeKioskParams = () => {
+  if (typeof globalThis === 'undefined') {
+    return;
+  }
+  if (globalThis.location.hash.includes('kiosk=true')) {
+    const hashIndex = globalThis.location.hash.indexOf('?');
+    if (hashIndex !== -1) {
+      globalThis.location.hash = globalThis.location.hash.substring(0, hashIndex);
+    }
+  }
+  const searchParams = new URLSearchParams(globalThis.location.search);
+  if (searchParams.has('kiosk')) {
+    searchParams.delete('kiosk');
+    const searchStr = searchParams.toString();
+    const newUrl = globalThis.location.pathname + (searchStr ? `?${searchStr}` : '') + globalThis.location.hash;
+    globalThis.history.replaceState({}, '', newUrl);
+  }
+};
+
 function AppContent() {
 
   const [page, setPage] = useState<PageId>(getHashPage);
@@ -110,33 +129,21 @@ function AppContent() {
     setKioskError(null);
     try {
       const res = await login(kioskUsername, kioskPassphrase);
-      if (res.success) {
-        if (res.role === 'admin') {
-          setIsKiosk(false);
-          setShowExitPrompt(false);
-          setKioskUsername('');
-          setKioskPassphrase('');
-
-          // Remove the kiosk parameter from the URL to prevent re-entering on reload
-          if (globalThis.location.hash.includes('kiosk=true')) {
-            const hashIndex = globalThis.location.hash.indexOf('?');
-            if (hashIndex !== -1) {
-              globalThis.location.hash = globalThis.location.hash.substring(0, hashIndex);
-            }
-          }
-          const searchParams = new URLSearchParams(globalThis.location.search);
-          if (searchParams.has('kiosk')) {
-            searchParams.delete('kiosk');
-            const searchStr = searchParams.toString();
-            const newUrl = globalThis.location.pathname + (searchStr ? `?${searchStr}` : '') + globalThis.location.hash;
-            globalThis.history.replaceState({}, '', newUrl);
-          }
-        } else {
-          setKioskError('Access denied: You must be an admin to exit kiosk mode.');
-        }
-      } else {
+      if (!res.success) {
         setKioskError(res.error || 'Invalid credentials.');
+        return;
       }
+      
+      if (res.role !== 'admin') {
+        setKioskError('Access denied: You must be an admin to exit kiosk mode.');
+        return;
+      }
+
+      setIsKiosk(false);
+      setShowExitPrompt(false);
+      setKioskUsername('');
+      setKioskPassphrase('');
+      removeKioskParams();
     } catch (err) {
       console.error(err);
       setKioskError('An error occurred during authentication.');
