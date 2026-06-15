@@ -209,9 +209,9 @@ export default function EnterWishPage() {
               <p>Your passphrase is: <strong>{result.secret}</strong></p>
               <div style={{ margin: '16px 0' }}>
                 <QRCodeSVG 
-                  value={`${window.location.origin}${window.location.pathname}#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`} 
+                  value={`${globalThis.location.origin}${globalThis.location.pathname}#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`} 
                   size={150} 
-                  includeMargin
+
                   bgColor="#ffffff"
                   fgColor="#0f172a"
                 />

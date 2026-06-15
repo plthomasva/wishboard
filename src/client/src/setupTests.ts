@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import ResizeObserver from 'resize-observer-polyfill';
 
 globalThis.ResizeObserver = ResizeObserver;
-if (typeof globalThis.window !== 'undefined') {
+if (globalThis.window !== undefined) {
   Object.defineProperty(globalThis.window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation(query => ({

@@ -56,7 +56,7 @@ export default function AdminPage() {
   };
 
   const clearAllFlags = async () => {
-    if (!window.confirm('Are you sure you want to clear flags for all remaining wishes?')) {
+    if (!globalThis.confirm('Are you sure you want to clear flags for all remaining wishes?')) {
       return;
     }
     setMessage(null);
@@ -87,7 +87,7 @@ export default function AdminPage() {
   };
 
   const resetPassphrase = async (id: string) => {
-    if (!window.confirm("Are you sure you want to reset this user's passphrase? Any active sessions will be terminated.")) {
+    if (!globalThis.confirm("Are you sure you want to reset this user's passphrase? Any active sessions will be terminated.")) {
       return;
     }
     setMessage(null);
