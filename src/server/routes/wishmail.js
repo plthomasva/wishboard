@@ -11,6 +11,35 @@ const getRequestUser = (req) => {
   return getUserFromToken(token);
 };
 
+const authorizeWishmailManagement = (req, res, next) => {
+  const { id: wish_id } = req.params;
+  const secret = req.headers['x-wish-secret'] || req.body?.secret;
+  const user = getRequestUser(req);
+
+  const wish = db.prepare('SELECT user_id, secret_hash FROM wishes WHERE id = ?').get(wish_id);
+  if (!wish) {
+    return res.status(404).json({ error: 'Wish not found.' });
+  }
+
+  let authorized = false;
+  if (user && wish.user_id === user.id) {
+    authorized = true;
+  }
+
+  if (!authorized && secret && wish.secret_hash) {
+    const [salt, hash] = wish.secret_hash.split(':');
+    if (verifyPassphrase(secret.trim(), salt, hash)) {
+      authorized = true;
+    }
+  }
+
+  if (!authorized) {
+    return res.status(403).json({ error: 'Not authorized to manage wishmail.' });
+  }
+
+  next();
+};
+
 // POST /api/wishes/:id/mail
 // Send a wishmail
 router.post('/', (req, res) => {
@@ -44,31 +73,8 @@ router.post('/', (req, res) => {
 
 // GET /api/wishes/:id/mail
 // Get wishmails for a wish
-router.get('/', (req, res) => {
+router.get('/', authorizeWishmailManagement, (req, res) => {
   const { id: wish_id } = req.params;
-  const secret = req.headers['x-wish-secret'];
-  const user = getRequestUser(req);
-
-  const wish = db.prepare('SELECT user_id, secret_hash FROM wishes WHERE id = ?').get(wish_id);
-  if (!wish) {
-    return res.status(404).json({ error: 'Wish not found.' });
-  }
-
-  let authorized = false;
-  if (user && wish.user_id === user.id) {
-    authorized = true;
-  }
-
-  if (!authorized && secret && wish.secret_hash) {
-    const [salt, hash] = wish.secret_hash.split(':');
-    if (verifyPassphrase(secret.trim(), salt, hash)) {
-      authorized = true;
-    }
-  }
-
-  if (!authorized) {
-    return res.status(403).json({ error: 'Not authorized to view wishmail.' });
-  }
 
   const rows = db.prepare('SELECT id, content, return_contacts, sender_id, read, created_at FROM wishmails WHERE wish_id = ? ORDER BY created_at DESC').all(wish_id);
   res.json(
@@ -85,31 +91,8 @@ router.get('/', (req, res) => {
 
 // POST /api/wishes/:id/mail/:mailId/read
 // Mark wishmail as read
-router.post('/:mailId/read', (req, res) => {
+router.post('/:mailId/read', authorizeWishmailManagement, (req, res) => {
   const { id: wish_id, mailId } = req.params;
-  const { secret } = req.body;
-  const user = getRequestUser(req);
-
-  const wish = db.prepare('SELECT user_id, secret_hash FROM wishes WHERE id = ?').get(wish_id);
-  if (!wish) {
-    return res.status(404).json({ error: 'Wish not found.' });
-  }
-
-  let authorized = false;
-  if (user && wish.user_id === user.id) {
-    authorized = true;
-  }
-
-  if (!authorized && secret && wish.secret_hash) {
-    const [salt, hash] = wish.secret_hash.split(':');
-    if (verifyPassphrase(secret.trim(), salt, hash)) {
-      authorized = true;
-    }
-  }
-
-  if (!authorized) {
-    return res.status(403).json({ error: 'Not authorized to manage wishmail.' });
-  }
 
   const result = db.prepare('UPDATE wishmails SET read = 1 WHERE id = ? AND wish_id = ?').run(mailId, wish_id);
   if (result.changes === 0) {
@@ -121,31 +104,8 @@ router.post('/:mailId/read', (req, res) => {
 
 // DELETE /api/wishes/:id/mail/:mailId
 // Delete a wishmail
-router.delete('/:mailId', (req, res) => {
+router.delete('/:mailId', authorizeWishmailManagement, (req, res) => {
   const { id: wish_id, mailId } = req.params;
-  const secret = req.headers['x-wish-secret'];
-  const user = getRequestUser(req);
-
-  const wish = db.prepare('SELECT user_id, secret_hash FROM wishes WHERE id = ?').get(wish_id);
-  if (!wish) {
-    return res.status(404).json({ error: 'Wish not found.' });
-  }
-
-  let authorized = false;
-  if (user && wish.user_id === user.id) {
-    authorized = true;
-  }
-
-  if (!authorized && secret && wish.secret_hash) {
-    const [salt, hash] = wish.secret_hash.split(':');
-    if (verifyPassphrase(secret.trim(), salt, hash)) {
-      authorized = true;
-    }
-  }
-
-  if (!authorized) {
-    return res.status(403).json({ error: 'Not authorized to manage wishmail.' });
-  }
 
   const result = db.prepare('DELETE FROM wishmails WHERE id = ? AND wish_id = ?').run(mailId, wish_id);
   if (result.changes === 0) {
