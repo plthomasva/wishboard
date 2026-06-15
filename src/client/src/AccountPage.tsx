@@ -8,30 +8,9 @@ import WishCard from './components/WishCard';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from './constants';
 import { QRCodeSVG } from 'qrcode.react';
 
-export default function AccountPage() {
-  const { user, token, login, register, logout, refreshUser } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>('register');
-  const [username, setUsername] = useState('');
-  const [passphrase, setPassphrase] = useState('');
-  const [identityGenders, setIdentityGenders] = useState('');
-  const [identityOrientations, setIdentityOrientations] = useState('');
-  const [identityRoles, setIdentityRoles] = useState('');
-  const [editIdentityGenders, setEditIdentityGenders] = useState('');
-  const [editIdentityOrientations, setEditIdentityOrientations] = useState('');
-  const [editIdentityRoles, setEditIdentityRoles] = useState('');
-  const [contacts, setContacts] = useState<Array<{ type: string; value: string }>>([]);
-  const [wishmailEnabled, setWishmailEnabled] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[] }>>([]);
+function useUsernameExistence(username: string) {
   const [existingUsername, setExistingUsername] = useState(false);
-
-
-  // Claim wish state
-  const [claimId, setClaimId] = useState('');
-  const [claimSecret, setClaimSecret] = useState('');
-
-  const effectiveMode = existingUsername ? 'login' : mode;
+  const [mode, setMode] = useState<'login' | 'register'>('register');
 
   useEffect(() => {
     const name = username.trim();
@@ -66,6 +45,33 @@ export default function AccountPage() {
       clearTimeout(timer);
     };
   }, [username]);
+
+  return { existingUsername, mode, setMode };
+}
+
+export default function AccountPage() {
+  const { user, token, login, register, logout, refreshUser } = useAuth();
+  const [username, setUsername] = useState('');
+  const [passphrase, setPassphrase] = useState('');
+  const [identityGenders, setIdentityGenders] = useState('');
+  const [identityOrientations, setIdentityOrientations] = useState('');
+  const [identityRoles, setIdentityRoles] = useState('');
+  const [editIdentityGenders, setEditIdentityGenders] = useState('');
+  const [editIdentityOrientations, setEditIdentityOrientations] = useState('');
+  const [editIdentityRoles, setEditIdentityRoles] = useState('');
+  const [contacts, setContacts] = useState<Array<{ type: string; value: string }>>([]);
+  const [wishmailEnabled, setWishmailEnabled] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[] }>>([]);
+
+  // Claim wish state
+  const [claimId, setClaimId] = useState('');
+  const [claimSecret, setClaimSecret] = useState('');
+
+  const { existingUsername, mode, setMode } = useUsernameExistence(username);
+
+  const effectiveMode = existingUsername ? 'login' : mode;
 
   const loadWishes = async () => {
     setError(null);

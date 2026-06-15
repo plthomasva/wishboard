@@ -73,18 +73,12 @@ function getRandomGenders() {
 
 function generateRandomContacts() {
   const count = crypto.randomInt(0, 3); // 0 to 2 contacts
-  const contacts = [];
-  const types = [...mockContactTypes];
-  for (let i = types.length - 1; i > 0; i--) {
-    const j = crypto.randomInt(0, i + 1);
-    [types[i], types[j]] = [types[j], types[i]];
-  }
-  for (let i=0; i<count; i++) {
-    const type = types[i];
-    const value = type === 'Phone' ? '555-010' + crypto.randomInt(0, 10) : `demo_${type.toLowerCase()}_${crypto.randomInt(0, 1000)}`;
-    contacts.push({ type, value });
-  }
-  return contacts;
+  if (count === 0) return [];
+  
+  return getRandom(mockContactTypes, count).map(type => ({
+    type,
+    value: type === 'Phone' ? '555-010' + crypto.randomInt(0, 10) : `demo_${type.toLowerCase()}_${crypto.randomInt(0, 1000)}`
+  }));
 }
 
 function randomListStr(arr, chanceEmpty) {
