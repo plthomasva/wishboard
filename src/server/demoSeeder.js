@@ -87,6 +87,10 @@ function generateRandomContacts() {
   return contacts;
 }
 
+function randomListStr(arr, chanceEmpty) {
+  return crypto.randomInt(0, 100) > chanceEmpty ? '[]' : JSON.stringify(getRandom(arr, 2));
+}
+
 // Helper to generate a random Mad Libs wish
 function generateMadLibsWish() {
   const action = textFragments.actions[crypto.randomInt(0, textFragments.actions.length)];
@@ -140,9 +144,9 @@ function createSingleWish(insertWish, randomUser) {
   const id = idGenerator();
   const content = generateMadLibsWish();
   
-  const desiredGenders = crypto.randomInt(0, 100) > 40 ? '[]' : JSON.stringify(getRandom(mockGenders, 2));
-  const desiredOrientations = crypto.randomInt(0, 100) > 60 ? '[]' : JSON.stringify(getRandom(mockOrientations, 2));
-  const desiredRoles = crypto.randomInt(0, 100) > 70 ? '[]' : JSON.stringify(getRandom(mockRoles, 2));
+  const desiredGenders = randomListStr(mockGenders, 40);
+  const desiredOrientations = randomListStr(mockOrientations, 60);
+  const desiredRoles = randomListStr(mockRoles, 70);
   
   const timeOffset = crypto.randomInt(0, 30 * 24 * 60 * 60 * 1000);
   const date = new Date(Date.now() - timeOffset).toISOString();

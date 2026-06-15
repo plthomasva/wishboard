@@ -31,7 +31,7 @@ app.use(cors({
         return callback(null, true);
       }
     } catch (err) {
-      // Ignore invalid origin URLs
+      console.error(err);
     }
     
     // By returning false instead of an Error, we simply omit CORS headers.

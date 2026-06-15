@@ -49,15 +49,11 @@ export default function AccountPage() {
         if (!active) {
           return;
         }
-        if (response.ok) {
-          const data = await response.json();
-          setExistingUsername(Boolean(data.exists));
-          setMode(data.exists ? 'login' : 'register');
-        } else {
-          setExistingUsername(false);
-          setMode('register');
-        }
-      } catch {
+        const exists = response.ok ? Boolean((await response.json()).exists) : false;
+        setExistingUsername(exists);
+        setMode(exists ? 'login' : 'register');
+      } catch (err) {
+        console.error(err);
         if (active) {
           setExistingUsername(false);
           setMode('register');

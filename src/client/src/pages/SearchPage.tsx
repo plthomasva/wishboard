@@ -29,7 +29,7 @@ export default function SearchPage() {
     setUseProfileAttributes(Boolean(user));
   }, [user]);
 
-  const search = async (event: React.FormEvent<HTMLFormElement>) => {
+  const search = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 
@@ -74,7 +74,7 @@ export default function SearchPage() {
       <h1 style={{ maxWidth: '800px', margin: '0 auto' }}>Search Wishes</h1>
       <form className="form-card" onSubmit={search} style={{ maxWidth: '800px', margin: '18px auto 24px' }}>
         <label>
-          Search phrase
+          Search phrase{' '}
           <input
             type="search"
             value={query}
@@ -107,7 +107,7 @@ export default function SearchPage() {
               </InfoToggle>
             </div>
             <label>
-              Searcher genders
+              Searcher genders{' '}
               <AttributeInput
                 value={manualGenders}
                 onChange={setManualGenders}
@@ -116,7 +116,7 @@ export default function SearchPage() {
               />
             </label>
             <label>
-              Searcher orientations
+              Searcher orientations{' '}
               <AttributeInput
                 value={manualOrientations}
                 onChange={setManualOrientations}
@@ -125,7 +125,7 @@ export default function SearchPage() {
               />
             </label>
             <label>
-              Searcher roles
+              Searcher roles{' '}
               <AttributeInput
                 value={manualRoles}
                 onChange={setManualRoles}

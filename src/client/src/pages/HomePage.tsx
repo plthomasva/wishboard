@@ -11,8 +11,8 @@ export default function HomePage({ onNavigate }: Readonly<HomePageProps>) {
         <h1 style={{ margin: 0 }}>Welcome to Wishboard</h1>
         <InfoToggle>
           <strong>Wishboard</strong> is a disconnected, private bulletin board for conventions. 
-          You can securely post wishes, search for compatible attendees, or put the device in 
-          <strong> Big Screen Display</strong> mode to cycle through wishes like a physical corkboard!
+          You can securely post wishes, search for compatible attendees, or put the device in{' '}
+          <strong>Big Screen Display</strong> mode to cycle through wishes like a physical corkboard!
         </InfoToggle>
       </div>
       <p>Choose an action below to enter a wish, search wishes, or show the rotating display.</p>
