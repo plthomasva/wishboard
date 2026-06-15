@@ -1,6 +1,6 @@
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import React, { useRef } from 'react';
+import React from 'react';
 import { useTextFit } from './useTextFit';
 
 describe('useTextFit', () => {
