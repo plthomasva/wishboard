@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext';
-import { isValidId, isValidSecret } from '../utils/validation';
 
 interface Wishmail {
   id: string;
@@ -34,12 +33,12 @@ export default function WishmailDashboard() {
       return;
     }
 
-    if (!isValidId(wId)) {
+    if (!/^[a-zA-Z0-9-]+$/.test(wId)) {
       setError('Invalid wish ID format.');
       return;
     }
 
-    if (wSecret && !isValidSecret(wSecret)) {
+    if (wSecret && !/^[a-zA-Z0-9_-]+$/.test(wSecret)) {
       setError('Invalid secret format.');
       return;
     }
@@ -61,7 +60,7 @@ export default function WishmailDashboard() {
   }, [token]);
 
   const markRead = async (mailId: string) => {
-    if (!wishId || !isValidId(wishId) || !isValidId(mailId)) return;
+    if (!wishId || !/^[a-zA-Z0-9-]+$/.test(wishId) || !/^[a-zA-Z0-9-]+$/.test(mailId)) return;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -78,7 +77,7 @@ export default function WishmailDashboard() {
   };
 
   const deleteMail = async (mailId: string) => {
-    if (!wishId || !isValidId(wishId) || !isValidId(mailId)) return;
+    if (!wishId || !/^[a-zA-Z0-9-]+$/.test(wishId) || !/^[a-zA-Z0-9-]+$/.test(mailId)) return;
     if (!confirm('Are you sure you want to delete this message?')) return;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
