@@ -366,7 +366,7 @@ button:hover {
 }
 
 .flag-wish-btn:hover {
-  color: #c53030;
+  color: #9b2c2c;
   background-color: rgba(229, 62, 62, 0.1);
   transform: scale(1.05);
 }
@@ -824,7 +824,7 @@ button:hover {
 
 .send-mail-icon-btn:hover {
   transform: scale(1.1);
-  color: #0d47a1;
+  color: #002171;
   background: rgba(26, 115, 232, 0.1);
 }
 

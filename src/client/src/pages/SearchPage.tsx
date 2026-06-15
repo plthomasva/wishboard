@@ -91,7 +91,7 @@ export default function SearchPage() {
                 checked={useProfileAttributes}
                 onChange={(event) => setUseProfileAttributes(event.target.checked)}
               />
-              Filter results by my profile attributes
+              {' '}Filter results by my profile attributes
             </label>
             <InfoToggle>
               When checked, we use your identity attributes to show only wishes from compatible creators. Uncheck this if you just want to do a broad keyword search across all wishes!

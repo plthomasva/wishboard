@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import ResizeObserver from 'resize-observer-polyfill';
+import { vi } from 'vitest';
 
 globalThis.ResizeObserver = ResizeObserver;
 if (globalThis.window !== undefined) {
