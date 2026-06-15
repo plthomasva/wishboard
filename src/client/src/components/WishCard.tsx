@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import IdentityStickers from './IdentityStickers';
 import FlagButton from './FlagButton';
 import { useTextFit } from '../hooks/useTextFit';
@@ -27,7 +27,7 @@ interface WishCardProps {
   isEditorPreview?: boolean;
 }
 
-export default function WishCard({ wish, cardClass = 'wish-card', showFlag = true, onFlag, onSendMail, onOverflowChange, isEditorPreview = false }: WishCardProps) {
+export default function WishCard({ wish, cardClass = 'wish-card', showFlag = true, onFlag, onSendMail, onOverflowChange, isEditorPreview = false }: Readonly<WishCardProps>) {
   // Use lower max font size for the card, and minimum 10px so we have enough room to scale down
   const { containerRef, contentRef, isOverflowing } = useTextFit({
     minFontSize: 10,
@@ -45,9 +45,9 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
     <article
       className={`${cardClass} ${isOverflowing && isEditorPreview ? 'text-overflow-hint' : ''}`}
       key={wish.id}
-      ref={containerRef as React.RefObject<HTMLDivElement>}
+      ref={containerRef}
     >
-      <div className="wish-card-inner-scale" ref={contentRef as React.RefObject<HTMLDivElement>}>
+      <div className="wish-card-inner-scale" ref={contentRef}>
         <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
         
         {showFlag && onFlag && (
@@ -59,7 +59,7 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
         {wish.contacts && wish.contacts.length > 0 && (
           <div className="wish-contacts-list">
             {wish.contacts.map((c, i) => (
-              <span key={i} className="wish-contact-item">
+              <span key={`${c.type}-${i}`} className="wish-contact-item">
                 <strong>{c.type}:</strong> {c.value}
               </span>
             ))}

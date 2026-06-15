@@ -5,7 +5,7 @@ interface Props {
   orientations?: string[];
 }
 
-export default function IdentityStickers({ genders = [], orientations = [] }: Props) {
+export default function IdentityStickers({ genders = [], orientations = [] }: Readonly<Props>) {
   const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
 
   const renderOrientationSticker = (orientation: string, index: number) => {
@@ -67,8 +67,8 @@ export default function IdentityStickers({ genders = [], orientations = [] }: Pr
 
   return (
     <div className="identity-stickers">
-      {orientations.map(renderOrientationSticker)}
-      {genders.map(renderGenderSticker)}
+      {orientations.map((ori, index) => renderOrientationSticker(ori, index))}
+      {genders.map((gen, index) => renderGenderSticker(gen, index))}
     </div>
   );
 }

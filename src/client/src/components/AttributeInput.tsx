@@ -8,7 +8,7 @@ interface AttributeInputProps {
   suggestions: string[];
 }
 
-export default function AttributeInput({ id, value, onChange, placeholder, suggestions }: AttributeInputProps) {
+export default function AttributeInput({ id, value, onChange, placeholder, suggestions }: Readonly<AttributeInputProps>) {
   const currentItems = value.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
 
   const handleToggle = (option: string) => {

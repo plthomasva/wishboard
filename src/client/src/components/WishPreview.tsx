@@ -7,7 +7,7 @@ interface WishPreviewProps {
   onOverflowChange: (isOverflowing: boolean) => void;
 }
 
-export default function WishPreview({ wish, onOverflowChange }: WishPreviewProps) {
+export default function WishPreview({ wish, onOverflowChange }: Readonly<WishPreviewProps>) {
   return (
     <div className="wish-preview-container" style={{ position: 'sticky', top: '24px' }}>
       <div className="label-with-info" style={{ borderBottom: '2px solid #e4e9f0', paddingBottom: '8px', marginBottom: '8px' }}>

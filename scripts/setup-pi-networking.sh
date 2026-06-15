@@ -11,13 +11,13 @@ echo "Configuring network for domain: $DOMAIN at IP: $AP_IP"
 
 # 1. Configure dnsmasq (via NetworkManager)
 DNS_CONF="/etc/NetworkManager/dnsmasq-shared.d/wishboard.conf"
-if [ -d "/etc/NetworkManager/dnsmasq-shared.d" ]; then
+if [[ -d "/etc/NetworkManager/dnsmasq-shared.d" ]]; then
     echo "address=/$DOMAIN/$AP_IP" > "$DNS_CONF"
     echo "Created DNS configuration at $DNS_CONF"
 else
     echo "Warning: /etc/NetworkManager/dnsmasq-shared.d does not exist. Are you running NetworkManager?"
     # We could optionally support native dnsmasq here:
-    if [ -d "/etc/dnsmasq.d" ]; then
+    if [[ -d "/etc/dnsmasq.d" ]]; then
         echo "address=/$DOMAIN/$AP_IP" > "/etc/dnsmasq.d/wishboard.conf"
         echo "Created DNS configuration at /etc/dnsmasq.d/wishboard.conf"
     fi
@@ -29,10 +29,10 @@ BASE_DOMAIN=$(echo "$DOMAIN" | grep -oE '[^.]+\.[^.]+$')
 CERT_DIR="/etc/letsencrypt/live/$BASE_DOMAIN"
 
 # Fallback if the folder doesn't match the base domain (e.g., if they named it painless-computing.com)
-if [ ! -d "$CERT_DIR" ]; then
+if [[ ! -d "$CERT_DIR" ]]; then
     # try to find any letsencrypt folder that has fullchain.pem
     ALT_DIR=$(ls -d /etc/letsencrypt/live/*/ 2>/dev/null | head -n 1)
-    if [ ! -z "$ALT_DIR" ]; then
+    if [[ ! -z "$ALT_DIR" ]]; then
         CERT_DIR=${ALT_DIR%/}
     fi
 fi
@@ -74,7 +74,7 @@ EOF
 echo "Created Nginx configuration at $NGINX_CONF"
 
 # Enable the site
-if [ ! -f "/etc/nginx/sites-enabled/wishboard" ]; then
+if [[ ! -f "/etc/nginx/sites-enabled/wishboard" ]]; then
     ln -s "$NGINX_CONF" "/etc/nginx/sites-enabled/wishboard"
     echo "Enabled Nginx site wishboard"
 fi

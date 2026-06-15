@@ -25,7 +25,7 @@ export default function WishFormFields({
   wishmailEnabled,
   setWishmailEnabled,
   isOverflowing
-}: WishFormFieldsProps) {
+}: Readonly<WishFormFieldsProps>) {
 
   return (
     <>

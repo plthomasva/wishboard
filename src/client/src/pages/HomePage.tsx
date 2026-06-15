@@ -4,7 +4,7 @@ interface HomePageProps {
   onNavigate: (page: 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin') => void;
 }
 
-export default function HomePage({ onNavigate }: HomePageProps) {
+export default function HomePage({ onNavigate }: Readonly<HomePageProps>) {
   return (
     <section>
       <div className="label-with-info" style={{ marginBottom: '16px' }}>

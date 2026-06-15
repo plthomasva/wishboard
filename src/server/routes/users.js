@@ -20,7 +20,7 @@ router.get('/exists', (req, res) => {
 
 router.post('/register', (req, res) => {
   const { username, passphrase, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled } = req.body;
-  if (!username || !username.trim()) {
+  if (!username?.trim()) {
     return res.status(400).json({ error: 'Username is required.' });
   }
 

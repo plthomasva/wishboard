@@ -136,6 +136,37 @@ function generateDemoUsers() {
   return users;
 }
 
+function createSingleWish(insertWish, randomUser) {
+  const id = idGenerator();
+  const content = generateMadLibsWish();
+  
+  const desiredGenders = crypto.randomInt(0, 100) > 40 ? '[]' : JSON.stringify(getRandom(mockGenders, 2));
+  const desiredOrientations = crypto.randomInt(0, 100) > 60 ? '[]' : JSON.stringify(getRandom(mockOrientations, 2));
+  const desiredRoles = crypto.randomInt(0, 100) > 70 ? '[]' : JSON.stringify(getRandom(mockRoles, 2));
+  
+  const timeOffset = crypto.randomInt(0, 30 * 24 * 60 * 60 * 1000);
+  const date = new Date(Date.now() - timeOffset).toISOString();
+
+  let wishContacts = [...randomUser.contacts];
+  let wishWishmail = randomUser.wishmailEnabled;
+  
+  if (crypto.randomInt(0, 100) > 80) wishWishmail = !wishWishmail;
+  
+  if (crypto.randomInt(0, 100) > 70 && wishContacts.length > 0) {
+    wishContacts.pop();
+  } else if (crypto.randomInt(0, 100) > 70) {
+    wishContacts.push({ type: 'FetLife', value: `wish_specific_${crypto.randomInt(0, 1000)}` });
+  }
+
+  insertWish.run(
+    id, randomUser.id, content,
+    randomUser.genders, randomUser.orientations, randomUser.roles,
+    desiredGenders, desiredOrientations, desiredRoles,
+    JSON.stringify(wishContacts), wishWishmail ? 1 : 0,
+    date, date, 0
+  ); // NOSONAR
+}
+
 function generateDemoWishes(users) {
   const insertWish = db.prepare(`
     INSERT INTO wishes (
@@ -149,48 +180,8 @@ function generateDemoWishes(users) {
 
   // 3. Distribute 100 wishes randomly across the 50 users
   for (let i = 0; i < 100; i++) {
-    const id = idGenerator();
     const randomUser = users[crypto.randomInt(0, users.length)];
-    const content = generateMadLibsWish();
-    
-    // Randomize what this wish is looking for, frequently leaving them blank to simulate normal user behavior
-    const desiredGenders = crypto.randomInt(0, 100) > 40 ? '[]' : JSON.stringify(getRandom(mockGenders, 2));
-    const desiredOrientations = crypto.randomInt(0, 100) > 60 ? '[]' : JSON.stringify(getRandom(mockOrientations, 2));
-    const desiredRoles = crypto.randomInt(0, 100) > 70 ? '[]' : JSON.stringify(getRandom(mockRoles, 2));
-    
-    // Stagger dates over the last 30 days
-    const timeOffset = crypto.randomInt(0, 30 * 24 * 60 * 60 * 1000);
-    const date = new Date(Date.now() - timeOffset).toISOString();
-
-    let wishContacts = [...randomUser.contacts];
-    let wishWishmail = randomUser.wishmailEnabled;
-    
-    // random override for wishmail
-    if (crypto.randomInt(0, 100) > 80) wishWishmail = !wishWishmail;
-    
-    // random override for contacts (remove one or add one)
-    if (crypto.randomInt(0, 100) > 70 && wishContacts.length > 0) {
-      wishContacts.pop();
-    } else if (crypto.randomInt(0, 100) > 70) {
-      wishContacts.push({ type: 'FetLife', value: `wish_specific_${crypto.randomInt(0, 1000)}` });
-    }
-
-    insertWish.run(
-      id,
-      randomUser.id,
-      content,
-      randomUser.genders,        
-      randomUser.orientations,
-      randomUser.roles,
-      desiredGenders,            
-      desiredOrientations,
-      desiredRoles,
-      JSON.stringify(wishContacts),
-      wishWishmail ? 1 : 0,
-      date,                      
-      date,                      
-      0                          
-    ); // NOSONAR
+    createSingleWish(insertWish, randomUser);
   }
 }
 

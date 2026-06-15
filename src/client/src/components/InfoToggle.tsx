@@ -4,7 +4,7 @@ interface InfoToggleProps {
   children: React.ReactNode;
 }
 
-export default function InfoToggle({ children }: InfoToggleProps) {
+export default function InfoToggle({ children }: Readonly<InfoToggleProps>) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (

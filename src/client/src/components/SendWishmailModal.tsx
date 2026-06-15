@@ -7,7 +7,7 @@ interface SendWishmailModalProps {
   onClose: () => void;
 }
 
-export default function SendWishmailModal({ wishId, onClose }: SendWishmailModalProps) {
+export default function SendWishmailModal({ wishId, onClose }: Readonly<SendWishmailModalProps>) {
   const { token } = useAuth();
   const [content, setContent] = useState('');
   const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
@@ -15,7 +15,7 @@ export default function SendWishmailModal({ wishId, onClose }: SendWishmailModal
   const [success, setSuccess] = useState(false);
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
@@ -33,12 +33,12 @@ export default function SendWishmailModal({ wishId, onClose }: SendWishmailModal
       })
     });
 
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.error || 'Failed to send message.');
-    } else {
+    if (response.ok) {
       setSuccess(true);
       setTimeout(onClose, 2000);
+    } else {
+      const data = await response.json();
+      setError(data.error || 'Failed to send message.');
     }
   };
 

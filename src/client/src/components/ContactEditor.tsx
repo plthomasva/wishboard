@@ -11,7 +11,7 @@ interface ContactEditorProps {
   addButtonLabel?: string;
 }
 
-export default function ContactEditor({ contacts, setContacts, addButtonLabel = "+ Add Contact Method" }: ContactEditorProps) {
+export default function ContactEditor({ contacts, setContacts, addButtonLabel = "+ Add Contact Method" }: Readonly<ContactEditorProps>) {
   const addContact = () => setContacts([...contacts, { type: 'FetLife', value: '' }]);
   
   const updateContact = (index: number, field: 'type' | 'value', val: string) => {
@@ -27,7 +27,7 @@ export default function ContactEditor({ contacts, setContacts, addButtonLabel = 
   return (
     <>
       {contacts.map((contact, index) => (
-        <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+        <div key={`${contact.type}-${index}`} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
           <select 
             value={contact.type} 
             onChange={(e) => updateContact(index, 'type', e.target.value)}
