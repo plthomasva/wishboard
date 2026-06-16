@@ -113,6 +113,7 @@ app.get('*path', frontendLimiter, (req, res) => {
 const PORT = process.env.PORT || 3000;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   app.listen(PORT, () => {
+    logger.info(`Wishboard server started on port ${PORT}`);
     console.log(`Wishboard server listening on http://localhost:${PORT}`);
   });
 }

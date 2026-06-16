@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import db from '../db.js';
 import { requireAdmin, generateMetricsTicket } from '../auth.js';
 import { generateDemoData } from '../demoSeeder.js';
+import logger from '../logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,16 +26,19 @@ router.get('/flags', requireAdmin, (req, res) => {
 
 router.post('/wishes/:id/remove', requireAdmin, (req, res) => {
   const result = db.prepare('DELETE FROM wishes WHERE id = ?').run(req.params.id);
+  logger.info('Admin removed wish', { admin_user_id: req.user.id, wish_id: req.params.id });
   checkResult(result, res, 'Wish');
 });
 
 router.post('/wishes/:id/clear-flag', requireAdmin, (req, res) => {
   const result = db.prepare('UPDATE wishes SET flagged = 0 WHERE id = ?').run(req.params.id);
+  logger.info('Admin cleared flag for wish', { admin_user_id: req.user.id, wish_id: req.params.id });
   checkResult(result, res, 'Wish');
 });
 
 router.post('/wishes/clear-all-flags', requireAdmin, (req, res) => {
   db.prepare('UPDATE wishes SET flagged = 0').run();
+  logger.info('Admin cleared all flags', { admin_user_id: req.user.id });
   res.json({ success: true });
 });
 
@@ -51,11 +55,13 @@ router.post('/users/:id/role', requireAdmin, (req, res) => {
   }
 
   const result = db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
+  logger.info('Admin updated user role', { admin_user_id: req.user.id, target_user_id: id, new_role: role });
   checkResult(result, res, 'User');
 });
 
 router.post('/users/:id/delete', requireAdmin, (req, res) => {
   const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  logger.info('Admin deleted user', { admin_user_id: req.user.id, target_user_id: req.params.id });
   checkResult(result, res, 'User');
 });
 
@@ -82,6 +88,7 @@ router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) =>
     db.prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?').run(hash, salt, id);
     db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
 
+    logger.info('Admin reset user passphrase', { admin_user_id: req.user.id, target_user_id: id });
     res.json({ success: true, newPassphrase: passphrase });
   } catch (error) {
     next(error);

@@ -4,6 +4,7 @@ import { customAlphabet } from 'nanoid';
 import db from '../db.js';
 import { getUserFromToken, getTokenFromRequestHeader, hashPassphrase, verifyPassphrase, parseJsonArray, normalizeArrayInput, createSalt } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
+import logger from '../logger.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
@@ -237,6 +238,7 @@ router.post('/', (req, res) => {
     now
   );
 
+  logger.info('Wish created', { user_id: userId, wish_id: id });
   res.json({ id, secret });
 });
 
@@ -332,6 +334,7 @@ router.post('/:id/manage', (req, res) => {
 
   if (action === 'delete') {
     db.prepare('DELETE FROM wishes WHERE id = ?').run(id);
+    logger.info('Wish deleted by owner', { user_id: user?.id, wish_id: id });
     return res.json({ success: true });
   }
 
@@ -382,6 +385,7 @@ router.post('/:id/claim', (req, res) => {
   // Assign to user and clear the secret_hash since it's now managed via user authentication
   db.prepare('UPDATE wishes SET user_id = ?, secret_hash = NULL, updated_at = ? WHERE id = ?').run(user.id, now, id);
 
+  logger.info('Wish claimed by user', { user_id: user.id, wish_id: id });
   res.json({ success: true });
 });
 
@@ -391,6 +395,7 @@ router.post('/:id/flag', (req, res) => {
   if (result.changes === 0) {
     return res.status(404).json({ error: 'Wish not found.' });
   }
+  logger.warn('Wish flagged for moderation', { wish_id: id });
   res.json({ success: true });
 });
 
