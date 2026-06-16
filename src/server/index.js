@@ -15,6 +15,7 @@ import { requireAdmin, consumeMetricsTicket } from './auth.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (e.g. nginx) so req.ip uses X-Forwarded-For
 app.disable('x-powered-by');
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS
@@ -50,7 +51,10 @@ app.use(express.json());
 // Log successful /api/admin/logs calls as debug to avoid log pollution from tailing
 // We completely skip them to prevent them from showing up even in local debug mode.
 app.use(morgan('combined', {
-  skip: (req, res) => req.path === '/api/admin/logs' && res.statusCode < 400,
+  skip: (req, res) => {
+    const url = req.originalUrl || req.url || '';
+    return url.startsWith('/api/admin/logs') && res.statusCode < 400;
+  },
   stream: {
     write: (message) => logger.info(message.trim())
   }
