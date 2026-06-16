@@ -10,7 +10,7 @@ import wishmailRouter from './routes/wishmail.js';
 import statusMonitor from 'express-status-monitor';
 import morgan from 'morgan';
 import logger from './logger.js';
-import { requireAdmin } from './auth.js';
+import { requireAdmin, consumeMetricsTicket } from './auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,7 +57,13 @@ app.use(morgan('combined', {
 // Setup status monitor, restricted to admin only (we mount it later, but init here)
 const monitor = statusMonitor({ path: '' });
 app.use(monitor);
-app.get('/api/admin/metrics', requireAdmin, monitor.pageRoute);
+app.get('/api/admin/metrics', (req, res, next) => {
+  if (req.query.ticket && consumeMetricsTicket(req.query.ticket)) {
+    req.user = { role: 'admin' };
+    return next();
+  }
+  requireAdmin(req, res, next);
+}, monitor.pageRoute);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,

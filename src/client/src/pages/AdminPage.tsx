@@ -8,6 +8,7 @@ export default function AdminPage() {
   const [flags, setFlags] = useState<Array<{ id: string; content: string; flagged: number; user_id: string | null }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; username: string; role: string }>>([]);
   const [logs, setLogs] = useState<string>('');
+  const [metricsTicket, setMetricsTicket] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +41,13 @@ export default function AdminPage() {
     }
     const data = await response.json();
     setLogs(data.logs);
+  };
+
+  const loadMetricsTicket = async () => {
+    const response = await fetch('/api/admin/metrics-ticket', { headers: authHeader });
+    if (!response.ok) return;
+    const data = await response.json();
+    setMetricsTicket(data.ticket);
   };
 
   const removeWish = async (id: string) => {
@@ -164,6 +172,7 @@ export default function AdminPage() {
       loadFlags();
       loadUsers();
       loadLogs();
+      loadMetricsTicket();
     }
   }, [user]);
 
@@ -212,7 +221,11 @@ export default function AdminPage() {
           <section style={{ marginTop: '24px' }}>
             <h2>System Metrics</h2>
             <p>Real-time server performance and request statistics.</p>
-            <iframe src={`/api/admin/metrics?token=${token}`} style={{ width: '100%', height: '600px', border: '1px solid #ccc', background: '#fff', borderRadius: '4px', marginTop: '12px' }} title="System Metrics" />
+            {metricsTicket ? (
+              <iframe src={`/api/admin/metrics?ticket=${metricsTicket}`} style={{ width: '100%', height: '600px', border: '1px solid #ccc', background: '#fff', borderRadius: '4px', marginTop: '12px' }} title="System Metrics" />
+            ) : (
+              <p>Loading metrics...</p>
+            )}
           </section>
 
           <section style={{ marginTop: '24px' }}>

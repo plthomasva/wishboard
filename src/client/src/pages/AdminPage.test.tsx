@@ -57,6 +57,16 @@ describe('AdminPage', () => {
         });
       }
 
+      if (url.endsWith('/api/admin/metrics-ticket')) {
+        if (!mockToken) {
+          return Promise.resolve({ ok: false, status: 401 });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ ticket: 'mock-ticket-123' })
+        });
+      }
+
       if (url.endsWith('/api/admin/reset-demo')) {
         return Promise.resolve({
           ok: true,
@@ -249,6 +259,9 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/admin/logs')) {
         return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
       }
+      if (url.endsWith('/api/admin/metrics-ticket')) {
+        return Promise.resolve({ ok: true, json: async () => ({ ticket: 'mock-ticket-123' }) });
+      }
       if (url.includes('/api/admin/users/') && url.endsWith('/reset-password')) {
         return Promise.resolve({ ok: true, json: async () => ({ success: true, newPassphrase: 'new-password-123' }) });
       }
@@ -317,6 +330,9 @@ describe('AdminPage', () => {
       }
       if (url.endsWith('/api/admin/logs')) {
         return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
+      }
+      if (url.endsWith('/api/admin/metrics-ticket')) {
+        return Promise.resolve({ ok: true, json: async () => ({ ticket: 'mock-ticket-123' }) });
       }
       return Promise.resolve({ ok: false });
     });
