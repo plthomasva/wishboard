@@ -4,11 +4,27 @@ import db from './db.js';
 const TOKEN_EXPIRY_MS = 1000 * 60 * 60 * 24 * 7;
 
 const getTokenFromRequest = (req) => {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers?.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
   }
   return authHeader.slice(7).trim();
+};
+
+const metricsTickets = new Map();
+
+export const generateMetricsTicket = () => {
+  const ticket = crypto.randomBytes(16).toString('hex');
+  metricsTickets.set(ticket, Date.now() + 30000); // 30s expiry
+  return ticket;
+};
+
+export const consumeMetricsTicket = (ticket) => {
+  const expires = metricsTickets.get(ticket);
+  if (!expires) return false;
+  metricsTickets.delete(ticket);
+  if (expires < Date.now()) return false;
+  return true;
 };
 
 export const createSalt = () => crypto.randomBytes(16).toString('hex');

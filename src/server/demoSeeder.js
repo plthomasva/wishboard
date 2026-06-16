@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { customAlphabet } from 'nanoid';
 import db from './db.js';
 import { createSalt, hashPassphrase } from './auth.js';
+import logger from './logger.js';
 
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
@@ -184,9 +185,11 @@ function generateDemoWishes(users) {
 }
 
 export function generateDemoData() {
+  logger.info('Clearing old demo data for seeder');
   clearDemoData();
   const users = generateDemoUsers();
   generateDemoWishes(users);
 
+  logger.info('Demo seeder completed', { usersCreated: 50, wishesCreated: 100 });
   return { usersCreated: 50, wishesCreated: 100 };
 }

@@ -3,6 +3,7 @@ import { customAlphabet } from 'nanoid';
 import db from '../db.js';
 import { createSalt, hashPassphrase, createSessionToken, getUserFromRequest, getTokenFromRequestHeader, verifyPassphrase, normalizeArrayInput, parseJsonArray } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
+import logger from '../logger.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
@@ -46,6 +47,7 @@ router.post('/register', (req, res) => {
     'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   ).run(userId, username.trim(), hash, salt, 'user', JSON.stringify(genders), JSON.stringify(orientations), JSON.stringify(roles), JSON.stringify(contacts || []), wishmailEnabledInt, now);
 
+  logger.info('New user registered', { user_id: userId, username: username.trim() });
   const token = createSessionToken(userId);
   res.json({ id: userId, username: username.trim(), role: 'user', token, secret, identity_genders: genders, identity_orientations: orientations, identity_roles: roles, contacts: contacts || [], wishmail_enabled: Boolean(wishmailEnabledInt) });
 });
@@ -88,9 +90,11 @@ router.post('/login', (req, res) => {
     .prepare('SELECT id, username, role, passphrase_hash, passphrase_salt, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled FROM users WHERE username = ?')
     .get(username.trim());
   if (!user || !verifyPassphrase(passphrase.trim(), user.passphrase_salt, user.passphrase_hash)) {
+    logger.warn('Failed login attempt', { username: username.trim(), ip: req.ip });
     return res.status(401).json({ error: 'Invalid username or passphrase.' });
   }
 
+  logger.info('Successful login', { username: user.username, ip: req.ip });
   const token = createSessionToken(user.id);
   res.json({
     id: user.id,

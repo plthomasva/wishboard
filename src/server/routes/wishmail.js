@@ -2,6 +2,7 @@ import express from 'express';
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
 import { getUserFromToken, getTokenFromRequestHeader, verifyPassphrase, parseJsonArray } from '../auth.js';
+import logger from '../logger.js';
 
 const router = express.Router({ mergeParams: true });
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
@@ -68,6 +69,7 @@ router.post('/', (req, res) => {
     'INSERT INTO wishmails (id, wish_id, content, return_contacts, sender_id, created_at) VALUES (?, ?, ?, ?, ?, ?)'
   ).run(mailId, wish_id, content.trim(), parsedContacts, user?.id || null, now);
 
+  logger.info('Wishmail sent', { sender_id: user?.id || null, target_wish_id: wish_id });
   res.json({ success: true, id: mailId });
 });
 
@@ -112,6 +114,8 @@ router.delete('/:mailId', authorizeWishmailManagement, (req, res) => {
     return res.status(404).json({ error: 'Wishmail not found.' });
   }
 
+  const user = getRequestUser(req);
+  logger.info('Wishmail deleted', { user_id: user?.id || null, wish_id, mail_id: mailId });
   res.json({ success: true });
 });
 

@@ -17,7 +17,8 @@ Implied are a home screen on the tablets where users can select one of the views
 1. manage admin users (super admin(s) only)
 2. review flagged wishes and remove any that violate the law or convention policies.
 3. manage self-service unprivileged users
-4. seed demo users and wishes for development and testing
+4. monitor server health, system metrics, and view live application logs
+5. seed demo users and wishes for development and testing
 
 ## Authentication & Security
 

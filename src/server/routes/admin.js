@@ -1,7 +1,14 @@
 import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import db from '../db.js';
-import { requireAdmin } from '../auth.js';
+import { requireAdmin, generateMetricsTicket } from '../auth.js';
 import { generateDemoData } from '../demoSeeder.js';
+import logger from '../logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -19,16 +26,19 @@ router.get('/flags', requireAdmin, (req, res) => {
 
 router.post('/wishes/:id/remove', requireAdmin, (req, res) => {
   const result = db.prepare('DELETE FROM wishes WHERE id = ?').run(req.params.id);
+  logger.info('Admin removed wish', { admin_user_id: req.user.id, wish_id: req.params.id });
   checkResult(result, res, 'Wish');
 });
 
 router.post('/wishes/:id/clear-flag', requireAdmin, (req, res) => {
   const result = db.prepare('UPDATE wishes SET flagged = 0 WHERE id = ?').run(req.params.id);
+  logger.info('Admin cleared flag for wish', { admin_user_id: req.user.id, wish_id: req.params.id });
   checkResult(result, res, 'Wish');
 });
 
 router.post('/wishes/clear-all-flags', requireAdmin, (req, res) => {
   db.prepare('UPDATE wishes SET flagged = 0').run();
+  logger.info('Admin cleared all flags', { admin_user_id: req.user.id });
   res.json({ success: true });
 });
 
@@ -45,11 +55,13 @@ router.post('/users/:id/role', requireAdmin, (req, res) => {
   }
 
   const result = db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
+  logger.info('Admin updated user role', { admin_user_id: req.user.id, target_user_id: id, new_role: role });
   checkResult(result, res, 'User');
 });
 
 router.post('/users/:id/delete', requireAdmin, (req, res) => {
   const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  logger.info('Admin deleted user', { admin_user_id: req.user.id, target_user_id: req.params.id });
   checkResult(result, res, 'User');
 });
 
@@ -76,6 +88,7 @@ router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) =>
     db.prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?').run(hash, salt, id);
     db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
 
+    logger.info('Admin reset user passphrase', { admin_user_id: req.user.id, target_user_id: id });
     res.json({ success: true, newPassphrase: passphrase });
   } catch (error) {
     next(error);
@@ -95,6 +108,35 @@ router.post('/reset-demo', requireAdmin, (req, res) => {
     console.error('Failed to seed demo data:', error);
     res.status(500).json({ error: 'Internal Server Error during seeding' });
   }
+});
+
+// GET /api/admin/logs
+router.get('/logs', requireAdmin, (req, res) => {
+  const logsDir = path.join(__dirname, '../../../data/logs');
+  try {
+    if (!fs.existsSync(logsDir)) {
+      return res.json({ logs: 'Logs directory not found.' });
+    }
+    const files = fs.readdirSync(logsDir).filter(f => f.endsWith('.log'));
+    if (!files.length) {
+      return res.json({ logs: 'No logs found.' });
+    }
+    
+    files.sort((a, b) => fs.statSync(path.join(logsDir, b)).mtimeMs - fs.statSync(path.join(logsDir, a)).mtimeMs);
+    const newestFile = files[0];
+    
+    const content = fs.readFileSync(path.join(logsDir, newestFile), 'utf-8');
+    const lines = content.split('\n').filter(Boolean);
+    const lastLines = lines.slice(-500).join('\n');
+    res.json({ logs: lastLines });
+  } catch (error) {
+    console.error('Failed to read logs:', error);
+    res.status(500).json({ error: 'Failed to read logs' });
+  }
+});
+
+router.get('/metrics-ticket', requireAdmin, (req, res) => {
+  res.json({ ticket: generateMetricsTicket() });
 });
 
 export default router;

@@ -1,7 +1,9 @@
 /** @vitest-environment node */
 process.env.WISHBOARD_DB_PATH = ':memory:';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
@@ -317,5 +319,62 @@ describe('Admin routes', () => {
 
     expect(response.status).toBe(404);
     expect(response.body.error).toBe('User not found.');
+  });
+
+  it('generates a metrics ticket', async () => {
+    const token = await loginAsAdmin();
+    const response = await request(app).get('/api/admin/metrics-ticket').set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    expect(typeof response.body.ticket).toBe('string');
+  });
+
+  it('reads the logs successfully', async () => {
+    const token = await loginAsAdmin();
+    const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    expect(response.body.logs).toBeDefined();
+  });
+
+  it('handles missing logs directory', async () => {
+    const token = await loginAsAdmin();
+    const logsDir = path.join(__dirname, '../../../data/logs');
+    const backupDir = path.join(__dirname, '../../../data/logs_backup');
+    
+    let moved = false;
+    if (fs.existsSync(logsDir)) {
+      fs.renameSync(logsDir, backupDir);
+      moved = true;
+    }
+    
+    const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    expect(response.body.logs).toBe('Logs directory not found.');
+    
+    if (moved) {
+      fs.renameSync(backupDir, logsDir);
+    }
+  });
+
+  it('handles empty logs directory', async () => {
+    const token = await loginAsAdmin();
+    const logsDir = path.join(__dirname, '../../../data/logs');
+    const backupDir = path.join(__dirname, '../../../data/logs_backup');
+    
+    let moved = false;
+    if (fs.existsSync(logsDir)) {
+      fs.renameSync(logsDir, backupDir);
+      moved = true;
+    }
+    
+    fs.mkdirSync(logsDir, { recursive: true });
+    
+    const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    expect(response.body.logs).toBe('No logs found.');
+    
+    fs.rmdirSync(logsDir);
+    if (moved) {
+      fs.renameSync(backupDir, logsDir);
+    }
   });
 });

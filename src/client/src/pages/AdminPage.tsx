@@ -7,6 +7,10 @@ export default function AdminPage() {
   const [passphrase, setPassphrase] = useState('');
   const [flags, setFlags] = useState<Array<{ id: string; content: string; flagged: number; user_id: string | null }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; username: string; role: string }>>([]);
+  const [logs, setLogs] = useState<string>('');
+  const [isTailing, setIsTailing] = useState<boolean>(true);
+  const logsEndRef = React.useRef<HTMLPreElement>(null);
+  const [metricsTicket, setMetricsTicket] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,6 +33,32 @@ export default function AdminPage() {
       return;
     }
     setUsers(await response.json());
+  };
+
+  const loadLogs = async () => {
+    try {
+      const response = await fetch('/api/admin/logs', { headers: authHeader });
+      if (!response.ok) {
+        setLogs('Failed to load logs.');
+        return;
+      }
+      const data = await response.json();
+      setLogs(data.logs);
+    } catch (e) {
+      console.error('Failed to load logs:', e);
+      setLogs('Failed to load logs.');
+    }
+  };
+
+  const loadMetricsTicket = async () => {
+    try {
+      const response = await fetch('/api/admin/metrics-ticket', { headers: authHeader });
+      if (!response.ok) return;
+      const data = await response.json();
+      setMetricsTicket(data.ticket);
+    } catch (e) {
+      console.error('Failed to load metrics ticket:', e);
+    }
   };
 
   const removeWish = async (id: string) => {
@@ -152,8 +182,39 @@ export default function AdminPage() {
     if (user?.role === 'admin') {
       loadFlags();
       loadUsers();
+      loadLogs();
+      loadMetricsTicket();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (isTailing && logsEndRef.current) {
+      logsEndRef.current.scrollTop = logsEndRef.current.scrollHeight;
+    }
+  }, [logs, isTailing]);
+
+  useEffect(() => {
+    if (!isTailing || user?.role !== 'admin' || !token) return;
+    
+    let isActive = true;
+    const poll = async () => {
+      try {
+        const response = await fetch('/api/admin/logs', { headers: { Authorization: `Bearer ${token}` } });
+        if (response.ok) {
+          const data = await response.json();
+          if (isActive) setLogs(data.logs);
+        }
+      } catch (e) {
+        console.error('Failed to poll logs:', e);
+      }
+    };
+
+    const interval = setInterval(poll, 2000);
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
+  }, [isTailing, user, token]);
 
   return (
     <section>
@@ -195,6 +256,30 @@ export default function AdminPage() {
             <button className="secondary-button" onClick={runSeeder} style={{ marginTop: '12px' }}>
               Run Seeder
             </button>
+          </section>
+
+          <section style={{ marginTop: '24px' }}>
+            <h2>System Metrics</h2>
+            <p>Real-time server performance and request statistics.</p>
+            {metricsTicket ? (
+              <iframe src={`/api/admin/metrics?ticket=${metricsTicket}`} style={{ width: '100%', height: '600px', border: '1px solid #ccc', background: '#fff', borderRadius: '4px', marginTop: '12px' }} title="System Metrics" />
+            ) : (
+              <p>Loading metrics...</p>
+            )}
+          </section>
+
+          <section style={{ marginTop: '24px' }}>
+            <h2>System Logs</h2>
+            <p>Recent server logs including rate limit warnings and failed logins.</p>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '12px' }}>
+              <button className="secondary-button" onClick={() => setIsTailing(!isTailing)}>
+                {isTailing ? 'Pause Tailing' : 'Resume Tailing'}
+              </button>
+              <button className="secondary-button" onClick={loadLogs}>Refresh Now</button>
+            </div>
+            <pre ref={logsEndRef} style={{ background: '#1e1e1e', color: '#d4d4d4', padding: '12px', overflowX: 'auto', maxHeight: '400px', borderRadius: '4px', fontSize: '12px' }}>
+              {logs || 'No logs available.'}
+            </pre>
           </section>
 
           <section style={{ marginTop: '24px' }}>

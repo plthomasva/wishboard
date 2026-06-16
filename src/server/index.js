@@ -7,10 +7,15 @@ import wishesRouter from './routes/wishes.js';
 import adminRouter from './routes/admin.js';
 import usersRouter from './routes/users.js';
 import wishmailRouter from './routes/wishmail.js';
+import statusMonitor from 'express-status-monitor';
+import morgan from 'morgan';
+import logger from './logger.js';
+import { requireAdmin, consumeMetricsTicket } from './auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (e.g. nginx) so req.ip uses X-Forwarded-For
 app.disable('x-powered-by');
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS
@@ -43,12 +48,39 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Log successful /api/admin/logs calls as debug to avoid log pollution from tailing
+// We completely skip them to prevent them from showing up even in local debug mode.
+app.use(morgan('combined', {
+  skip: (req, res) => {
+    const url = req.originalUrl || req.url || '';
+    return url.startsWith('/api/admin/logs') && res.statusCode < 400;
+  },
+  stream: {
+    write: (message) => logger.info(message.trim())
+  }
+}));
+
+// Setup status monitor, restricted to admin only (we mount it later, but init here)
+const monitor = statusMonitor({ path: '' });
+app.use(monitor);
+app.get('/api/admin/metrics', (req, res, next) => {
+  if (req.query.ticket && consumeMetricsTicket(req.query.ticket)) {
+    req.user = { role: 'admin' };
+    return next();
+  }
+  requireAdmin(req, res, next);
+}, monitor.pageRoute);
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: process.env.NODE_ENV === 'test' ? 100000 : 1000,
   message: { error: 'Too many requests, please try again later.' },
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('Rate limit exceeded', { ip: req.ip, path: req.path });
+    res.status(options.statusCode).send(options.message);
+  }
 });
 app.use('/api', limiter);
 
@@ -58,6 +90,10 @@ const frontendLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' },
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('Frontend Rate limit exceeded', { ip: req.ip, path: req.path });
+    res.status(options.statusCode).send(options.message);
+  }
 });
 
 app.use('/api/users', usersRouter);
@@ -75,6 +111,7 @@ app.get('*path', frontendLimiter, (req, res) => {
 const PORT = process.env.PORT || 3000;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   app.listen(PORT, () => {
+    logger.info(`Wishboard server started on port ${PORT}`);
     console.log(`Wishboard server listening on http://localhost:${PORT}`);
   });
 }

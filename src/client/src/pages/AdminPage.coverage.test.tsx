@@ -22,6 +22,8 @@ describe('AdminPage Coverage', () => {
     // Initial load
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([{ id: 'w1', content: 'flagged', user_id: 'u1' }]) }); // loadFlags
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([]) }); // loadUsers
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ logs: '' }) }); // loadLogs
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ ticket: 'tick123' }) }); // loadMetricsTicket
 
     render(<AdminPage />);
     await waitFor(() => expect(screen.getByText('Remove')).toBeInTheDocument());
@@ -40,6 +42,8 @@ describe('AdminPage Coverage', () => {
     
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([{ id: 'w1', content: 'flagged', user_id: 'u1' }]) });
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([]) });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ logs: '' }) });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ ticket: 'tick123' }) });
 
     render(<AdminPage />);
     await waitFor(() => expect(screen.getByText('Clear Flag')).toBeInTheDocument());
@@ -57,6 +61,8 @@ describe('AdminPage Coverage', () => {
     
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([{ id: 'w1', content: 'flagged', user_id: 'u1' }]) });
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([]) });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ logs: '' }) });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ ticket: 'tick123' }) });
 
     render(<AdminPage />);
     await waitFor(() => expect(screen.getByText('Clear All Flags')).toBeInTheDocument());
@@ -81,6 +87,8 @@ describe('AdminPage Coverage', () => {
     
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([]) }); // loadFlags
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([{ id: 'u1', username: 'testuser', role: 'user' }]) }); // loadUsers
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ logs: '' }) }); // loadLogs
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ ticket: 'tick123' }) }); // loadMetricsTicket
 
     render(<AdminPage />);
     await waitFor(() => expect(screen.getByText('Reset Password')).toBeInTheDocument());

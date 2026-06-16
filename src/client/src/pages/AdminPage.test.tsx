@@ -47,6 +47,26 @@ describe('AdminPage', () => {
         });
       }
 
+      if (url.endsWith('/api/admin/logs')) {
+        if (!mockToken) {
+          return Promise.resolve({ ok: false, status: 401 });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ logs: 'Test logs output' })
+        });
+      }
+
+      if (url.endsWith('/api/admin/metrics-ticket')) {
+        if (!mockToken) {
+          return Promise.resolve({ ok: false, status: 401 });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ ticket: 'mock-ticket-123' })
+        });
+      }
+
       if (url.endsWith('/api/admin/reset-demo')) {
         return Promise.resolve({
           ok: true,
@@ -236,6 +256,12 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/admin/users')) {
         return Promise.resolve({ ok: true, json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }] });
       }
+      if (url.endsWith('/api/admin/logs')) {
+        return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
+      }
+      if (url.endsWith('/api/admin/metrics-ticket')) {
+        return Promise.resolve({ ok: true, json: async () => ({ ticket: 'mock-ticket-123' }) });
+      }
       if (url.includes('/api/admin/users/') && url.endsWith('/reset-password')) {
         return Promise.resolve({ ok: true, json: async () => ({ success: true, newPassphrase: 'new-password-123' }) });
       }
@@ -302,6 +328,12 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/admin/users')) {
         return Promise.resolve({ ok: true, json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }] });
       }
+      if (url.endsWith('/api/admin/logs')) {
+        return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
+      }
+      if (url.endsWith('/api/admin/metrics-ticket')) {
+        return Promise.resolve({ ok: true, json: async () => ({ ticket: 'mock-ticket-123' }) });
+      }
       return Promise.resolve({ ok: false });
     });
 
@@ -363,5 +395,54 @@ describe('AdminPage', () => {
       expect(screen.getByText('Cleared all flags successfully.')).toBeInTheDocument();
     });
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/wishes/clear-all-flags', expect.any(Object));
+  });
+
+  it('can view logs and toggle tailing', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+    render(<AdminPage />);
+
+    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
+
+    await waitFor(() => {
+      expect(screen.getByText('Test logs output')).toBeInTheDocument();
+    });
+
+    // Toggle live tail
+    const toggleButton = screen.getByRole('button', { name: /Pause Tailing/i });
+    await act(async () => {
+      fireEvent.click(toggleButton);
+    });
+    expect(screen.getByRole('button', { name: /Resume Tailing/i })).toBeInTheDocument();
+  });
+
+  it('can view metrics iframe', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+    render(<AdminPage />);
+
+    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
+
+    await waitFor(() => {
+      expect(screen.getByTitle('System Metrics')).toBeInTheDocument();
+    });
+  });
+
+  it('handles fetch exceptions during initial load', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+    globalThis.fetch = vi.fn().mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : '';
+      if (url.endsWith('/api/admin/metrics-ticket') || url.endsWith('/api/admin/logs')) {
+        throw new Error('Network fail');
+      }
+      return { ok: true, json: async () => [] };
+    });
+    
+    render(<AdminPage />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load logs.')).toBeInTheDocument();
+    });
   });
 });
