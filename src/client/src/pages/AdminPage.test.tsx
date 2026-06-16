@@ -396,4 +396,35 @@ describe('AdminPage', () => {
     });
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/wishes/clear-all-flags', expect.any(Object));
   });
+
+  it('can view logs and toggle tailing', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+    render(<AdminPage />);
+
+    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
+
+    await waitFor(() => {
+      expect(screen.getByText('Test logs output')).toBeInTheDocument();
+    });
+
+    // Toggle live tail
+    const toggleButton = screen.getByRole('button', { name: /Pause Tailing/i });
+    await act(async () => {
+      fireEvent.click(toggleButton);
+    });
+    expect(screen.getByRole('button', { name: /Resume Tailing/i })).toBeInTheDocument();
+  });
+
+  it('can view metrics iframe', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+    render(<AdminPage />);
+
+    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
+
+    await waitFor(() => {
+      expect(screen.getByTitle('System Metrics')).toBeInTheDocument();
+    });
+  });
 });
