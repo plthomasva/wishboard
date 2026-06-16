@@ -47,10 +47,18 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Set up morgan to log HTTP requests through winston
+// Log successful /api/admin/logs calls as debug to avoid log pollution from tailing
 app.use(morgan('combined', {
+  skip: (req, res) => req.path === '/api/admin/logs' && res.statusCode < 400,
   stream: {
     write: (message) => logger.info(message.trim())
+  }
+}));
+
+app.use(morgan('combined', {
+  skip: (req, res) => !(req.path === '/api/admin/logs' && res.statusCode < 400),
+  stream: {
+    write: (message) => logger.debug(message.trim())
   }
 }));
 
