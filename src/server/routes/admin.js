@@ -1,7 +1,13 @@
 import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import db from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { generateDemoData } from '../demoSeeder.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -94,6 +100,31 @@ router.post('/reset-demo', requireAdmin, (req, res) => {
   } catch (error) {
     console.error('Failed to seed demo data:', error);
     res.status(500).json({ error: 'Internal Server Error during seeding' });
+  }
+});
+
+// GET /api/admin/logs
+router.get('/logs', requireAdmin, (req, res) => {
+  const logsDir = path.join(__dirname, '../../../data/logs');
+  try {
+    if (!fs.existsSync(logsDir)) {
+      return res.json({ logs: 'Logs directory not found.' });
+    }
+    const files = fs.readdirSync(logsDir).filter(f => f.endsWith('.log'));
+    if (!files.length) {
+      return res.json({ logs: 'No logs found.' });
+    }
+    
+    files.sort((a, b) => fs.statSync(path.join(logsDir, b)).mtimeMs - fs.statSync(path.join(logsDir, a)).mtimeMs);
+    const newestFile = files[0];
+    
+    const content = fs.readFileSync(path.join(logsDir, newestFile), 'utf-8');
+    const lines = content.split('\n').filter(Boolean);
+    const lastLines = lines.slice(-500).join('\n');
+    res.json({ logs: lastLines });
+  } catch (error) {
+    console.error('Failed to read logs:', error);
+    res.status(500).json({ error: 'Failed to read logs' });
   }
 });
 

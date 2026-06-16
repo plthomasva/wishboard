@@ -47,6 +47,16 @@ describe('AdminPage', () => {
         });
       }
 
+      if (url.endsWith('/api/admin/logs')) {
+        if (!mockToken) {
+          return Promise.resolve({ ok: false, status: 401 });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ logs: 'Test logs output' })
+        });
+      }
+
       if (url.endsWith('/api/admin/reset-demo')) {
         return Promise.resolve({
           ok: true,
@@ -236,6 +246,9 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/admin/users')) {
         return Promise.resolve({ ok: true, json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }] });
       }
+      if (url.endsWith('/api/admin/logs')) {
+        return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
+      }
       if (url.includes('/api/admin/users/') && url.endsWith('/reset-password')) {
         return Promise.resolve({ ok: true, json: async () => ({ success: true, newPassphrase: 'new-password-123' }) });
       }
@@ -301,6 +314,9 @@ describe('AdminPage', () => {
       }
       if (url.endsWith('/api/admin/users')) {
         return Promise.resolve({ ok: true, json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }] });
+      }
+      if (url.endsWith('/api/admin/logs')) {
+        return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
       }
       return Promise.resolve({ ok: false });
     });

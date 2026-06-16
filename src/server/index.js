@@ -7,6 +7,10 @@ import wishesRouter from './routes/wishes.js';
 import adminRouter from './routes/admin.js';
 import usersRouter from './routes/users.js';
 import wishmailRouter from './routes/wishmail.js';
+import statusMonitor from 'express-status-monitor';
+import morgan from 'morgan';
+import logger from './logger.js';
+import { requireAdmin } from './auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,12 +47,28 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Set up morgan to log HTTP requests through winston
+app.use(morgan('combined', {
+  stream: {
+    write: (message) => logger.info(message.trim())
+  }
+}));
+
+// Setup status monitor, restricted to admin only (we mount it later, but init here)
+const monitor = statusMonitor({ path: '' });
+app.use(monitor);
+app.get('/api/admin/metrics', requireAdmin, monitor.pageRoute);
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: process.env.NODE_ENV === 'test' ? 100000 : 1000,
   message: { error: 'Too many requests, please try again later.' },
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('Rate limit exceeded', { ip: req.ip, path: req.path });
+    res.status(options.statusCode).send(options.message);
+  }
 });
 app.use('/api', limiter);
 
@@ -58,6 +78,10 @@ const frontendLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' },
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('Frontend Rate limit exceeded', { ip: req.ip, path: req.path });
+    res.status(options.statusCode).send(options.message);
+  }
 });
 
 app.use('/api/users', usersRouter);
