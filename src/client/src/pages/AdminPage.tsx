@@ -8,6 +8,8 @@ export default function AdminPage() {
   const [flags, setFlags] = useState<Array<{ id: string; content: string; flagged: number; user_id: string | null }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; username: string; role: string }>>([]);
   const [logs, setLogs] = useState<string>('');
+  const [isTailing, setIsTailing] = useState<boolean>(true);
+  const logsEndRef = React.useRef<HTMLPreElement>(null);
   const [metricsTicket, setMetricsTicket] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -176,6 +178,35 @@ export default function AdminPage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (isTailing && logsEndRef.current) {
+      logsEndRef.current.scrollTop = logsEndRef.current.scrollHeight;
+    }
+  }, [logs, isTailing]);
+
+  useEffect(() => {
+    if (!isTailing || user?.role !== 'admin' || !token) return;
+    
+    let isActive = true;
+    const poll = async () => {
+      try {
+        const response = await fetch('/api/admin/logs', { headers: { Authorization: `Bearer ${token}` } });
+        if (response.ok) {
+          const data = await response.json();
+          if (isActive) setLogs(data.logs);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    const interval = setInterval(poll, 2000);
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
+  }, [isTailing, user, token]);
+
   return (
     <section>
       <h1>Admin Panel</h1>
@@ -231,8 +262,13 @@ export default function AdminPage() {
           <section style={{ marginTop: '24px' }}>
             <h2>System Logs</h2>
             <p>Recent server logs including rate limit warnings and failed logins.</p>
-            <button className="secondary-button" onClick={loadLogs} style={{ marginTop: '12px', marginBottom: '12px' }}>Refresh Logs</button>
-            <pre style={{ background: '#1e1e1e', color: '#d4d4d4', padding: '12px', overflowX: 'auto', maxHeight: '400px', borderRadius: '4px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '12px' }}>
+              <button className="secondary-button" onClick={() => setIsTailing(!isTailing)}>
+                {isTailing ? 'Pause Tailing' : 'Resume Tailing'}
+              </button>
+              <button className="secondary-button" onClick={loadLogs}>Refresh Now</button>
+            </div>
+            <pre ref={logsEndRef} style={{ background: '#1e1e1e', color: '#d4d4d4', padding: '12px', overflowX: 'auto', maxHeight: '400px', borderRadius: '4px', fontSize: '12px' }}>
               {logs || 'No logs available.'}
             </pre>
           </section>
