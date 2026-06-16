@@ -212,7 +212,7 @@ export default function AdminPage() {
           <section style={{ marginTop: '24px' }}>
             <h2>System Metrics</h2>
             <p>Real-time server performance and request statistics.</p>
-            <iframe src="/api/admin/metrics" style={{ width: '100%', height: '600px', border: '1px solid #ccc', background: '#fff', borderRadius: '4px', marginTop: '12px' }} title="System Metrics" />
+            <iframe src={`/api/admin/metrics?token=${token}`} style={{ width: '100%', height: '600px', border: '1px solid #ccc', background: '#fff', borderRadius: '4px', marginTop: '12px' }} title="System Metrics" />
           </section>
 
           <section style={{ marginTop: '24px' }}>

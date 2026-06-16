@@ -4,9 +4,9 @@ import db from './db.js';
 const TOKEN_EXPIRY_MS = 1000 * 60 * 60 * 24 * 7;
 
 const getTokenFromRequest = (req) => {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers?.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return null;
+    return req.query?.token || null;
   }
   return authHeader.slice(7).trim();
 };
