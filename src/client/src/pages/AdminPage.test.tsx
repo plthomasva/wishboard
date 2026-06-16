@@ -427,4 +427,22 @@ describe('AdminPage', () => {
       expect(screen.getByTitle('System Metrics')).toBeInTheDocument();
     });
   });
+
+  it('handles fetch exceptions during initial load', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+    globalThis.fetch = vi.fn().mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : '';
+      if (url.endsWith('/api/admin/metrics-ticket') || url.endsWith('/api/admin/logs')) {
+        throw new Error('Network fail');
+      }
+      return { ok: true, json: async () => [] };
+    });
+    
+    render(<AdminPage />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load logs.')).toBeInTheDocument();
+    });
+  });
 });

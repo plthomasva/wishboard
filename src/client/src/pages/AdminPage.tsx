@@ -36,20 +36,29 @@ export default function AdminPage() {
   };
 
   const loadLogs = async () => {
-    const response = await fetch('/api/admin/logs', { headers: authHeader });
-    if (!response.ok) {
+    try {
+      const response = await fetch('/api/admin/logs', { headers: authHeader });
+      if (!response.ok) {
+        setLogs('Failed to load logs.');
+        return;
+      }
+      const data = await response.json();
+      setLogs(data.logs);
+    } catch (e) {
+      console.error('Failed to load logs:', e);
       setLogs('Failed to load logs.');
-      return;
     }
-    const data = await response.json();
-    setLogs(data.logs);
   };
 
   const loadMetricsTicket = async () => {
-    const response = await fetch('/api/admin/metrics-ticket', { headers: authHeader });
-    if (!response.ok) return;
-    const data = await response.json();
-    setMetricsTicket(data.ticket);
+    try {
+      const response = await fetch('/api/admin/metrics-ticket', { headers: authHeader });
+      if (!response.ok) return;
+      const data = await response.json();
+      setMetricsTicket(data.ticket);
+    } catch (e) {
+      console.error('Failed to load metrics ticket:', e);
+    }
   };
 
   const removeWish = async (id: string) => {
@@ -196,7 +205,7 @@ export default function AdminPage() {
           if (isActive) setLogs(data.logs);
         }
       } catch (e) {
-        // ignore
+        console.error('Failed to poll logs:', e);
       }
     };
 

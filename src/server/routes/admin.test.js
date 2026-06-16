@@ -335,19 +335,46 @@ describe('Admin routes', () => {
     expect(response.body.logs).toBeDefined();
   });
 
-  it('handles errors when reading logs', async () => {
+  it('handles missing logs directory', async () => {
     const token = await loginAsAdmin();
-    // Since fs might be immutable, we'll try to spy on it, but if that fails, 
-    // at least the other lines are covered. We can mock path.join or fs.existsSync.
-    try {
-      const spy = vi.spyOn(fs, 'existsSync').mockImplementation(() => { throw new Error('mock error'); });
-      const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
-      expect(response.status).toBe(500);
-      expect(response.body.error).toBe('Failed to read logs');
-      spy.mockRestore();
-    } catch (e) {
-      // If spyOn fails due to ESM immutability, we silently pass since we can't easily force an error 
-      // without heavy refactoring of how admin.js imports fs.
+    const logsDir = path.join(__dirname, '../../../data/logs');
+    const backupDir = path.join(__dirname, '../../../data/logs_backup');
+    
+    let moved = false;
+    if (fs.existsSync(logsDir)) {
+      fs.renameSync(logsDir, backupDir);
+      moved = true;
+    }
+    
+    const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    expect(response.body.logs).toBe('Logs directory not found.');
+    
+    if (moved) {
+      fs.renameSync(backupDir, logsDir);
+    }
+  });
+
+  it('handles empty logs directory', async () => {
+    const token = await loginAsAdmin();
+    const logsDir = path.join(__dirname, '../../../data/logs');
+    const backupDir = path.join(__dirname, '../../../data/logs_backup');
+    
+    let moved = false;
+    if (fs.existsSync(logsDir)) {
+      fs.renameSync(logsDir, backupDir);
+      moved = true;
+    }
+    
+    fs.mkdirSync(logsDir, { recursive: true });
+    
+    const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    expect(response.body.logs).toBe('No logs found.');
+    
+    fs.rmdirSync(logsDir);
+    if (moved) {
+      fs.renameSync(backupDir, logsDir);
     }
   });
 });
