@@ -13,30 +13,34 @@ const logFormat = winston.format.combine(
   winston.format.json()
 );
 
-const transport = new winston.transports.DailyRotateFile({
-  filename: path.join(__dirname, '../../data/logs/wishboard-%DATE%.log'),
-  datePattern: 'YYYY-MM-DD',
-  zippedArchive: false,
-  maxSize: '20m',
-  maxFiles: '14d'
-});
+const transports = [];
+
+if (process.env.NODE_ENV !== 'test') {
+  transports.push(new winston.transports.DailyRotateFile({
+    filename: path.join(__dirname, '../../data/logs/wishboard-%DATE%.log'),
+    datePattern: 'YYYY-MM-DD',
+    zippedArchive: false,
+    maxSize: '20m',
+    maxFiles: '14d'
+  }));
+}
+
+transports.push(new winston.transports.Console({
+  silent: process.env.NODE_ENV === 'test',
+  format: winston.format.combine(
+    winston.format.colorize(),
+    winston.format.printf(({ timestamp, level, message, ...meta }) => {
+      return `[${timestamp}] ${level}: ${message} ${
+        Object.keys(meta).length ? JSON.stringify(meta) : ''
+      }`;
+    })
+  )
+}));
 
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: logFormat,
-  transports: [
-    transport,
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.printf(({ timestamp, level, message, ...meta }) => {
-          return `[${timestamp}] ${level}: ${message} ${
-            Object.keys(meta).length ? JSON.stringify(meta) : ''
-          }`;
-        })
-      )
-    })
-  ]
+  transports
 });
 
 export default logger;
