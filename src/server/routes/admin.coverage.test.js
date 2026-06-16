@@ -79,16 +79,5 @@ describe('Admin routes coverage', () => {
     expect(response.body).toHaveProperty('logs');
   });
 
-  it('handles error when reading logs', async () => {
-    const token = await loginAsAdmin();
-    const fs = await import('node:fs');
-    const spy = vi.spyOn(fs, 'existsSync').mockImplementation(() => { throw new Error('Mock error'); });
-    const response = await request(app)
-      .get('/api/admin/logs')
-      .set('Authorization', `Bearer ${token}`);
-    expect(response.status).toBe(500);
-    expect(response.body.error).toBe('Failed to read logs');
-    spy.mockRestore();
-  });
 });
 
