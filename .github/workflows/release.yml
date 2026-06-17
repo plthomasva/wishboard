@@ -35,19 +35,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Sanitize tag name
+        id: sanitize
+        run: |
+          RAW_TAG="${{ needs.release-please.outputs.tag_name }}"
+          CLEAN_TAG="${RAW_TAG#wishboard-}"
+          echo "clean_tag=$CLEAN_TAG" >> $GITHUB_OUTPUT
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=semver,pattern={{version}},value=${{ needs.release-please.outputs.tag_name }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release-please.outputs.tag_name }}
-            type=semver,pattern={{major}},value=${{ needs.release-please.outputs.tag_name }}
+            type=semver,pattern={{version}},value=${{ steps.sanitize.outputs.clean_tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.sanitize.outputs.clean_tag }}
+            type=semver,pattern={{major}},value=${{ steps.sanitize.outputs.clean_tag }}
             type=raw,value=latest
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true

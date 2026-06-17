@@ -1,7 +1,8 @@
 node_modules
 dist
-data
-.env
+data/*.db
+data/*.log
+data/*.tmp
 .git
 .github
 npm-debug.log
