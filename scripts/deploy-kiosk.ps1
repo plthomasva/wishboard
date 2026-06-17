@@ -26,6 +26,13 @@ if ($DeployRules) {
 $ProjectRoot = Resolve-Path "$PSScriptRoot\.."
 Set-Location $ProjectRoot
 
+# Read the current version to deploy a specific tag instead of 'latest'
+$AppVersion = "latest"
+if (Test-Path "VERSION") {
+    $AppVersion = Get-Content "VERSION" | Out-String | ForEach-Object Trim
+}
+Write-Host "Target Version: $AppVersion" -ForegroundColor Cyan
+
 try {
     Write-Host "1. Uploading setup script and deployment script..." -ForegroundColor Yellow
     scp "scripts\setup-kiosk.sh" "${AdminUsername}@${HostName}:/tmp/setup-kiosk.sh"
@@ -38,12 +45,12 @@ try {
         throw "Setup script failed on the target device."
     }
 
-    Write-Host "3. Deploying Docker container..." -ForegroundColor Yellow
+    Write-Host "3. Deploying Docker container (Version: $AppVersion)..." -ForegroundColor Yellow
     
     $DeployRulesArg = if ($DeployRules) { "reset" } else { "keep" }
     
     # Execute the remote deployment script
-    ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh $Mode $DomainName $DeployRulesArg"
+    ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh $Mode $DomainName $DeployRulesArg $AppVersion"
 
     if ($LASTEXITCODE -ne 0) {
         throw "Deployment failed on the target device. Check the logs above."

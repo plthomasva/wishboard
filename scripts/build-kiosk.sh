@@ -6,12 +6,13 @@ echo "=== Wishboard Raspberry Pi Container Deploy ==="
 MODE="${1:-dev}"
 DOMAIN_NAME="${2:-wishboard.painless-computing.com}"
 DEPLOY_RULES="${3:-keep}"
+APP_VERSION="${4:-latest}"
 
 # Configure the Docker command to securely execute as the wishboard service user using their isolated rootless daemon
 WISHBOARD_UID=$(id -u wishboard)
 RUN_CMD="sudo -u wishboard DOCKER_HOST=unix:///run/user/$WISHBOARD_UID/docker.sock docker"
 
-echo "Deployment Mode: $MODE, Domain: $DOMAIN_NAME, Rules: $DEPLOY_RULES"
+echo "Deployment Mode: $MODE, Domain: $DOMAIN_NAME, Rules: $DEPLOY_RULES, Version: $APP_VERSION"
 REQUIRED_MB=800
 AVAILABLE_MB=$(df -m /home | awk 'NR==2 {print $4}')
 if [[ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]]; then
@@ -42,8 +43,8 @@ echo "Stopping and removing existing container if present..."
 $RUN_CMD stop wishboard || true
 $RUN_CMD rm wishboard || true
 
-echo "Pulling latest image from GitHub Container Registry..."
-$RUN_CMD pull ghcr.io/plthomasva/wishboard:latest
+echo "Pulling image from GitHub Container Registry (ghcr.io/plthomasva/wishboard:$APP_VERSION)..."
+$RUN_CMD pull ghcr.io/plthomasva/wishboard:$APP_VERSION
 
 echo "Starting container..."
 $RUN_CMD run -d \
@@ -52,7 +53,7 @@ $RUN_CMD run -d \
     --network host \
     --env-file /home/wishboard/wishboard/.env \
     -v wishboard_data:/app/data \
-    ghcr.io/plthomasva/wishboard:latest
+    ghcr.io/plthomasva/wishboard:$APP_VERSION
 
 echo "Restarting Display Manager..."
 sudo systemctl restart lightdm || true
