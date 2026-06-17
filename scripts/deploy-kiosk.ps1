@@ -13,7 +13,10 @@ param (
     [string]$DomainName = "wishboard.painless-computing.com",
 
     [Parameter(Mandatory = $false)]
-    [switch]$DeployRules
+    [switch]$DeployRules,
+
+    [Parameter(Mandatory = $false)]
+    [string]$Version = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,8 +31,12 @@ Set-Location $ProjectRoot
 
 # Read the current version to deploy a specific tag instead of 'latest'
 $AppVersion = "latest"
-if (Test-Path "VERSION") {
-    $AppVersion = Get-Content "VERSION" | Out-String | ForEach-Object Trim
+if ($Version) {
+    $AppVersion = $Version
+}
+elseif (Test-Path "package.json") {
+    $PackageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
+    $AppVersion = $PackageJson.version
 }
 Write-Host "Target Version: $AppVersion" -ForegroundColor Cyan
 
