@@ -98,6 +98,10 @@ router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) =>
 // POST /api/admin/reset-demo
 // Protected by requireAdmin so only the 'admin' account can trigger it
 router.post('/reset-demo', requireAdmin, (req, res) => {
+  if (process.env.NODE_ENV === 'production' && req.query.force !== 'true' && req.body.force !== true) {
+    return res.status(403).json({ error: 'Demo reset is disabled in production unless force is explicitly requested.' });
+  }
+
   try {
     const stats = generateDemoData();
     res.status(200).json({ 

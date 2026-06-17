@@ -173,12 +173,17 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
 
     render(<AdminPage />);
-
+    
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
     await waitFor(() => {
       expect(screen.getByText('Flagged wish')).toBeInTheDocument();
     });
-    expect(screen.getByText('tester')).toBeInTheDocument();
-    expect(screen.getByText('other-admin')).toBeInTheDocument();
+
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
+    await waitFor(() => {
+      expect(screen.getByText('tester')).toBeInTheDocument();
+      expect(screen.getByText('other-admin')).toBeInTheDocument();
+    });
   });
 
   it('can remove a flagged wish', async () => {
@@ -186,6 +191,7 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
 
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
 
     await waitFor(() => expect(screen.getByText('Flagged wish')).toBeInTheDocument());
     
@@ -204,6 +210,7 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
 
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
 
     await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
 
@@ -239,6 +246,7 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
 
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
 
     await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
 
@@ -284,6 +292,7 @@ describe('AdminPage', () => {
     });
 
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
 
     await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
 
@@ -305,8 +314,9 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
 
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
 
-    await waitFor(() => expect(screen.getByText('Demo Seeder')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Demo Seeder (Dev Only)')).toBeInTheDocument());
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Run Seeder/i }));
@@ -325,6 +335,7 @@ describe('AdminPage', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
 
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
 
     await waitFor(() => {
       expect(screen.getByText('Unable to load flagged wishes.')).toBeInTheDocument();
@@ -356,6 +367,7 @@ describe('AdminPage', () => {
     });
 
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
 
     await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
 
@@ -383,6 +395,7 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
 
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
 
     await waitFor(() => expect(screen.getByText('Flagged wish')).toBeInTheDocument());
 
@@ -402,6 +415,7 @@ describe('AdminPage', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
 
     await waitFor(() => expect(screen.getByText('Flagged wish')).toBeInTheDocument());
 
@@ -419,8 +433,7 @@ describe('AdminPage', () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
     render(<AdminPage />);
-
-    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /System/i })); });
 
     await waitFor(() => {
       expect(screen.getByText('Test logs output')).toBeInTheDocument();
@@ -438,8 +451,7 @@ describe('AdminPage', () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
     render(<AdminPage />);
-
-    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /System/i })); });
 
     await waitFor(() => {
       expect(screen.getByTitle('System Metrics')).toBeInTheDocument();
@@ -458,6 +470,7 @@ describe('AdminPage', () => {
     });
     
     render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /System/i })); });
     
     await waitFor(() => {
       expect(screen.getByText('Failed to load logs.')).toBeInTheDocument();
