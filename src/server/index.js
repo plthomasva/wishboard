@@ -1,3 +1,4 @@
+import http from 'node:http';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,7 @@ import statusMonitor from 'express-status-monitor';
 import morgan from 'morgan';
 import logger from './logger.js';
 import { requireAdmin, consumeMetricsTicket } from './auth.js';
+import { initSocket } from './socket.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,7 +25,7 @@ const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS
   ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
   : ['http://localhost:3000', 'http://localhost:5173']);
 
-app.use(cors({
+const corsOptions = {
   origin(origin, callback) {
     if (!origin) {
       return callback(null, true);
@@ -39,14 +41,12 @@ app.use(cors({
     } catch (err) {
       console.error(err);
     }
-    
-    // By returning false instead of an Error, we simply omit CORS headers.
-    // The browser doesn't need CORS headers for same-origin requests, so they succeed!
-    // Real cross-origin requests will naturally be blocked by the browser.
     return callback(null, false);
   },
   credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use(morgan('combined', {
@@ -105,11 +105,18 @@ app.get('*path', frontendLimiter, (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+
+// Initialize Socket.io
+initSocket(server, corsOptions);
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     logger.info(`Wishboard server started on port ${PORT}`);
     console.log(`Wishboard server listening on http://localhost:${PORT}`);
   });
 }
 
+// Export both app and server for testing
+export { app, server };
 export default app;

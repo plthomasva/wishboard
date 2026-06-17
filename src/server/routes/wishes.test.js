@@ -59,7 +59,7 @@ describe('Authenticated wish creation', () => {
       .send({ content: 'Help me' })
       .set('Accept', 'application/json');
 
-    expect(wishResponse.status).toBe(200);
+    expect(wishResponse.status).toBe(201);
     expect(wishResponse.body.id).toBeTypeOf('string');
 
     const row = db
@@ -81,7 +81,7 @@ describe('Authenticated wish creation', () => {
       })
       .set('Accept', 'application/json');
 
-    expect(wishResponse.status).toBe(200);
+    expect(wishResponse.status).toBe(201);
 
     const row = db.prepare('SELECT contacts, wishmail_enabled FROM wishes WHERE id = ?').get(wishResponse.body.id);
     expect(JSON.parse(row.contacts)).toEqual([{ type: 'Email', value: 'test@example.com' }]);
@@ -259,7 +259,7 @@ describe('Claiming wishes', () => {
   it('allows an authenticated user to claim an anonymous wish with the correct passphrase', async () => {
     // 1. Create anonymous wish
     const wishRes = await request(app).post('/api/wishes').send({ content: 'Anonymous wish' });
-    expect(wishRes.status).toBe(200);
+    expect(wishRes.status).toBe(201);
     const wishId = wishRes.body.id;
     const secret = wishRes.body.secret;
 

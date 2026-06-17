@@ -6,6 +6,7 @@ import { getUserFromToken, getTokenFromRequestHeader, hashPassphrase, verifyPass
 import { generatePassphrase } from '../../client/src/passphrase.js';
 import logger from '../logger.js';
 import { getRules } from '../rulesManager.js';
+import { emitNewWish, emitWishFlagged, emitWishDeleted } from '../socket.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
@@ -249,7 +250,20 @@ router.post('/', (req, res) => {
   );
 
   logger.info('Wish created', { user_id: userId, wish_id: id });
-  res.json({ id, secret });
+  const newWish = {
+    id,
+    content: content.trim(),
+    created_at: now,
+    creator_genders: creatorGenders,
+    creator_orientations: creatorOrientations,
+    creator_roles: creatorRoles,
+    desired_genders: desiredGenders,
+    desired_orientations: desiredOrientations,
+    desired_roles: desiredRoles
+  };
+  emitNewWish(newWish);
+
+  res.status(201).json({ id, secret });
 });
 
 router.get('/random', (req, res) => {
@@ -346,6 +360,7 @@ router.post('/:id/manage', (req, res) => {
   if (action === 'delete') {
     db.prepare('DELETE FROM wishes WHERE id = ?').run(id);
     logger.info('Wish deleted by owner', { user_id: user?.id, wish_id: id });
+    emitWishDeleted(id);
     return res.json({ success: true });
   }
 
@@ -406,6 +421,10 @@ router.post('/:id/flag', (req, res) => {
   if (result.changes === 0) {
     return res.status(404).json({ error: 'Wish not found.' });
   }
+  
+  const flaggedWish = db.prepare('SELECT id, content, flagged, user_id FROM wishes WHERE id = ?').get(id);
+  emitWishFlagged(flaggedWish);
+
   logger.warn('Wish flagged for moderation', { wish_id: id });
   res.json({ success: true });
 });

@@ -6,6 +6,7 @@ import db from '../db.js';
 import { requireAdmin, generateMetricsTicket } from '../auth.js';
 import { generateDemoData } from '../demoSeeder.js';
 import logger from '../logger.js';
+import { emitWishDeleted } from '../socket.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,9 @@ router.get('/flags', requireAdmin, (req, res) => {
 router.post('/wishes/:id/remove', requireAdmin, (req, res) => {
   const result = db.prepare('DELETE FROM wishes WHERE id = ?').run(req.params.id);
   logger.info('Admin removed wish', { admin_user_id: req.user.id, wish_id: req.params.id });
+  if (result.changes > 0) {
+    emitWishDeleted(req.params.id);
+  }
   checkResult(result, res, 'Wish');
 });
 

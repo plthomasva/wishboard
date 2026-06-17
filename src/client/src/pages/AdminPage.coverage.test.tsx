@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import AdminPage from './AdminPage';
 import React from 'react';
@@ -30,6 +30,11 @@ describe('AdminPage Coverage', () => {
     });
 
     render(<AdminPage />);
+
+    // Navigate to the Flags tab
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Flagged Wishes'));
+    });
     await waitFor(() => expect(screen.getByText('Remove')).toBeInTheDocument());
 
     fireEvent.click(screen.getByText('Remove'));
@@ -53,6 +58,11 @@ describe('AdminPage Coverage', () => {
     });
 
     render(<AdminPage />);
+
+    // Navigate to the Flags tab
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Flagged Wishes'));
+    });
     await waitFor(() => expect(screen.getByText('Clear Flag')).toBeInTheDocument());
 
     fireEvent.click(screen.getByText('Clear Flag'));
@@ -76,6 +86,11 @@ describe('AdminPage Coverage', () => {
     });
 
     render(<AdminPage />);
+
+    // Navigate to the Flags tab
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Flagged Wishes'));
+    });
     await waitFor(() => expect(screen.getByText('Clear All Flags')).toBeInTheDocument());
 
     // Cancel confirm
@@ -106,6 +121,11 @@ describe('AdminPage Coverage', () => {
     });
 
     render(<AdminPage />);
+
+    // Navigate to the Users tab
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('User Accounts'));
+    });
     await waitFor(() => expect(screen.getByText('Reset Password')).toBeInTheDocument());
 
     // Cancel confirm

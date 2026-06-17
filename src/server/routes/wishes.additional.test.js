@@ -24,7 +24,7 @@ afterEach(() => {
 describe('Wishes: anonymous and authenticated flows', () => {
   it('allows anonymous creation and management via returned secret', async () => {
     const create = await request(app).post('/api/wishes').send({ content: 'Anon wish' }).set('Accept', 'application/json');
-    expect(create.status).toBe(200);
+    expect(create.status).toBe(201);
     expect(create.body.id).toBeTypeOf('string');
     expect(create.body.secret).toBeTypeOf('string');
 
@@ -60,7 +60,7 @@ describe('Wishes: anonymous and authenticated flows', () => {
     const token = login.body.token;
 
     const create = await request(app).post('/api/wishes').set('Authorization', `Bearer ${token}`).send({ content: 'Owned wish' });
-    expect(create.status).toBe(200);
+    expect(create.status).toBe(201);
     const id = create.body.id;
 
     // owner can update without secret

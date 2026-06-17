@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 export default function SystemOverviewSection({ authHeader, token, refreshCounter }: any) {
   const [metricsTicket, setMetricsTicket] = useState<string | null>(null);
@@ -6,6 +7,7 @@ export default function SystemOverviewSection({ authHeader, token, refreshCounte
   const [filterRepeating, setFilterRepeating] = useState<boolean>(true);
   const [isTailing, setIsTailing] = useState<boolean>(true);
   const logsEndRef = useRef<HTMLPreElement>(null);
+  const { socket } = useWebSocket();
 
   const loadMetricsTicket = async () => {
     try {
@@ -39,20 +41,24 @@ export default function SystemOverviewSection({ authHeader, token, refreshCounte
   }, [displayLogs, isTailing]);
 
   useEffect(() => {
-    if (!isTailing || !token) return;
-    let isActive = true;
-    const poll = async () => {
-      try {
-        const response = await fetch('/api/admin/logs', { headers: { Authorization: `Bearer ${token}` } });
-        if (response.ok) {
-          const data = await response.json();
-          if (isActive) setRawLogs(data.logs || '');
+    if (!socket) return;
+    
+    const handleNewLog = (logEntry: string) => {
+      setRawLogs(prev => {
+        const lines = prev.split('\n');
+        // Keep logs size somewhat bounded
+        if (lines.length > 2000) {
+          lines.splice(0, lines.length - 2000);
         }
-      } catch (e) { console.error(e); }
+        return lines.join('\n') + (prev ? '\n' : '') + logEntry;
+      });
     };
-    const interval = setInterval(poll, 2000);
-    return () => { isActive = false; clearInterval(interval); };
-  }, [isTailing, token]);
+
+    socket.on('sys:log', handleNewLog);
+    return () => {
+      socket.off('sys:log', handleNewLog);
+    };
+  }, [socket]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

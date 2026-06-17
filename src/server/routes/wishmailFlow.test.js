@@ -35,7 +35,7 @@ describe('Wishmail Flow E2E', () => {
         content: 'This is User A wish',
         wishmail_enabled: true
       });
-    expect(wishRes.status).toBe(200);
+    expect(wishRes.status).toBe(201);
     const wishId = wishRes.body.id;
 
     // 3. Register User B

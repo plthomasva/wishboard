@@ -6,6 +6,31 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Custom Transport for WebSockets
+class SocketTransport extends winston.Transport {
+  constructor(opts) {
+    super(opts);
+  }
+  
+  log(info, callback) {
+    setImmediate(() => {
+      this.emit('logged', info);
+    });
+    
+    // Dynamically import to avoid circular dependency
+    import('./socket.js').then((socketModule) => {
+      const formattedLog = `[${info.timestamp}] ${info.level}: ${info.message} ${
+        Object.keys(info).filter(k => !['timestamp', 'level', 'message'].includes(k)).length > 0
+          ? JSON.stringify(Object.fromEntries(Object.entries(info).filter(([k]) => !['timestamp', 'level', 'message'].includes(k))))
+          : ''
+      }`;
+      socketModule.emitSystemLog(formattedLog);
+    }).catch(() => { /* Ignore if socket module isn't ready */ });
+
+    callback();
+  }
+}
+
 const logFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
@@ -23,6 +48,8 @@ if (process.env.NODE_ENV !== 'test') {
     maxSize: '20m',
     maxFiles: '14d'
   }));
+  
+  transports.push(new SocketTransport());
 }
 
 transports.push(new winston.transports.Console({

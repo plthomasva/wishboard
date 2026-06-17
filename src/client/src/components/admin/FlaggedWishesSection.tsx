@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 export default function FlaggedWishesSection({ authHeader, setMessage, setError, refreshCounter }: any) {
   const [flags, setFlags] = useState<Array<{ id: string; content: string; flagged: number; user_id: string | null }>>([]);
@@ -12,6 +13,31 @@ export default function FlaggedWishesSection({ authHeader, setMessage, setError,
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadFlags(); }, [refreshCounter]);
+
+  const { socket } = useWebSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleWishFlagged = (wish: any) => {
+      setFlags(prev => {
+        if (prev.some(w => w.id === wish.id)) return prev;
+        return [wish, ...prev];
+      });
+    };
+
+    const handleWishDeleted = (wishId: string) => {
+      setFlags(prev => prev.filter(w => w.id !== wishId));
+    };
+
+    socket.on('wish:flagged', handleWishFlagged);
+    socket.on('wish:deleted', handleWishDeleted);
+    
+    return () => {
+      socket.off('wish:flagged', handleWishFlagged);
+      socket.off('wish:deleted', handleWishDeleted);
+    };
+  }, [socket]);
 
   const removeWish = async (id: string) => {
     setMessage(null); setError(null);
