@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import WishCard from '../components/WishCard';
 import useFlagWish from '../hooks/useFlagWish';
 import SendWishmailModal from '../components/SendWishmailModal';
@@ -18,6 +18,7 @@ interface DisplayPageProps {
 
 export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps = {}) {
   const [wishes, setWishes] = useState<Wish[]>([]);
+  const [pinnedWishes, setPinnedWishes] = useState<{wish: Wish, pinnedAt: number}[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [capacity, setCapacity] = useState<number>(12);
   const [mailWishId, setMailWishId] = useState<string | null>(null);
@@ -57,10 +58,9 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
     if (!socket) return;
     
     const handleNewWish = (newWish: Wish) => {
-      setWishes(prev => {
-        const currentLimit = isKiosk ? capacity : 12;
-        const updated = [newWish, ...prev];
-        return updated.slice(0, currentLimit);
+      setPinnedWishes(prev => {
+        const filtered = prev.filter(p => p.wish.id !== newWish.id);
+        return [{ wish: newWish, pinnedAt: Date.now() }, ...filtered];
       });
       // Give people time to read the newly arrived wish
       resetTimer();
@@ -104,6 +104,17 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
 
   const handleFlag = useFlagWish((id) => setWishes((prev) => prev.filter((wish) => wish.id !== id)));
 
+  const displayWishes = useMemo(() => {
+    const currentLimit = isKiosk ? capacity : 12;
+    const now = Date.now();
+    const PIN_DURATION = 120000; // 2 minutes
+    const activePins = pinnedWishes.filter(p => now - p.pinnedAt < PIN_DURATION).map(p => p.wish);
+    
+    const randomWishes = wishes.filter(w => !activePins.some(p => p.id === w.id));
+    
+    return [...activePins, ...randomWishes].slice(0, currentLimit);
+  }, [wishes, pinnedWishes, capacity, isKiosk]);
+
   return (
     <section className="display-section">
       <div className="display-header-bar">
@@ -117,7 +128,7 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
       <p>This screen refreshes automatically with rotated wishes.</p>
       {error && <div className="message error">{error}</div>}
       <div className="display-grid" ref={gridRef}>
-        {wishes.map((wish) => (
+        {displayWishes.map((wish) => (
           <WishCard
             key={wish.id}
             wish={wish}

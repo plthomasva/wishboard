@@ -259,7 +259,9 @@ router.post('/', (req, res) => {
     creator_roles: creatorRoles,
     desired_genders: desiredGenders,
     desired_orientations: desiredOrientations,
-    desired_roles: desiredRoles
+    desired_roles: desiredRoles,
+    contacts: parsedContacts,
+    wishmail_enabled: Boolean(wme)
   };
   emitNewWish(newWish);
 
