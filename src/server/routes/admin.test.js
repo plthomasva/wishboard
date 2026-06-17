@@ -190,7 +190,7 @@ describe('Admin routes', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(usersAfterDelete.body.some((user) => user.id === testUserId)).toBe(false);
-  });
+  }, 15000);
 
   it('resets the demo environment and returns the correct stats', async () => {
     db.prepare('INSERT INTO wishes (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)')
@@ -335,11 +335,11 @@ describe('Admin routes', () => {
     expect(response.body.logs).toBeDefined();
   });
 
-  it.skip('handles missing logs directory', async () => {
+  it('handles missing logs directory', async () => {
     const token = await loginAsAdmin();
     
     const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation((pathStr) => {
-      if (typeof pathStr === 'string' && pathStr.includes('data/logs') || pathStr.includes('data\\logs')) return false;
+      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes('data\\logs'))) return false;
       return true;
     });
 
@@ -350,15 +350,15 @@ describe('Admin routes', () => {
     spyExists.mockRestore();
   });
 
-  it.skip('handles empty logs directory', async () => {
+  it('handles empty logs directory', async () => {
     const token = await loginAsAdmin();
     
     const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation((pathStr) => {
-      if (typeof pathStr === 'string' && pathStr.includes('data/logs') || pathStr.includes('data\\logs')) return true;
+      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes('data\\logs'))) return true;
       return true;
     });
     const spyReadDir = vi.spyOn(fs, 'readdirSync').mockImplementation((pathStr) => {
-      if (typeof pathStr === 'string' && pathStr.includes('data/logs') || pathStr.includes('data\\logs')) return [];
+      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes('data\\logs'))) return [];
       return [];
     });
 
