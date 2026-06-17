@@ -47,7 +47,7 @@ jobs:
     - name: Test and Coverage
       run: npm run test:coverage
     - name: SonarCloud Scan
-      if: github.actor != 'dependabot[bot]'
+      if: github.actor != 'dependabot[bot]' && matrix.node-version == '22.x'
       uses: SonarSource/sonarqube-scan-action@v8.2.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
