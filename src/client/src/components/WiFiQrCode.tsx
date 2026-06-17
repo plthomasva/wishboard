@@ -23,7 +23,6 @@ export default function WiFiQrCode() {
     const cycle = () => {
       // Pick a random corner
       const corners: Position[] = [
-        { top: '2rem', left: '2rem' },
         { top: '2rem', right: '2rem' },
         { bottom: '2rem', left: '2rem' },
         { bottom: '2rem', right: '2rem' },
