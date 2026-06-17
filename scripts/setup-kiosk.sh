@@ -151,6 +151,8 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
     }
 }
 EOF
@@ -184,7 +186,7 @@ sudo -u wishboard convert -size 1920x1080 xc:black -font DejaVu-Sans -pointsize 
 
 # 3. Create systemd service
 echo "Configuring systemd service..."
-sudo tee /etc/systemd/system/wishboard.service > /dev/null << 'EOF'
+sudo tee /etc/systemd/system/wishboard.service > /dev/null << EOF
 [Unit]
 Description=Wishboard Node Server
 After=network.target
@@ -196,7 +198,7 @@ WorkingDirectory=/home/wishboard/wishboard
 ExecStart=/usr/bin/node src/server/index.js
 Restart=always
 RestartSec=3
-Environment=PORT=3000 WISHBOARD_DB_PATH=/home/wishboard/wishboard/data/wishboard.db
+Environment=PORT=3000 WISHBOARD_DB_PATH=/home/wishboard/wishboard/data/wishboard.db CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173
 
 [Install]
 WantedBy=multi-user.target

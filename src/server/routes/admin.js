@@ -6,6 +6,7 @@ import db from '../db.js';
 import { requireAdmin, generateMetricsTicket } from '../auth.js';
 import { generateDemoData } from '../demoSeeder.js';
 import logger from '../logger.js';
+import { emitWishDeleted } from '../socket.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,9 @@ router.get('/flags', requireAdmin, (req, res) => {
 router.post('/wishes/:id/remove', requireAdmin, (req, res) => {
   const result = db.prepare('DELETE FROM wishes WHERE id = ?').run(req.params.id);
   logger.info('Admin removed wish', { admin_user_id: req.user.id, wish_id: req.params.id });
+  if (result.changes > 0) {
+    emitWishDeleted(req.params.id);
+  }
   checkResult(result, res, 'Wish');
 });
 
@@ -98,6 +102,10 @@ router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) =>
 // POST /api/admin/reset-demo
 // Protected by requireAdmin so only the 'admin' account can trigger it
 router.post('/reset-demo', requireAdmin, (req, res) => {
+  if (process.env.NODE_ENV === 'production' && req.query.force !== 'true' && req.body.force !== true) {
+    return res.status(403).json({ error: 'Demo reset is disabled in production unless force is explicitly requested.' });
+  }
+
   try {
     const stats = generateDemoData();
     res.status(200).json({ 

@@ -14,3 +14,4 @@ coverage
 *.sqlite-shm
 *.sqlite-wal
 dummy-path.log*
+*.tar.gz

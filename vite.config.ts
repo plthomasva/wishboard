@@ -18,7 +18,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:3000'
+      '/api': 'http://localhost:3000',
+      '/socket.io': {
+        target: 'http://localhost:3000',
+        ws: true,
+        changeOrigin: true,
+      }
     }
   },
   test: {
@@ -28,6 +33,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/client/src/**/*.{test,spec}.{ts,tsx}', 'src/server/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
     setupFiles: 'src/client/src/setupTests.ts',
+    globalSetup: 'vitest.global-setup.js',
     maxWorkers: 1,
     coverage: {
       provider: 'v8',

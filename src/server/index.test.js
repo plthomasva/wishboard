@@ -1,12 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import request from 'supertest';
-import app from './index.js';
+import app, { server } from './index.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+afterAll(() => new Promise((resolve) => server.close(resolve)));
 
 describe('Server index.js', () => {
   it('should serve index.html for unknown routes', async () => {

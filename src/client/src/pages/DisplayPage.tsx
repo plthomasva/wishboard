@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import WishCard from '../components/WishCard';
 import useFlagWish from '../hooks/useFlagWish';
 import SendWishmailModal from '../components/SendWishmailModal';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface Wish {
   id: string;
@@ -21,28 +22,55 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
   const [capacity, setCapacity] = useState<number>(12);
   const [mailWishId, setMailWishId] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<number | null>(null);
+  const { socket } = useWebSocket();
+
+  const loadWishes = useCallback(async () => {
+    setError(null);
+    try {
+      const currentLimit = isKiosk ? capacity : 12;
+      const response = await fetch(`/api/wishes/random?limit=${currentLimit}`);
+      if (!response.ok) {
+        throw new Error('Unable to load wishes.');
+      }
+      const data = await response.json();
+      setWishes(data);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }, [capacity, isKiosk]);
+
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) globalThis.clearInterval(timerRef.current);
+    timerRef.current = globalThis.setInterval(loadWishes, 12000);
+  }, [loadWishes]);
 
   useEffect(() => {
-    const loadWishes = async () => {
-      setError(null);
-      try {
-        // Fetch exactly the number of wishes that perfectly fit the physical screen
+    loadWishes();
+    resetTimer();
+    return () => {
+      if (timerRef.current) globalThis.clearInterval(timerRef.current);
+    };
+  }, [loadWishes, resetTimer]);
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleNewWish = (newWish: Wish) => {
+      setWishes(prev => {
         const currentLimit = isKiosk ? capacity : 12;
-        const response = await fetch(`/api/wishes/random?limit=${currentLimit}`);
-        if (!response.ok) {
-          throw new Error('Unable to load wishes.');
-        }
-        const data = await response.json();
-        setWishes(data);
-      } catch (err) {
-        setError((err as Error).message);
-      }
+        const updated = [newWish, ...prev];
+        return updated.slice(0, currentLimit);
+      });
+      // Give people time to read the newly arrived wish
+      resetTimer();
     };
 
-    loadWishes();
-    const handle = globalThis.setInterval(loadWishes, 12000);
-    return () => globalThis.clearInterval(handle);
-  }, [capacity, isKiosk]);
+    socket.on('wish:created', handleNewWish);
+    return () => {
+      socket.off('wish:created', handleNewWish);
+    };
+  }, [socket, isKiosk, capacity, resetTimer]);
 
   useEffect(() => {
     if (!isKiosk) return;

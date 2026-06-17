@@ -25,8 +25,8 @@ describe('Logger', () => {
     const logger = (await import('./logger.js')).default;
     expect(logger).toBeDefined();
     
-    // production has DailyRotateFile and Console
-    expect(logger.transports.length).toBe(2);
+    // production has DailyRotateFile, SocketTransport, and Console
+    expect(logger.transports.length).toBe(3);
     
     logger.info('test message', { extraField: 'metaData' });
     logger.info('test empty meta');

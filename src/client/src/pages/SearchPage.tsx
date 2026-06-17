@@ -6,6 +6,7 @@ import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
 import SendWishmailModal from '../components/SendWishmailModal';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface Wish {
   id: string;
@@ -24,6 +25,35 @@ export default function SearchPage() {
   const [manualOrientations, setManualOrientations] = useState('');
   const [manualRoles, setManualRoles] = useState('');
   const [mailWishId, setMailWishId] = useState<string | null>(null);
+  const [lastSearchParams, setLastSearchParams] = useState<string | null>(null);
+  const { socket } = useWebSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const prependIfNotPresent = (newWish: Wish) => setResults(prev =>
+      prev.some(w => w.id === newWish.id) ? prev : [newWish, ...prev]
+    );
+
+    const handleNewWish = async (newWish: Wish) => {
+      if (lastSearchParams === null) return;
+      try {
+        const response = await fetch(`/api/wishes?${lastSearchParams}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.some((w: Wish) => w.id === newWish.id)) {
+          prependIfNotPresent(newWish);
+        }
+      } catch (err) {
+        console.debug('WebSocket wish:created check failed:', err);
+      }
+    };
+
+    socket.on('wish:created', handleNewWish);
+    return () => {
+      socket.off('wish:created', handleNewWish);
+    };
+  }, [socket, lastSearchParams]);
 
   useEffect(() => {
     setUseProfileAttributes(Boolean(user));
@@ -57,7 +87,10 @@ export default function SearchPage() {
       }
     }
 
-    const response = await fetch(`/api/wishes?${params.toString()}`);
+    const paramsStr = params.toString();
+    setLastSearchParams(paramsStr);
+
+    const response = await fetch(`/api/wishes?${paramsStr}`);
     const data = await response.json();
     if (!response.ok) {
       setError('Unable to perform search.');

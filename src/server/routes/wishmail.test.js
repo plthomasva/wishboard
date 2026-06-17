@@ -23,7 +23,7 @@ describe('Wishmail routes', () => {
       content: 'Wishmail test',
       wishmail_enabled: true
     });
-    expect(wishRes.status).toBe(200);
+    expect(wishRes.status).toBe(201);
     const wishId = wishRes.body.id;
 
     const mailRes = await request(app).post(`/api/wishes/${wishId}/mail`).send({
