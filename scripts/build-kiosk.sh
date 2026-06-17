@@ -1,11 +1,15 @@
 #!/bin/bash
 set -e
 
-echo "=== Wishboard Raspberry Pi Docker Deploy ==="
+echo "=== Wishboard Raspberry Pi Container Deploy ==="
 
 MODE="${1:-dev}"
 DOMAIN_NAME="${2:-wishboard.painless-computing.com}"
 DEPLOY_RULES="${3:-keep}"
+
+# Configure the Docker command to securely execute as the wishboard service user using their isolated rootless daemon
+WISHBOARD_UID=$(id -u wishboard)
+RUN_CMD="sudo -u wishboard DOCKER_HOST=unix:///run/user/$WISHBOARD_UID/docker.sock docker"
 
 echo "Deployment Mode: $MODE, Domain: $DOMAIN_NAME, Rules: $DEPLOY_RULES"
 REQUIRED_MB=800
@@ -30,19 +34,19 @@ fi
 sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> /home/wishboard/wishboard/.env"
 
 if [[ "$DEPLOY_RULES" = "reset" ]]; then
-    echo "Resetting Docker volume..."
-    sudo docker volume rm wishboard_data || true
+    echo "Resetting container volume..."
+    $RUN_CMD volume rm wishboard_data || true
 fi
 
 echo "Stopping and removing existing container if present..."
-sudo docker stop wishboard || true
-sudo docker rm wishboard || true
+$RUN_CMD stop wishboard || true
+$RUN_CMD rm wishboard || true
 
-echo "Pulling latest Docker image from GitHub Container Registry..."
-sudo docker pull ghcr.io/plthomasva/wishboard:latest
+echo "Pulling latest image from GitHub Container Registry..."
+$RUN_CMD pull ghcr.io/plthomasva/wishboard:latest
 
-echo "Starting Docker container..."
-sudo docker run -d \
+echo "Starting container..."
+$RUN_CMD run -d \
     --name wishboard \
     --restart unless-stopped \
     --network host \

@@ -27,12 +27,23 @@ echo "Creating application folder..."
 sudo mkdir -p /home/wishboard/wishboard
 sudo chown -R wishboard:wishboard /home/wishboard
 
-echo "Installing graphical kiosk and container dependencies..."
+echo "Installing graphical kiosk and network dependencies..."
 sudo apt-get update
-sudo apt-get install -y imagemagick swaybg chromium network-manager iw nginx docker.io
+sudo apt-get install -y imagemagick swaybg chromium network-manager iw nginx
 
-echo "Assigning docker group to wishboard user..."
-sudo usermod -a -G docker wishboard
+echo "Checking for Docker CE Rootless dependencies..."
+# We unconditionally ensure Docker CE, rootless-extras, uidmap and systemd-container are installed.
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras uidmap systemd-container
+
+echo "Enabling systemd lingering for wishboard user..."
+sudo loginctl enable-linger wishboard
+
+echo "Initializing Rootless Docker for wishboard user..."
+# Use machinectl to spawn a proper systemd user session shell and install rootless docker
+sudo machinectl shell wishboard@ /bin/bash -c "PATH=/usr/bin:/sbin:/usr/sbin:\$PATH dockerd-rootless-setuptool.sh install"
+
+echo "Exporting DOCKER_HOST for wishboard user..."
+sudo -u wishboard bash -c 'grep -q "DOCKER_HOST" ~/.bashrc || echo "export DOCKER_HOST=unix:///run/user/\$(id -u)/docker.sock" >> ~/.bashrc'
 
 echo "Configuring Wireless Access Point (Hotspot) for Mode: $MODE..."
 
