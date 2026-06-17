@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.0.0...wishboard-v1.1.0) (2026-06-17)
+
+
+### Features
+
+* migrate raspberry pi deployment scripts to use docker ([e0aafd7](https://github.com/plthomasva/wishboard/commit/e0aafd79303416090cc254150bd013d903c14fc7))
+
+
+### Bug Fixes
+
+* correctly extract tag name for docker metadata ([7bf9c21](https://github.com/plthomasva/wishboard/commit/7bf9c219c5eba60f56b9264853a8be833c6928d8))
+
 ## 1.0.0 (2026-06-17)
 
 ### 🚀 Features
