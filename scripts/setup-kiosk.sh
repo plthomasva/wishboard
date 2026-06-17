@@ -27,9 +27,12 @@ echo "Creating application folder..."
 sudo mkdir -p /home/wishboard/wishboard
 sudo chown -R wishboard:wishboard /home/wishboard
 
-echo "Installing graphical kiosk dependencies..."
+echo "Installing graphical kiosk and container dependencies..."
 sudo apt-get update
-sudo apt-get install -y imagemagick swaybg chromium network-manager iw nginx
+sudo apt-get install -y imagemagick swaybg chromium network-manager iw nginx docker.io
+
+echo "Assigning docker group to wishboard user..."
+sudo usermod -a -G docker wishboard
 
 echo "Configuring Wireless Access Point (Hotspot) for Mode: $MODE..."
 
@@ -184,29 +187,7 @@ fi
 echo "Generating fallback background image..."
 sudo -u wishboard convert -size 1920x1080 xc:black -font DejaVu-Sans -pointsize 48 -fill white -gravity center -draw "text 0,0 'Please contact the Wishboard Administrator'" /home/wishboard/background.png || echo "Fallback background creation skipped (imagemagick failed or font missing)."
 
-# 3. Create systemd service
-echo "Configuring systemd service..."
-sudo tee /etc/systemd/system/wishboard.service > /dev/null << EOF
-[Unit]
-Description=Wishboard Node Server
-After=network.target
-
-[Service]
-Type=simple
-User=wishboard
-WorkingDirectory=/home/wishboard/wishboard
-ExecStart=/usr/bin/node src/server/index.js
-Restart=always
-RestartSec=3
-Environment=PORT=3000 WISHBOARD_DB_PATH=/home/wishboard/wishboard/data/wishboard.db CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable wishboard.service
-echo "systemd service wishboard.service enabled."
+# 3. (Systemd Node Service Removed in favor of Docker --restart always)
 
 # 4. Configure LightDM auto-login
 echo "Configuring auto-login in LightDM..."

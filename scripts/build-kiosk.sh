@@ -1,12 +1,13 @@
 #!/bin/bash
 set -e
 
-echo "=== Wishboard Raspberry Pi Build & Deploy ==="
+echo "=== Wishboard Raspberry Pi Docker Deploy ==="
 
 MODE="${1:-dev}"
 DOMAIN_NAME="${2:-wishboard.painless-computing.com}"
+DEPLOY_RULES="${3:-keep}"
 
-echo "Deployment Mode: $MODE, Domain: $DOMAIN_NAME"
+echo "Deployment Mode: $MODE, Domain: $DOMAIN_NAME, Rules: $DEPLOY_RULES"
 REQUIRED_MB=800
 AVAILABLE_MB=$(df -m /home | awk 'NR==2 {print $4}')
 if [[ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]]; then
@@ -15,18 +16,8 @@ if [[ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]]; then
 fi
 echo "Disk space OK (${AVAILABLE_MB} MB available)."
 
-echo "Stopping service if it is already running..."
-sudo systemctl stop wishboard.service || true
-
-echo "Extracting code archive..."
-# Make archive readable by wishboard user
-chgrp wishboard /tmp/wishboard.tar.gz
-chmod g+r /tmp/wishboard.tar.gz
-sudo -u wishboard tar -xzf /tmp/wishboard.tar.gz -C /home/wishboard/wishboard
-cd /home/wishboard/wishboard
-
-echo "Installing NPM dependencies..."
-sudo -u wishboard bash -c 'cd /home/wishboard/wishboard && npm install'
+# Ensure directory exists for env file
+sudo -u wishboard mkdir -p /home/wishboard/wishboard
 
 echo "Configuring environment variables..."
 if [[ "$MODE" = "prod" ]] || [[ "$MODE" = "dual" ]]; then
@@ -34,20 +25,33 @@ if [[ "$MODE" = "prod" ]] || [[ "$MODE" = "dual" ]]; then
     sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_AP_IP=10.42.0.1' >> /home/wishboard/wishboard/.env"
 else
     sudo rm -f /home/wishboard/wishboard/.env
+    sudo -u wishboard touch /home/wishboard/wishboard/.env
+fi
+sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> /home/wishboard/wishboard/.env"
+
+if [[ "$DEPLOY_RULES" = "reset" ]]; then
+    echo "Resetting Docker volume..."
+    sudo docker volume rm wishboard_data || true
 fi
 
-echo "Building application..."
-sudo -u wishboard bash -c 'cd /home/wishboard/wishboard && npm run build'
+echo "Stopping and removing existing container if present..."
+sudo docker stop wishboard || true
+sudo docker rm wishboard || true
 
-echo "Removing dev dependencies to save space..."
-sudo -u wishboard bash -c 'cd /home/wishboard/wishboard && npm prune --omit=dev'
+echo "Pulling latest Docker image from GitHub Container Registry..."
+sudo docker pull ghcr.io/plthomasva/wishboard:latest
 
-echo "Cleaning up archive..."
-rm -f /tmp/wishboard.tar.gz
+echo "Starting Docker container..."
+sudo docker run -d \
+    --name wishboard \
+    --restart unless-stopped \
+    --network host \
+    --env-file /home/wishboard/wishboard/.env \
+    -v wishboard_data:/app/data \
+    ghcr.io/plthomasva/wishboard:latest
 
-echo "Restarting services..."
-sudo systemctl restart wishboard.service || true
+echo "Restarting Display Manager..."
 sudo systemctl restart lightdm || true
 
-echo "Deployment complete! Wishboard and Display Manager have been restarted."
+echo "Deployment complete! Wishboard container and Display Manager have been restarted."
 exit 0
