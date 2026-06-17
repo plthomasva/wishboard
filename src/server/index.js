@@ -7,6 +7,7 @@ import wishesRouter from './routes/wishes.js';
 import adminRouter from './routes/admin.js';
 import usersRouter from './routes/users.js';
 import wishmailRouter from './routes/wishmail.js';
+import rulesRouter from './routes/rules.js';
 import statusMonitor from 'express-status-monitor';
 import morgan from 'morgan';
 import logger from './logger.js';
@@ -94,6 +95,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/wishes', wishesRouter);
 app.use('/api/wishes/:id/mail', wishmailRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/rules', rulesRouter);
 
 const distPath = path.resolve(__dirname, '../../dist');
 app.use(express.static(distPath));

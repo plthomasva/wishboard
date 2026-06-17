@@ -64,6 +64,7 @@ db.exec(`
     FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY(parent_mail_id) REFERENCES wishmails(id) ON DELETE SET NULL
   );
+
 `);
 
 const ensureColumn = (table, column, type) => {
@@ -110,5 +111,7 @@ const ensureDefaultAdmin = () => {
 };
 
 ensureDefaultAdmin();
+
+
 
 export default db;

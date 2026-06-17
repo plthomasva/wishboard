@@ -1,6 +1,7 @@
 node_modules
 dist
-data
+data/*
+!data/rules.yaml
 .vite
 npm-debug.log*
 .DS_Store
@@ -12,3 +13,4 @@ coverage
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+dummy-path.log*

@@ -1,0 +1,127 @@
+# Wishboard Matching Engine Rules
+#
+# This file defines the rules that govern how users match with one another.
+# There are 4 types of rules:
+# 1. enrichment: Implicitly adds a target attribute if the trigger (and optional context) match.
+# 2. acceptance: Overrides matching to automatically accept a broad set of targets.
+# 3. expansion: Broadens a search term to include more specific terms.
+# 4. cross_match: Creates a bidirectional match between two complementary roles.
+
+rules:
+  # ==========================================
+  # ENRICHMENTS (Implicit Identities)
+  # ==========================================
+  - id: enrich_lesb_woman
+    rule_type: enrichment
+    trigger_attribute: orientation
+    trigger_value: lesbian
+    target_attribute: gender
+    target_value: woman
+
+  - id: enrich_gay_lesb
+    rule_type: enrichment
+    trigger_attribute: orientation
+    trigger_value: gay
+    context_attribute: gender
+    context_value: woman
+    target_attribute: orientation
+    target_value: lesbian
+
+  - id: enrich_homo_lesb
+    rule_type: enrichment
+    trigger_attribute: orientation
+    trigger_value: homosexual
+    context_attribute: gender
+    context_value: woman
+    target_attribute: orientation
+    target_value: lesbian
+
+  # ==========================================
+  # ACCEPTANCES (Broad Overrides)
+  # ==========================================
+  # Pan/Queer
+  - id: acc_pan
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: pan
+    target_attribute: gender
+    target_value: "man, woman, nonbinary, cis-man, cis-woman, trans-man,
+      trans-woman, men, women"
+
+  - id: acc_queer
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: queer
+    target_attribute: gender
+    target_value: "man, woman, nonbinary, cis-man, cis-woman, trans-man,
+      trans-woman, men, women"
+
+  # Bi
+  - id: acc_bi
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: bi
+    target_attribute: gender
+    target_value: "man, woman, cis-man, cis-woman, men, women"
+  - id: acc_bisexual
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: bisexual
+    target_attribute: gender
+    target_value: "man, woman, cis-man, cis-woman, men, women"
+
+  # Lesbian
+  - id: acc_lesb
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: lesbian
+    target_attribute: gender
+    target_value: "woman, cis-woman, women"
+
+  # Gay
+  - id: acc_gay_man
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: gay
+    target_attribute: gender
+    target_value: "man, cis-man, men"
+  - id: acc_homo_man
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: homosexual
+    target_attribute: gender
+    target_value: "man, cis-man, men"
+  - id: acc_gay_woman
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: gay
+    context_attribute: gender
+    context_value: woman
+    target_attribute: gender
+    target_value: "woman, cis-woman, women"
+  - id: acc_homo_woman
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: homosexual
+    context_attribute: gender
+    context_value: woman
+    target_attribute: gender
+    target_value: "woman, cis-woman, women"
+
+  # Straight
+  - id: acc_str_man
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: straight
+    context_attribute: gender
+    context_value: man
+    target_attribute: gender
+    target_value: "woman, cis-woman, women"
+  - id: acc_str_woman
+    rule_type: acceptance
+    trigger_attribute: orientation
+    trigger_value: straight
+    context_attribute: gender
+    context_value: woman
+    target_attribute: gender
+    target_value: "man, cis-man, men"

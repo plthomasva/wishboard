@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import React from 'react';
 import AdminPage from './AdminPage';
 
@@ -17,6 +17,7 @@ vi.mock('../AuthContext', () => ({
 
 describe('AdminPage', () => {
   beforeEach(() => {
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
     mockUser = null;
     mockToken = null;
     loginMock.mockReset();
@@ -74,6 +75,15 @@ describe('AdminPage', () => {
         });
       }
 
+      if (url.includes('/api/rules')) {
+        if (options?.method === 'PUT' || options?.method === 'POST' || options?.method === 'DELETE') {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+        }
+        return Promise.resolve({ ok: true, json: async () => [
+          { id: 'rule-1', rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup' }
+        ] });
+      }
+
       if (url.includes('/api/admin/wishes/') && url.endsWith('/remove')) {
         return Promise.resolve({ ok: true });
       }
@@ -100,6 +110,7 @@ describe('AdminPage', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    delete window.HTMLElement.prototype.scrollIntoView;
   });
 
   it('renders login form when user is not admin', async () => {
@@ -232,7 +243,8 @@ describe('AdminPage', () => {
     await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
 
     // Delete tester
-    const deleteButtons = screen.getAllByRole('button', { name: /Delete/i });
+    const usersSection = screen.getByText('User Accounts').closest('section');
+    const deleteButtons = within(usersSection!).getAllByRole('button', { name: /Delete/i });
     await act(async () => {
       fireEvent.click(deleteButtons[0]);
     });
@@ -261,6 +273,9 @@ describe('AdminPage', () => {
       }
       if (url.endsWith('/api/admin/metrics-ticket')) {
         return Promise.resolve({ ok: true, json: async () => ({ ticket: 'mock-ticket-123' }) });
+      }
+      if (url.endsWith('/api/rules')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
       }
       if (url.includes('/api/admin/users/') && url.endsWith('/reset-password')) {
         return Promise.resolve({ ok: true, json: async () => ({ success: true, newPassphrase: 'new-password-123' }) });
@@ -312,7 +327,7 @@ describe('AdminPage', () => {
     render(<AdminPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Unable to load flagged wishes. Please login as admin.')).toBeInTheDocument();
+      expect(screen.getByText('Unable to load flagged wishes.')).toBeInTheDocument();
     });
   });
 
@@ -333,6 +348,9 @@ describe('AdminPage', () => {
       }
       if (url.endsWith('/api/admin/metrics-ticket')) {
         return Promise.resolve({ ok: true, json: async () => ({ ticket: 'mock-ticket-123' }) });
+      }
+      if (url.endsWith('/api/rules')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
       }
       return Promise.resolve({ ok: false });
     });
@@ -444,5 +462,44 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Failed to load logs.')).toBeInTheDocument();
     });
+  });
+
+  it('can edit and save a matching rule', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+
+    render(<AdminPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('role = pup')).toBeInTheDocument();
+    });
+
+    const editButtons = screen.getAllByRole('button', { name: /Edit/i });
+    await act(async () => {
+      fireEvent.click(editButtons[0]);
+    });
+
+    // Form should scroll and populate
+    const targetValueInput = screen.getByLabelText(/Target Value/i);
+    expect(targetValueInput).toHaveValue('pup');
+
+    // Change value
+    await act(async () => {
+      fireEvent.change(targetValueInput, { target: { value: 'pup, kitten' } });
+    });
+
+    // Save changes
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Rule updated successfully.')).toBeInTheDocument();
+    });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/rules/rule-1'),
+      expect.objectContaining({ method: 'PUT' })
+    );
   });
 });

@@ -1,16 +1,25 @@
 /** @vitest-environment node */
 process.env.WISHBOARD_DB_PATH = ':memory:';
+process.env.WISHBOARD_RULES_PATH = './data/rules.test.yaml';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-const request = (await import('supertest')).default;
-const appModule = await import('../index.js');
-const db = (await import('../db.js')).default;
-const app = appModule.default;
+import request from 'supertest';
+import app from '../index.js';
+import db from '../db.js';
+import { addRule, reloadRules } from '../rulesManager.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const clearTestData = () => {
   db.exec('DELETE FROM sessions');
   db.exec('DELETE FROM wishes');
   db.exec("DELETE FROM users WHERE role != 'admin'");
+  const rulesPath = path.resolve(process.cwd(), 'data/rules.test.yaml');
+  const srcRules = path.resolve(process.cwd(), 'data/rules.yaml');
+  if (fs.existsSync(srcRules)) {
+    fs.copyFileSync(srcRules, rulesPath);
+  }
+  reloadRules();
 };
 
 beforeEach(() => {
@@ -206,6 +215,43 @@ describe('Matchmaking logic', () => {
     });
     
     expect(resSearch1.body).toHaveLength(1);
+  });
+
+  it('correctly uses rule engine for expansions and cross-matches (handler/pet/pup)', async () => {
+    // 1. Add rules via rulesManager
+    addRule({ id: 'r1', rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup, kitten' });
+    addRule({ id: 'r2', rule_type: 'cross_match', trigger_attribute: 'role', trigger_value: 'handler', target_attribute: 'role', target_value: 'pet' });
+
+    // 2. Create wish wanting a pet
+    await request(app).post('/api/wishes').send({ 
+      content: 'Looking for pet', 
+      desired_roles: 'pet' 
+    });
+
+    // 3. Search as pup (expansion match)
+    const resPup = await request(app).get('/api/wishes').query({ sr: 'pup', q: 'Looking for pet' });
+    expect(resPup.body).toHaveLength(1);
+
+    // 4. Search as handler (cross match)
+    const resHandler = await request(app).get('/api/wishes').query({ sr: 'handler', q: 'Looking for pet' });
+    expect(resHandler.body).toHaveLength(1);
+
+    // 5. Create wish wanting a handler
+    await request(app).post('/api/wishes').send({ 
+      content: 'Looking for handler', 
+      desired_roles: 'handler' 
+    });
+
+    // 6. Search as pet (cross match)
+    const resPet = await request(app).get('/api/wishes').query({ sr: 'pet', q: 'Looking for handler' });
+    expect(resPet.body).toHaveLength(1);
+
+    // 7. Search as pup (expansion of cross match!)
+    const resPupCross = await request(app).get('/api/wishes').query({ sr: 'pup', q: 'Looking for handler' });
+    expect(resPupCross.body).toHaveLength(1);
+
+    // Cleanup rules
+    // Rules are handled by the afterEach hook
   });
 });
 
