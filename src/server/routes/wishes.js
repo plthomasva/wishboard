@@ -5,6 +5,7 @@ import db from '../db.js';
 import { getUserFromToken, getTokenFromRequestHeader, hashPassphrase, verifyPassphrase, parseJsonArray, normalizeArrayInput, createSalt } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
 import logger from '../logger.js';
+import { getRules } from '../rulesManager.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
@@ -33,159 +34,178 @@ const parseGenderDescriptor = (value) => {
   return { token, base, isTrans, isCis };
 };
 
-const buildAcceptedGenderSet = (searcherGenders, searcherOrientations) => {
-  const accepted = new Set();
-  const orientations = searcherOrientations.map(normalizeToken);
-  const genders = searcherGenders.map(parseGenderDescriptor);
+const escapeRegExp = (string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+};
 
-  const addGender = (label) => {
-    accepted.add(label);
-  };
+const hasToken = (str, token) => {
+  const escapedToken = escapeRegExp(token);
+  return new RegExp(String.raw`\b${escapedToken}\b`, 'i').test(normalizeToken(str));
+};
 
-  const add = (items) => items.forEach((item) => addGender(item));
-
-  if (orientations.some((o) => /\b(pan|queer)\b/.test(o))) {
-    add(['man', 'woman', 'nonbinary', 'cis-man', 'cis-woman', 'trans-man', 'trans-woman', 'men', 'women']);
-  }
-
-  if (orientations.some((o) => /\b(bi|bisexual)\b/.test(o))) {
-    add(['man', 'woman', 'cis-man', 'cis-woman', 'men', 'women']);
-  }
-
-  if (orientations.some((o) => /\b(lesb|lesbian)\b/.test(o))) {
-    add(['woman', 'cis-woman', 'women']);
-  }
-
-  if (orientations.some((o) => /\b(gay|homosexual)\b/.test(o))) {
-    const hasWoman = genders.some((g) => g.base === 'woman');
-    const hasMan = genders.some((g) => g.base === 'man');
-    if (hasWoman && !hasMan) {
-      add(['woman', 'cis-woman', 'women']);
-    } else {
-      add(['man', 'cis-man', 'men']);
+const enrichAttributes = (userAttributes, targetCategory, rules) => {
+  const enriched = new Set((userAttributes[targetCategory] || []).map(normalizeToken));
+  const enrichmentRules = rules.filter(r => r.rule_type === 'enrichment' && r.target_attribute === targetCategory);
+  
+  for (const rule of enrichmentRules) {
+    const triggerVals = userAttributes[rule.trigger_attribute] || [];
+    const triggerMatch = triggerVals.some(v => hasToken(v, rule.trigger_value));
+    
+    let contextMatch = true;
+    if (rule.context_attribute && rule.context_value) {
+      const ctxVals = userAttributes[rule.context_attribute] || [];
+      contextMatch = ctxVals.some(v => {
+        if (rule.context_attribute === 'gender') {
+          return parseGenderDescriptor(v).base === rule.context_value;
+        }
+        return hasToken(v, rule.context_value);
+      });
+    }
+    
+    if (triggerMatch && contextMatch) {
+      enriched.add(rule.target_value);
     }
   }
+  return Array.from(enriched);
+};
 
-  if (orientations.some((o) => /\b(straight)\b/.test(o))) {
-    const hasMan = genders.some((g) => g.base === 'man');
-    const hasWoman = genders.some((g) => g.base === 'woman');
-    if (hasMan) add(['woman', 'cis-woman', 'women']);
-    if (hasWoman) add(['man', 'cis-man', 'men']);
+const buildAcceptedSet = (userAttributes, targetCategory, rules) => {
+  const accepted = new Set();
+  const acceptanceRules = rules.filter(r => r.rule_type === 'acceptance' && r.target_attribute === targetCategory);
+  
+  for (const rule of acceptanceRules) {
+    const triggerVals = userAttributes[rule.trigger_attribute] || [];
+    const triggerMatch = triggerVals.some(v => hasToken(v, rule.trigger_value));
+    
+    let contextMatch = true;
+    if (rule.context_attribute && rule.context_value) {
+      const ctxVals = userAttributes[rule.context_attribute] || [];
+      contextMatch = ctxVals.some(v => {
+        if (rule.context_attribute === 'gender') {
+          return parseGenderDescriptor(v).base === rule.context_value;
+        }
+        return hasToken(v, rule.context_value);
+      });
+    }
+    
+    if (triggerMatch && contextMatch) {
+      const targets = rule.target_value.split(',').map(t => t.trim().toLowerCase());
+      targets.forEach(t => accepted.add(t));
+    }
   }
-
   return accepted;
 };
 
-const enrichGenders = (genders, orientations) => {
-  const enriched = new Set(genders.map(normalizeToken));
-  const normO = orientations.map(normalizeToken);
-  if (normO.some(o => /\b(lesb|lesbian)\b/.test(o))) {
-    enriched.add('woman');
+const getExpandedDesired = (desiredVals, category, rules) => {
+  const result = new Set(desiredVals.map(normalizeToken));
+  const expandRules = rules.filter(r => r.rule_type === 'expansion' && r.trigger_attribute === category && r.target_attribute === category);
+  
+  for (const val of desiredVals) {
+    for (const rule of expandRules) {
+      if (hasToken(val, rule.trigger_value)) {
+        const targets = rule.target_value.split(',').map(t => t.trim().toLowerCase());
+        targets.forEach(t => result.add(t));
+      }
+    }
   }
-  return Array.from(enriched);
+  return Array.from(result);
 };
 
-const enrichOrientations = (genders, orientations) => {
-  const enriched = new Set(orientations.map(normalizeToken));
-  const normG = genders.map(parseGenderDescriptor);
-  const hasWoman = normG.some((g) => g.base === 'woman');
-  if (hasWoman && Array.from(enriched).some(o => /\b(gay|homosexual)\b/.test(o))) {
-    enriched.add('lesbian');
+const getCrossMatchedDesired = (desiredVals, category, rules) => {
+  const result = new Set();
+  const crossRules = rules.filter(r => r.rule_type === 'cross_match' && r.trigger_attribute === category && r.target_attribute === category);
+  
+  for (const val of desiredVals) {
+    for (const rule of crossRules) {
+      if (hasToken(val, rule.trigger_value)) {
+        const targets = rule.target_value.split(',').map(t => t.trim().toLowerCase());
+        targets.forEach(t => result.add(t));
+      }
+      if (rule.target_value.split(',').some(t => hasToken(val, t.trim().toLowerCase()))) {
+        result.add(rule.trigger_value.toLowerCase());
+      }
+    }
   }
-  return Array.from(enriched);
+  return Array.from(result);
 };
 
+const matchesAttribute = (searcherVals, desiredVals, category, rules) => {
+  if (!desiredVals || desiredVals.length === 0) return true;
+  if (!searcherVals || searcherVals.length === 0) return false;
 
+  const normalizedSearcher = new Set(searcherVals.map(normalizeToken));
+  const expandedDesired = getExpandedDesired(desiredVals, category, rules);
+  const crossMatchedDesired = getCrossMatchedDesired(desiredVals, category, rules);
+  const expandedCrossMatched = getExpandedDesired(Array.from(crossMatchedDesired), category, rules);
 
-const matchesGenderPreference = (searcherGenders, searcherOrientations, desired) => {
-  if (!desired || desired.length === 0) {
-    return true;
-  }
-  if (!searcherOrientations || searcherOrientations.length === 0) {
-    return true;
-  }
+  const allAcceptable = new Set([...expandedDesired, ...crossMatchedDesired, ...expandedCrossMatched]);
 
-  const accepted = buildAcceptedGenderSet(searcherGenders || [], searcherOrientations);
-  if (accepted.size === 0) {
-    return false;
-  }
-  return desired.some((item) => {
+  return Array.from(allAcceptable).some(desired => normalizedSearcher.has(desired));
+};
+
+const matchesGenderPreferenceImplicit = (searcherAttributes, desiredGenders, rules) => {
+  if (!desiredGenders || desiredGenders.length === 0) return true;
+  const searcherOrientations = searcherAttributes.orientation || [];
+  if (!searcherOrientations || searcherOrientations.length === 0) return true;
+
+  const accepted = buildAcceptedSet(searcherAttributes, 'gender', rules);
+  if (accepted.size === 0) return false;
+
+  return desiredGenders.some((item) => {
     const descriptor = parseGenderDescriptor(item);
     return [descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, item.trim().toLowerCase()].some((label) => accepted.has(label));
   });
 };
 
-const roleCompatibility = {
-  top: ['bottom'],
-  bottom: ['top'],
-  dom: ['sub'],
-  sub: ['dom']
-};
-
-const matchesRolePreference = (searcherRoles, desired) => {
-  if (!desired || desired.length === 0) {
-    return true;
-  }
-  if (!searcherRoles || searcherRoles.length === 0) {
-    return false;
-  }
-
-  const normalizedSearcher = new Set(searcherRoles.map(normalizeToken));
-  const normalizedDesired = desired.map(normalizeToken);
-
-  return normalizedDesired.some((desiredRole) => {
-    return normalizedSearcher.has(desiredRole);
-  });
-};
-
-const matchesPreference = (searcher, desired) => {
-  if (!desired || desired.length === 0) {
-    return true;
-  }
-  if (!searcher || searcher.length === 0) {
-    return false;
-  }
-  const normalizedSearcher = new Set(searcher.map(normalizeToken));
-  return desired.some((item) => normalizedSearcher.has(normalizeToken(item)));
-};
-
-export const isCompatible = (wish, searcher) => {
+export const isCompatible = (wish, searcher, rules = []) => {
   const desiredGenders = parseJsonArray(wish.desired_genders);
   const desiredOrientations = parseJsonArray(wish.desired_orientations);
   const desiredRoles = parseJsonArray(wish.desired_roles);
   
   const creatorGendersRaw = parseJsonArray(wish.creator_genders);
   const creatorOrientationsRaw = parseJsonArray(wish.creator_orientations);
+  const creatorRolesRaw = parseJsonArray(wish.creator_roles);
   
-  const searcherGendersRaw = searcher.identity_genders;
-  const searcherOrientationsRaw = searcher.identity_orientations;
+  const searcherGendersRaw = searcher.identity_genders || [];
+  const searcherOrientationsRaw = searcher.identity_orientations || [];
+  const searcherRolesRaw = searcher.identity_roles || [];
 
-  const creatorGenders = enrichGenders(creatorGendersRaw, creatorOrientationsRaw);
-  const creatorOrientations = enrichOrientations(creatorGendersRaw, creatorOrientationsRaw);
+  const creatorProfileRaw = { gender: creatorGendersRaw, orientation: creatorOrientationsRaw, role: creatorRolesRaw };
+  const searcherProfileRaw = { gender: searcherGendersRaw, orientation: searcherOrientationsRaw, role: searcherRolesRaw };
+
+  const creatorProfile = {
+    gender: enrichAttributes(creatorProfileRaw, 'gender', rules),
+    orientation: enrichAttributes(creatorProfileRaw, 'orientation', rules),
+    role: creatorProfileRaw.role
+  };
   
-  const searcherGenders = enrichGenders(searcherGendersRaw, searcherOrientationsRaw);
-  const searcherOrientations = enrichOrientations(searcherGendersRaw, searcherOrientationsRaw);
+  const searcherProfile = {
+    gender: enrichAttributes(searcherProfileRaw, 'gender', rules),
+    orientation: enrichAttributes(searcherProfileRaw, 'orientation', rules),
+    role: searcherProfileRaw.role
+  };
 
   // 1. Does the searcher want the wish creator?
-  const searcherWantsCreatorGender = matchesGenderPreference(searcherGenders, searcherOrientations, creatorGenders);
+  const searcherWantsCreatorGender = matchesGenderPreferenceImplicit(searcherProfile, creatorProfile.gender, rules);
 
   // 2. Does the wish creator want the searcher?
   let creatorWantsSearcherGender = false;
   if (desiredGenders.length > 0) {
-    creatorWantsSearcherGender = searcherGenders.some((item) => {
-      const descriptor = parseGenderDescriptor(item);
-      const searcherLabels = new Set([descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, item.trim().toLowerCase()]);
-      return desiredGenders.some(d => searcherLabels.has(normalizeToken(d)));
-    });
+    const searcherExtendedGenders = [];
+    for (const g of searcherProfile.gender) {
+      const descriptor = parseGenderDescriptor(g);
+      searcherExtendedGenders.push(descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, g.trim().toLowerCase());
+    }
+    creatorWantsSearcherGender = matchesAttribute(searcherExtendedGenders, desiredGenders, 'gender', rules);
   } else {
-    creatorWantsSearcherGender = matchesGenderPreference(creatorGenders, creatorOrientations, searcherGenders);
+    creatorWantsSearcherGender = matchesGenderPreferenceImplicit(creatorProfile, searcherProfile.gender, rules);
   }
 
   return (
     searcherWantsCreatorGender &&
     creatorWantsSearcherGender &&
-    matchesPreference(searcherOrientations, desiredOrientations) &&
-    matchesRolePreference(searcher.identity_roles, desiredRoles)
+    matchesAttribute(searcherProfile.orientation, desiredOrientations, 'orientation', rules) &&
+    matchesAttribute(searcherProfile.role, desiredRoles, 'role', rules)
   );
 };
 
@@ -282,7 +302,8 @@ router.get('/', (req, res) => {
         .prepare('SELECT id, content, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled FROM wishes ORDER BY created_at DESC LIMIT 50')
         .all();
 
-  const filtered = ignoreAttributes ? rows : rows.filter((wish) => isCompatible(wish, searcherProfile));
+  const rules = getRules();
+  const filtered = ignoreAttributes ? rows : rows.filter((wish) => isCompatible(wish, searcherProfile, rules));
   res.json(
     filtered.map((wish) => ({
       id: wish.id,

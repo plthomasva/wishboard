@@ -19,17 +19,19 @@ describe('AdminPage Coverage', () => {
   it('handles removeWish failure', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ user: { role: 'admin' }, token: 'mock-token' } as any);
     
-    // Initial load
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([{ id: 'w1', content: 'flagged', user_id: 'u1' }]) }); // loadFlags
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([]) }); // loadUsers
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ logs: '' }) }); // loadLogs
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ ticket: 'tick123' }) }); // loadMetricsTicket
+    mockFetch.mockImplementation((input: any) => {
+      const url = typeof input === 'string' ? input : input?.url || '';
+      if (url.endsWith('/api/admin/flags')) return Promise.resolve({ ok: true, json: async () => ([{ id: 'w1', content: 'flagged', user_id: 'u1' }]) });
+      if (url.endsWith('/api/admin/users')) return Promise.resolve({ ok: true, json: async () => ([]) });
+      if (url.endsWith('/api/admin/logs')) return Promise.resolve({ ok: true, json: async () => ({ logs: '' }) });
+      if (url.endsWith('/api/admin/metrics-ticket')) return Promise.resolve({ ok: true, json: async () => ({ ticket: 'tick123' }) });
+      if (url.endsWith('/api/rules')) return Promise.resolve({ ok: true, json: async () => ([]) });
+      return Promise.resolve({ ok: false });
+    });
 
     render(<AdminPage />);
     await waitFor(() => expect(screen.getByText('Remove')).toBeInTheDocument());
 
-    // Click remove and mock failure
-    mockFetch.mockResolvedValueOnce({ ok: false }); // removeWish
     fireEvent.click(screen.getByText('Remove'));
 
     await waitFor(() => {
@@ -40,15 +42,19 @@ describe('AdminPage Coverage', () => {
   it('handles clearFlag failure', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ user: { role: 'admin' }, token: 'mock-token' } as any);
     
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([{ id: 'w1', content: 'flagged', user_id: 'u1' }]) });
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([]) });
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ logs: '' }) });
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ ticket: 'tick123' }) });
+    mockFetch.mockImplementation((input: any) => {
+      const url = typeof input === 'string' ? input : input?.url || '';
+      if (url.endsWith('/api/admin/flags')) return Promise.resolve({ ok: true, json: async () => ([{ id: 'w1', content: 'flagged', user_id: 'u1' }]) });
+      if (url.endsWith('/api/admin/users')) return Promise.resolve({ ok: true, json: async () => ([]) });
+      if (url.endsWith('/api/admin/logs')) return Promise.resolve({ ok: true, json: async () => ({ logs: '' }) });
+      if (url.endsWith('/api/admin/metrics-ticket')) return Promise.resolve({ ok: true, json: async () => ({ ticket: 'tick123' }) });
+      if (url.endsWith('/api/rules')) return Promise.resolve({ ok: true, json: async () => ([]) });
+      return Promise.resolve({ ok: false });
+    });
 
     render(<AdminPage />);
     await waitFor(() => expect(screen.getByText('Clear Flag')).toBeInTheDocument());
 
-    mockFetch.mockResolvedValueOnce({ ok: false });
     fireEvent.click(screen.getByText('Clear Flag'));
 
     await waitFor(() => {
@@ -59,10 +65,15 @@ describe('AdminPage Coverage', () => {
   it('handles clearAllFlags cancel and failure', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ user: { role: 'admin' }, token: 'mock-token' } as any);
     
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([{ id: 'w1', content: 'flagged', user_id: 'u1' }]) });
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([]) });
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ logs: '' }) });
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ ticket: 'tick123' }) });
+    mockFetch.mockImplementation((input: any) => {
+      const url = typeof input === 'string' ? input : input?.url || '';
+      if (url.endsWith('/api/admin/flags')) return Promise.resolve({ ok: true, json: async () => ([{ id: 'w1', content: 'flagged', user_id: 'u1' }]) });
+      if (url.endsWith('/api/admin/users')) return Promise.resolve({ ok: true, json: async () => ([]) });
+      if (url.endsWith('/api/admin/logs')) return Promise.resolve({ ok: true, json: async () => ({ logs: '' }) });
+      if (url.endsWith('/api/admin/metrics-ticket')) return Promise.resolve({ ok: true, json: async () => ({ ticket: 'tick123' }) });
+      if (url.endsWith('/api/rules')) return Promise.resolve({ ok: true, json: async () => ([]) });
+      return Promise.resolve({ ok: false });
+    });
 
     render(<AdminPage />);
     await waitFor(() => expect(screen.getByText('Clear All Flags')).toBeInTheDocument());
@@ -74,7 +85,6 @@ describe('AdminPage Coverage', () => {
 
     // Proceed and fail
     globalThis.window.confirm = vi.fn().mockReturnValueOnce(true);
-    mockFetch.mockResolvedValueOnce({ ok: false });
     fireEvent.click(screen.getByText('Clear All Flags'));
 
     await waitFor(() => {
@@ -85,10 +95,15 @@ describe('AdminPage Coverage', () => {
   it('handles resetPassphrase cancel and failure', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ user: { role: 'admin' }, token: 'mock-token' } as any);
     
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([]) }); // loadFlags
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([{ id: 'u1', username: 'testuser', role: 'user' }]) }); // loadUsers
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ logs: '' }) }); // loadLogs
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ ticket: 'tick123' }) }); // loadMetricsTicket
+    mockFetch.mockImplementation((input: any) => {
+      const url = typeof input === 'string' ? input : input?.url || '';
+      if (url.endsWith('/api/admin/flags')) return Promise.resolve({ ok: true, json: async () => ([]) });
+      if (url.endsWith('/api/admin/users')) return Promise.resolve({ ok: true, json: async () => ([{ id: 'u1', username: 'testuser', role: 'user' }]) });
+      if (url.endsWith('/api/admin/logs')) return Promise.resolve({ ok: true, json: async () => ({ logs: '' }) });
+      if (url.endsWith('/api/admin/metrics-ticket')) return Promise.resolve({ ok: true, json: async () => ({ ticket: 'tick123' }) });
+      if (url.endsWith('/api/rules')) return Promise.resolve({ ok: true, json: async () => ([]) });
+      return Promise.resolve({ ok: false });
+    });
 
     render(<AdminPage />);
     await waitFor(() => expect(screen.getByText('Reset Password')).toBeInTheDocument());
@@ -100,7 +115,6 @@ describe('AdminPage Coverage', () => {
 
     // Proceed and fail
     globalThis.window.confirm = vi.fn().mockReturnValueOnce(true);
-    mockFetch.mockResolvedValueOnce({ ok: false });
     fireEvent.click(screen.getByText('Reset Password'));
 
     await waitFor(() => {
@@ -108,4 +122,3 @@ describe('AdminPage Coverage', () => {
     });
   });
 });
-

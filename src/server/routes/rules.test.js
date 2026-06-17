@@ -1,0 +1,145 @@
+/** @vitest-environment node */
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+const request = (await import('supertest')).default;
+const appModule = await import('../index.js');
+const db = (await import('../db.js')).default;
+const app = appModule.default;
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { reloadRules } from '../rulesManager.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rulesPath = path.resolve(__dirname, '../../../data/rules.test.yaml');
+
+const defaultAdminUsername = 'admin';
+const defaultAdminSecret = 'admin-board';
+
+const clearTestData = () => {
+  db.exec('DELETE FROM sessions');
+  db.exec("DELETE FROM users WHERE role != 'admin'");
+  if (fs.existsSync(rulesPath)) {
+    fs.unlinkSync(rulesPath);
+  }
+  reloadRules();
+};
+
+beforeEach(() => clearTestData());
+afterEach(() => clearTestData());
+
+describe('rules routes', () => {
+  const loginAsAdmin = async () => {
+    const response = await request(app)
+      .post('/api/users/login')
+      .send({ username: defaultAdminUsername, passphrase: defaultAdminSecret })
+      .set('Accept', 'application/json');
+    return response.body.token;
+  };
+
+  const loginAsUser = async () => {
+    await request(app).post('/api/users/register').send({ username: 'testuser', passphrase: 'password' });
+    const response = await request(app).post('/api/users/login').send({ username: 'testuser', passphrase: 'password' });
+    return response.body.token;
+  };
+
+  it('allows admin to get rules', async () => {
+    const token = await loginAsAdmin();
+    const res = await request(app).get('/api/rules').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+
+  it('forbids non-admin from getting rules', async () => {
+    const token = await loginAsUser();
+    const res = await request(app).get('/api/rules').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('allows admin to add a rule', async () => {
+    const token = await loginAsAdmin();
+    const res = await request(app)
+      .post('/api/rules')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        rule_type: 'expansion',
+        trigger_attribute: 'role',
+        trigger_value: 'pet',
+        target_attribute: 'role',
+        target_value: 'pup'
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBeDefined();
+
+    const getRes = await request(app).get('/api/rules').set('Authorization', `Bearer ${token}`);
+    expect(getRes.body.length).toBe(1);
+    expect(getRes.body[0].trigger_value).toBe('pet');
+  });
+
+  it('allows admin to update a rule', async () => {
+    const token = await loginAsAdmin();
+    const createRes = await request(app).post('/api/rules').set('Authorization', `Bearer ${token}`).send({
+      rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup'
+    });
+    const ruleId = createRes.body.id;
+
+    const updateRes = await request(app)
+      .put(`/api/rules/${ruleId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ 
+        rule_type: 'expansion', 
+        trigger_attribute: 'role', 
+        trigger_value: 'pet', 
+        target_attribute: 'role', 
+        target_value: 'pup, kitten' 
+      });
+    
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.success).toBe(true);
+
+    const getRes = await request(app).get('/api/rules').set('Authorization', `Bearer ${token}`);
+    expect(getRes.body[0].target_value).toBe('pup, kitten');
+  });
+
+  it('returns 404 when updating non-existent rule', async () => {
+    const token = await loginAsAdmin();
+    const res = await request(app).put('/api/rules/missing-id').set('Authorization', `Bearer ${token}`).send({
+        rule_type: 'expansion', 
+        trigger_attribute: 'role', 
+        trigger_value: 'pet', 
+        target_attribute: 'role', 
+        target_value: 'pup, kitten'
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it('handles malformed updates gracefully', async () => {
+    const token = await loginAsAdmin();
+    const createRes = await request(app).post('/api/rules').set('Authorization', `Bearer ${token}`).send({
+      rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup'
+    });
+    
+    const res = await request(app).put(`/api/rules/${createRes.body.id}`).set('Authorization', `Bearer ${token}`).send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('allows admin to delete a rule', async () => {
+    const token = await loginAsAdmin();
+    const createRes = await request(app).post('/api/rules').set('Authorization', `Bearer ${token}`).send({
+      rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup'
+    });
+    const ruleId = createRes.body.id;
+
+    const deleteRes = await request(app).delete(`/api/rules/${ruleId}`).set('Authorization', `Bearer ${token}`);
+    expect(deleteRes.status).toBe(200);
+
+    const getRes = await request(app).get('/api/rules').set('Authorization', `Bearer ${token}`);
+    expect(getRes.body.length).toBe(0);
+  });
+
+  it('returns 404 when deleting non-existent rule', async () => {
+    const token = await loginAsAdmin();
+    const res = await request(app).delete('/api/rules/missing-id').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(404);
+  });
+});
