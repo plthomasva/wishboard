@@ -439,7 +439,13 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
 
-  const authHeader = useMemo<Record<string, string>>(() => token ? { Authorization: `Bearer ${token}` } : {}, [token]);
+  const authHeader = useMemo(() => {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+  }, [token]);
 
   const onLogin = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
