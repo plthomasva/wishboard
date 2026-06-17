@@ -7,7 +7,8 @@ export default function AdminPage() {
   const [passphrase, setPassphrase] = useState('');
   const [flags, setFlags] = useState<Array<{ id: string; content: string; flagged: number; user_id: string | null }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; username: string; role: string }>>([]);
-  const [logs, setLogs] = useState<string>('');
+  const [rawLogs, setRawLogs] = useState<string>('');
+  const [filterRepeating, setFilterRepeating] = useState<boolean>(true);
   const [isTailing, setIsTailing] = useState<boolean>(true);
   const logsEndRef = React.useRef<HTMLPreElement>(null);
   const [metricsTicket, setMetricsTicket] = useState<string | null>(null);
@@ -39,14 +40,14 @@ export default function AdminPage() {
     try {
       const response = await fetch('/api/admin/logs', { headers: authHeader });
       if (!response.ok) {
-        setLogs('Failed to load logs.');
+        setRawLogs('Failed to load logs.');
         return;
       }
       const data = await response.json();
-      setLogs(data.logs);
+      setRawLogs(data.logs);
     } catch (e) {
       console.error('Failed to load logs:', e);
-      setLogs('Failed to load logs.');
+      setRawLogs('Failed to load logs.');
     }
   };
 
@@ -178,6 +179,14 @@ export default function AdminPage() {
     setMessage('Admin login successful.');
   };
 
+  const displayLogs = React.useMemo(() => {
+    if (!filterRepeating) return rawLogs;
+    return rawLogs
+      .split('\n')
+      .filter(line => !line.includes('/api/admin/logs') && !line.includes('/api/wishes/random'))
+      .join('\n');
+  }, [rawLogs, filterRepeating]);
+
   useEffect(() => {
     if (user?.role === 'admin') {
       loadFlags();
@@ -191,7 +200,7 @@ export default function AdminPage() {
     if (isTailing && logsEndRef.current) {
       logsEndRef.current.scrollTop = logsEndRef.current.scrollHeight;
     }
-  }, [logs, isTailing]);
+  }, [displayLogs, isTailing]);
 
   useEffect(() => {
     if (!isTailing || user?.role !== 'admin' || !token) return;
@@ -202,7 +211,7 @@ export default function AdminPage() {
         const response = await fetch('/api/admin/logs', { headers: { Authorization: `Bearer ${token}` } });
         if (response.ok) {
           const data = await response.json();
-          if (isActive) setLogs(data.logs);
+          if (isActive) setRawLogs(data.logs);
         }
       } catch (e) {
         console.error('Failed to poll logs:', e);
@@ -271,14 +280,22 @@ export default function AdminPage() {
           <section style={{ marginTop: '24px' }}>
             <h2>System Logs</h2>
             <p>Recent server logs including rate limit warnings and failed logins.</p>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
               <button className="secondary-button" onClick={() => setIsTailing(!isTailing)}>
                 {isTailing ? 'Pause Tailing' : 'Resume Tailing'}
               </button>
               <button className="secondary-button" onClick={loadLogs}>Refresh Now</button>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+                <input 
+                  type="checkbox" 
+                  checked={filterRepeating} 
+                  onChange={(e) => setFilterRepeating(e.target.checked)} 
+                />
+                <span>Filter repeating logs</span>
+              </label>
             </div>
             <pre ref={logsEndRef} style={{ background: '#1e1e1e', color: '#d4d4d4', padding: '12px', overflowX: 'auto', maxHeight: '400px', borderRadius: '4px', fontSize: '12px' }}>
-              {logs || 'No logs available.'}
+              {displayLogs || 'No logs available.'}
             </pre>
           </section>
 
