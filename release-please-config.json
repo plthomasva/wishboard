@@ -1,0 +1,11 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "extra-files": [
+        "VERSION"
+      ],
+      "bump-minor-pre-major": false
+    }
+  }
+}
