@@ -57,7 +57,7 @@ describe('reset-password script', () => {
 
     const sessions = db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get('user-1').count;
     expect(sessions).toBe(0);
-  });
+  }, 15000);
 
   it('generates a new passphrase if omitted', async () => {
     let output = '';

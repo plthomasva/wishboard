@@ -36,7 +36,7 @@ export default function SearchPage() {
     );
 
     const handleNewWish = async (newWish: Wish) => {
-      if (!lastSearchParams) return;
+      if (lastSearchParams === null) return;
       try {
         const response = await fetch(`/api/wishes?${lastSearchParams}`);
         if (!response.ok) return;

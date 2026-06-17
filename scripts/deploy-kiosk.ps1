@@ -10,19 +10,43 @@ param (
     [string]$Mode = "dev",
 
     [Parameter(Mandatory = $false)]
-    [string]$DomainName = "wishboard.painless-computing.com"
+    [string]$DomainName = "wishboard.painless-computing.com",
+
+    [Parameter(Mandatory = $false)]
+    [switch]$DeployRules
 )
 
 $ErrorActionPreference = "Stop"
 
 Write-Host "Starting Wishboard Kiosk Deployment to ${AdminUsername}@${HostName} (Mode: $Mode)..." -ForegroundColor Cyan
+if ($DeployRules) {
+    Write-Host "DeployRules flag specified. Baseline rules will overwrite any customized rules on the device." -ForegroundColor Yellow
+}
 
 $ProjectRoot = Resolve-Path "$PSScriptRoot\.."
 Set-Location $ProjectRoot
 
 Write-Host "1. Creating code archive using tar..." -ForegroundColor Yellow
-# Exclude folders we don't want to upload (like node_modules, build outputs, and the archive itself)
-tar.exe -czf wishboard.tar.gz --exclude=node_modules --exclude=.git --exclude=dist --exclude=data --exclude=wishboard.tar.gz .
+# Exclude runtime data (DB, logs) and build outputs
+$ExcludeArgs = @(
+    "--exclude=node_modules",
+    "--exclude=.git",
+    "--exclude=dist",
+    "--exclude=data/*.db",
+    "--exclude=data/*.sqlite",
+    "--exclude=data/*.sqlite-shm",
+    "--exclude=data/*.sqlite-wal",
+    "--exclude=data/logs",
+    "--exclude=wishboard.tar.gz"
+)
+
+# By default, don't deploy rules unless explicitly asked, to avoid wiping out customized rules on the target
+if (-not $DeployRules) {
+    $ExcludeArgs += "--exclude=data/rules.yaml"
+}
+
+$TarArgs = @("-czf", "wishboard.tar.gz") + $ExcludeArgs + @(".")
+& tar.exe @TarArgs
 
 try {
     Write-Host "2. Uploading setup script, build script, and code archive..." -ForegroundColor Yellow
