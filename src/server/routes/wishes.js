@@ -43,26 +43,30 @@ const hasToken = (str, token) => {
   return new RegExp(String.raw`\b${escapedToken}\b`, 'i').test(normalizeToken(str));
 };
 
+const evaluateRuleConditions = (rule, userAttributes) => {
+  const triggerVals = userAttributes[rule.trigger_attribute] || [];
+  const triggerMatch = triggerVals.some(v => hasToken(v, rule.trigger_value));
+  
+  let contextMatch = true;
+  if (rule.context_attribute && rule.context_value) {
+    const ctxVals = userAttributes[rule.context_attribute] || [];
+    contextMatch = ctxVals.some(v => {
+      if (rule.context_attribute === 'gender') {
+        return parseGenderDescriptor(v).base === rule.context_value;
+      }
+      return hasToken(v, rule.context_value);
+    });
+  }
+  
+  return triggerMatch && contextMatch;
+};
+
 const enrichAttributes = (userAttributes, targetCategory, rules) => {
   const enriched = new Set((userAttributes[targetCategory] || []).map(normalizeToken));
   const enrichmentRules = rules.filter(r => r.rule_type === 'enrichment' && r.target_attribute === targetCategory);
   
   for (const rule of enrichmentRules) {
-    const triggerVals = userAttributes[rule.trigger_attribute] || [];
-    const triggerMatch = triggerVals.some(v => hasToken(v, rule.trigger_value));
-    
-    let contextMatch = true;
-    if (rule.context_attribute && rule.context_value) {
-      const ctxVals = userAttributes[rule.context_attribute] || [];
-      contextMatch = ctxVals.some(v => {
-        if (rule.context_attribute === 'gender') {
-          return parseGenderDescriptor(v).base === rule.context_value;
-        }
-        return hasToken(v, rule.context_value);
-      });
-    }
-    
-    if (triggerMatch && contextMatch) {
+    if (evaluateRuleConditions(rule, userAttributes)) {
       enriched.add(rule.target_value);
     }
   }
@@ -74,21 +78,7 @@ const buildAcceptedSet = (userAttributes, targetCategory, rules) => {
   const acceptanceRules = rules.filter(r => r.rule_type === 'acceptance' && r.target_attribute === targetCategory);
   
   for (const rule of acceptanceRules) {
-    const triggerVals = userAttributes[rule.trigger_attribute] || [];
-    const triggerMatch = triggerVals.some(v => hasToken(v, rule.trigger_value));
-    
-    let contextMatch = true;
-    if (rule.context_attribute && rule.context_value) {
-      const ctxVals = userAttributes[rule.context_attribute] || [];
-      contextMatch = ctxVals.some(v => {
-        if (rule.context_attribute === 'gender') {
-          return parseGenderDescriptor(v).base === rule.context_value;
-        }
-        return hasToken(v, rule.context_value);
-      });
-    }
-    
-    if (triggerMatch && contextMatch) {
+    if (evaluateRuleConditions(rule, userAttributes)) {
       const targets = rule.target_value.split(',').map(t => t.trim().toLowerCase());
       targets.forEach(t => accepted.add(t));
     }
