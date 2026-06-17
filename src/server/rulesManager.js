@@ -28,7 +28,7 @@ const loadRules = () => {
       throw new Error(`YAML syntax errors: ${newYamlDoc.errors.map(e => e.message).join(', ')}`);
     }
     const parsed = newYamlDoc.toJSON();
-    if (parsed && parsed.rules && Array.isArray(parsed.rules)) {
+    if (Array.isArray(parsed?.rules)) {
       rulesCache = parsed.rules;
       yamlDoc = newYamlDoc;
       logger.info(`Loaded ${rulesCache.length} rules from ${rulesPath}`);
@@ -89,7 +89,7 @@ export const updateRule = (id, updatedRule) => {
   rulesCache[index] = { ...rulesCache[index], ...updatedRule };
   
   const rulesSeq = yamlDoc.get('rules');
-  if (rulesSeq && rulesSeq.items) {
+  if (rulesSeq?.items) {
     const itemIndex = rulesSeq.items.findIndex(item => (item.get ? item.get('id') : item.id) === id);
     if (itemIndex !== -1) {
       const newMap = new YAML.YAMLMap();
@@ -114,7 +114,7 @@ export const deleteRule = (id) => {
   rulesCache.splice(index, 1);
   
   const rulesSeq = yamlDoc.get('rules');
-  if (rulesSeq && rulesSeq.items) {
+  if (rulesSeq?.items) {
     const itemIndex = rulesSeq.items.findIndex(item => (item.get ? item.get('id') : item.id) === id);
     if (itemIndex !== -1) {
       rulesSeq.items.splice(itemIndex, 1);
