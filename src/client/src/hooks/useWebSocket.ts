@@ -4,15 +4,13 @@ import { io, Socket } from 'socket.io-client';
 let socketInstance: Socket | null = null;
 
 export const getSocket = () => {
-  if (!socketInstance) {
-    socketInstance = io(window.location.origin, {
-      path: '/socket.io',
-      autoConnect: true,
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-    });
-  }
+  socketInstance ??= io(globalThis.location.origin, {
+    path: '/socket.io',
+    autoConnect: true,
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+  });
   return socketInstance;
 };
 

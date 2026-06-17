@@ -30,25 +30,22 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (!socket) return;
-    
+
+    const prependIfNotPresent = (newWish: Wish) => setResults(prev =>
+      prev.some(w => w.id === newWish.id) ? prev : [newWish, ...prev]
+    );
+
     const handleNewWish = async (newWish: Wish) => {
       if (!lastSearchParams) return;
-      
       try {
         const response = await fetch(`/api/wishes?${lastSearchParams}`);
         if (!response.ok) return;
         const data = await response.json();
-        
-        // If the new wish is in the results, it matches our criteria
         if (data.some((w: Wish) => w.id === newWish.id)) {
-          setResults(prev => {
-            // Avoid duplicates if it's already there
-            if (prev.some(w => w.id === newWish.id)) return prev;
-            return [newWish, ...prev];
-          });
+          prependIfNotPresent(newWish);
         }
       } catch (err) {
-        // ignore
+        console.debug('WebSocket wish:created check failed:', err);
       }
     };
 

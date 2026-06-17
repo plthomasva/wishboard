@@ -18,24 +18,21 @@ export default function FlaggedWishesSection({ authHeader, setMessage, setError,
 
   useEffect(() => {
     if (!socket) return;
-    
-    const handleWishFlagged = (wish: any) => {
-      setFlags(prev => {
-        if (prev.some(w => w.id === wish.id)) return prev;
-        return [wish, ...prev];
-      });
-    };
 
-    const handleWishDeleted = (wishId: string) => {
-      setFlags(prev => prev.filter(w => w.id !== wishId));
-    };
+    const addFlag = (wish: any) => setFlags(prev =>
+      prev.some(w => w.id === wish.id) ? prev : [wish, ...prev]
+    );
 
-    socket.on('wish:flagged', handleWishFlagged);
-    socket.on('wish:deleted', handleWishDeleted);
-    
+    const removeFlag = (wishId: string) => setFlags(prev =>
+      prev.filter(w => w.id !== wishId)
+    );
+
+    socket.on('wish:flagged', addFlag);
+    socket.on('wish:deleted', removeFlag);
+
     return () => {
-      socket.off('wish:flagged', handleWishFlagged);
-      socket.off('wish:deleted', handleWishDeleted);
+      socket.off('wish:flagged', addFlag);
+      socket.off('wish:deleted', removeFlag);
     };
   }, [socket]);
 
