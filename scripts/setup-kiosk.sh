@@ -209,13 +209,9 @@ sudo -u wishboard convert -size 1920x1080 xc:black -font DejaVu-Sans -pointsize 
 echo "Configuring auto-login in LightDM..."
 LIGHTDM_CONF="/etc/lightdm/lightdm.conf"
 
-# Detect whether to use Wayland (labwc) or X11 (openbox)
-if [[ -x "$(command -v labwc)" ]]; then
-  KIOSK_SESSION="labwc"
-else
-  KIOSK_SESSION="openbox"
-fi
-echo "Detected graphics stack. Using session: $KIOSK_SESSION"
+# Hardcode to Wayland (labwc) since we only target Trixie+
+KIOSK_SESSION="labwc"
+echo "Targeting Wayland graphics stack. Using session: $KIOSK_SESSION"
 
 if [[ -f "$LIGHTDM_CONF" ]]; then
   # Remove existing autologin settings to prevent conflicts
@@ -272,35 +268,6 @@ sudo -u wishboard tee /home/wishboard/.config/labwc/rc.xml > /dev/null << 'EOF'
 </labwc_config>
 EOF
 
-# 7. Configure autostart for X11 (openbox)
-echo "Configuring openbox X11 autostart..."
-sudo -u wishboard mkdir -p /home/wishboard/.config/openbox
-sudo -u wishboard tee /home/wishboard/.config/openbox/autostart > /dev/null << 'EOF'
-#!/bin/bash
-xset s off
-xset -dpms
-xset s noblank
-feh --bg-fill /home/wishboard/background.png &
-while ! curl -s http://localhost:3000 > /dev/null; do
-  sleep 1
-done
-while true; do
-  chromium --kiosk --noerrdialogs --disable-infobars --app=http://localhost:3000/#display?kiosk=true --disable-translate --disable-features=Translate --fast --fast-start --password-store=basic
-  sleep 1
-done
-EOF
-sudo chmod +x /home/wishboard/.config/openbox/autostart
-
-sudo -u wishboard tee /home/wishboard/.config/openbox/rc.xml > /dev/null << 'EOF'
-<?xml version="1.0"?>
-<openbox_config>
-  <keyboard>
-    <keybind key="C-A-q"><action name="Execute"><command>dm-tool switch-to-greeter</command></action></keybind>
-    <keybind key="C-A-Q"><action name="Execute"><command>dm-tool switch-to-greeter</command></action></keybind>
-  </keyboard>
-  <mouse><context name="Root"><!-- Empty root menu --></context></mouse>
-</openbox_config>
-EOF
 
 echo "=== Setup Completed! ==="
 
