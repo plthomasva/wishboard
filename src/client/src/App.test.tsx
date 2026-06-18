@@ -45,12 +45,12 @@ describe('App Component', () => {
 
     expect(screen.getByText('HomePage Mock')).toBeInTheDocument();
 
-    const searchTab = screen.getByText('Search Wishes');
+    const searchTab = screen.getAllByText('Search Wishes')[0];
     fireEvent.click(searchTab);
 
     expect(screen.getByText('SearchPage Mock')).toBeInTheDocument();
 
-    const aboutTab = screen.getByText('About');
+    const aboutTab = screen.getAllByText('About')[0];
     fireEvent.click(aboutTab);
 
     expect(screen.getByText('AboutPage Mock')).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe('App Component', () => {
   it('enters kiosk mode and hides header navigation', async () => {
     render(<App />);
 
-    const displayTab = screen.getByText('Big Screen');
+    const displayTab = screen.getAllByText('Big Screen')[0];
     fireEvent.click(displayTab);
 
     expect(screen.getByText('DisplayPage Mock')).toBeInTheDocument();
@@ -100,7 +100,7 @@ describe('App Component', () => {
     render(<App />);
 
     // Go to big screen and enter kiosk mode
-    fireEvent.click(screen.getByText('Big Screen'));
+    fireEvent.click(screen.getAllByText('Big Screen')[0]);
     fireEvent.click(screen.getByText('Enter Kiosk'));
 
     // Trigger escape key
@@ -116,7 +116,7 @@ describe('App Component', () => {
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith('admin', 'secret');
       expect(screen.queryByText('Exit Kiosk Mode')).not.toBeInTheDocument();
-      expect(screen.getByText('Big Screen')).toBeInTheDocument(); // Navbar restored
+      expect(screen.getAllByText('Big Screen')[0]).toBeInTheDocument(); // Navbar restored
     });
   });
 
@@ -125,7 +125,7 @@ describe('App Component', () => {
 
     render(<App />);
 
-    fireEvent.click(screen.getByText('Big Screen'));
+    fireEvent.click(screen.getAllByText('Big Screen')[0]);
     fireEvent.click(screen.getByText('Enter Kiosk'));
     fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
 
