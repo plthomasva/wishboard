@@ -16,16 +16,16 @@ export default function FlaggedWishesSection({ authHeader, setMessage, setError,
 
   const { socket } = useWebSocket();
 
+  const addFlag = React.useCallback((wish: any) => {
+    setFlags(prev => prev.some(w => w.id === wish.id) ? prev : [wish, ...prev]);
+  }, []);
+
+  const removeFlag = React.useCallback((wishId: string) => {
+    setFlags(prev => prev.filter(w => w.id !== wishId));
+  }, []);
+
   useEffect(() => {
     if (!socket) return;
-
-    const addFlag = (wish: any) => setFlags(prev =>
-      prev.some(w => w.id === wish.id) ? prev : [wish, ...prev]
-    );
-
-    const removeFlag = (wishId: string) => setFlags(prev =>
-      prev.filter(w => w.id !== wishId)
-    );
 
     socket.on('wish:flagged', addFlag);
     socket.on('wish:deleted', removeFlag);
@@ -34,7 +34,7 @@ export default function FlaggedWishesSection({ authHeader, setMessage, setError,
       socket.off('wish:flagged', addFlag);
       socket.off('wish:deleted', removeFlag);
     };
-  }, [socket]);
+  }, [socket, addFlag, removeFlag]);
 
   const removeWish = async (id: string) => {
     setMessage(null); setError(null);

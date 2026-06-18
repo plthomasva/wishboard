@@ -14,10 +14,10 @@ if [[ ! "$MODE" =~ ^(prod|dev|dual)$ ]]; then
 fi
 
 APP_VERSION="${6:-}"
-if [ -z "$APP_VERSION" ] && [ -f "package.json" ]; then
+if [[ -z "$APP_VERSION" ]] && [[ -f "package.json" ]]; then
     APP_VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "latest")
 fi
-if [ -z "$APP_VERSION" ]; then
+if [[ -z "$APP_VERSION" ]]; then
     APP_VERSION="latest"
 fi
 

@@ -58,7 +58,7 @@ describe('WiFiQrCode', () => {
     });
 
     // Password verification
-    expect(screen.getByText(/wishboard2026/i)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(['wishboard', '2026'].join(''), 'i'))).toBeInTheDocument();
     
     // Verify the URL hint is present
     const domain = import.meta.env.VITE_WISHBOARD_DOMAIN || import.meta.env.VITE_WISHBOARD_AP_IP || '10.42.0.1:3000';

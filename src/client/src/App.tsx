@@ -78,6 +78,7 @@ function AppContent() {
   const [page, setPage] = useState<PageId>(getHashPage);
   const [isKiosk, setIsKiosk] = useState<boolean>(checkIsKioskParam);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [kioskUsername, setKioskUsername] = useState('');
   const [kioskPassphrase, setKioskPassphrase] = useState('');
@@ -242,10 +243,7 @@ function AppContent() {
             </button>
           ))}
           {/* Hamburger Menu for the rest */}
-          <button className="mobile-tab-button" onClick={() => {
-            const menu = document.getElementById('mobile-hamburger-menu');
-            if (menu) menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-          }}>
+          <button className="mobile-tab-button" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             <div className="mobile-tab-icon">☰</div>
             <span className="mobile-tab-label">More</span>
           </button>
@@ -253,19 +251,22 @@ function AppContent() {
       )}
 
       {/* Mobile Hamburger Overlay */}
-      {!isKiosk && (
-        <div id="mobile-hamburger-menu" className="mobile-hamburger-menu" style={{ display: 'none' }} onClick={(e) => {
-          if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
-        }}>
+      {!isKiosk && isMobileMenuOpen && (
+        <div id="mobile-hamburger-menu" className="mobile-hamburger-menu" style={{ display: 'flex' }}>
+          <button
+            aria-label="Close menu"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: 'transparent', border: 'none', cursor: 'default', padding: 0, margin: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setIsMobileMenuOpen(false);
+            }}
+          />
           <div className="hamburger-content">
-            <button className="hamburger-close" onClick={() => {
-              const menu = document.getElementById('mobile-hamburger-menu');
-              if (menu) menu.style.display = 'none';
-            }}>✕</button>
+            <button className="hamburger-close" onClick={() => setIsMobileMenuOpen(false)}>✕</button>
             <div className="hamburger-items">
-              <button className="hamburger-item" onClick={() => { navigate('about'); document.getElementById('mobile-hamburger-menu')!.style.display = 'none'; }}>About</button>
-              <button className="hamburger-item" onClick={() => { navigate('admin'); document.getElementById('mobile-hamburger-menu')!.style.display = 'none'; }}>Admin</button>
-              {user && <button className="hamburger-item" onClick={() => { logout(); document.getElementById('mobile-hamburger-menu')!.style.display = 'none'; }}>Log out</button>}
+              <button className="hamburger-item" onClick={() => { navigate('about'); setIsMobileMenuOpen(false); }}>About</button>
+              <button className="hamburger-item" onClick={() => { navigate('admin'); setIsMobileMenuOpen(false); }}>Admin</button>
+              {user && <button className="hamburger-item" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>Log out</button>}
             </div>
           </div>
         </div>
