@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.4](https://github.com/plthomasva/wishboard/compare/wishboard-v1.2.3...wishboard-v1.2.4) (2026-06-18)
+
+
+### Bug Fixes
+
+* improve documentation and add poster generator ([5d8aedc](https://github.com/plthomasva/wishboard/commit/5d8aedc3a04cea0ad36cee57e7ec4f797a06fea4))
+* SonarCloud issues: cognitive complexity, accessibility, and types ([#43](https://github.com/plthomasva/wishboard/issues/43)) ([e54fa6e](https://github.com/plthomasva/wishboard/commit/e54fa6e997575547d12edd2923046b76ff84c288))
+
 ## [1.2.3](https://github.com/plthomasva/wishboard/compare/wishboard-v1.2.2...wishboard-v1.2.3) (2026-06-18)
 
 
