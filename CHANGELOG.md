@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/plthomasva/wishboard/compare/wishboard-v1.2.2...wishboard-v1.2.3) (2026-06-18)
+
+
+### Bug Fixes
+
+* remove bookworm/openbox support ([1415c54](https://github.com/plthomasva/wishboard/commit/1415c548bfdb405a7c76f2b4157b8446d73a72fd))
+
 ## [1.2.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.2.1...wishboard-v1.2.2) (2026-06-18)
 
 
