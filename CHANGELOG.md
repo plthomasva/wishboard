@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.2.1...wishboard-v1.2.2) (2026-06-18)
+
+
+### Bug Fixes
+
+* correct socket config on remote pi ([0c973b3](https://github.com/plthomasva/wishboard/commit/0c973b37a10abb590f3cafbe83fa461fdcc32da7))
+* read version from package.json instead of standalone file ([9191770](https://github.com/plthomasva/wishboard/commit/9191770491c9ad3f6315fadaf1a47e3b20dfa70f))
+* use concurrently in dev mode ([12106dc](https://github.com/plthomasva/wishboard/commit/12106dc98b3ce8f6275616f8f901721877ed6d0c))
+
 ## [1.2.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.2.0...wishboard-v1.2.1) (2026-06-17)
 
 
