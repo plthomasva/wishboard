@@ -9,6 +9,11 @@ const __dirname = path.dirname(__filename);
 const dataDir = path.resolve(__dirname, '../../data');
 fs.mkdirSync(dataDir, { recursive: true });
 
+// Prevent tests from corrupting the local development database
+if (process.env.NODE_ENV === 'test' && !process.env.WISHBOARD_DB_PATH) {
+  process.env.WISHBOARD_DB_PATH = ':memory:';
+}
+
 const dbPath = process.env.WISHBOARD_DB_PATH || path.join(dataDir, 'wishboard.db');
 const db = new Database(dbPath);
 
