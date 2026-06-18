@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   build:
+    if: ${{ !startsWith(github.head_ref, 'release-please-') }}
     runs-on: ubuntu-latest
 
     strategy:
