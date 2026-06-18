@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"node --watch ./src/server/index.js\"",
     "prebuild": "node ./scripts/download-fonts.js",
     "build": "vite build",
     "preview": "vite preview",
@@ -41,6 +41,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.8",
     "c8": "^11.0.0",
+    "concurrently": "^10.0.3",
     "jsdom": "^29.1.1",
     "resize-observer-polyfill": "^1.5.1",
     "supertest": "^7.1.3",
