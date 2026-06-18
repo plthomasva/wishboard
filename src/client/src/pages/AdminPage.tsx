@@ -62,6 +62,14 @@ export default function AdminPage() {
               <button type="button" onClick={() => setActiveTab('overview')} className={activeTab === 'overview' ? '' : 'secondary-button'} title="System Overview">
                 📊 {sidebarExpanded && 'System'}
               </button>
+              <button 
+                type="button" 
+                className="secondary-button" 
+                onClick={() => { globalThis.location.hash = '#poster'; }} 
+                title="Print Event Poster"
+              >
+                🖨️ {sidebarExpanded && 'Poster'}
+              </button>
             </nav>
           </aside>
           <main style={{ flex: 1, overflowX: 'hidden' }}>

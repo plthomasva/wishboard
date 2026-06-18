@@ -58,7 +58,7 @@ Alternatively, if you prefer `docker-compose`, a `docker-compose.yml` file is pr
 
 ## Development
 
-- `npm run dev` — start Vite development server for the client
+- `npm run dev` — start Vite development server for the client and the Express backend concurrently with hot-reloading
 - `npm run build` — produce production assets in `dist/`
 - `npm start` — build and launch the Express server
 - `npm test` — run the test suite
@@ -96,8 +96,13 @@ Wishboard includes automation to deploy the application as a secure, full-screen
 - **OS**: Raspberry Pi OS based on **Debian 13 (Trixie)** or newer. The setup relies on the `labwc` Wayland compositor, which is the new default standard replacing X11/Mutter.
 - **Network**: The Pi must be reachable via SSH.
 
+For a full step-by-step walkthrough on how to set up SSL certificates, custom domains, and configure environment variables on a fresh Pi, please see the [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.md).
+
 **Deployment:**
-Run the appropriate orchestrator script for your operating system from the project directory.
+Run the appropriate orchestrator script for your operating system from the project directory. You can deploy in three networking modes:
+- `prod`: The Pi acts as an isolated Wi-Fi Hotspot and redirects all DNS queries for the domain to itself. (Standard offline mode).
+- `dual`: The Pi maintains its internet connection via `wlan0` but creates a virtual `ap0` Hotspot for local access. Useful for debugging or setting up.
+- `dev`: The Pi simply connects to an existing Wi-Fi network. You access it using its assigned IP address on that network.
 
 **For Windows (PowerShell):**
 
@@ -117,12 +122,18 @@ Run the appropriate orchestrator script for your operating system from the proje
 - Creates a dedicated locked-down `wishboard` user.
 - Configures `LightDM` to auto-login the `wishboard` user.
 - Configures `labwc` to automatically launch Chromium in incognito kiosk mode pointed at `http://localhost:3000`.
-- Sets up a systemd service (`wishboard.service`) to ensure the Node server runs on boot.
-- Deploys the code, installs production dependencies, and builds the assets.
+- Pulls the latest pre-built Docker image from the GitHub Container Registry.
+- Deploys the application inside an isolated Rootless Docker container for maximum security.
 
 **Kiosk Shortcuts:**
 
 - To cleanly exit the Wayland kiosk and drop back to the standard LightDM graphical login screen, press `Ctrl-Alt-Q`.
+
+## Contributing & Releases
+
+Wishboard uses `release-please` and GitHub Actions to automatically manage semantic versioning and changelogs.
+- To cut a new release, merge a Pull Request into `main` using Conventional Commits (e.g., `feat: added poster`, `fix: proxy error`).
+- A Release PR will automatically be opened. Merging that PR will publish a new Docker image to `ghcr.io`.
 
 ## Administration & Monitoring
 

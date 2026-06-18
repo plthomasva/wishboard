@@ -10,6 +10,7 @@ import ManageWishPage from './pages/ManageWishPage';
 import WishmailDashboard from './pages/WishmailDashboard';
 import AboutPage from './pages/AboutPage';
 import WiFiQrCode from './components/WiFiQrCode';
+import PosterPage from './pages/PosterPage';
 
 const pages = [
   { id: 'home', label: 'Home' },
@@ -21,14 +22,14 @@ const pages = [
   { id: 'admin', label: 'Admin' }
 ];
 
-type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin' | 'manage-wish' | 'wishmail-dashboard';
+type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin' | 'manage-wish' | 'wishmail-dashboard' | 'poster';
 
 const getHashPage = (): PageId => {
   if (typeof globalThis === 'undefined') {
     return 'home';
   }
   const hashPart = globalThis.location.hash.split('?')[0].replace(/^#/, '');
-  const validPages = ['home', 'enter', 'search', 'display', 'account', 'about', 'admin', 'manage-wish', 'wishmail-dashboard'];
+  const validPages = ['home', 'enter', 'search', 'display', 'account', 'about', 'admin', 'manage-wish', 'wishmail-dashboard', 'poster'];
   if (validPages.includes(hashPart)) {
     return hashPart as PageId;
   }
@@ -133,7 +134,7 @@ function AppContent() {
         setKioskError(res.error || 'Invalid credentials.');
         return;
       }
-      
+
       if (res.role !== 'admin') {
         setKioskError('Access denied: You must be an admin to exit kiosk mode.');
         return;
@@ -155,7 +156,7 @@ function AppContent() {
   return (
     <div className={shellClass}>
       {!isKiosk && (
-        <header className="app-header">
+        <header className="app-header desktop-only">
           <div className="logo">Wishboard</div>
           <nav className="nav-bar">
             {pages.map((item) => (
@@ -171,8 +172,8 @@ function AppContent() {
           <div className="user-area" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {user ? (
               <>
-                <button 
-                  className="user-link-button" 
+                <button
+                  className="user-link-button"
                   onClick={() => navigate('account')}
                   aria-label="My Account"
                 >
@@ -185,7 +186,7 @@ function AppContent() {
               </>
             ) : (
               <>
-                <div 
+                <div
                   style={{ display: 'flex', alignItems: 'center', fontWeight: 600, fontSize: '1.05rem', padding: '8px 12px', cursor: 'default' }}
                   aria-label="Guest Account"
                 >
@@ -217,7 +218,57 @@ function AppContent() {
           {page === 'manage-wish' && <ManageWishPage />}
           {page === 'wishmail-dashboard' && <WishmailDashboard />}
           {page === 'admin' && <AdminPage />}
+          {page === 'poster' && <PosterPage />}
         </main>
+      )}
+
+      {/* Mobile Bottom Tab Bar */}
+      {!isKiosk && (
+        <nav className="mobile-bottom-bar">
+          {pages.filter(p => !['admin', 'poster', 'about'].includes(p.id)).map((item) => (
+            <button
+              key={item.id}
+              className={`mobile-tab-button ${page === item.id ? 'active' : ''}`}
+              onClick={() => navigate(item.id as PageId)}
+            >
+              <div className="mobile-tab-icon">
+                {item.id === 'home' && '🏠'}
+                {item.id === 'enter' && '✨'}
+                {item.id === 'search' && '🔍'}
+                {item.id === 'display' && '📺'}
+                {item.id === 'account' && '👤'}
+              </div>
+              <span className="mobile-tab-label">{item.label}</span>
+            </button>
+          ))}
+          {/* Hamburger Menu for the rest */}
+          <button className="mobile-tab-button" onClick={() => {
+            const menu = document.getElementById('mobile-hamburger-menu');
+            if (menu) menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+          }}>
+            <div className="mobile-tab-icon">☰</div>
+            <span className="mobile-tab-label">More</span>
+          </button>
+        </nav>
+      )}
+
+      {/* Mobile Hamburger Overlay */}
+      {!isKiosk && (
+        <div id="mobile-hamburger-menu" className="mobile-hamburger-menu" style={{ display: 'none' }} onClick={(e) => {
+          if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
+        }}>
+          <div className="hamburger-content">
+            <button className="hamburger-close" onClick={() => {
+              const menu = document.getElementById('mobile-hamburger-menu');
+              if (menu) menu.style.display = 'none';
+            }}>✕</button>
+            <div className="hamburger-items">
+              <button className="hamburger-item" onClick={() => { navigate('about'); document.getElementById('mobile-hamburger-menu')!.style.display = 'none'; }}>About</button>
+              <button className="hamburger-item" onClick={() => { navigate('admin'); document.getElementById('mobile-hamburger-menu')!.style.display = 'none'; }}>Admin</button>
+              {user && <button className="hamburger-item" onClick={() => { logout(); document.getElementById('mobile-hamburger-menu')!.style.display = 'none'; }}>Log out</button>}
+            </div>
+          </div>
+        </div>
       )}
 
       {showExitPrompt && (

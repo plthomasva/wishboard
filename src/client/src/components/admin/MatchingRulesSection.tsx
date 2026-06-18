@@ -100,7 +100,7 @@ export default function MatchingRulesSection({ authHeader, setMessage, setError,
         <input type="text" placeholder="Filter rules..." value={ruleFilter} onChange={(e) => setRuleFilter(e.target.value)} className="base-input" style={{ padding: '8px', width: '100%', maxWidth: '300px' }} />
       </div>
       <div style={{ overflowX: 'auto', marginBottom: '24px', background: '#1c1c1c', borderRadius: '8px', border: '1px solid #333' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#e0e0e0' }}>
+        <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', color: '#e0e0e0' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #444', backgroundColor: '#2a2a2a' }}>
               <th style={{ padding: '12px', cursor: 'pointer' }} onClick={() => handleRuleSort('rule_type')}>Type {getSortIcon(ruleSort, 'rule_type')}</th>
@@ -113,11 +113,11 @@ export default function MatchingRulesSection({ authHeader, setMessage, setError,
           <tbody>
             {filteredRules.map((rule) => (
               <tr key={rule.id} style={{ borderBottom: '1px solid #333' }}>
-                <td style={{ padding: '12px' }}><strong>{rule.rule_type}</strong></td>
-                <td style={{ padding: '12px' }}>{rule.trigger_attribute} = {rule.trigger_value}</td>
-                <td style={{ padding: '12px' }}>{rule.context_attribute ? `${rule.context_attribute} = ${rule.context_value}` : <span style={{ color: '#777' }}>-</span>}</td>
-                <td style={{ padding: '12px' }}>{rule.target_attribute} = {rule.target_value}</td>
-                <td style={{ padding: '12px' }}>
+                <td data-label="Type" style={{ padding: '12px' }}><strong>{rule.rule_type}</strong></td>
+                <td data-label="Trigger" style={{ padding: '12px' }}>{rule.trigger_attribute} = {rule.trigger_value}</td>
+                <td data-label="Context" style={{ padding: '12px' }}>{rule.context_attribute ? `${rule.context_attribute} = ${rule.context_value}` : <span style={{ color: '#777' }}>-</span>}</td>
+                <td data-label="Target" style={{ padding: '12px' }}>{rule.target_attribute} = {rule.target_value}</td>
+                <td data-label="Actions" style={{ padding: '12px' }}>
                   <button type="button" className="secondary-button" style={{ padding: '4px 8px', fontSize: '0.8rem', minWidth: 'auto', marginRight: '4px' }} onClick={() => editRule(rule)}>Edit</button>
                   <button type="button" className="secondary-button" style={{ padding: '4px 8px', fontSize: '0.8rem', minWidth: 'auto' }} onClick={() => deleteRule(rule.id)}>Delete</button>
                 </td>
