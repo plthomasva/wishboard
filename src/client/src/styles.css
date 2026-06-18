@@ -380,7 +380,7 @@ button:hover {
   background: transparent;
   border: none;
   padding: 4px;
-  color: #a0aec0;
+  color: #4a5568;
   cursor: pointer;
   border-radius: 4px;
   display: flex;
@@ -391,8 +391,8 @@ button:hover {
 }
 
 .flag-wish-btn:hover {
-  color: #9b2c2c;
-  background-color: rgba(229, 62, 62, 0.1);
+  color: #7f1d1d;
+  background-color: #fee2e2;
   transform: scale(1.05);
 }
 
@@ -836,7 +836,7 @@ button:hover {
   right: 16px;
   background: none;
   border: none;
-  color: #1a73e8;
+  color: #0d47a1;
   cursor: pointer;
   padding: 6px;
   border-radius: 50%;
@@ -849,8 +849,8 @@ button:hover {
 
 .send-mail-icon-btn:hover {
   transform: scale(1.1);
-  color: #002171;
-  background: rgba(26, 115, 232, 0.1);
+  color: #1e3a8a;
+  background-color: #dbeafe;
 }
 
 .wish-contacts-list {

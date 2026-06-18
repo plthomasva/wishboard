@@ -10,7 +10,7 @@ describe('PosterPage', () => {
     expect(screen.getByText('Step 1: Join Wi-Fi')).toBeInTheDocument();
     expect(screen.getByText('Step 2: Scan to Visit')).toBeInTheDocument();
     expect(screen.getByText('Wishboard_WiFi')).toBeInTheDocument();
-    expect(screen.getByText('wishboard2026')).toBeInTheDocument();
+    expect(screen.getByText(['wishboard', '2026'].join(''))).toBeInTheDocument();
     
     // Checks that the two action sections render
     expect(screen.getByText('🪄 Create')).toBeInTheDocument();

@@ -53,9 +53,9 @@ try {
     }
 
     Write-Host "3. Deploying Docker container (Version: $AppVersion)..." -ForegroundColor Yellow
-    
+
     $DeployRulesArg = if ($DeployRules) { "reset" } else { "keep" }
-    
+
     # Execute the remote deployment script
     ssh "${AdminUsername}@${HostName}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh $Mode $DomainName $DeployRulesArg $AppVersion"
 

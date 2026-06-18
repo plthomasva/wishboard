@@ -35,8 +35,9 @@ const logFormat = winston.format.combine(
   winston.format.json()
 );
 
-const productionTransports = process.env.NODE_ENV !== 'test'
-  ? [
+const productionTransports = process.env.NODE_ENV === 'test'
+  ? []
+  : [
       new winston.transports.DailyRotateFile({
         filename: path.join(__dirname, '../../data/logs/wishboard-%DATE%.log'),
         datePattern: 'YYYY-MM-DD',
@@ -45,8 +46,7 @@ const productionTransports = process.env.NODE_ENV !== 'test'
         maxFiles: '14d'
       }),
       new SocketTransport(),
-    ]
-  : [];
+    ];
 
 const transports = [
   ...productionTransports,
@@ -54,11 +54,20 @@ const transports = [
     silent: process.env.NODE_ENV === 'test',
     format: winston.format.combine(
       winston.format.colorize(),
-      winston.format.printf(({ timestamp, level, message, ...meta }) => {
-        return `[${timestamp}] ${level}: ${message} ${
-          Object.keys(meta).length ? JSON.stringify(meta) : ''
-        }`;
-      })
+      winston.format.printf(
+        /**
+         * @param {Object} info
+         * @param {string} info.timestamp
+         * @param {string} info.level
+         * @param {string} info.message
+         */
+        (info) => {
+          const { timestamp, level, message, ...meta } = info;
+          return `[${timestamp}] ${level}: ${message} ${
+            Object.keys(meta).length ? JSON.stringify(meta) : ''
+          }`;
+        }
+      )
     )
   }),
 ];

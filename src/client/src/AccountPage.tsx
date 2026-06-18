@@ -49,6 +49,159 @@ function useUsernameExistence(username: string) {
   return { existingUsername, mode, setMode };
 }
 
+function ClaimWishForm({ token, loadWishes }: Readonly<{ token: string | null; loadWishes: () => void }>) {
+  const [claimId, setClaimId] = useState('');
+  const [claimSecret, setClaimSecret] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const claimWish = async (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    if (!claimId.trim() || !claimSecret.trim()) {
+      setError('Wish ID and Passphrase are required to claim a wish.');
+      return;
+    }
+
+    const response = await fetch(`/api/wishes/${encodeURIComponent(claimId.trim())}/claim`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ secret: claimSecret.trim() })
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      setError(data.error || 'Unable to claim wish.');
+      return;
+    }
+
+    setMessage('Wish claimed successfully!');
+    setClaimId('');
+    setClaimSecret('');
+    loadWishes();
+  };
+
+  return (
+    <div className="profile-edit">
+      <div className="label-with-info" style={{ marginBottom: '16px' }}>
+        <h2 style={{ margin: 0 }}>Claim an Anonymous Wish</h2>
+        <InfoToggle>
+          Adopt a wish you created anonymously so you can manage it from your account.
+        </InfoToggle>
+      </div>
+      <form onSubmit={claimWish} style={{ display: 'grid', gap: '12px' }}>
+        <label>
+          Wish ID{' '}
+          <input
+            type="text"
+            value={claimId}
+            onChange={(e) => setClaimId(e.target.value)}
+            placeholder="e.g. abc123xy"
+          />
+        </label>
+        <label>
+          Passphrase{' '}
+          <input
+            type="text"
+            value={claimSecret}
+            onChange={(e) => setClaimSecret(e.target.value)}
+            placeholder="e.g. CorrectHorseBatteryStaple"
+          />
+        </label>
+        <button type="submit" className="secondary-button">Claim Wish</button>
+      </form>
+      {message && <div className="message success" style={{ marginTop: '12px' }}>{message}</div>}
+      {error && <div className="message error" style={{ marginTop: '12px' }}>{error}</div>}
+    </div>
+  );
+}
+
+function UnauthenticatedAccountView({
+  mode, setMode, effectiveMode, onLogin, onRegister,
+  username, setUsername, passphrase, setPassphrase,
+  identityGenders, setIdentityGenders, identityOrientations, setIdentityOrientations, identityRoles, setIdentityRoles,
+  message, error
+}: Readonly<any>) {
+  return (
+    <section>
+      <h1>My Account</h1>
+      <p>Create an account to manage multiple wishes, or log in if you already have one.</p>
+      <div className="tab-buttons">
+        <button className={mode === 'login' ? 'nav-button active' : 'nav-button'} onClick={() => setMode('login')}>
+          Login
+        </button>
+        <button className={mode === 'register' ? 'nav-button active' : 'nav-button'} onClick={() => setMode('register')}>
+          Register
+        </button>
+      </div>
+      <form className="form-card" onSubmit={effectiveMode === 'login' ? onLogin : onRegister}>
+        <label>
+          Username{' '}
+          <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Choose a username" />
+        </label>
+        <label>
+          Passphrase{' '}
+          <input
+            type="text"
+            value={passphrase}
+            onChange={(event) => setPassphrase(event.target.value)}
+            placeholder={effectiveMode === 'register' ? 'Leave blank to auto-generate when registering' : 'Enter your passphrase'}
+          />
+        </label>
+        {effectiveMode === 'register' && (
+          <>
+            <div className="label-with-info" style={{ marginTop: '12px', marginBottom: '8px' }}>
+              <strong style={{ display: 'block' }}>Identity Attributes</strong>
+              <InfoToggle>
+                These attributes are automatically applied to any wishes you create, and are used by default when you search.
+              </InfoToggle>
+            </div>
+            <label>
+              Identity genders
+              <AttributeInput
+                value={identityGenders}
+                onChange={setIdentityGenders}
+                placeholder="e.g. woman, non-binary"
+                suggestions={SUGGESTED_GENDERS}
+              />
+            </label>
+            <label>
+              Identity orientations
+              <AttributeInput
+                value={identityOrientations}
+                onChange={setIdentityOrientations}
+                placeholder="e.g. queer, straight"
+                suggestions={SUGGESTED_ORIENTATIONS}
+              />
+            </label>
+            <label>
+              Identity roles
+              <AttributeInput
+                value={identityRoles}
+                onChange={setIdentityRoles}
+                placeholder="e.g. speaker, volunteer"
+                suggestions={SUGGESTED_ROLES}
+              />
+            </label>
+          </>
+        )}
+        <button type="submit">{effectiveMode === 'login' ? 'Login' : 'Register'}</button>
+      </form>
+      {message && <div className="message success">{message}</div>}
+      {error && <div className="message error">{error}</div>}
+      {effectiveMode === 'register' && (
+        <div className="note-box">
+          <p>Tip: Use a memorable passphrase like <strong>{generatePassphrase()}</strong>.</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function AccountPage() {
   const { user, token, login, register, logout, refreshUser } = useAuth();
   const [username, setUsername] = useState('');
@@ -65,9 +218,7 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[] }>>([]);
 
-  // Claim wish state
-  const [claimId, setClaimId] = useState('');
-  const [claimSecret, setClaimSecret] = useState('');
+
 
   const { existingUsername, mode, setMode } = useUsernameExistence(username);
 
@@ -198,110 +349,18 @@ export default function AccountPage() {
     loadWishes();
   };
 
-  const claimWish = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    setError(null);
-    setMessage(null);
-    if (!claimId.trim() || !claimSecret.trim()) {
-      setError('Wish ID and Passphrase are required to claim a wish.');
-      return;
-    }
 
-    const response = await fetch(`/api/wishes/${encodeURIComponent(claimId.trim())}/claim`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ secret: claimSecret.trim() })
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.error || 'Unable to claim wish.');
-      return;
-    }
-
-    setMessage('Wish claimed successfully!');
-    setClaimId('');
-    setClaimSecret('');
-    loadWishes();
-  };
 
   if (!user) {
     return (
-      <section>
-        <h1>My Account</h1>
-        <p>Create an account to manage multiple wishes, or log in if you already have one.</p>
-        <div className="tab-buttons">
-          <button className={mode === 'login' ? 'nav-button active' : 'nav-button'} onClick={() => setMode('login')}>
-            Login
-          </button>
-          <button className={mode === 'register' ? 'nav-button active' : 'nav-button'} onClick={() => setMode('register')}>
-            Register
-          </button>
-        </div>
-        <form className="form-card" onSubmit={effectiveMode === 'login' ? onLogin : onRegister}>
-          <label>
-            Username{' '}
-            <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Choose a username" />
-          </label>
-          <label>
-            Passphrase{' '}
-            <input
-              type="text"
-              value={passphrase}
-              onChange={(event) => setPassphrase(event.target.value)}
-              placeholder={effectiveMode === 'register' ? 'Leave blank to auto-generate when registering' : 'Enter your passphrase'}
-            />
-          </label>
-          {effectiveMode === 'register' && (
-            <>
-              <div className="label-with-info" style={{ marginTop: '12px', marginBottom: '8px' }}>
-                <strong style={{ display: 'block' }}>Identity Attributes</strong>
-                <InfoToggle>
-                  These attributes are automatically applied to any wishes you create, and are used by default when you search.
-                </InfoToggle>
-              </div>
-              <label>
-                Identity genders
-                <AttributeInput
-                  value={identityGenders}
-                  onChange={setIdentityGenders}
-                  placeholder="e.g. woman, non-binary"
-                  suggestions={SUGGESTED_GENDERS}
-                />
-              </label>
-              <label>
-                Identity orientations
-                <AttributeInput
-                  value={identityOrientations}
-                  onChange={setIdentityOrientations}
-                  placeholder="e.g. queer, straight"
-                  suggestions={SUGGESTED_ORIENTATIONS}
-                />
-              </label>
-              <label>
-                Identity roles
-                <AttributeInput
-                  value={identityRoles}
-                  onChange={setIdentityRoles}
-                  placeholder="e.g. speaker, volunteer"
-                  suggestions={SUGGESTED_ROLES}
-                />
-              </label>
-            </>
-          )}
-          <button type="submit">{effectiveMode === 'login' ? 'Login' : 'Register'}</button>
-        </form>
-        {message && <div className="message success">{message}</div>}
-        {error && <div className="message error">{error}</div>}
-        {effectiveMode === 'register' && (
-          <div className="note-box">
-            <p>Tip: Use a memorable passphrase like <strong>{generatePassphrase()}</strong>.</p>
-          </div>
-        )}
-      </section>
+      <UnauthenticatedAccountView
+        mode={mode} setMode={setMode} effectiveMode={effectiveMode} onLogin={onLogin} onRegister={onRegister}
+        username={username} setUsername={setUsername} passphrase={passphrase} setPassphrase={setPassphrase}
+        identityGenders={identityGenders} setIdentityGenders={setIdentityGenders}
+        identityOrientations={identityOrientations} setIdentityOrientations={setIdentityOrientations}
+        identityRoles={identityRoles} setIdentityRoles={setIdentityRoles}
+        message={message} error={error}
+      />
     );
   }
 
@@ -450,35 +509,7 @@ export default function AccountPage() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '32px' }}>
-        <div className="profile-edit">
-          <div className="label-with-info" style={{ marginBottom: '16px' }}>
-            <h2 style={{ margin: 0 }}>Claim an Anonymous Wish</h2>
-            <InfoToggle>
-              Adopt a wish you created anonymously so you can manage it from your account.
-            </InfoToggle>
-          </div>
-          <form onSubmit={claimWish} style={{ display: 'grid', gap: '12px' }}>
-            <label>
-              Wish ID{' '}
-              <input
-                type="text"
-                value={claimId}
-                onChange={(e) => setClaimId(e.target.value)}
-                placeholder="e.g. abc123xy"
-              />
-            </label>
-            <label>
-              Passphrase{' '}
-              <input
-                type="text"
-                value={claimSecret}
-                onChange={(e) => setClaimSecret(e.target.value)}
-                placeholder="e.g. CorrectHorseBatteryStaple"
-              />
-            </label>
-            <button type="submit" className="secondary-button">Claim Wish</button>
-          </form>
-        </div>
+        <ClaimWishForm token={token} loadWishes={loadWishes} />
 
         {token && (
           <div className="profile-edit" style={{ textAlign: 'center' }}>

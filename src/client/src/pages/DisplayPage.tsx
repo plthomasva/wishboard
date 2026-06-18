@@ -23,7 +23,7 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
   const [capacity, setCapacity] = useState<number>(12);
   const [mailWishId, setMailWishId] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof globalThis.setInterval> | null>(null);
   const { socket } = useWebSocket();
 
   const loadWishes = useCallback(async () => {
@@ -54,23 +54,22 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
     };
   }, [loadWishes, resetTimer]);
 
+  const handleNewWish = useCallback((newWish: Wish) => {
+    setPinnedWishes(prev => {
+      const filtered = prev.filter(p => p.wish.id !== newWish.id);
+      return [{ wish: newWish, pinnedAt: Date.now() }, ...filtered];
+    });
+    // Give people time to read the newly arrived wish
+    resetTimer();
+  }, [resetTimer]);
+
   useEffect(() => {
     if (!socket) return;
-    
-    const handleNewWish = (newWish: Wish) => {
-      setPinnedWishes(prev => {
-        const filtered = prev.filter(p => p.wish.id !== newWish.id);
-        return [{ wish: newWish, pinnedAt: Date.now() }, ...filtered];
-      });
-      // Give people time to read the newly arrived wish
-      resetTimer();
-    };
-
     socket.on('wish:created', handleNewWish);
     return () => {
       socket.off('wish:created', handleNewWish);
     };
-  }, [socket, isKiosk, capacity, resetTimer]);
+  }, [socket, handleNewWish]);
 
   useEffect(() => {
     if (!isKiosk) return;

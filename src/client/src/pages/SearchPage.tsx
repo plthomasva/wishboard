@@ -28,32 +28,31 @@ export default function SearchPage() {
   const [lastSearchParams, setLastSearchParams] = useState<string | null>(null);
   const { socket } = useWebSocket();
 
+  const prependIfNotPresent = React.useCallback((newWish: Wish) => {
+    setResults(prev => prev.some(w => w.id === newWish.id) ? prev : [newWish, ...prev]);
+  }, []);
+
+  const handleNewWish = React.useCallback(async (newWish: Wish) => {
+    if (lastSearchParams === null) return;
+    try {
+      const response = await fetch(`/api/wishes?${lastSearchParams}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.some((w: Wish) => w.id === newWish.id)) {
+        prependIfNotPresent(newWish);
+      }
+    } catch (err) {
+      console.debug('WebSocket wish:created check failed:', err);
+    }
+  }, [lastSearchParams, prependIfNotPresent]);
+
   useEffect(() => {
     if (!socket) return;
-
-    const prependIfNotPresent = (newWish: Wish) => setResults(prev =>
-      prev.some(w => w.id === newWish.id) ? prev : [newWish, ...prev]
-    );
-
-    const handleNewWish = async (newWish: Wish) => {
-      if (lastSearchParams === null) return;
-      try {
-        const response = await fetch(`/api/wishes?${lastSearchParams}`);
-        if (!response.ok) return;
-        const data = await response.json();
-        if (data.some((w: Wish) => w.id === newWish.id)) {
-          prependIfNotPresent(newWish);
-        }
-      } catch (err) {
-        console.debug('WebSocket wish:created check failed:', err);
-      }
-    };
-
     socket.on('wish:created', handleNewWish);
     return () => {
       socket.off('wish:created', handleNewWish);
     };
-  }, [socket, lastSearchParams]);
+  }, [socket, handleNewWish]);
 
   useEffect(() => {
     setUseProfileAttributes(Boolean(user));
