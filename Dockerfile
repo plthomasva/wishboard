@@ -3,17 +3,29 @@ FROM node:22-slim AS builder
 
 WORKDIR /app
 
+# Install build tools for native modules (better-sqlite3)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
 # Install all dependencies (including devDependencies needed for Vite)
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 # Copy the rest of the application
 COPY . .
 
-# Run the build script (which also runs the prebuild font downloader)
+# Run the build script
 RUN npm run build
 
-# Stage 2: Create the production image
+# Stage 2: Install production dependencies natively
+FROM node:22-slim AS deps
+WORKDIR /app
+# Install build tools for native modules (better-sqlite3)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+# Run npm ci WITHOUT --ignore-scripts so better-sqlite3 can build or download its native bindings
+RUN npm ci --omit=dev
+
+# Stage 3: Create the production image
 FROM node:22-slim AS runner
 
 WORKDIR /app
@@ -24,9 +36,8 @@ ENV PORT=3000
 # Ensure sqlite data, logs, and rules persist to the mounted volume
 ENV WISHBOARD_DB_PATH=/app/data/wishboard.db
 
-# Install only production dependencies
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+# Copy node_modules from deps stage (has correctly built native bindings)
+COPY --from=deps /app/node_modules ./node_modules
 
 # Copy the built backend and frontend from the builder stage
 COPY --from=builder /app/dist ./dist
