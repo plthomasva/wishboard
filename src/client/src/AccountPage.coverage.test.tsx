@@ -204,6 +204,7 @@ describe('AccountPage Coverage', () => {
     expect(wishmailCb).toBeChecked();
   });
   it('handles deactivate profile', async () => {
+    vi.useRealTimers();
     vi.mocked(AuthContext.useAuth).mockReturnValue({ 
       user: { id: 'u1', username: 'test', is_active: true, identity_genders: [], identity_orientations: [], identity_roles: [], contacts: [], wishmail_enabled: false },
       token: 'mock-token',
@@ -211,9 +212,10 @@ describe('AccountPage Coverage', () => {
       login: vi.fn(), register: vi.fn(), logout: vi.fn()
     } as any);
     
-    mockFetch.mockImplementation(async (url) => {
-      if (url.includes('/api/users/me/wishes')) return { ok: true, json: async () => [] };
-      if (url.includes('/api/users/me/deactivate')) return { ok: true, json: async () => ({}) };
+    mockFetch.mockImplementation(async (urlObj) => {
+      const url = typeof urlObj === 'string' ? urlObj : (urlObj?.url || '');
+      if (url.includes('wishes')) return { ok: true, json: async () => [] };
+      if (url.includes('deactivate')) return { ok: true, json: async () => ({}) };
       return { ok: true, json: async () => ({}) };
     });
 
@@ -226,9 +228,11 @@ describe('AccountPage Coverage', () => {
       expect(mockFetch).toHaveBeenCalledWith('/api/users/me/deactivate', expect.any(Object));
       expect(screen.getByText('Profile deactivated successfully.')).toBeInTheDocument();
     });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   it('handles delete account preview and confirmation', async () => {
+    vi.useRealTimers();
     const mockLogout = vi.fn();
     vi.mocked(AuthContext.useAuth).mockReturnValue({ 
       user: { id: 'u1', username: 'test', is_active: true, identity_genders: [], identity_orientations: [], identity_roles: [], contacts: [], wishmail_enabled: false },
@@ -237,10 +241,11 @@ describe('AccountPage Coverage', () => {
       login: vi.fn(), register: vi.fn(), refreshUser: vi.fn()
     } as any);
     
-    mockFetch.mockImplementation(async (url) => {
-      if (url.includes('/api/users/me/wishes')) return { ok: true, json: async () => [] };
-      if (url.includes('/api/users/me/delete-preview')) return { ok: true, json: async () => ({ wishesCount: 2, wishmailsCount: 5 }) };
-      if (url.includes('/api/users/me/delete')) return { ok: true, json: async () => ({}) };
+    mockFetch.mockImplementation(async (urlObj) => {
+      const url = typeof urlObj === 'string' ? urlObj : (urlObj?.url || '');
+      if (url.includes('delete-preview')) return { ok: true, json: async () => ({ wishesCount: 2, wishmailsCount: 5 }) };
+      if (url.includes('delete')) return { ok: true, json: async () => ({}) };
+      if (url.includes('wishes')) return { ok: true, json: async () => [] };
       return { ok: true, json: async () => ({}) };
     });
 
@@ -261,5 +266,6 @@ describe('AccountPage Coverage', () => {
       expect(mockFetch).toHaveBeenCalledWith('/api/users/me/delete', expect.any(Object));
       expect(mockLogout).toHaveBeenCalled();
     });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 });
