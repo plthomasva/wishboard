@@ -136,6 +136,13 @@ router.get('/me/delete-preview', (req, res) => {
 router.post('/me/delete', (req, res) => {
   const user = req.user;
   
+  if (user.role === 'admin') {
+    const adminCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count;
+    if (adminCount <= 1) {
+      return res.status(403).json({ error: 'Cannot delete the last admin user.' });
+    }
+  }
+  
   db.prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').run(user.id);
   db.prepare('DELETE FROM wishes WHERE user_id = ?').run(user.id);
   db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);

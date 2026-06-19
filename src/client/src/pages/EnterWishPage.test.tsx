@@ -43,4 +43,18 @@ describe('EnterWishPage', () => {
     
     expect(await screen.findByText(/Server error/i)).toBeInTheDocument();
   });
+
+  it('toggles Advanced Match Criteria', async () => {
+    render(<EnterWishPage />);
+    
+    // Initially hidden
+    expect(screen.queryByText(/Desired genders/i)).not.toBeInTheDocument();
+    
+    // Click toggle
+    const toggle = screen.getByText(/Advanced Match Criteria/i);
+    fireEvent.click(toggle);
+    
+    // Now visible
+    expect(screen.getByText(/Strictly required genders/i)).toBeInTheDocument();
+  });
 });

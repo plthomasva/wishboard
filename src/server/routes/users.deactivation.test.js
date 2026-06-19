@@ -5,6 +5,7 @@ import { describe, expect, it, afterEach } from 'vitest';
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
+const { createSessionToken } = await import('../auth.js');
 const app = appModule.default;
 
 afterEach(() => {
@@ -91,5 +92,20 @@ describe('User deactivation and cascade delete', () => {
     expect((await request(app).post('/api/users/me/delete')).status).toBe(401);
     expect((await request(app).post('/api/users/me/deactivate')).status).toBe(401);
     expect((await request(app).post('/api/users/me/reactivate')).status).toBe(401);
+  });
+
+  it('prevents the last admin from deleting themselves', async () => {
+    // There should be exactly one admin created by default in memory DB
+    const admin = db.prepare("SELECT id FROM users WHERE role = 'admin'").get();
+    expect(admin).toBeDefined();
+
+    const token = createSessionToken(admin.id);
+
+    const del = await request(app)
+      .post('/api/users/me/delete')
+      .set('Authorization', `Bearer ${token}`);
+      
+    expect(del.status).toBe(403);
+    expect(del.body.error).toMatch(/last admin user/);
   });
 });

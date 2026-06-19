@@ -93,5 +93,57 @@ describe('ManageWishPage Coverage', () => {
       expect(screen.getByText('Failed to delete wish.')).toBeInTheDocument();
     });
   });
+
+  it('handles deactivate wish and token inclusion', async () => {
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
+    globalThis.window.location.hash = '#manage-wish?id=w3';
+    
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 'w3', content: 'Wish content', contacts: [], is_active: true })
+    });
+
+    render(<ManageWishPage />);
+    await waitFor(() => expect(screen.getByText('Manage Your Wish')).toBeInTheDocument());
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({})
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deactivate Wish' }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/wishes/w3/deactivate', expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer mock-token' })
+      }));
+      expect(screen.getByText('Reactivate Wish')).toBeInTheDocument();
+    });
+  });
+
+  it('handles reactivate wish', async () => {
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
+    globalThis.window.location.hash = '#manage-wish?id=w4';
+    
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 'w4', content: 'Wish content', contacts: [], is_active: false })
+    });
+
+    render(<ManageWishPage />);
+    await waitFor(() => expect(screen.getByText('Manage Your Wish')).toBeInTheDocument());
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({})
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reactivate Wish' }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/wishes/w4/reactivate', expect.any(Object));
+      expect(screen.getByText('Deactivate Wish')).toBeInTheDocument();
+    });
+  });
 });
 
