@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.3.0...wishboard-v1.4.0) (2026-06-19)
+
+
+### Features
+
+* implement advanced match criteria toggle and deactivation UI ([360550f](https://github.com/plthomasva/wishboard/commit/360550f48e652169886721e3061fd528d38bf926))
+* implement advanced match criteria toggle and deactivation UI ([6a40f97](https://github.com/plthomasva/wishboard/commit/6a40f97ee84b1771f5cdc6c72a22bcb08c976cb8))
+
+
+### Bug Fixes
+
+* container start failure from missing javascript file copy ([809b3d5](https://github.com/plthomasva/wishboard/commit/809b3d5f46c483b6eace96223af025627b30dc0e))
+* correct getByText test matcher for wishes count split by tags ([358603e](https://github.com/plthomasva/wishboard/commit/358603ea8eba3f72d3f624125bd8b3da2c7d8bfe))
+* correct log tailing ([fa142cf](https://github.com/plthomasva/wishboard/commit/fa142cf3c2f1eb8f11761c83a3981ec8ac7575ad))
+* ensure tests pass with real timers ([d167b65](https://github.com/plthomasva/wishboard/commit/d167b650814ad25cc5effc903029be0d3885295e))
+* refactor users.js to fix sonarqube duplication limit ([d3552d9](https://github.com/plthomasva/wishboard/commit/d3552d94977d28a6d4a5c4193162c83f12607a67))
+* resolve markdown and dockerfile linting warnings ([cc25aed](https://github.com/plthomasva/wishboard/commit/cc25aed996b733827e4e1daad6166c7584e3167c))
+
 ## [1.3.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.2.4...wishboard-v1.3.0) (2026-06-19)
 
 
