@@ -31,6 +31,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 # Copy the built backend and frontend from the builder stage
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/server ./src/server
+COPY --from=builder /app/src/client/src/passphrase.js ./src/client/src/passphrase.js
 COPY --from=builder /app/data ./data
 
 # Expose the API port
