@@ -8,7 +8,9 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 
 # Install all dependencies (including devDependencies needed for Vite)
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
+# Explicitly rebuild better-sqlite3 to compile native bindings securely
+RUN npm rebuild better-sqlite3
 
 # Copy the rest of the application
 COPY . .
@@ -22,8 +24,8 @@ WORKDIR /app
 # Install build tools for native modules (better-sqlite3)
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
-# Run npm ci WITHOUT --ignore-scripts so better-sqlite3 can build or download its native bindings
-RUN npm ci --omit=dev
+# Run npm ci with --ignore-scripts and explicitly rebuild better-sqlite3
+RUN npm ci --omit=dev --ignore-scripts && npm rebuild better-sqlite3
 
 # Stage 3: Create the production image
 FROM node:22-slim AS runner
