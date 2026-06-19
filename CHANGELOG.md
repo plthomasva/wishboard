@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/plthomasva/wishboard/compare/wishboard-v1.4.2...wishboard-v1.4.3) (2026-06-19)
+
+
+### Bug Fixes
+
+* **docker:** explicitly rebuild better-sqlite3 for security ([a9c6932](https://github.com/plthomasva/wishboard/commit/a9c69322c11df15f12f958afd01425f3dc339dd9))
+
 ## [1.4.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.4.1...wishboard-v1.4.2) (2026-06-19)
 
 
