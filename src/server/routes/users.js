@@ -49,14 +49,20 @@ router.post('/register', (req, res) => {
 
   logger.info('New user registered', { user_id: userId, username: username.trim() });
   const token = createSessionToken(userId);
-  res.json({ id: userId, username: username.trim(), role: 'user', token, secret, identity_genders: genders, identity_orientations: orientations, identity_roles: roles, contacts: contacts || [], wishmail_enabled: Boolean(wishmailEnabledInt) });
+  res.json({ id: userId, username: username.trim(), role: 'user', is_active: true, token, secret, identity_genders: genders, identity_orientations: orientations, identity_roles: roles, contacts: contacts || [], wishmail_enabled: Boolean(wishmailEnabledInt) });
 });
 
-router.put('/me', (req, res) => {
+router.use('/me', (req, res, next) => {
   const user = getUserFromRequest(req);
   if (!user) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
+  req.user = user;
+  next();
+});
+
+router.put('/me', (req, res) => {
+  const user = req.user;
 
   const { identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled } = req.body;
   const genders = normalizeArrayInput(identity_genders);
@@ -87,7 +93,7 @@ router.post('/login', (req, res) => {
   }
 
   const user = db
-    .prepare('SELECT id, username, role, passphrase_hash, passphrase_salt, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled FROM users WHERE username = ?')
+    .prepare('SELECT id, username, role, is_active, passphrase_hash, passphrase_salt, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled FROM users WHERE username = ?')
     .get(username.trim());
   if (!user || !verifyPassphrase(passphrase.trim(), user.passphrase_salt, user.passphrase_hash)) {
     logger.warn('Failed login attempt', { username: username.trim(), ip: req.ip });
@@ -100,6 +106,7 @@ router.post('/login', (req, res) => {
     id: user.id,
     username: user.username,
     role: user.role,
+    is_active: Boolean(user.is_active),
     token,
     identity_genders: parseJsonArray(user.identity_genders),
     identity_orientations: parseJsonArray(user.identity_orientations),
@@ -117,22 +124,78 @@ router.post('/logout', (req, res) => {
   res.json({ success: true });
 });
 
-router.get('/me', (req, res) => {
-  const user = getUserFromRequest(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated.' });
+router.get('/me/delete-preview', (req, res) => {
+  const user = req.user;
+
+  const wishesCount = db.prepare('SELECT COUNT(*) as count FROM wishes WHERE user_id = ?').get(user.id).count;
+  const wishmailsCount = db.prepare('SELECT COUNT(*) as count FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').get(user.id).count;
+
+  res.json({ wishesCount, wishmailsCount });
+});
+
+router.post('/me/delete', (req, res) => {
+  const user = req.user;
+  
+  if (user.role === 'admin') {
+    const adminCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count;
+    if (adminCount <= 1) {
+      return res.status(403).json({ error: 'Cannot delete the last admin user.' });
+    }
   }
+  
+  db.prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').run(user.id);
+  db.prepare('DELETE FROM wishes WHERE user_id = ?').run(user.id);
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+  db.prepare('DELETE FROM users WHERE id = ?').run(user.id);
+
+  logger.info('User self-deleted', { user_id: user.id });
+  res.json({ success: true });
+});
+
+router.post('/me/deactivate', async (req, res) => {
+  const user = req.user;
+
+  db.prepare('UPDATE users SET is_active = 0 WHERE id = ?').run(user.id);
+  
+  const wishes = db.prepare('SELECT id FROM wishes WHERE user_id = ?').all(user.id);
+  const { emitWishDeleted } = await import('../socket.js');
+  wishes.forEach(w => emitWishDeleted(w.id));
+  
+  logger.info('User deactivated', { user_id: user.id });
+  res.json({ success: true });
+});
+
+router.post('/me/reactivate', async (req, res) => {
+  const user = req.user;
+
+  db.prepare('UPDATE users SET is_active = 1 WHERE id = ?').run(user.id);
+  
+  const wishes = db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled FROM wishes WHERE user_id = ? AND is_active = 1').all(user.id);
+  const { emitWishReactivated } = await import('../socket.js');
+  wishes.forEach(w => {
+    emitWishReactivated({
+      ...w,
+      creator_genders: parseJsonArray(w.creator_genders),
+      creator_orientations: parseJsonArray(w.creator_orientations),
+      contacts: parseJsonArray(w.contacts),
+      wishmail_enabled: Boolean(w.wishmail_enabled)
+    });
+  });
+
+  logger.info('User reactivated', { user_id: user.id });
+  res.json({ success: true });
+});
+
+router.get('/me', (req, res) => {
+  const user = req.user;
   res.json(user);
 });
 
 router.get('/me/wishes', (req, res) => {
-  const user = getUserFromRequest(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated.' });
-  }
+  const user = req.user;
 
   const rows = db
-    .prepare('SELECT id, content, contacts, wishmail_enabled, creator_genders, creator_orientations, flagged, created_at, updated_at FROM wishes WHERE user_id = ? ORDER BY created_at DESC')
+    .prepare('SELECT id, content, contacts, wishmail_enabled, creator_genders, creator_orientations, flagged, created_at, updated_at, is_active FROM wishes WHERE user_id = ? ORDER BY created_at DESC')
     .all(user.id);
     
   const formattedRows = rows.map(row => ({
@@ -140,7 +203,8 @@ router.get('/me/wishes', (req, res) => {
     creator_genders: parseJsonArray(row.creator_genders),
     creator_orientations: parseJsonArray(row.creator_orientations),
     contacts: parseJsonArray(row.contacts),
-    wishmail_enabled: Boolean(row.wishmail_enabled)
+    wishmail_enabled: Boolean(row.wishmail_enabled),
+    is_active: Boolean(row.is_active)
   }));
     
   res.json(formattedRows);

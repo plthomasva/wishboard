@@ -9,6 +9,7 @@ type AuthUser = {
   identity_roles: string[];
   contacts: { type: string; value: string }[];
   wishmail_enabled: boolean;
+  is_active: boolean;
 };
 
 type AuthContextValue = {
@@ -42,7 +43,8 @@ const mapToAuthUser = (data: any): AuthUser => ({
   identity_orientations: data.identity_orientations || [],
   identity_roles: data.identity_roles || [],
   contacts: data.contacts || [],
-  wishmail_enabled: Boolean(data.wishmail_enabled)
+  wishmail_enabled: Boolean(data.wishmail_enabled),
+  is_active: data.is_active !== undefined ? Boolean(data.is_active) : true
 });
 
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {

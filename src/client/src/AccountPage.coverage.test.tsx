@@ -203,5 +203,70 @@ describe('AccountPage Coverage', () => {
     fireEvent.click(wishmailCb);
     expect(wishmailCb).toBeChecked();
   });
-});
+  it('handles deactivate profile', async () => {
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ 
+      user: { id: 'u1', username: 'test', is_active: true, identity_genders: [], identity_orientations: [], identity_roles: [], contacts: [], wishmail_enabled: false },
+      token: 'mock-token',
+      refreshUser: vi.fn(),
+      login: vi.fn(), register: vi.fn(), logout: vi.fn()
+    } as any);
+    
+    mockFetch.mockImplementation(async (urlObj) => {
+      const url = typeof urlObj === 'string' ? urlObj : (urlObj?.url || '');
+      if (url.includes('wishes')) return { ok: true, json: async () => [] };
+      if (url.includes('deactivate')) return { ok: true, json: async () => ({}) };
+      return { ok: true, json: async () => ({}) };
+    });
 
+    render(<AccountPage />);
+    await waitFor(() => expect(screen.getByText('Danger Zone')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deactivate Profile' }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/users/me/deactivate', expect.any(Object));
+      expect(screen.getByText('Profile deactivated successfully.')).toBeInTheDocument();
+    });
+  });
+
+  it('handles delete account preview and confirmation', async () => {
+    const mockLogout = vi.fn();
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ 
+      user: { id: 'u1', username: 'test', is_active: true, identity_genders: [], identity_orientations: [], identity_roles: [], contacts: [], wishmail_enabled: false },
+      token: 'mock-token',
+      logout: mockLogout,
+      login: vi.fn(), register: vi.fn(), refreshUser: vi.fn()
+    } as any);
+    
+    mockFetch.mockImplementation(async (urlObj) => {
+      const url = typeof urlObj === 'string' ? urlObj : (urlObj?.url || '');
+      if (url.includes('delete-preview')) return { ok: true, json: async () => ({ wishesCount: 2, wishmailsCount: 5 }) };
+      if (url.includes('delete')) return { ok: true, json: async () => ({}) };
+      if (url.includes('wishes')) return { ok: true, json: async () => [] };
+      return { ok: true, json: async () => ({}) };
+    });
+
+    render(<AccountPage />);
+    await waitFor(() => expect(screen.getByText('Danger Zone')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+    
+    // Let microtasks and promises resolve
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete Account Confirmation')).toBeInTheDocument();
+      expect(screen.getByText((_, element) => element?.textContent === '2 wishes')).toBeInTheDocument();
+      expect(screen.getByText((_, element) => element?.textContent === '5 wishmail messages')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete Account' }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/users/me/delete', expect.any(Object));
+      expect(mockLogout).toHaveBeenCalled();
+    });
+  });
+});

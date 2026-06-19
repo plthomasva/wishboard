@@ -63,13 +63,20 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
     resetTimer();
   }, [resetTimer]);
 
+  const handleDeletedWish = useCallback((deletedWishId: string) => {
+    setWishes(prev => prev.filter(w => w.id !== deletedWishId));
+    setPinnedWishes(prev => prev.filter(p => p.wish.id !== deletedWishId));
+  }, []);
+
   useEffect(() => {
     if (!socket) return;
     socket.on('wish:created', handleNewWish);
+    socket.on('wish:deleted', handleDeletedWish);
     return () => {
       socket.off('wish:created', handleNewWish);
+      socket.off('wish:deleted', handleDeletedWish);
     };
-  }, [socket, handleNewWish]);
+  }, [socket, handleNewWish, handleDeletedWish]);
 
   useEffect(() => {
     if (!isKiosk) return;

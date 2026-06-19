@@ -42,6 +42,10 @@ export const emitWishDeleted = (wishId) => {
   if (io) io.emit('wish:deleted', wishId);
 };
 
+export const emitWishReactivated = (wish) => {
+  if (io) io.emit('wish:reactivated', wish);
+};
+
 export const emitSystemLog = (logEntry) => {
   if (io) io.emit('sys:log', logEntry);
 };

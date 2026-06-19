@@ -216,9 +216,10 @@ export default function AccountPage() {
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[] }>>([]);
-
-
+  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[]; is_active: boolean }>>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePreview, setDeletePreview] = useState<{ wishesCount: number; wishmailsCount: number } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { existingUsername, mode, setMode } = useUsernameExistence(username);
 
@@ -349,6 +350,50 @@ export default function AccountPage() {
     loadWishes();
   };
 
+  const handleDeletePreview = async () => {
+    setDeleteError(null);
+    const response = await fetch('/api/users/me/delete-preview', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!response.ok) {
+      setDeleteError('Unable to fetch delete preview.');
+      return;
+    }
+    const data = await response.json();
+    setDeletePreview(data);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    setDeleteError(null);
+    const response = await fetch('/api/users/me/delete', {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!response.ok) {
+      setDeleteError('Unable to delete account.');
+      return;
+    }
+    logout();
+  };
+
+  const toggleProfileStatus = async () => {
+    setError(null);
+    setMessage(null);
+    const endpoint = user?.is_active ? '/api/users/me/deactivate' : '/api/users/me/reactivate';
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!response.ok) {
+      setError(`Unable to ${user?.is_active ? 'deactivate' : 'reactivate'} profile.`);
+      return;
+    }
+    setMessage(`Profile ${user?.is_active ? 'deactivated' : 'reactivated'} successfully.`);
+    if (refreshUser) await refreshUser();
+    loadWishes();
+  };
+
 
 
   if (!user) {
@@ -368,7 +413,10 @@ export default function AccountPage() {
     <section>
       <div className="account-header">
         <div>
-          <h1>Welcome back, {user.username}</h1>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            Welcome back, {user.username}
+            {!user.is_active && <span style={{ fontSize: '0.9rem', color: '#e53e3e', background: '#ffe5e5', padding: '4px 8px', borderRadius: '4px' }}>Inactive</span>}
+          </h1>
           <p>You can manage your saved wishes here.</p>
         </div>
         <button className="secondary-button" onClick={logout}>
@@ -482,6 +530,23 @@ export default function AccountPage() {
         </button>
       </div>
 
+      <div className="profile-edit" style={{ border: '1px solid #e53e3e', marginBottom: '32px' }}>
+        <h2 style={{ color: '#e53e3e', margin: '0 0 16px 0' }}>Danger Zone</h2>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+          <button className="secondary-button" style={{ color: user.is_active ? '#e53e3e' : '#2b6cb0', borderColor: user.is_active ? '#e53e3e' : '#2b6cb0' }} onClick={toggleProfileStatus} type="button">
+            {user.is_active ? 'Deactivate Profile' : 'Reactivate Profile'}
+          </button>
+          <button className="secondary-button" style={{ background: '#e53e3e', color: 'white', borderColor: '#e53e3e' }} onClick={handleDeletePreview} type="button">
+            Delete Account
+          </button>
+        </div>
+        <p style={{ marginTop: '12px', fontSize: '0.9rem', color: '#556275' }}>
+          {user.is_active 
+            ? 'Deactivating your profile will temporarily hide all your wishes. Deleting your account is permanent.' 
+            : 'Your profile is currently deactivated. Your wishes are hidden from the public.'}
+        </p>
+      </div>
+
       {message && <div className="message success">{message}</div>}
       {error && <div className="message error">{error}</div>}
 
@@ -491,7 +556,10 @@ export default function AccountPage() {
         <div className="wish-grid">
           {wishes.map((wish) => (
             <div key={wish.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <WishCard wish={wish} showFlag={false} />
+              <div style={{ opacity: wish.is_active ? 1 : 0.6 }}>
+                <WishCard wish={wish} showFlag={false} />
+                {!wish.is_active && <div style={{ textAlign: 'center', color: '#e53e3e', fontWeight: 'bold', marginTop: '4px' }}>Inactive</div>}
+              </div>
               <div className="wish-actions" style={{ marginTop: 0, justifyContent: 'flex-start', gap: '12px' }}>
                 <a href={`#wishmail-dashboard?id=${wish.id}`} className="button" style={{ textDecoration: 'none', background: '#3b82f6', color: 'white', padding: '10px 16px', borderRadius: '14px', fontWeight: 'bold' }}>
                   View Wishmail
@@ -533,6 +601,27 @@ export default function AccountPage() {
           </div>
         )}
       </div>
+
+      {showDeleteModal && deletePreview && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px' }}>
+            <h2>Delete Account Confirmation</h2>
+            <p style={{ color: '#e53e3e', fontWeight: 'bold' }}>This action is permanent and cannot be undone.</p>
+            <p>If you proceed, the following data will be permanently deleted along with your account:</p>
+            <ul style={{ margin: '16px 0', paddingLeft: '24px' }}>
+              <li><strong>{deletePreview.wishesCount}</strong> {deletePreview.wishesCount === 1 ? 'wish' : 'wishes'}</li>
+              <li><strong>{deletePreview.wishmailsCount}</strong> {deletePreview.wishmailsCount === 1 ? 'wishmail message' : 'wishmail messages'}</li>
+            </ul>
+            {deleteError && <div className="message error">{deleteError}</div>}
+            <div className="form-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button className="secondary-button" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+              <button className="button" style={{ background: '#e53e3e', color: 'white', borderColor: '#e53e3e' }} onClick={confirmDelete}>
+                Yes, Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </section>
   );

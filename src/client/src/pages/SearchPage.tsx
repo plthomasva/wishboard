@@ -46,13 +46,21 @@ export default function SearchPage() {
     }
   }, [lastSearchParams, prependIfNotPresent]);
 
+  const handleDeletedWish = React.useCallback((deletedWishId: string) => {
+    setResults(prev => prev.filter(w => w.id !== deletedWishId));
+  }, []);
+
   useEffect(() => {
     if (!socket) return;
     socket.on('wish:created', handleNewWish);
+    socket.on('wish:reactivated', handleNewWish);
+    socket.on('wish:deleted', handleDeletedWish);
     return () => {
       socket.off('wish:created', handleNewWish);
+      socket.off('wish:reactivated', handleNewWish);
+      socket.off('wish:deleted', handleDeletedWish);
     };
-  }, [socket, handleNewWish]);
+  }, [socket, handleNewWish, handleDeletedWish]);
 
   useEffect(() => {
     setUseProfileAttributes(Boolean(user));

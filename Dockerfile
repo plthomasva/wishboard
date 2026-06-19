@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install all dependencies (including devDependencies needed for Vite)
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 # Copy the rest of the application
 COPY . .
@@ -26,7 +26,7 @@ ENV WISHBOARD_DB_PATH=/app/data/wishboard.db
 
 # Install only production dependencies
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy the built backend and frontend from the builder stage
 COPY --from=builder /app/dist ./dist
