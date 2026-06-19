@@ -44,7 +44,7 @@ export default function SystemOverviewSection({ authHeader, token, refreshCounte
     if (!socket) return;
     
     const handleNewLog = (logEntry: string) => {
-      setRawLogs(prev => {
+      setRawLogs((prev = '') => {
         const lines = prev.split('\n');
         // Keep logs size somewhat bounded
         if (lines.length > 2000) {

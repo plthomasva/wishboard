@@ -22,7 +22,7 @@ class SocketTransport extends winston.Transport {
         metaEntries.some(() => true) ? JSON.stringify(Object.fromEntries(metaEntries)) : ''
       }`;
       socketModule.emitSystemLog(formattedLog);
-    }).catch(() => { /* Ignore if socket module isn't ready */ });
+    }).catch((err) => { console.error("SOCKET TRANSPORT IMPORT ERROR:", err); });
 
     callback();
   }
