@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.4.0...wishboard-v1.4.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* add arm64 arch and modify docker compose ([728a064](https://github.com/plthomasva/wishboard/commit/728a064f03ba663c43c489ba95e3adc91861e2e5))
+
 ## [1.4.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.3.0...wishboard-v1.4.0) (2026-06-19)
 
 
