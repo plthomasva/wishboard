@@ -63,9 +63,20 @@ router.post('/users/:id/role', requireAdmin, (req, res) => {
   checkResult(result, res, 'User');
 });
 
+router.get('/users/:id/delete-preview', requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const wishesCount = db.prepare('SELECT COUNT(*) as count FROM wishes WHERE user_id = ?').get(id).count;
+  const wishmailsCount = db.prepare('SELECT COUNT(*) as count FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').get(id).count;
+  res.json({ wishesCount, wishmailsCount });
+});
+
 router.post('/users/:id/delete', requireAdmin, (req, res) => {
-  const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
-  logger.info('Admin deleted user', { admin_user_id: req.user.id, target_user_id: req.params.id });
+  const { id } = req.params;
+  db.prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').run(id);
+  db.prepare('DELETE FROM wishes WHERE user_id = ?').run(id);
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+  const result = db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  logger.info('Admin deleted user', { admin_user_id: req.user.id, target_user_id: id });
   checkResult(result, res, 'User');
 });
 

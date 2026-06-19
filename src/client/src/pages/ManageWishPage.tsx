@@ -6,7 +6,7 @@ import { useAuth } from '../AuthContext';
 
 export default function ManageWishPage() {
   const { token } = useAuth();
-  const [wish, setWish] = useState<{ id: string; content: string; contacts: any[]; wishmail_enabled: boolean; created_at: string; creator_genders?: string[]; creator_orientations?: string[] } | null>(null);
+  const [wish, setWish] = useState<{ id: string; content: string; contacts: any[]; wishmail_enabled: boolean; created_at: string; creator_genders?: string[]; creator_orientations?: string[]; is_active: boolean } | null>(null);
   const [content, setContent] = useState('');
   const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
@@ -112,6 +112,33 @@ export default function ManageWishPage() {
     }
   };
 
+  const toggleWishStatus = async () => {
+    if (!wish) return;
+    setError(null);
+    setMessage(null);
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const endpoint = wish.is_active ? `/api/wishes/${encodeURIComponent(wish.id)}/deactivate` : `/api/wishes/${encodeURIComponent(wish.id)}/reactivate`;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ secret })
+    });
+
+    if (response.ok) {
+      setMessage(`Wish ${wish.is_active ? 'deactivated' : 'reactivated'} successfully.`);
+      setWish({ ...wish, is_active: !wish.is_active });
+    } else {
+      const data = await response.json();
+      setError(data.error || `Failed to ${wish.is_active ? 'deactivate' : 'reactivate'} wish.`);
+    }
+  };
+
   if (error && !wish) {
     return (
       <section>
@@ -146,7 +173,10 @@ export default function ManageWishPage() {
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ marginBottom: '8px' }}>Manage Your Wish</h1>
+          <h1 style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            Manage Your Wish
+            {!wish.is_active && <span style={{ fontSize: '0.9rem', color: '#e53e3e', background: '#ffe5e5', padding: '4px 8px', borderRadius: '4px', fontWeight: 'normal' }}>Inactive</span>}
+          </h1>
           <p style={{ marginTop: 0 }}>Edit the content of your wish or delete it permanently.</p>
         </div>
         {wish.wishmail_enabled && (
@@ -184,8 +214,11 @@ export default function ManageWishPage() {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap' }}>
             <button type="submit">Save Changes</button>
+            <button type="button" className="secondary-button" style={{ color: wish.is_active ? '#e53e3e' : '#2b6cb0', borderColor: wish.is_active ? '#e53e3e' : '#2b6cb0' }} onClick={toggleWishStatus}>
+              {wish.is_active ? 'Deactivate Wish' : 'Reactivate Wish'}
+            </button>
             <button type="button" className="secondary-button" onClick={handleDelete} style={{ background: '#fee2e2', color: '#b91c1c' }}>
               Delete Wish
             </button>

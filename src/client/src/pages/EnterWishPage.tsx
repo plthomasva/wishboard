@@ -21,6 +21,7 @@ export default function EnterWishPage() {
   const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -162,39 +163,73 @@ export default function EnterWishPage() {
               </label>
             </>
           )}
-          <div style={{ display: 'grid', gap: '8px' }}>
-            <div className="label-with-info">
-              <label htmlFor="desiredGenders">Desired genders for who can fulfill this wish</label>
-              <InfoToggle>
-                Leaving this blank means you're open to matching with anyone (based on your own orientation)! Explicitly entering a gender here will override your default orientation preferences.
-              </InfoToggle>
-            </div>
-            <AttributeInput
-              id="desiredGenders"
-              value={desiredGenders}
-              onChange={setDesiredGenders}
-              placeholder="e.g. woman, non-binary"
-              suggestions={SUGGESTED_GENDERS}
-            />
+          <div className="advanced-criteria-toggle" style={{ margin: '24px 0 16px 0' }}>
+            <button 
+              type="button" 
+              className="secondary-button" 
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <span>{showAdvanced ? 'Hide' : 'Show'} Advanced Match Criteria</span>
+              <span>{showAdvanced ? '▲' : '▼'}</span>
+            </button>
+            {!showAdvanced && (
+              <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '8px', textAlign: 'center' }}>
+                By default, we smartly guess who you want to match with based on your own identity. Open this to set strict requirements for who can view this wish.
+              </p>
+            )}
           </div>
-          <label>
-            Desired orientations for who can fulfill this wish
-            <AttributeInput
-              value={desiredOrientations}
-              onChange={setDesiredOrientations}
-              placeholder="e.g. queer, straight"
-              suggestions={SUGGESTED_ORIENTATIONS}
-            />
-          </label>
-          <label>
-            Desired roles for who can fulfill this wish
-            <AttributeInput
-              value={desiredRoles}
-              onChange={setDesiredRoles}
-              placeholder="e.g. speaker, vendor"
-              suggestions={SUGGESTED_ROLES}
-            />
-          </label>
+
+          {showAdvanced && (
+            <fieldset style={{ border: '1px solid #d7dee5', borderRadius: '12px', padding: '16px', background: '#f8fafc', marginBottom: '16px' }}>
+              <legend style={{ fontWeight: 600, padding: '0 8px' }}>Advanced Match Criteria</legend>
+              <div style={{ display: 'grid', gap: '8px' }}>
+                <div className="label-with-info">
+                  <label htmlFor="desiredGenders">Strictly required genders</label>
+                  <InfoToggle>
+                    Only users with these genders will be able to see this wish. If you leave this blank, we'll smartly fall back to guessing based on your own orientation!
+                  </InfoToggle>
+                </div>
+                <AttributeInput
+                  id="desiredGenders"
+                  value={desiredGenders}
+                  onChange={setDesiredGenders}
+                  placeholder="e.g. woman, non-binary"
+                  suggestions={SUGGESTED_GENDERS}
+                />
+              </div>
+              <div style={{ display: 'grid', gap: '8px', marginTop: '12px' }}>
+                <div className="label-with-info">
+                  <label htmlFor="desiredOrientations">Strictly required orientations</label>
+                  <InfoToggle>
+                    Only users with these orientations will be able to see this wish.
+                  </InfoToggle>
+                </div>
+                <AttributeInput
+                  id="desiredOrientations"
+                  value={desiredOrientations}
+                  onChange={setDesiredOrientations}
+                  placeholder="e.g. queer, straight"
+                  suggestions={SUGGESTED_ORIENTATIONS}
+                />
+              </div>
+              <div style={{ display: 'grid', gap: '8px', marginTop: '12px' }}>
+                <div className="label-with-info">
+                  <label htmlFor="desiredRoles">Strictly required roles</label>
+                  <InfoToggle>
+                    Only users with these roles will be able to see this wish.
+                  </InfoToggle>
+                </div>
+                <AttributeInput
+                  id="desiredRoles"
+                  value={desiredRoles}
+                  onChange={setDesiredRoles}
+                  placeholder="e.g. speaker, vendor"
+                  suggestions={SUGGESTED_ROLES}
+                />
+              </div>
+            </fieldset>
+          )}
           <button type="submit">Submit Wish</button>
         </form>
 

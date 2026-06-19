@@ -84,6 +84,7 @@ ensureColumn('users', 'identity_orientations', 'TEXT');
 ensureColumn('users', 'identity_roles', 'TEXT');
 ensureColumn('users', 'contacts', 'TEXT');
 ensureColumn('users', 'wishmail_enabled', 'INTEGER DEFAULT 0');
+ensureColumn('users', 'is_active', 'INTEGER DEFAULT 1');
 ensureColumn('wishes', 'creator_genders', 'TEXT');
 ensureColumn('wishes', 'creator_orientations', 'TEXT');
 ensureColumn('wishes', 'creator_roles', 'TEXT');
@@ -92,6 +93,7 @@ ensureColumn('wishes', 'desired_orientations', 'TEXT');
 ensureColumn('wishes', 'desired_roles', 'TEXT');
 ensureColumn('wishes', 'contacts', 'TEXT');
 ensureColumn('wishes', 'wishmail_enabled', 'INTEGER DEFAULT 0');
+ensureColumn('wishes', 'is_active', 'INTEGER DEFAULT 1');
 
 const defaultAdminUsername = process.env.WISHBOARD_ADMIN_USERNAME || 'admin';
 const defaultAdminSecret = process.env.WISHBOARD_ADMIN_SECRET || 'admin-board';
