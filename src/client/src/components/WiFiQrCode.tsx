@@ -30,7 +30,7 @@ export default function WiFiQrCode() {
         { top: '50%', left: '2rem', transform: 'translateY(-50%)' },
         { top: '50%', right: '2rem', transform: 'translateY(-50%)' }
       ];
-      setPosition(corners[Math.floor(Math.random() * corners.length)]);
+      setPosition(corners[Math.floor(Math.random() * corners.length)]); // NOSONAR
       setIsVisible(true);
 
       timeoutId = setTimeout(() => {

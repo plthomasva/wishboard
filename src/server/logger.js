@@ -35,18 +35,19 @@ const logFormat = winston.format.combine(
   winston.format.json()
 );
 
-const productionTransports = process.env.NODE_ENV === 'test'
-  ? []
-  : [
-      new winston.transports.DailyRotateFile({
-        filename: path.join(__dirname, '../../data/logs/wishboard-%DATE%.log'),
-        datePattern: 'YYYY-MM-DD',
-        zippedArchive: false,
-        maxSize: '20m',
-        maxFiles: '14d'
-      }),
-      new SocketTransport(),
-    ];
+const productionTransports = [];
+if (process.env.NODE_ENV !== 'test') {
+  productionTransports.push(
+    new winston.transports.DailyRotateFile({
+      filename: path.join(__dirname, '../../data/logs/wishboard-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      zippedArchive: false,
+      maxSize: '20m',
+      maxFiles: '14d'
+    }),
+    new SocketTransport()
+  );
+}
 
 const transports = [
   ...productionTransports,

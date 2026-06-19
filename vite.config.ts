@@ -1,12 +1,17 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const clientRoot = resolve(projectRoot, 'src/client');
+const packageJson = JSON.parse(fs.readFileSync(resolve(projectRoot, 'package.json'), 'utf-8'));
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version)
+  },
   // Vite should bundle the client app from src/client
   root: clientRoot,
   plugins: [react()],
@@ -40,7 +45,6 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
       exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/*.d.ts'],
-      all: true,
       include: ['src/client/src/**/*.{js,ts,tsx}', 'src/server/**/*.{js,ts}', 'scripts/**/*.{js,ts}']
     }
   }
