@@ -204,7 +204,6 @@ describe('AccountPage Coverage', () => {
     expect(wishmailCb).toBeChecked();
   });
   it('handles deactivate profile', async () => {
-    vi.useRealTimers();
     vi.mocked(AuthContext.useAuth).mockReturnValue({ 
       user: { id: 'u1', username: 'test', is_active: true, identity_genders: [], identity_orientations: [], identity_roles: [], contacts: [], wishmail_enabled: false },
       token: 'mock-token',
@@ -228,11 +227,9 @@ describe('AccountPage Coverage', () => {
       expect(mockFetch).toHaveBeenCalledWith('/api/users/me/deactivate', expect.any(Object));
       expect(screen.getByText('Profile deactivated successfully.')).toBeInTheDocument();
     });
-    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   it('handles delete account preview and confirmation', async () => {
-    vi.useRealTimers();
     const mockLogout = vi.fn();
     vi.mocked(AuthContext.useAuth).mockReturnValue({ 
       user: { id: 'u1', username: 'test', is_active: true, identity_genders: [], identity_orientations: [], identity_roles: [], contacts: [], wishmail_enabled: false },
@@ -253,11 +250,16 @@ describe('AccountPage Coverage', () => {
     await waitFor(() => expect(screen.getByText('Danger Zone')).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+    
+    // Let microtasks and promises resolve
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Delete Account Confirmation')).toBeInTheDocument();
-      expect(screen.getByText(/2 wishes/)).toBeInTheDocument();
-      expect(screen.getByText(/5 wishmail messages/)).toBeInTheDocument();
+      expect(screen.getByText((_, element) => element?.textContent === '2 wishes')).toBeInTheDocument();
+      expect(screen.getByText((_, element) => element?.textContent === '5 wishmail messages')).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete Account' }));
@@ -266,6 +268,5 @@ describe('AccountPage Coverage', () => {
       expect(mockFetch).toHaveBeenCalledWith('/api/users/me/delete', expect.any(Object));
       expect(mockLogout).toHaveBeenCalled();
     });
-    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 });
