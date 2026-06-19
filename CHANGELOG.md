@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.2.4...wishboard-v1.3.0) (2026-06-19)
+
+
+### Features
+
+* display app version on About page ([57320c2](https://github.com/plthomasva/wishboard/commit/57320c25a75d23e46c16cacbe1034cf03169d1d7))
+
+
+### Bug Fixes
+
+* extract PosterPage inline styles to resolve linter errors ([57320c2](https://github.com/plthomasva/wishboard/commit/57320c25a75d23e46c16cacbe1034cf03169d1d7))
+* resolve sonar warnings in logger.js and WiFiQrCode.tsx ([57320c2](https://github.com/plthomasva/wishboard/commit/57320c25a75d23e46c16cacbe1034cf03169d1d7))
+
 ## [1.2.4](https://github.com/plthomasva/wishboard/compare/wishboard-v1.2.3...wishboard-v1.2.4) (2026-06-18)
 
 
