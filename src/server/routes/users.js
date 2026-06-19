@@ -52,11 +52,17 @@ router.post('/register', (req, res) => {
   res.json({ id: userId, username: username.trim(), role: 'user', is_active: true, token, secret, identity_genders: genders, identity_orientations: orientations, identity_roles: roles, contacts: contacts || [], wishmail_enabled: Boolean(wishmailEnabledInt) });
 });
 
-router.put('/me', (req, res) => {
+router.use('/me', (req, res, next) => {
   const user = getUserFromRequest(req);
   if (!user) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
+  req.user = user;
+  next();
+});
+
+router.put('/me', (req, res) => {
+  const user = req.user;
 
   const { identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled } = req.body;
   const genders = normalizeArrayInput(identity_genders);
@@ -119,10 +125,7 @@ router.post('/logout', (req, res) => {
 });
 
 router.get('/me/delete-preview', (req, res) => {
-  const user = getUserFromRequest(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated.' });
-  }
+  const user = req.user;
 
   const wishesCount = db.prepare('SELECT COUNT(*) as count FROM wishes WHERE user_id = ?').get(user.id).count;
   const wishmailsCount = db.prepare('SELECT COUNT(*) as count FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').get(user.id).count;
@@ -131,10 +134,7 @@ router.get('/me/delete-preview', (req, res) => {
 });
 
 router.post('/me/delete', (req, res) => {
-  const user = getUserFromRequest(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated.' });
-  }
+  const user = req.user;
   
   db.prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').run(user.id);
   db.prepare('DELETE FROM wishes WHERE user_id = ?').run(user.id);
@@ -146,10 +146,7 @@ router.post('/me/delete', (req, res) => {
 });
 
 router.post('/me/deactivate', async (req, res) => {
-  const user = getUserFromRequest(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated.' });
-  }
+  const user = req.user;
 
   db.prepare('UPDATE users SET is_active = 0 WHERE id = ?').run(user.id);
   
@@ -162,10 +159,7 @@ router.post('/me/deactivate', async (req, res) => {
 });
 
 router.post('/me/reactivate', async (req, res) => {
-  const user = getUserFromRequest(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated.' });
-  }
+  const user = req.user;
 
   db.prepare('UPDATE users SET is_active = 1 WHERE id = ?').run(user.id);
   
@@ -186,18 +180,12 @@ router.post('/me/reactivate', async (req, res) => {
 });
 
 router.get('/me', (req, res) => {
-  const user = getUserFromRequest(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated.' });
-  }
+  const user = req.user;
   res.json(user);
 });
 
 router.get('/me/wishes', (req, res) => {
-  const user = getUserFromRequest(req);
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated.' });
-  }
+  const user = req.user;
 
   const rows = db
     .prepare('SELECT id, content, contacts, wishmail_enabled, creator_genders, creator_orientations, flagged, created_at, updated_at, is_active FROM wishes WHERE user_id = ? ORDER BY created_at DESC')
