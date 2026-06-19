@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.4.1...wishboard-v1.4.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* **docker:** support native better-sqlite3 bindings for arm64 ([42fcc6d](https://github.com/plthomasva/wishboard/commit/42fcc6da9c24f37dbd23ca03a9df6506a2ace20b))
+
 ## [1.4.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.4.0...wishboard-v1.4.1) (2026-06-19)
 
 
