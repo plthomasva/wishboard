@@ -1,5 +1,6 @@
 services:
   wishboard:
+    image: ghcr.io/plthomasva/wishboard:latest
     build:
       context: .
       dockerfile: Dockerfile
