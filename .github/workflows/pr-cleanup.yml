@@ -1,0 +1,23 @@
+name: Cleanup PR Image
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: none
+
+jobs:
+  delete-pr-image:
+    if: ${{ !startsWith(github.head_ref, 'release-please-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete PR Image
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          # Note: The default GITHUB_TOKEN does not have delete:packages permission.
+          # You MUST create a Personal Access Token (classic) with `delete:packages` 
+          # and `read:packages` scopes and save it as a repository secret named GHCR_DELETE_PAT.
+          token: ${{ secrets.GHCR_DELETE_PAT }}
+          packages: wishboard
+          delete-tags: pr-${{ github.event.pull_request.number }}

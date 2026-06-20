@@ -44,7 +44,7 @@ const mapToAuthUser = (data: any): AuthUser => ({
   identity_roles: data.identity_roles || [],
   contacts: data.contacts || [],
   wishmail_enabled: Boolean(data.wishmail_enabled),
-  is_active: data.is_active !== undefined ? Boolean(data.is_active) : true
+  is_active: data.is_active === undefined ? true : Boolean(data.is_active)
 });
 
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
