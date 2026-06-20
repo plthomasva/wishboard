@@ -4,6 +4,9 @@ on:
   pull_request:
     types: [closed]
 
+permissions:
+  contents: none
+
 jobs:
   delete-pr-image:
     if: ${{ !startsWith(github.head_ref, 'release-please-') }}
