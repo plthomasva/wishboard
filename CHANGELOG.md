@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.4.3...wishboard-v1.5.0) (2026-06-20)
+
+
+### Features
+
+* automate pull request preview image generation and cleanup using GitHub Actions ([ac03f19](https://github.com/plthomasva/wishboard/commit/ac03f19f33db1d86ec581c98a593e96f65f15ce0))
+
+
+### Bug Fixes
+
+* resolve Dockerfile security hotspots by applying explicit permissions and non-root users ([ac03f19](https://github.com/plthomasva/wishboard/commit/ac03f19f33db1d86ec581c98a593e96f65f15ce0))
+* simplify negated boolean expression in AuthContext ([ac03f19](https://github.com/plthomasva/wishboard/commit/ac03f19f33db1d86ec581c98a593e96f65f15ce0))
+* update delete user modal to use correct kiosk CSS classes ([ac03f19](https://github.com/plthomasva/wishboard/commit/ac03f19f33db1d86ec581c98a593e96f65f15ce0))
+
 ## [1.4.3](https://github.com/plthomasva/wishboard/compare/wishboard-v1.4.2...wishboard-v1.4.3) (2026-06-19)
 
 
