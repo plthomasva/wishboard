@@ -158,4 +158,8 @@ router.get('/metrics-ticket', requireAdmin, (req, res) => {
   res.json({ ticket: generateMetricsTicket() });
 });
 
+router.get('/config', requireAdmin, (req, res) => {
+  res.json({ isProduction: process.env.NODE_ENV === 'production' });
+});
+
 export default router;

@@ -6,14 +6,24 @@ export default function UserAccountsSection({ authHeader, setMessage, error, set
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [deletePreview, setDeletePreview] = useState<{ wishesCount: number; wishmailsCount: number } | null>(null);
 
+  const [isProduction, setIsProduction] = useState<boolean>(true);
+
   const loadUsers = async () => {
     setError(null);
     const response = await fetch('/api/admin/users', { headers: authHeader });
     if (response.ok) setUsers(await response.json());
   };
 
+  const loadConfig = async () => {
+    const response = await fetch('/api/admin/config', { headers: authHeader });
+    if (response.ok) {
+      const config = await response.json();
+      setIsProduction(config.isProduction);
+    }
+  };
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadUsers(); }, [refreshCounter]);
+  useEffect(() => { loadUsers(); loadConfig(); }, [refreshCounter]);
 
   const updateRole = async (id: string, role: string) => {
     setMessage(null); setError(null);
@@ -60,8 +70,7 @@ export default function UserAccountsSection({ authHeader, setMessage, error, set
     setMessage(null); setError(null);
     const response = await fetch('/api/admin/reset-demo', { 
       method: 'POST', 
-      headers: { ...authHeader, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ force: true })
+      headers: { ...authHeader, 'Content-Type': 'application/json' }
     });
     if (!response.ok) { setError('Failed to run seeder.'); return; }
     const data = await response.json();
@@ -94,11 +103,13 @@ export default function UserAccountsSection({ authHeader, setMessage, error, set
         )}
       </section>
 
-      <section style={{ marginTop: '48px', padding: '16px', border: '1px solid #ff4444', borderRadius: '8px' }}>
-        <h2 style={{ color: '#ff4444' }}>Demo Seeder (Dev Only)</h2>
-        <p>Generate simulated users and wishes for testing. <strong>Warning: This clears existing demo data.</strong></p>
-        <button type="button" className="secondary-button" onClick={runSeeder} style={{ marginTop: '12px', borderColor: '#ff4444', color: '#ff4444' }}>Run Seeder</button>
-      </section>
+      {!isProduction && (
+        <section style={{ marginTop: '48px', padding: '16px', border: '1px solid #ff4444', borderRadius: '8px' }}>
+          <h2 style={{ color: '#ff4444' }}>Demo Seeder (Dev Only)</h2>
+          <p>Generate simulated users and wishes for testing. <strong>Warning: This clears existing demo data.</strong></p>
+          <button type="button" className="secondary-button" onClick={runSeeder} style={{ marginTop: '12px', borderColor: '#ff4444', color: '#ff4444' }}>Run Seeder</button>
+        </section>
+      )}
 
       {userToDelete && deletePreview && (
         <ConfirmDeleteAccountModal

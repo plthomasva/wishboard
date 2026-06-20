@@ -58,6 +58,13 @@ describe('AdminPage', () => {
         });
       }
 
+      if (url.endsWith('/api/admin/config')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ isProduction: false })
+        });
+      }
+
       if (url.endsWith('/api/admin/metrics-ticket')) {
         if (!mockToken) {
           return Promise.resolve({ ok: false, status: 401 });
@@ -295,6 +302,9 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/rules')) {
         return Promise.resolve({ ok: true, json: async () => [] });
       }
+      if (url.endsWith('/api/admin/config')) {
+        return Promise.resolve({ ok: true, json: async () => ({ isProduction: false }) });
+      }
       if (url.includes('/api/admin/users/') && url.endsWith('/reset-password')) {
         return Promise.resolve({ ok: true, json: async () => ({ success: true, newPassphrase: 'new-password-123' }) });
       }
@@ -372,6 +382,9 @@ describe('AdminPage', () => {
       }
       if (url.endsWith('/api/rules')) {
         return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      if (url.endsWith('/api/admin/config')) {
+        return Promise.resolve({ ok: true, json: async () => ({ isProduction: false }) });
       }
       if (url.includes('/api/admin/users/') && url.endsWith('/delete-preview')) {
         return Promise.resolve({ ok: true, json: async () => ({ wishesCount: 5, wishmailsCount: 2 }) });
