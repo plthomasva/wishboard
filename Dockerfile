@@ -36,7 +36,7 @@ COPY package.json package-lock.json ./
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
         export CXX=aarch64-linux-gnu-g++ CC=aarch64-linux-gnu-gcc; \
     fi && \
-    npm ci --omit=dev --target_arch="$TARGETARCH" --target_platform=linux
+    npm ci --omit=dev --target_arch="$TARGETARCH" --target_platform=linux --build-from-source
 
 # Stage 3: Create the production image
 FROM node:22-slim AS runner
