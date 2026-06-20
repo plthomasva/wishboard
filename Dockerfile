@@ -19,14 +19,18 @@ COPY scripts ./scripts
 # Run the build script
 RUN npm run build
 
-# Stage 2: Install production dependencies natively
-FROM node:22-slim AS deps
+# Stage 2: Install production dependencies natively (using cross-compilation on host platform)
+FROM --platform=$BUILDPLATFORM node:22-slim AS deps
+ARG TARGETARCH
 WORKDIR /app
-# Install build tools for native modules (better-sqlite3)
-RUN apt-get update && apt-get --no-install-recommends install -y g++ make python3 && rm -rf /var/lib/apt/lists/*
+# Install standard build tools AND cross-compilers so we can compile arm64 bindings on an amd64 host
+RUN apt-get update && apt-get --no-install-recommends install -y g++ make python3 g++-aarch64-linux-gnu libc6-dev-arm64-cross && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
-# Run npm ci to install production dependencies and automatically download pre-built binaries
-RUN npm ci --omit=dev
+# Run npm ci setting the target architecture, so it either downloads the correct binary or cross-compiles it instantly
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+        export CXX=aarch64-linux-gnu-g++ CC=aarch64-linux-gnu-gcc; \
+    fi && \
+    npm ci --omit=dev --target_arch=$TARGETARCH --target_platform=linux
 
 # Stage 3: Create the production image
 FROM node:22-slim AS runner
