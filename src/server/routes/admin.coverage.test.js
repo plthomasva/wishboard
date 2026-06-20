@@ -64,10 +64,58 @@ describe('Admin routes coverage', () => {
       .set('Authorization', `Bearer ${token}`);
     
     // next(error) in Express will usually render a 500 HTML page or error JSON depending on the handler
-    // Since we don't have a specific error handler, express sends 500.
     expect(response.status).toBe(500);
 
     spy.mockRestore();
+  });
+
+  it('returns delete preview stats correctly', async () => {
+    const token = await loginAsAdmin();
+    const registerRes = await request(app)
+      .post('/api/users/register')
+      .send({ username: 'delete-preview-user', passphrase: 'pwd' });
+    const userId = registerRes.body.id;
+
+    db.prepare('INSERT INTO wishes (id, user_id, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+      .run('preview-wish', userId, 'test', new Date().toISOString(), new Date().toISOString());
+
+    const response = await request(app)
+      .get(`/api/admin/users/${userId}/delete-preview`)
+      .set('Authorization', `Bearer ${token}`);
+    
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ wishesCount: 1, wishmailsCount: 0 });
+  });
+
+  it('rejects demo reset in production without force', async () => {
+    const token = await loginAsAdmin();
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    const response = await request(app)
+      .post('/api/admin/reset-demo')
+      .send({})
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body.error).toBe('Demo reset is disabled in production unless force is explicitly requested.');
+
+    process.env.NODE_ENV = originalEnv;
+  });
+
+  it('allows demo reset in production with force', async () => {
+    const token = await loginAsAdmin();
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    const response = await request(app)
+      .post('/api/admin/reset-demo')
+      .send({ force: true })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+
+    process.env.NODE_ENV = originalEnv;
   });
 
   it('reads logs successfully', async () => {
@@ -89,4 +137,3 @@ describe('Admin routes coverage', () => {
   });
 
 });
-

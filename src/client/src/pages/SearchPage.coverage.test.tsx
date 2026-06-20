@@ -40,5 +40,27 @@ describe('SearchPage Coverage', () => {
 
     await waitFor(() => expect(screen.queryByText('Send Wishmail')).not.toBeInTheDocument());
   });
+  it('handles search fetch failure gracefully', async () => {
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as any);
+    mockFetch.mockResolvedValue({ ok: false, json: async () => ({ error: 'Search failed' }) });
+    render(<SearchPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await waitFor(() => expect(screen.getByText('Unable to perform search.')).toBeInTheDocument());
+  });
+
+  it('performs temporary search with attributes when unauthenticated', async () => {
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as any);
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ([{ id: 'w2', content: 'Attribute Wish', wishmail_enabled: false }])
+    });
+
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText('e.g. woman, cisgender man'), { target: { value: 'man' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('sg=man')));
+  });
+
 });
 
