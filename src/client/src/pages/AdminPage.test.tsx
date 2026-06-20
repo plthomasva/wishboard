@@ -100,6 +100,10 @@ describe('AdminPage', () => {
         return Promise.resolve({ ok: true });
       }
 
+      if (url.includes('/api/admin/users/') && url.endsWith('/delete-preview')) {
+        return Promise.resolve({ ok: true, json: async () => ({ wishesCount: 5, wishmailsCount: 2 }) });
+      }
+
       if (url.includes('/api/admin/users/') && url.endsWith('/delete')) {
         return Promise.resolve({ ok: true });
       }
@@ -252,9 +256,15 @@ describe('AdminPage', () => {
 
     // Delete tester
     const usersSection = screen.getByText('User Accounts').closest('section');
-    const deleteButtons = within(usersSection!).getAllByRole('button', { name: /Delete/i });
+    const deleteButtons = within(usersSection!).getAllByRole('button', { name: /^Delete$/i });
     await act(async () => {
       fireEvent.click(deleteButtons[0]);
+    });
+
+    // Click confirm delete in modal
+    await waitFor(() => expect(screen.getByText(/If you proceed, the following data/i)).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete Account' }));
     });
 
     await waitFor(() => {
@@ -363,6 +373,9 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/rules')) {
         return Promise.resolve({ ok: true, json: async () => [] });
       }
+      if (url.includes('/api/admin/users/') && url.endsWith('/delete-preview')) {
+        return Promise.resolve({ ok: true, json: async () => ({ wishesCount: 5, wishmailsCount: 2 }) });
+      }
       return Promise.resolve({ ok: false });
     });
 
@@ -379,7 +392,11 @@ describe('AdminPage', () => {
 
     // Try delete
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Delete/i }));
+      fireEvent.click(screen.getAllByRole('button', { name: /^Delete$/i })[0]);
+    });
+    await waitFor(() => expect(screen.getByText(/If you proceed, the following data/i)).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete Account' }));
     });
     await waitFor(() => expect(screen.getByText('Failed to delete user.')).toBeInTheDocument());
 

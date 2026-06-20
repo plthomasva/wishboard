@@ -7,6 +7,7 @@ import AttributeInput from './components/AttributeInput';
 import WishCard from './components/WishCard';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from './constants';
 import { QRCodeSVG } from 'qrcode.react';
+import ConfirmDeleteAccountModal from './components/ConfirmDeleteAccountModal';
 
 function useUsernameExistence(username: string) {
   const [existingUsername, setExistingUsername] = useState(false);
@@ -603,24 +604,12 @@ export default function AccountPage() {
       </div>
 
       {showDeleteModal && deletePreview && (
-        <div className="kiosk-modal-backdrop">
-          <div className="kiosk-modal" style={{ maxWidth: '500px' }}>
-            <h2>Delete Account Confirmation</h2>
-            <p style={{ color: '#e53e3e', fontWeight: 'bold' }}>This action is permanent and cannot be undone.</p>
-            <p>If you proceed, the following data will be permanently deleted along with your account:</p>
-            <ul style={{ margin: '16px 0', paddingLeft: '24px' }}>
-              <li><strong>{deletePreview.wishesCount}</strong> {deletePreview.wishesCount === 1 ? 'wish' : 'wishes'}</li>
-              <li><strong>{deletePreview.wishmailsCount}</strong> {deletePreview.wishmailsCount === 1 ? 'wishmail message' : 'wishmail messages'}</li>
-            </ul>
-            {deleteError && <div className="message error">{deleteError}</div>}
-            <div className="kiosk-modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
-              <button className="secondary-button" onClick={() => setShowDeleteModal(false)}>Cancel</button>
-              <button className="button" style={{ background: '#e53e3e', color: 'white', borderColor: '#e53e3e' }} onClick={confirmDelete}>
-                Yes, Delete Account
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDeleteAccountModal
+          deletePreview={deletePreview}
+          deleteError={deleteError}
+          onCancel={() => setShowDeleteModal(false)}
+          onConfirm={confirmDelete}
+        />
       )}
 
     </section>
