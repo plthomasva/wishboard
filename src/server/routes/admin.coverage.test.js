@@ -79,5 +79,14 @@ describe('Admin routes coverage', () => {
     expect(response.body).toHaveProperty('logs');
   });
 
+  it('returns config successfully', async () => {
+    const token = await loginAsAdmin();
+    const response = await request(app)
+      .get('/api/admin/config')
+      .set('Authorization', `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('isProduction');
+  });
+
 });
 

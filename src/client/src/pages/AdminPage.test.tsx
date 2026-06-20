@@ -280,6 +280,30 @@ describe('AdminPage', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/delete', expect.any(Object));
   });
 
+  it('can cancel user deletion', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+
+    render(<AdminPage />);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
+
+    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /^Delete$/i })[0]);
+    });
+
+    await waitFor(() => expect(screen.getByText(/Delete Account Confirmation/i)).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Delete Account Confirmation/i)).not.toBeInTheDocument();
+    });
+  });
+
   it('can reset a user password', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
