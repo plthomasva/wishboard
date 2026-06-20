@@ -1,5 +1,5 @@
 # Stage 1: Build the Vite frontend and install all dependencies
-FROM node:22-slim AS builder
+FROM --platform=$BUILDPLATFORM node:22-slim AS builder
 
 WORKDIR /app
 
@@ -8,9 +8,7 @@ RUN apt-get update && apt-get --no-install-recommends install -y g++ make python
 
 # Install all dependencies (including devDependencies needed for Vite)
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
-# Explicitly rebuild better-sqlite3 to compile native bindings securely
-RUN npm rebuild better-sqlite3
+RUN npm ci
 
 # Copy the rest of the application
 COPY tsconfig.json vite.config.ts ./
@@ -27,8 +25,8 @@ WORKDIR /app
 # Install build tools for native modules (better-sqlite3)
 RUN apt-get update && apt-get --no-install-recommends install -y g++ make python3 && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
-# Run npm ci with --ignore-scripts and explicitly rebuild better-sqlite3
-RUN npm ci --omit=dev --ignore-scripts && npm rebuild better-sqlite3
+# Run npm ci to install production dependencies and automatically download pre-built binaries
+RUN npm ci --omit=dev
 
 # Stage 3: Create the production image
 FROM node:22-slim AS runner
