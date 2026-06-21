@@ -99,5 +99,16 @@ describe('WishCard', () => {
     
     expect(onOverflowChange).toHaveBeenCalledWith(true);
   });
+
+  it('renders Admin Delete button when onAdminDelete is provided', () => {
+    const wish = { id: 'w8', content: 'Admin delete me' };
+    const onAdminDelete = vi.fn();
+    render(<WishCard wish={wish} onAdminDelete={onAdminDelete} />);
+    
+    const deleteBtn = screen.getByTitle('Admin Delete Wish');
+    expect(deleteBtn).toBeInTheDocument();
+    fireEvent.click(deleteBtn);
+    expect(onAdminDelete).toHaveBeenCalledWith('w8');
+  });
 });
 
