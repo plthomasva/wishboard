@@ -35,7 +35,11 @@ export default defineConfig({
     // Use repo root for testing so both client and server files are visible.
     root: projectRoot,
     globals: true,
-    environment: 'jsdom',
+    environmentMatchGlobs: [
+      ['src/server/**', 'node'],
+      ['scripts/**', 'node'],
+      ['src/client/**', 'jsdom'],
+    ],
     include: ['src/client/src/**/*.{test,spec}.{ts,tsx}', 'src/server/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
     setupFiles: 'src/client/src/setupTests.ts',
     globalSetup: 'vitest.global-setup.js',
