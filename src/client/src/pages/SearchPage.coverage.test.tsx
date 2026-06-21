@@ -41,7 +41,7 @@ describe('SearchPage Coverage', () => {
     await waitFor(() => expect(screen.queryByText('Send Wishmail')).not.toBeInTheDocument());
   });
   it('handles search fetch failure gracefully', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as any);
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof AuthContext.useAuth>);
     mockFetch.mockResolvedValue({ ok: false, json: async () => ({ error: 'Search failed' }) });
     render(<SearchPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
@@ -49,7 +49,7 @@ describe('SearchPage Coverage', () => {
   });
 
   it('performs temporary search with attributes when unauthenticated', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as any);
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof AuthContext.useAuth>);
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ([{ id: 'w2', content: 'Attribute Wish', wishmail_enabled: false }])

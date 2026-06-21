@@ -66,7 +66,7 @@ describe('WishCard', () => {
       containerRef: { current: null },
       contentRef: { current: null },
       isOverflowing: true
-    } as any);
+    } as unknown as ReturnType<typeof useTextFit>);
     
     const wish = { id: 'w5', content: 'Overflowing' };
     render(<WishCard wish={wish} isEditorPreview={true} />);
@@ -91,7 +91,7 @@ describe('WishCard', () => {
       containerRef: { current: null },
       contentRef: { current: null },
       isOverflowing: true
-    } as any);
+    } as unknown as ReturnType<typeof useTextFit>);
     
     const wish = { id: 'w7', content: 'Overflowing' };
     const onOverflowChange = vi.fn();
