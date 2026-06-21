@@ -325,4 +325,75 @@ describe('AccountPage', () => {
     expect(register).toHaveBeenCalledWith('testuser', undefined, { genders: 'agender', orientations: 'ace', roles: 'attendee' });
     await screen.findByText(/Account created. Remember your passphrase: secret/);
   });
+
+  it('allows user to delete their account and handles cancellation', async () => {
+    const logout = vi.fn();
+    const fetchMock = vi.fn((input, init) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/me/delete-preview')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ wishesCount: 2, wishmailsCount: 1 }) });
+      }
+      if (url.includes('/api/users/me') && init?.method === 'DELETE') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      }
+      if (url.includes('/api/users/me/wishes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(), register: vi.fn(), logout, refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+    
+    // Click delete account
+    const deleteBtn = screen.getByRole('button', { name: 'Delete Account' });
+    fireEvent.click(deleteBtn);
+
+    // Modal appears
+    await waitFor(() => expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument());
+
+    // Cancel modal
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByText(/This action is permanent and cannot be undone/)).not.toBeInTheDocument());
+
+    // Click delete account again
+    fireEvent.click(deleteBtn);
+    await waitFor(() => expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument());
+
+    // Confirm deletion
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete Account' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me', expect.objectContaining({ method: 'DELETE' })));
+    expect(logout).toHaveBeenCalled();
+  });
+
+  it('shows error if account delete preview fails', async () => {
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/me/delete-preview')) {
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({ error: 'failed' }) });
+      }
+      if (url.includes('/api/users/me/wishes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+    
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+    await waitFor(() => expect(screen.getByText('Failed to fetch delete preview.')).toBeInTheDocument());
+  });
 });
