@@ -64,15 +64,13 @@ Alternatively, if you prefer `docker-compose`, a `docker-compose.yml` file is pr
 - `npm test` — run the test suite
 - `npm run test:coverage` — run tests with coverage reporting
 
-## Wish metadata and search
+## Documentation
 
-- Users may register with identity metadata, including gender, orientation, and role.
-- Wishes can include creator identity metadata and desired fulfiller targets.
-- **Explicit Match Overrides**: If a user specifies a desired trait (e.g. a specific gender), it strictly overrides implicit rules.
-- **Implicit Rules**: If desired traits are left blank, the system relies on the creator's orientation. For example, a straight user implicitly matches only with binary opposite genders.
-- Search uses logged-in profile attributes by default when available.
-- Logged-in users can temporarily disable profile matching to perform broad keyword searches.
-- Anonymous searchers may provide temporary gender/orientation/role values for a one-off compatibility query.
+Detailed guides and documentation can be found in the `docs/` directory:
+
+- [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.md) - Instructions for securely deploying Wishboard as a locked-down offline Wi-Fi kiosk on a Raspberry Pi.
+- [**Matching Rules**](docs/MATCHING_RULES.md) - A deep dive into how the matchmaking engine implicitly maps, expands, and cross-matches user identities.
+- [**Mutation Testing**](docs/MUTATION_TESTING.md) - Details on how we use Stryker to guarantee robust unit testing, and how to view the daily automated reports.
 
 ## User Interface
 
@@ -87,51 +85,10 @@ Alternatively, if you prefer `docker-compose`, a `docker-compose.yml` file is pr
 - Use `http://<host>:3000/` to open the live preview.
 - For cloud or tunneling-based development, expose port `3000` securely and point collaborators to the same URL.
 
-## Raspberry Pi Kiosk Deployment
-
-Wishboard includes automation to deploy the application as a secure, full-screen kiosk on a Raspberry Pi.
-
-**Requirements:**
-
-- **OS**: Raspberry Pi OS based on **Debian 13 (Trixie)** or newer. The setup relies on the `labwc` Wayland compositor, which is the new default standard replacing X11/Mutter.
-- **Network**: The Pi must be reachable via SSH.
-
-For a full step-by-step walkthrough on how to set up SSL certificates, custom domains, and configure environment variables on a fresh Pi, please see the [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.md).
-
-**Deployment:**
-Run the appropriate orchestrator script for your operating system from the project directory. You can deploy in three networking modes:
-- `prod`: The Pi acts as an isolated Wi-Fi Hotspot and redirects all DNS queries for the domain to itself. (Standard offline mode).
-- `dual`: The Pi maintains its internet connection via `wlan0` but creates a virtual `ap0` Hotspot for local access. Useful for debugging or setting up.
-- `dev`: The Pi simply connects to an existing Wi-Fi network. You access it using its assigned IP address on that network.
-
-**For Windows (PowerShell):**
-
-```powershell
-.\scripts\deploy-kiosk.ps1 -AdminUsername pi -HostName raspberrypi.local
-```
-
-**For macOS / Linux (Bash):**
-
-```bash
-./scripts/deploy-kiosk.sh pi raspberrypi.local
-```
-
-**What the script does:**
-
-- Disables TTY autologin for the `pi` user to secure physical access (`Ctrl-Alt-F1`).
-- Creates a dedicated locked-down `wishboard` user.
-- Configures `LightDM` to auto-login the `wishboard` user.
-- Configures `labwc` to automatically launch Chromium in incognito kiosk mode pointed at `http://localhost:3000`.
-- Pulls the latest pre-built Docker image from the GitHub Container Registry.
-- Deploys the application inside an isolated Rootless Docker container for maximum security.
-
-**Kiosk Shortcuts:**
-
-- To cleanly exit the Wayland kiosk and drop back to the standard LightDM graphical login screen, press `Ctrl-Alt-Q`.
-
 ## Contributing & Releases
 
 Wishboard uses `release-please` and GitHub Actions to automatically manage semantic versioning and changelogs.
+
 - To cut a new release, merge a Pull Request into `main` using Conventional Commits (e.g., `feat: added poster`, `fix: proxy error`).
 - A Release PR will automatically be opened. Merging that PR will publish a new Docker image to `ghcr.io`.
 

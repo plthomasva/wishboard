@@ -99,3 +99,13 @@ A cross-match rule between "handler" and "pet" means:
 Combined with an **Expansion** rule (e.g., "pet" expands to "pup, kitten"), a
 "handler" will automatically match with a "pup" or "kitten" without needing
 explicit rules for every combination!
+
+## 5. Application of Rules in Search
+
+The matching rules outlined above are applied within the Wishboard application as follows:
+
+- **Profile Defaults**: By default, the search engine filters wishes based on the currently logged-in user's profile attributes (gender, orientation, role).
+- **Explicit Match Overrides**: If a wish creator specifies a explicit desired trait (e.g. they only want a specific gender), that explicit requirement strictly overrides any implicit rules.
+- **Implicit Rules**: If a wish creator leaves desired traits blank, the matching engine relies on the creator's orientation to determine compatibility (e.g., a straight user implicitly matches only with binary opposite genders).
+- **Broad Search**: Logged-in users can temporarily disable profile-based matching in the UI to perform broad, unrestricted keyword searches.
+- **Anonymous Search**: Users who are not logged in can provide temporary gender, orientation, and role values in the search UI to perform a one-off compatibility query.

@@ -6,16 +6,27 @@ import React from 'react';
 describe('WishFormFields', () => {
   it('renders content textarea and calls setContent', () => {
     const setContent = vi.fn();
-    render(<WishFormFields content="my wish" setContent={setContent} contacts={[]} setContacts={vi.fn()} wishmailEnabled={false} setWishmailEnabled={vi.fn()} />);
+    render(<WishFormFields content="my wish" setContent={setContent} contacts={[]} setContacts={vi.fn()} wishmailEnabled={false} setWishmailEnabled={vi.fn()} isOverflowing={false} />);
     const textarea = screen.getByRole('textbox', { name: /What is your wish\?/i });
     expect(textarea).toHaveValue('my wish');
+    expect(textarea).toHaveAttribute('rows', '6');
+    expect(textarea).toHaveAttribute('placeholder', 'Type your wish here');
+    expect(textarea).not.toHaveClass('overflowing-textarea');
+    expect(screen.queryByText('Text Overflowing')).not.toBeInTheDocument();
+    
+    // Check fieldset renders
+    expect(screen.getByText('Contacts & Wishmail')).toBeInTheDocument();
+
     fireEvent.change(textarea, { target: { value: 'new wish' } });
     expect(setContent).toHaveBeenCalledWith('new wish');
   });
 
-  it('renders overflow hint when isOverflowing is true', () => {
+  it('renders overflow hint and styling when isOverflowing is true', () => {
     render(<WishFormFields content="my wish" setContent={vi.fn()} contacts={[]} setContacts={vi.fn()} wishmailEnabled={false} setWishmailEnabled={vi.fn()} isOverflowing={true} />);
     expect(screen.getByText('Text Overflowing')).toBeInTheDocument();
+    
+    const textarea = screen.getByRole('textbox', { name: /What is your wish\?/i });
+    expect(textarea).toHaveClass('overflowing-textarea');
   });
 
   it('toggles wishmail checkbox', () => {
@@ -31,7 +42,7 @@ describe('WishFormFields', () => {
     const setContacts = vi.fn();
     const contacts = [{ type: 'FetLife', value: 'user1' }];
     
-    const { rerender } = render(
+    render(
       <WishFormFields content="" setContent={vi.fn()} contacts={contacts} setContacts={setContacts} wishmailEnabled={false} setWishmailEnabled={vi.fn()} />
     );
 
