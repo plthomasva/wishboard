@@ -30,7 +30,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Use the project's supported node version
+          node-version: '24' # Use the project's supported node version
           cache: 'npm'
 
       - name: Install Dependencies
@@ -49,7 +49,7 @@ jobs:
       - name: Upload Report to Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './reports/mutation' # The directory Stryker writes the HTML report to
+          path: './reports/mutation/html' # The directory Stryker writes the HTML report to
 
       - name: Deploy to GitHub Pages
         id: deployment
