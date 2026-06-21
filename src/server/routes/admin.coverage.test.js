@@ -10,18 +10,18 @@ const app = appModule.default;
 const defaultAdminUsername = 'admin';
 const defaultAdminSecret = 'admin-board';
 
-const clearTestData = () => {
-  db.exec('DELETE FROM sessions');
-  db.exec('DELETE FROM wishes');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+const clearTestData = async () => {
+  await db.exec('DELETE FROM sessions');
+  await db.exec('DELETE FROM wishes');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
 };
 
-beforeEach(() => {
-  clearTestData();
+beforeEach(async () => {
+  await clearTestData();
 });
 
-afterEach(() => {
-  clearTestData();
+afterEach(async () => {
+  await clearTestData();
 });
 
 describe('Admin routes coverage', () => {
@@ -51,7 +51,7 @@ describe('Admin routes coverage', () => {
       .send({ username: 'reset-error-user', passphrase: 'pwd' });
     const userId = registerRes.body.id;
 
-    const originalPrepare = db.prepare.bind(db);
+    const originalPrepare = await db.prepare.bind(db);
     const spy = vi.spyOn(db, 'prepare').mockImplementation((sql) => {
       if (typeof sql === 'string' && sql.includes('UPDATE users SET passphrase_hash = ?')) {
         throw new Error('Mock error');
@@ -76,7 +76,7 @@ describe('Admin routes coverage', () => {
       .send({ username: 'delete-preview-user', passphrase: 'pwd' });
     const userId = registerRes.body.id;
 
-    db.prepare('INSERT INTO wishes (id, user_id, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+    await db.prepare('INSERT INTO wishes (id, user_id, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
       .run('preview-wish', userId, 'test', new Date().toISOString(), new Date().toISOString());
 
     const response = await request(app)

@@ -16,17 +16,17 @@ const rulesPath = path.resolve(__dirname, '../../../data/rules.test.yaml');
 const defaultAdminUsername = 'admin';
 const defaultAdminSecret = 'admin-board';
 
-const clearTestData = () => {
-  db.exec('DELETE FROM sessions');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+const clearTestData = async () => {
+  await db.exec('DELETE FROM sessions');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
   if (fs.existsSync(rulesPath)) {
     fs.unlinkSync(rulesPath);
   }
   reloadRules();
 };
 
-beforeEach(() => clearTestData());
-afterEach(() => clearTestData());
+beforeEach(async () => await clearTestData());
+afterEach(async () => await clearTestData());
 
 describe('rules routes', () => {
   const loginAsAdmin = async () => {

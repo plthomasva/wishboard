@@ -20,13 +20,13 @@ const checkResult = (result, res, entityName) => {
   res.json({ success: true });
 };
 
-router.get('/flags', requireAdmin, (req, res) => {
-  const rows = db.prepare('SELECT id, content, flagged, created_at, user_id FROM wishes WHERE flagged > 0 ORDER BY flagged DESC').all();
+router.get('/flags', await requireAdmin, async (req, res) => {
+  const rows = await db.prepare('SELECT id, content, flagged, created_at, user_id FROM wishes WHERE flagged > 0 ORDER BY flagged DESC').all();
   res.json(rows);
 });
 
-router.post('/wishes/:id/remove', requireAdmin, (req, res) => {
-  const result = db.prepare('DELETE FROM wishes WHERE id = ?').run(req.params.id);
+router.post('/wishes/:id/remove', await requireAdmin, async (req, res) => {
+  const result = await db.prepare('DELETE FROM wishes WHERE id = ?').run(req.params.id);
   logger.info('Admin removed wish', { admin_user_id: req.user.id, wish_id: req.params.id });
   if (result.changes > 0) {
     emitWishDeleted(req.params.id);
@@ -34,59 +34,59 @@ router.post('/wishes/:id/remove', requireAdmin, (req, res) => {
   checkResult(result, res, 'Wish');
 });
 
-router.post('/wishes/:id/clear-flag', requireAdmin, (req, res) => {
-  const result = db.prepare('UPDATE wishes SET flagged = 0 WHERE id = ?').run(req.params.id);
+router.post('/wishes/:id/clear-flag', await requireAdmin, async (req, res) => {
+  const result = await db.prepare('UPDATE wishes SET flagged = 0 WHERE id = ?').run(req.params.id);
   logger.info('Admin cleared flag for wish', { admin_user_id: req.user.id, wish_id: req.params.id });
   checkResult(result, res, 'Wish');
 });
 
-router.post('/wishes/clear-all-flags', requireAdmin, (req, res) => {
-  db.prepare('UPDATE wishes SET flagged = 0').run();
+router.post('/wishes/clear-all-flags', await requireAdmin, async (req, res) => {
+  await db.prepare('UPDATE wishes SET flagged = 0').run();
   logger.info('Admin cleared all flags', { admin_user_id: req.user.id });
   res.json({ success: true });
 });
 
-router.get('/users', requireAdmin, (req, res) => {
-  const users = db.prepare('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC').all();
+router.get('/users', await requireAdmin, async (req, res) => {
+  const users = await db.prepare('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC').all();
   res.json(users);
 });
 
-router.post('/users/:id/role', requireAdmin, (req, res) => {
+router.post('/users/:id/role', await requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
   if (!role || !['user', 'admin'].includes(role)) {
     return res.status(400).json({ error: 'Role must be user or admin.' });
   }
 
-  const result = db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
+  const result = await db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
   logger.info('Admin updated user role', { admin_user_id: req.user.id, target_user_id: id, new_role: role });
   checkResult(result, res, 'User');
 });
 
-router.get('/users/:id/delete-preview', requireAdmin, (req, res) => {
+router.get('/users/:id/delete-preview', await requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const wishesCount = db.prepare('SELECT COUNT(*) as count FROM wishes WHERE user_id = ?').get(id).count;
-  const wishmailsCount = db.prepare('SELECT COUNT(*) as count FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').get(id).count;
+  const wishesCount = (await db.prepare('SELECT COUNT(*) as count FROM wishes WHERE user_id = ?').get(id)).count;
+  const wishmailsCount = (await db.prepare('SELECT COUNT(*) as count FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').get(id)).count;
   res.json({ wishesCount, wishmailsCount });
 });
 
-router.post('/users/:id/delete', requireAdmin, (req, res) => {
+router.post('/users/:id/delete', await requireAdmin, async (req, res) => {
   const { id } = req.params;
-  db.prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').run(id);
-  db.prepare('DELETE FROM wishes WHERE user_id = ?').run(id);
-  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
-  const result = db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  await db.prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').run(id);
+  await db.prepare('DELETE FROM wishes WHERE user_id = ?').run(id);
+  await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+  const result = await db.prepare('DELETE FROM users WHERE id = ?').run(id);
   logger.info('Admin deleted user', { admin_user_id: req.user.id, target_user_id: id });
   checkResult(result, res, 'User');
 });
 
 // POST /api/admin/users/:id/reset-password
-router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) => {
+router.post('/users/:id/reset-password', await requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     let passphrase = req.body?.passphrase;
 
-    const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(id);
+    const user = await db.prepare('SELECT id, username FROM users WHERE id = ?').get(id);
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
     }
@@ -100,8 +100,8 @@ router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) =>
     const salt = createSalt();
     const hash = hashPassphrase(passphrase, salt);
 
-    db.prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?').run(hash, salt, id);
-    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+    await db.prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?').run(hash, salt, id);
+    await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
 
     logger.info('Admin reset user passphrase', { admin_user_id: req.user.id, target_user_id: id });
     res.json({ success: true, newPassphrase: passphrase });
@@ -111,14 +111,14 @@ router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) =>
 });
 
 // POST /api/admin/reset-demo
-// Protected by requireAdmin so only the 'admin' account can trigger it
-router.post('/reset-demo', requireAdmin, (req, res) => {
+// Protected by await requireAdmin so only the 'admin' account can trigger it
+router.post('/reset-demo', await requireAdmin, async (req, res) => {
   if (process.env.NODE_ENV === 'production' && req.query.force !== 'true' && req.body?.force !== true) {
     return res.status(403).json({ error: 'Demo reset is disabled in production unless force is explicitly requested.' });
   }
 
   try {
-    const stats = generateDemoData();
+    const stats = await generateDemoData();
     res.status(200).json({ 
       message: 'Demo environment successfully seeded.',
       stats
@@ -130,7 +130,7 @@ router.post('/reset-demo', requireAdmin, (req, res) => {
 });
 
 // GET /api/admin/logs
-router.get('/logs', requireAdmin, (req, res) => {
+router.get('/logs', await requireAdmin, async (req, res) => {
   const logsDir = path.join(__dirname, '../../../data/logs');
   try {
     if (!fs.existsSync(logsDir)) {
@@ -154,11 +154,11 @@ router.get('/logs', requireAdmin, (req, res) => {
   }
 });
 
-router.get('/metrics-ticket', requireAdmin, (req, res) => {
+router.get('/metrics-ticket', await requireAdmin, async (req, res) => {
   res.json({ ticket: generateMetricsTicket() });
 });
 
-router.get('/config', requireAdmin, (req, res) => {
+router.get('/config', await requireAdmin, async (req, res) => {
   res.json({ isProduction: process.env.NODE_ENV === 'production' });
 });
 

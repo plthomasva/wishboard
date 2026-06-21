@@ -38,7 +38,7 @@ import { downloadFile, main, FONTS, targetDir } from './download-fonts.js';
 describe('download-fonts', () => {
   let mockWriteStream;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockWriteStream = new EventEmitter();
     mockWriteStream.close = vi.fn((cb) => cb && cb());

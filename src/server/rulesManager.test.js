@@ -24,17 +24,17 @@ describe('rulesManager', () => {
     rulesManager = await import('./rulesManager.js');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     if (fs.existsSync(rulesPath)) {
       fs.unlinkSync(rulesPath);
     }
   });
 
-  it('starts with empty rules if file not found', () => {
+  it('starts with empty rules if file not found', async () => {
     expect(rulesManager.getRules()).toEqual([]);
   });
 
-  it('loads valid YAML and populates rules', () => {
+  it('loads valid YAML and populates rules', async () => {
     const validYaml = `
 rules:
   - id: "rule-1"
@@ -51,7 +51,7 @@ rules:
     expect(rules[0].id).toBe('rule-1');
   });
 
-  it('falls back to previous state on invalid YAML', () => {
+  it('falls back to previous state on invalid YAML', async () => {
     const validYaml = `
 rules:
   - id: "rule-1"
@@ -84,7 +84,7 @@ rules:
     expect(rulesManager.getRules().length).toBe(1);
   });
 
-  it('adds a new rule and saves', () => {
+  it('adds a new rule and saves', async () => {
     fs.writeFileSync(rulesPath, 'rules: []\n', 'utf8');
     rulesManager.reloadRules();
     rulesManager.addRule({ id: 'rule-new', rule_type: 'expansion' });
@@ -94,7 +94,7 @@ rules:
     expect(content).toContain('rule-new');
   });
 
-  it('updates an existing rule', () => {
+  it('updates an existing rule', async () => {
     const validYaml = `
 rules:
   - id: "rule-2"
@@ -115,11 +115,11 @@ rules:
     expect(content).not.toContain('old');
   });
 
-  it('returns false when updating a non-existent rule', () => {
+  it('returns false when updating a non-existent rule', async () => {
     expect(rulesManager.updateRule('does-not-exist', {})).toBe(false);
   });
 
-  it('deletes an existing rule', () => {
+  it('deletes an existing rule', async () => {
     const validYaml = `
 rules:
   - id: "rule-3"
@@ -135,7 +135,7 @@ rules:
     expect(content).not.toContain('rule-3');
   });
 
-  it('returns false when deleting a non-existent rule', () => {
+  it('returns false when deleting a non-existent rule', async () => {
     expect(rulesManager.deleteRule('does-not-exist')).toBe(false);
   });
 });

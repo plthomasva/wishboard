@@ -12,18 +12,18 @@ const app = appModule.default;
 const defaultAdminUsername = 'admin';
 const defaultAdminSecret = 'admin-board';
 
-const clearTestData = () => {
-  db.exec('DELETE FROM sessions');
-  db.exec('DELETE FROM wishes');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+const clearTestData = async () => {
+  await db.exec('DELETE FROM sessions');
+  await db.exec('DELETE FROM wishes');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
 };
 
-beforeEach(() => {
-  clearTestData();
+beforeEach(async () => {
+  await clearTestData();
 });
 
-afterEach(() => {
-  clearTestData();
+afterEach(async () => {
+  await clearTestData();
 });
 
 describe('Admin routes', () => {
@@ -46,7 +46,7 @@ describe('Admin routes', () => {
   it('lists flagged wishes and allows removal by admin', async () => {
     const wishId = 'flagged-wish-1';
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
@@ -95,8 +95,8 @@ describe('Admin routes', () => {
     const wishId1 = 'flagged-wish-1';
     const wishId2 = 'flagged-wish-2';
     const now = new Date().toISOString();
-    const insertWish = (id) => {
-      db.prepare(
+    const insertWish = async (id) => {
+      await db.prepare(
         `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
@@ -107,8 +107,8 @@ describe('Admin routes', () => {
       );
     };
 
-    insertWish(wishId1);
-    insertWish(wishId2);
+    await insertWish(wishId1);
+    await insertWish(wishId2);
 
     const token = await loginAsAdmin();
 
@@ -128,7 +128,7 @@ describe('Admin routes', () => {
     expect(flagsResponse.body[0].id).toBe(wishId2);
 
     // 2. Set wishId1 flagged status back to 1 to test bulk clear
-    db.prepare('UPDATE wishes SET flagged = 1 WHERE id = ?').run(wishId1);
+    await db.prepare('UPDATE wishes SET flagged = 1 WHERE id = ?').run(wishId1);
 
     // Clear all flags in bulk
     const clearAllResponse = await request(app)
@@ -193,7 +193,7 @@ describe('Admin routes', () => {
   }, 15000);
 
   it('resets the demo environment and returns the correct stats', async () => {
-    db.prepare('INSERT INTO wishes (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)')
+    await db.prepare('INSERT INTO wishes (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)')
       .run('preseed-wish', 'Leave me behind', new Date().toISOString(), new Date().toISOString());
 
     const token = await loginAsAdmin();
@@ -205,9 +205,9 @@ describe('Admin routes', () => {
     expect(resetResponse.status).toBe(200);
     expect(resetResponse.body).toEqual({ message: 'Demo environment successfully seeded.', stats: { usersCreated: 50, wishesCreated: 100 } });
 
-    const usersCount = db.prepare("SELECT COUNT(*) AS count FROM users WHERE role != 'admin'").get().count;
-    const adminCount = db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").get().count;
-    const wishesCount = db.prepare('SELECT COUNT(*) AS count FROM wishes').get().count;
+    const usersCount = (await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role != 'admin'").get()).count;
+    const adminCount = (await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").get()).count;
+    const wishesCount = (await db.prepare('SELECT COUNT(*) AS count FROM wishes').get()).count;
 
     expect(usersCount).toBe(50);
     expect(adminCount).toBe(1);
@@ -244,7 +244,7 @@ describe('Admin routes', () => {
 
   it('handles errors during demo reset', async () => {
     const token = await loginAsAdmin();
-    const originalPrepare = db.prepare.bind(db);
+    const originalPrepare = await db.prepare.bind(db);
     const spy = vi.spyOn(db, 'prepare').mockImplementation((sql) => {
       if (typeof sql === 'string' && sql.includes('DELETE FROM wishes')) {
         throw new Error('Mock error');
@@ -279,7 +279,7 @@ describe('Admin routes', () => {
       .set('Accept', 'application/json');
     expect(loginResponse.status).toBe(200);
 
-    const activeSessionsBefore = db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId).count;
+    const activeSessionsBefore = (await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId)).count;
     expect(activeSessionsBefore).toBe(2);
 
     // 4. Reset password as admin
@@ -293,7 +293,7 @@ describe('Admin routes', () => {
     expect(resetResponse.body.newPassphrase.length).toBeGreaterThan(0);
 
     // 5. Verify sessions were deleted
-    const activeSessionsAfter = db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId).count;
+    const activeSessionsAfter = (await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId)).count;
     expect(activeSessionsAfter).toBe(0);
 
     // 6. Verify old password doesn't work

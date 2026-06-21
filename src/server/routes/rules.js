@@ -8,13 +8,13 @@ const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
 // All routes require admin
-router.use(requireAdmin);
+router.use(await requireAdmin);
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   res.json(getRules());
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { rule_type, trigger_attribute, trigger_value, context_attribute, context_value, target_attribute, target_value } = req.body;
   if (!rule_type || !trigger_attribute || !trigger_value || !target_attribute || !target_value) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -38,7 +38,7 @@ router.post('/', (req, res) => {
   res.json({ success: true, id });
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const { rule_type, trigger_attribute, trigger_value, context_attribute, context_value, target_attribute, target_value } = req.body;
   if (!rule_type || !trigger_attribute || !trigger_value || !target_attribute || !target_value) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -62,7 +62,7 @@ router.put('/:id', (req, res) => {
   res.json({ success: true });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const success = deleteRule(req.params.id);
   if (!success) {
     return res.status(404).json({ error: 'Rule not found' });

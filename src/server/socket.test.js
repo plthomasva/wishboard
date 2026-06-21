@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('socket.js', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules();
   });
 

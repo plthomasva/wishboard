@@ -7,10 +7,10 @@ const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
 const app = appModule.default;
 
-afterEach(() => {
-  db.exec('DELETE FROM wishes');
-  db.exec('DELETE FROM sessions');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+afterEach(async () => {
+  await db.exec('DELETE FROM wishes');
+  await db.exec('DELETE FROM sessions');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
 });
 
 describe('Wish deactivation', () => {

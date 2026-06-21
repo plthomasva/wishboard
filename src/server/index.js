@@ -58,12 +58,12 @@ app.use(morgan('combined', {
 // Setup status monitor, restricted to admin only (we mount it later, but init here)
 const monitor = statusMonitor({ path: '' });
 app.use(monitor);
-app.get('/api/admin/metrics', (req, res, next) => {
+app.get('/api/admin/metrics', async (req, res, next) => {
   if (req.query.ticket && consumeMetricsTicket(req.query.ticket)) {
     req.user = { role: 'admin' };
     return next();
   }
-  requireAdmin(req, res, next);
+  await requireAdmin(req, res, next);
 }, monitor.pageRoute);
 
 const limiter = rateLimit({

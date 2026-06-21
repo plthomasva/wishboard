@@ -10,10 +10,10 @@ import { addRule, reloadRules } from '../rulesManager.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const clearTestData = () => {
-  db.exec('DELETE FROM sessions');
-  db.exec('DELETE FROM wishes');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+const clearTestData = async () => {
+  await db.exec('DELETE FROM sessions');
+  await db.exec('DELETE FROM wishes');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
   const rulesPath = path.resolve(process.cwd(), 'data/rules.test.yaml');
   const srcRules = path.resolve(process.cwd(), 'data/rules.yaml');
   if (fs.existsSync(srcRules)) {
@@ -22,12 +22,12 @@ const clearTestData = () => {
   reloadRules();
 };
 
-beforeEach(() => {
-  clearTestData();
+beforeEach(async () => {
+  await clearTestData();
 });
 
-afterEach(() => {
-  clearTestData();
+afterEach(async () => {
+  await clearTestData();
 });
 
 describe('Authenticated wish creation', () => {
@@ -62,7 +62,7 @@ describe('Authenticated wish creation', () => {
     expect(wishResponse.status).toBe(201);
     expect(wishResponse.body.id).toBeTypeOf('string');
 
-    const row = db
+    const row = await db
       .prepare('SELECT creator_genders, creator_orientations, creator_roles FROM wishes WHERE id = ?')
       .get(wishResponse.body.id);
 
@@ -83,7 +83,7 @@ describe('Authenticated wish creation', () => {
 
     expect(wishResponse.status).toBe(201);
 
-    const row = db.prepare('SELECT contacts, wishmail_enabled FROM wishes WHERE id = ?').get(wishResponse.body.id);
+    const row = await db.prepare('SELECT contacts, wishmail_enabled FROM wishes WHERE id = ?').get(wishResponse.body.id);
     expect(JSON.parse(row.contacts)).toEqual([{ type: 'Email', value: 'test@example.com' }]);
     expect(row.wishmail_enabled).toBe(1);
   });
@@ -116,7 +116,7 @@ describe('Matchmaking logic', () => {
     
     // Straight man should see "Straight Woman wish" but NOT "Lesbian wish".
     const contents1 = resSearch1.body.map(w => w.content);
-    expect(contents1).toContain('Straight Woman wish');
+    console.log(resSearch1.body); expect(contents1).toContain('Straight Woman wish');
     expect(contents1).not.toContain('Lesbian wish');
 
     // 4. Search as a Lesbian Woman

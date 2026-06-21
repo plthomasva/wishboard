@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { createClient } from '@libsql/client';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,15 +9,21 @@ const __dirname = path.dirname(__filename);
 const dataDir = path.resolve(__dirname, '../../data');
 fs.mkdirSync(dataDir, { recursive: true });
 
+let url = process.env.DATABASE_URL;
+
 // Prevent tests from corrupting the local development database
-if (process.env.NODE_ENV === 'test' && !process.env.WISHBOARD_DB_PATH) {
+if (process.env.NODE_ENV === 'test' && !process.env.WISHBOARD_DB_PATH && !url) {
   process.env.WISHBOARD_DB_PATH = ':memory:';
 }
 
-const dbPath = process.env.WISHBOARD_DB_PATH || path.join(dataDir, 'wishboard.db');
-const db = new Database(dbPath);
+if (!url) {
+  const dbPath = process.env.WISHBOARD_DB_PATH || path.join(dataDir, 'wishboard.db');
+  url = dbPath === ':memory:' ? 'file::memory:' : `file:${dbPath}`;
+}
 
-db.exec(`
+const db = createClient({ url });
+
+await db.executeMultiple(`
   PRAGMA foreign_keys = ON;
 
   CREATE TABLE IF NOT EXISTS users (
@@ -69,38 +75,41 @@ db.exec(`
     FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY(parent_mail_id) REFERENCES wishmails(id) ON DELETE SET NULL
   );
-
 `);
 
-const ensureColumn = (table, column, type) => {
-  const row = db.prepare(`PRAGMA table_info(${table})`).all().find((info) => info.name === column);
+const ensureColumn = async (table, column, type) => {
+  const rs = await db.execute(`PRAGMA table_info(${table})`);
+  const row = rs.rows.find((info) => info.name === column);
   if (!row) {
-    db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`).run();
+    await db.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
   }
 };
 
-ensureColumn('users', 'identity_genders', 'TEXT');
-ensureColumn('users', 'identity_orientations', 'TEXT');
-ensureColumn('users', 'identity_roles', 'TEXT');
-ensureColumn('users', 'contacts', 'TEXT');
-ensureColumn('users', 'wishmail_enabled', 'INTEGER DEFAULT 0');
-ensureColumn('users', 'is_active', 'INTEGER DEFAULT 1');
-ensureColumn('wishes', 'creator_genders', 'TEXT');
-ensureColumn('wishes', 'creator_orientations', 'TEXT');
-ensureColumn('wishes', 'creator_roles', 'TEXT');
-ensureColumn('wishes', 'desired_genders', 'TEXT');
-ensureColumn('wishes', 'desired_orientations', 'TEXT');
-ensureColumn('wishes', 'desired_roles', 'TEXT');
-ensureColumn('wishes', 'contacts', 'TEXT');
-ensureColumn('wishes', 'wishmail_enabled', 'INTEGER DEFAULT 0');
-ensureColumn('wishes', 'is_active', 'INTEGER DEFAULT 1');
+await ensureColumn('users', 'identity_genders', 'TEXT');
+await ensureColumn('users', 'identity_orientations', 'TEXT');
+await ensureColumn('users', 'identity_roles', 'TEXT');
+await ensureColumn('users', 'contacts', 'TEXT');
+await ensureColumn('users', 'wishmail_enabled', 'INTEGER DEFAULT 0');
+await ensureColumn('users', 'is_active', 'INTEGER DEFAULT 1');
+await ensureColumn('wishes', 'creator_genders', 'TEXT');
+await ensureColumn('wishes', 'creator_orientations', 'TEXT');
+await ensureColumn('wishes', 'creator_roles', 'TEXT');
+await ensureColumn('wishes', 'desired_genders', 'TEXT');
+await ensureColumn('wishes', 'desired_orientations', 'TEXT');
+await ensureColumn('wishes', 'desired_roles', 'TEXT');
+await ensureColumn('wishes', 'contacts', 'TEXT');
+await ensureColumn('wishes', 'wishmail_enabled', 'INTEGER DEFAULT 0');
+await ensureColumn('wishes', 'is_active', 'INTEGER DEFAULT 1');
 
 const defaultAdminUsername = process.env.WISHBOARD_ADMIN_USERNAME || 'admin';
 const defaultAdminSecret = process.env.WISHBOARD_ADMIN_SECRET || 'admin-board';
 
-const ensureDefaultAdmin = () => {
-  const existing = db.prepare('SELECT id FROM users WHERE role = ? LIMIT 1').get('admin');
-  if (existing) {
+const ensureDefaultAdmin = async () => {
+  const rs = await db.execute({
+    sql: 'SELECT id FROM users WHERE role = ? LIMIT 1',
+    args: ['admin']
+  });
+  if (rs.rows.length > 0) {
     return;
   }
 
@@ -113,16 +122,43 @@ const ensureDefaultAdmin = () => {
   const adminId = `admin-${crypto.randomBytes(4).toString('hex')}`;
   const now = new Date().toISOString();
 
-  db.prepare(
-    'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(adminId, defaultAdminUsername, hash, salt, 'admin', now);
+  await db.execute({
+    sql: 'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    args: [adminId, defaultAdminUsername, hash, salt, 'admin', now]
+  });
 
   console.log(`Created default admin account: ${defaultAdminUsername}`);
   console.log('Set WISHBOARD_ADMIN_SECRET to change the default password.');
 };
 
-ensureDefaultAdmin();
+await ensureDefaultAdmin();
 
+const mapArg = (a) => {
+  if (a === undefined) return null;
+  if (typeof a === 'boolean') return a ? 1 : 0;
+  return a;
+};
 
+const dbWrapper = {
+  prepare: (sql) => ({
+    get: async (...args) => {
+      const rs = await db.execute({ sql, args: args.map(mapArg) });
+      return rs.rows[0];
+    },
+    all: async (...args) => {
+      const rs = await db.execute({ sql, args: args.map(mapArg) });
+      return rs.rows;
+    },
+    run: async (...args) => {
+      const rs = await db.execute({ sql, args: args.map(mapArg) });
+      return { changes: rs.rowsAffected, lastInsertRowid: rs.lastInsertRowid };
+    }
+  }),
+  exec: async (sql) => {
+    return await db.executeMultiple(sql);
+  },
+  execute: db.execute.bind(db),
+  executeMultiple: db.executeMultiple.bind(db)
+};
 
-export default db;
+export default dbWrapper;

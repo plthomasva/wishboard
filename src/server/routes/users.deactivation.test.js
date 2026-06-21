@@ -8,11 +8,11 @@ const db = (await import('../db.js')).default;
 const { createSessionToken } = await import('../auth.js');
 const app = appModule.default;
 
-afterEach(() => {
-  db.exec('DELETE FROM wishmails');
-  db.exec('DELETE FROM wishes');
-  db.exec('DELETE FROM sessions');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+afterEach(async () => {
+  await db.exec('DELETE FROM wishmails');
+  await db.exec('DELETE FROM wishes');
+  await db.exec('DELETE FROM sessions');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
 });
 
 describe('User deactivation and cascade delete', () => {
@@ -33,7 +33,7 @@ describe('User deactivation and cascade delete', () => {
     const wishId = wishRes.body.id;
 
     // 3. Create a wishmail for that wish
-    db.prepare('INSERT INTO wishmails (id, wish_id, content, created_at) VALUES (?, ?, ?, ?)')
+    await db.prepare('INSERT INTO wishmails (id, wish_id, content, created_at) VALUES (?, ?, ?, ?)')
       .run('mail1', wishId, 'A reply', new Date().toISOString());
 
     // 4. Preview delete
@@ -51,11 +51,11 @@ describe('User deactivation and cascade delete', () => {
     expect(del.status).toBe(200);
 
     // 6. Verify cascade
-    const wishCount = db.prepare('SELECT COUNT(*) as c FROM wishes WHERE id = ?').get(wishId).c;
+    const wishCount = (await db.prepare('SELECT COUNT(*) as c FROM wishes WHERE id = ?').get(wishId)).c;
     expect(wishCount).toBe(0);
-    const mailCount = db.prepare('SELECT COUNT(*) as c FROM wishmails WHERE id = ?').get('mail1').c;
+    const mailCount = (await db.prepare('SELECT COUNT(*) as c FROM wishmails WHERE id = ?').get('mail1')).c;
     expect(mailCount).toBe(0);
-    const userCount = db.prepare('SELECT COUNT(*) as c FROM users WHERE username = ?').get('delete_me_user').c;
+    const userCount = (await db.prepare('SELECT COUNT(*) as c FROM users WHERE username = ?').get('delete_me_user')).c;
     expect(userCount).toBe(0);
   });
 
@@ -96,10 +96,10 @@ describe('User deactivation and cascade delete', () => {
 
   it('prevents the last admin from deleting themselves', async () => {
     // There should be exactly one admin created by default in memory DB
-    const admin = db.prepare("SELECT id FROM users WHERE role = 'admin'").get();
+    const admin = await db.prepare("SELECT id FROM users WHERE role = 'admin'").get();
     expect(admin).toBeDefined();
 
-    const token = createSessionToken(admin.id);
+    const token = await createSessionToken(admin.id);
 
     const del = await request(app)
       .post('/api/users/me/delete')
