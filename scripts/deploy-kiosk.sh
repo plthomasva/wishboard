@@ -26,9 +26,13 @@ echo -e "\033[1;36mStarting Wishboard Kiosk Docker Deployment to ${ADMIN_USERNAM
 # Ensure we are in the project root
 cd "$(dirname "$0")/.."
 
-echo -e "\033[1;33m1. Uploading setup script and deployment script...\033[0m"
+echo -e "\033[1;33m1. Uploading setup script, build script, and docker-compose.yml...\033[0m"
 scp scripts/setup-kiosk.sh "${ADMIN_USERNAME}@${HOST_NAME}:/tmp/setup-kiosk.sh"
 scp scripts/build-kiosk.sh "${ADMIN_USERNAME}@${HOST_NAME}:/tmp/build-kiosk.sh"
+
+# Ensure the target directory exists on the Pi for docker-compose.yml
+ssh "${ADMIN_USERNAME}@${HOST_NAME}" "mkdir -p /home/wishboard/wishboard"
+scp docker-compose.yml "${ADMIN_USERNAME}@${HOST_NAME}:/home/wishboard/wishboard/docker-compose.yml"
 
 echo -e "\033[1;33m2. Executing setup script (creating user, configuring Docker and kiosk)...\033[0m"
 # Ensure line endings don't break bash execution by stripping \r using sed

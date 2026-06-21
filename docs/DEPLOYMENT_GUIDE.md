@@ -93,7 +93,7 @@ If you need to inject special environment variables (like changing the default a
    ```
 4. Restart the Docker container so it picks up the new environment variables:
    ```bash
-   sudo -u wishboard DOCKER_HOST=unix:///run/user/$(id -u wishboard)/docker.sock docker restart wishboard
+   sudo -u wishboard DOCKER_HOST=unix:///run/user/$(id -u wishboard)/docker.sock bash -c 'cd /home/wishboard/wishboard && docker compose restart'
    ```
 
 ---

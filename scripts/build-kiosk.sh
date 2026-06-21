@@ -36,24 +36,20 @@ sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http:
 
 if [[ "$DEPLOY_RULES" = "reset" ]]; then
     echo "Resetting container volume..."
-    $RUN_CMD volume rm wishboard_data || true
+    $RUN_CMD volume rm wishboard_data db_data || true
 fi
 
-echo "Stopping and removing existing container if present..."
-$RUN_CMD stop wishboard || true
-$RUN_CMD rm wishboard || true
+# Navigate to the application directory where docker-compose.yml is uploaded
+cd /home/wishboard/wishboard
 
-echo "Pulling image from GitHub Container Registry (ghcr.io/plthomasva/wishboard:$APP_VERSION)..."
-$RUN_CMD pull ghcr.io/plthomasva/wishboard:$APP_VERSION
+echo "Stopping existing services..."
+$RUN_CMD compose down || true
 
-echo "Starting container..."
-$RUN_CMD run -d \
-    --name wishboard \
-    --restart unless-stopped \
-    --network host \
-    --env-file /home/wishboard/wishboard/.env \
-    -v wishboard_data:/app/data \
-    ghcr.io/plthomasva/wishboard:$APP_VERSION
+echo "Starting services via Docker Compose..."
+# We assume the user has copied docker-compose.yml to the target directory.
+# If they are running this script in the repository root, it will find docker-compose.yml.
+export APP_VERSION=$APP_VERSION
+$RUN_CMD compose up -d
 
 echo "Restarting Display Manager..."
 sudo systemctl restart lightdm || true

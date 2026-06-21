@@ -41,9 +41,13 @@ elseif (Test-Path "package.json") {
 Write-Host "Target Version: $AppVersion" -ForegroundColor Cyan
 
 try {
-    Write-Host "1. Uploading setup script and deployment script..." -ForegroundColor Yellow
+    Write-Host "1. Uploading setup script, build script, and docker-compose.yml..." -ForegroundColor Yellow
     scp "scripts\setup-kiosk.sh" "${AdminUsername}@${HostName}:/tmp/setup-kiosk.sh"
     scp "scripts\build-kiosk.sh" "${AdminUsername}@${HostName}:/tmp/build-kiosk.sh"
+    
+    # Ensure the target directory exists on the Pi for docker-compose.yml
+    ssh "${AdminUsername}@${HostName}" "mkdir -p /home/wishboard/wishboard"
+    scp "docker-compose.yml" "${AdminUsername}@${HostName}:/home/wishboard/wishboard/docker-compose.yml"
 
     Write-Host "2. Executing setup script (configuring kiosk and Docker)..." -ForegroundColor Yellow
     # Ensure DOS line endings don't break bash execution by stripping \r using sed
