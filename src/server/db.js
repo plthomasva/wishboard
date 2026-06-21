@@ -133,6 +133,40 @@ const ensureDefaultAdmin = async () => {
 
 await ensureDefaultAdmin();
 
+const localDbPath = path.join(dataDir, 'wishboard.db');
+const migrationFlag = path.join(dataDir, '.migrated_to_libsql');
+
+// If using a remote libSQL server and an old local SQLite database exists, migrate it
+if (url.startsWith('http') && fs.existsSync(localDbPath) && !fs.existsSync(migrationFlag)) {
+  console.log('Found legacy SQLite database. Migrating data to libSQL server...');
+  const localDb = createClient({ url: `file:${localDbPath}` });
+  
+  const tablesToMigrate = ['users', 'sessions', 'wishes', 'wishmails'];
+  for (const table of tablesToMigrate) {
+    try {
+      const rs = await localDb.execute(`SELECT * FROM ${table}`);
+      if (rs.rows.length > 0) {
+        console.log(`Migrating ${rs.rows.length} rows for table ${table}...`);
+        for (const row of rs.rows) {
+          const columns = Object.keys(row).join(', ');
+          const placeholders = Object.keys(row).map(() => '?').join(', ');
+          const values = Object.values(row);
+          
+          await db.execute({
+            sql: `INSERT OR IGNORE INTO ${table} (${columns}) VALUES (${placeholders})`,
+            args: values
+          });
+        }
+      }
+    } catch (err) {
+      console.warn(`Could not migrate table ${table} (might not exist in old db):`, err.message);
+    }
+  }
+  
+  fs.writeFileSync(migrationFlag, new Date().toISOString());
+  console.log('Migration complete!');
+}
+
 const mapArg = (a) => {
   if (a === undefined) return null;
   if (typeof a === 'boolean') return a ? 1 : 0;
