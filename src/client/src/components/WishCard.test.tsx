@@ -100,6 +100,22 @@ describe('WishCard', () => {
     expect(onOverflowChange).toHaveBeenCalledWith(true);
   });
 
+  it('renders image when image_url or image_id is provided', () => {
+    const wish = {
+      id: 'w8',
+      content: 'This text should be hidden',
+      image_id: 'test-image.png'
+    };
+    render(<WishCard wish={wish} />);
+    
+    const img = screen.getByRole('img', { name: 'This text should be hidden' });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', '/images/test-image.png');
+    
+    const textNode = screen.getByText('This text should be hidden');
+    expect(textNode).toHaveClass('sr-only');
+  });
+
   it('renders Admin Delete button when onAdminDelete is provided', () => {
     const wish = { id: 'w8', content: 'Admin delete me' };
     const onAdminDelete = vi.fn();

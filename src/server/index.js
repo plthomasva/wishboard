@@ -98,6 +98,9 @@ app.use('/api/admin', adminRouter);
 app.use('/api/rules', rulesRouter);
 
 const distPath = path.resolve(__dirname, '../../dist');
+const imagesPath = path.resolve(__dirname, '../../data/images');
+
+app.use('/images', express.static(imagesPath));
 app.use(express.static(distPath));
 
 app.get('*path', frontendLimiter, (req, res) => {

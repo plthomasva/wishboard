@@ -5,6 +5,7 @@ import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
 import WishPreview from '../components/WishPreview';
 import WishFormFields from '../components/WishFormFields';
+import WishScanner from '../components/WishScanner';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
 export default function EnterWishPage() {
@@ -22,6 +23,8 @@ export default function EnterWishPage() {
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [imageBlob, setImageBlob] = useState<Blob | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -43,10 +46,24 @@ export default function EnterWishPage() {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch('/api/wishes', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
+    let body: BodyInit;
+    if (imageBlob) {
+      delete headers['Content-Type'];
+      const formData = new FormData();
+      formData.append('content', content);
+      if (passphrase) formData.append('passphrase', passphrase);
+      formData.append('creator_genders', creatorGenders);
+      formData.append('creator_orientations', creatorOrientations);
+      formData.append('creator_roles', creatorRoles);
+      formData.append('desired_genders', desiredGenders);
+      formData.append('desired_orientations', desiredOrientations);
+      formData.append('desired_roles', desiredRoles);
+      formData.append('contacts', JSON.stringify(contacts));
+      formData.append('wishmail_enabled', wishmailEnabled ? 'true' : '');
+      formData.append('image', imageBlob, 'wish.jpg');
+      body = formData;
+    } else {
+      body = JSON.stringify({
         content,
         passphrase: passphrase || undefined,
         creator_genders: creatorGenders,
@@ -57,7 +74,13 @@ export default function EnterWishPage() {
         desired_roles: desiredRoles,
         contacts,
         wishmail_enabled: wishmailEnabled
-      })
+      });
+    }
+
+    const response = await fetch('/api/wishes', {
+      method: 'POST',
+      headers,
+      body
     });
 
     const data = await response.json();
@@ -78,6 +101,7 @@ export default function EnterWishPage() {
     setContacts([]);
     setWishmailEnabled(false);
     setIsOverflowing(false);
+    setImageBlob(null);
   };
 
   const parsedCreatorGenders = creatorGenders ? creatorGenders.split(',').map(s => s.trim()) : undefined;
@@ -89,7 +113,8 @@ export default function EnterWishPage() {
     creator_genders: user ? user.identity_genders : parsedCreatorGenders,
     creator_orientations: user ? user.identity_orientations : parsedCreatorOrientations,
     contacts: contacts.filter(c => c.value.trim()),
-    wishmail_enabled: wishmailEnabled
+    wishmail_enabled: wishmailEnabled,
+    image_url: imageBlob ? URL.createObjectURL(imageBlob) : undefined
   };
 
   return (
@@ -107,6 +132,20 @@ export default function EnterWishPage() {
             setWishmailEnabled={setWishmailEnabled}
             isOverflowing={isOverflowing}
           />
+
+          <div style={{ margin: '16px 0', padding: '16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+            {imageBlob ? (
+              <div>
+                <p style={{ color: '#166534', fontWeight: 'bold' }}>✓ Handwritten wish attached</p>
+                <button type="button" className="secondary-button" onClick={() => setImageBlob(null)}>Remove Image</button>
+              </div>
+            ) : (
+              <div>
+                <p style={{ margin: '0 0 12px 0' }}>Have a physical 3x5 wish card?</p>
+                <button type="button" onClick={() => setShowScanner(true)}>Capture Handwritten Wish</button>
+              </div>
+            )}
+          </div>
 
           {token ? (
             <div className="note-box">
@@ -264,6 +303,19 @@ export default function EnterWishPage() {
         </div>
       )}
       {error && <div className="message error">{error}</div>}
+
+      {showScanner && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <WishScanner 
+            onCapture={(ocrContent, blob) => {
+              if (ocrContent) setContent(ocrContent);
+              setImageBlob(blob);
+              setShowScanner(false);
+            }} 
+            onCancel={() => setShowScanner(false)} 
+          />
+        </div>
+      )}
     </section>
   );
 }

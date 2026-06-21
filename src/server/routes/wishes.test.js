@@ -87,6 +87,27 @@ describe('Authenticated wish creation', () => {
     expect(JSON.parse(row.contacts)).toEqual([{ type: 'Email', value: 'test@example.com' }]);
     expect(row.wishmail_enabled).toBe(1);
   });
+
+  it('accepts multipart form data with image and returns image_id', async () => {
+    // Create a 1x1 transparent PNG buffer
+    const dummyImage = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+    
+    const wishResponse = await request(app)
+      .post('/api/wishes')
+      .attach('image', dummyImage, 'test.png')
+      .field('content', 'This is my handwritten wish')
+      .field('wishmail_enabled', 'true')
+      .set('Accept', 'application/json');
+
+    expect(wishResponse.status).toBe(201);
+    expect(wishResponse.body.id).toBeTypeOf('string');
+
+    const row = db.prepare('SELECT content, wishmail_enabled, image_id FROM wishes WHERE id = ?').get(wishResponse.body.id);
+    expect(row.content).toBe('This is my handwritten wish');
+    expect(row.wishmail_enabled).toBe(1);
+    expect(row.image_id).toBeTypeOf('string');
+    expect(row.image_id).toMatch(/image-.*\.png/);
+  });
 });
 
 describe('Matchmaking logic', () => {

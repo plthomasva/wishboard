@@ -15,6 +15,8 @@ interface Wish {
   creator_orientations?: string[];
   contacts?: Contact[];
   wishmail_enabled?: boolean;
+  image_url?: string;
+  image_id?: string;
 }
 
 interface WishCardProps {
@@ -48,8 +50,10 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
       key={wish.id}
       ref={containerRef}
     >
-      <div className="wish-card-inner-scale" ref={contentRef}>
-        <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
+      <div className={`wish-card-inner-scale ${wish.image_url || wish.image_id ? 'has-image' : ''}`} ref={contentRef} style={wish.image_url || wish.image_id ? { position: 'relative', height: '100%', padding: 0 } : {}}>
+        {!wish.image_url && !wish.image_id && (
+          <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
+        )}
         
         {showFlag && onFlag && (
           <FlagButton onFlag={() => onFlag(wish.id)} />
@@ -67,10 +71,25 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
           </button>
         )}
         
-        <p className="wish-text">{wish.content}</p>
+        {wish.image_url || wish.image_id ? (
+          <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+            <img 
+              src={wish.image_url || `/images/${wish.image_id}`} 
+              alt={wish.content || "Handwritten wish"} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px', display: 'block' }}
+            />
+            <div style={{ position: 'absolute', bottom: '16px', right: '16px', zIndex: 5, fontSize: '10px' }}>
+              <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
+            </div>
+            {/* Hidden text for accessibility/search */}
+            <p className="sr-only" style={{ display: 'none' }}>{wish.content}</p>
+          </div>
+        ) : (
+          <p className="wish-text">{wish.content}</p>
+        )}
 
         {wish.contacts && wish.contacts.length > 0 && (
-          <div className="wish-contacts-list">
+          <div className="wish-contacts-list" style={wish.image_url || wish.image_id ? { position: 'absolute', bottom: '48px', right: '16px', zIndex: 5, background: 'rgba(255,255,255,0.9)', padding: '4px', borderRadius: '4px' } : {}}>
             {wish.contacts.map((c, i) => (
               <span key={`${c.type}-${i}`} className="wish-contact-item">
                 <strong>{c.type}:</strong> {c.value}
@@ -80,7 +99,7 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
         )}
 
         {wish.wishmail_enabled && (
-          <div style={{ clear: 'both', textAlign: 'right', marginTop: '12px' }}>
+          <div style={{ clear: 'both', textAlign: 'right', marginTop: '12px', position: wish.image_url || wish.image_id ? 'absolute' : 'static', bottom: wish.image_url || wish.image_id ? '16px' : 'auto', left: wish.image_url || wish.image_id ? '16px' : 'auto', zIndex: 5 }}>
             <button 
               type="button"
               className="send-mail-icon-btn" 
@@ -90,6 +109,7 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
               }}
               title="Send Wishmail"
               aria-label="Send Wishmail"
+              style={wish.image_url || wish.image_id ? { background: 'rgba(255,255,255,0.9)', borderRadius: '50%', padding: '8px' } : {}}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="20" height="16" x="2" y="4" rx="2"/>
