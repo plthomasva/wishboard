@@ -35,7 +35,7 @@ sudo chown -R wishboard:wishboard $WISHBOARD_HOME
 
 echo "Installing graphical kiosk and network dependencies..."
 sudo apt-get update
-sudo apt-get install -y imagemagick swaybg chromium network-manager iw nginx
+sudo apt-get install -y swaybg chromium network-manager iw nginx
 
 echo "Checking for Docker CE Rootless dependencies..."
 # We unconditionally ensure Docker CE, rootless-extras, uidmap and systemd-container are installed.
@@ -206,9 +206,6 @@ else
     echo "Local DNS redirection enabled."
 fi
 
-echo "Generating fallback background image..."
-sudo -u wishboard convert -size 1920x1080 xc:black -font DejaVu-Sans -pointsize 48 -fill white -gravity center -draw "text 0,0 'Please contact the Wishboard Administrator'" $WISHBOARD_HOME/background.png || echo "Fallback background creation skipped (imagemagick failed or font missing)."
-
 # 3. (Systemd Node Service Removed in favor of Docker --restart always)
 
 # 4. Configure LightDM auto-login
@@ -252,7 +249,7 @@ echo "Configuring labwc Wayland autostart..."
 sudo -u wishboard mkdir -p $WISHBOARD_HOME/.config/labwc
 sudo -u wishboard tee $WISHBOARD_HOME/.config/labwc/autostart > /dev/null << 'EOF'
 #!/bin/bash
-swaybg -i $WISHBOARD_HOME/background.png -m fill &
+swaybg -c "#000000" &
 while ! curl -s http://localhost:3000 > /dev/null; do
   sleep 1
 done
