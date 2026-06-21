@@ -1,7 +1,6 @@
 import base from './vite.config.ts';
 
-// Explicitly override the include array to only run the passphrase test
-// (mergeConfig merges arrays, which would run the entire test suite)
-base.test.include = ['src/client/src/passphrase.test.ts'];
+// Skip index.test.js during Stryker runs to avoid sandbox file path collisions
+base.test.exclude = [...(base.test.exclude || ['**/node_modules/**', '**/dist/**', '**/cypress/**', '**/.{idea,git,cache,output,temp}/**', '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*']), 'src/server/index.test.js'];
 
 export default base;

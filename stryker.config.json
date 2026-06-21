@@ -10,7 +10,7 @@
     "html"
   ],
   "coverageAnalysis": "perTest",
-  "mutate": [
-    "src/client/src/passphrase.js"
+  "ignorePatterns": [
+    "!dist/**/*"
   ]
 }

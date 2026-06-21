@@ -15,4 +15,5 @@ coverage
 *.sqlite-wal
 dummy-path.log*
 *.tar.gz
-.stryker-tmp
+.stryker-tmp/
+reports/
