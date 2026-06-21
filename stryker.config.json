@@ -9,7 +9,7 @@
     "clear-text",
     "html"
   ],
-  "coverageAnalysis": "perTest",
+  "coverageAnalysis": "off",
   "ignorePatterns": [
     "!dist/**/*"
   ]
