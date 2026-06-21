@@ -21,18 +21,21 @@ if [[ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]]; then
 fi
 echo "Disk space OK (${AVAILABLE_MB} MB available)."
 
+# Determine the home directory dynamically
+WISHBOARD_HOME=$(getent passwd wishboard | cut -d: -f6 || echo "/home/wishboard")
+
 # Ensure directory exists for env file
-sudo -u wishboard mkdir -p /home/wishboard/wishboard
+sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard
 
 echo "Configuring environment variables..."
 if [[ "$MODE" = "prod" ]]; then
-    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_DOMAIN=$DOMAIN_NAME' > /home/wishboard/wishboard/.env"
-    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_AP_IP=10.42.0.1' >> /home/wishboard/wishboard/.env"
+    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_DOMAIN=$DOMAIN_NAME' > $WISHBOARD_HOME/wishboard/.env"
+    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_AP_IP=10.42.0.1' >> $WISHBOARD_HOME/wishboard/.env"
 else
-    sudo rm -f /home/wishboard/wishboard/.env
-    sudo -u wishboard bash -c "echo 'NODE_ENV=development' > /home/wishboard/wishboard/.env"
+    sudo rm -f $WISHBOARD_HOME/wishboard/.env
+    sudo -u wishboard bash -c "echo 'NODE_ENV=development' > $WISHBOARD_HOME/wishboard/.env"
 fi
-sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> /home/wishboard/wishboard/.env"
+sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> $WISHBOARD_HOME/wishboard/.env"
 
 if [[ "$DEPLOY_RULES" = "reset" ]]; then
     echo "Resetting container volume..."
@@ -40,7 +43,7 @@ if [[ "$DEPLOY_RULES" = "reset" ]]; then
 fi
 
 # Navigate to the application directory where docker-compose.yml is uploaded
-cd /home/wishboard/wishboard
+cd $WISHBOARD_HOME/wishboard
 
 echo "Stopping existing services..."
 $RUN_CMD compose down || true
