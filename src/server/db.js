@@ -104,8 +104,12 @@ const ensureDefaultAdmin = () => {
     return;
   }
 
+  const scryptOptions = process.env.NODE_ENV === 'test' 
+    ? { N: 16, r: 1, p: 1 } 
+    : undefined;
+
   const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.scryptSync(defaultAdminSecret, salt, 64).toString('hex');
+  const hash = crypto.scryptSync(defaultAdminSecret, salt, 64, scryptOptions).toString('hex');
   const adminId = `admin-${crypto.randomBytes(4).toString('hex')}`;
   const now = new Date().toISOString();
 

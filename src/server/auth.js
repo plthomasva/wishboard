@@ -29,8 +29,12 @@ export const consumeMetricsTicket = (ticket) => {
 
 export const createSalt = () => crypto.randomBytes(16).toString('hex');
 
+const scryptOptions = process.env.NODE_ENV === 'test' 
+  ? { N: 16, r: 1, p: 1 } 
+  : undefined;
+
 export const hashPassphrase = (passphrase, salt) =>
-  crypto.scryptSync(passphrase, salt, 64).toString('hex');
+  crypto.scryptSync(passphrase, salt, 64, scryptOptions).toString('hex');
 
 export const verifyPassphrase = (passphrase, salt, hash) =>
   hashPassphrase(passphrase, salt) === hash;
