@@ -352,12 +352,12 @@ export default function AccountPage() {
   };
 
   const handleDeletePreview = async () => {
-    setDeleteError(null);
+    setError(null);
     const response = await fetch('/api/users/me/delete-preview', {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
     if (!response.ok) {
-      setDeleteError('Unable to fetch delete preview.');
+      setError('Unable to fetch delete preview.');
       return;
     }
     const data = await response.json();

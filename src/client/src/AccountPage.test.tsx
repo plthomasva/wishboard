@@ -333,7 +333,7 @@ describe('AccountPage', () => {
       if (url.includes('/api/users/me/delete-preview')) {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ wishesCount: 2, wishmailsCount: 1 }) });
       }
-      if (url.includes('/api/users/me') && init?.method === 'DELETE') {
+      if (url.includes('/api/users/me/delete') && init?.method === 'POST') {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
       }
       if (url.includes('/api/users/me/wishes')) {
@@ -368,7 +368,7 @@ describe('AccountPage', () => {
 
     // Confirm deletion
     fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete Account' }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me', expect.objectContaining({ method: 'DELETE' })));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/users/me/delete'), expect.objectContaining({ method: 'POST' })));
     expect(logout).toHaveBeenCalled();
   });
 
@@ -394,6 +394,6 @@ describe('AccountPage', () => {
     render(<AccountPage />);
     
     fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
-    await waitFor(() => expect(screen.getByText('Failed to fetch delete preview.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Unable to fetch delete preview.')).toBeInTheDocument());
   });
 });
