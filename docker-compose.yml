@@ -5,7 +5,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - wishboard_data:/var/lib/sqld
+      - db_data:/var/lib/sqld
     restart: unless-stopped
     environment:
       - RUST_LOG=info
@@ -32,3 +32,4 @@ services:
 
 volumes:
   wishboard_data:
+  db_data:
