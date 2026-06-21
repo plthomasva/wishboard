@@ -9,7 +9,15 @@
     "clear-text",
     "html"
   ],
-  "coverageAnalysis": "perTest",
+  "coverageAnalysis": "off",
+  "mutate": [
+    "src/client/src/**/*.ts",
+    "src/client/src/**/*.tsx",
+    "src/client/src/**/*.js",
+    "!src/client/src/**/*.test.ts",
+    "!src/client/src/**/*.test.tsx",
+    "!src/client/src/**/*.test.js"
+  ],
   "ignorePatterns": [
     "!dist/**/*"
   ]

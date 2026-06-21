@@ -17,12 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  stryker:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -30,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Use the project's supported node version
+          node-version: '24' # Use the project's supported node version
           cache: 'npm'
 
       - name: Install Dependencies
@@ -40,7 +36,7 @@ jobs:
         run: npm run build
 
       - name: Run Stryker Mutation Tests
-        run: npx --no-install stryker run
+        run: npx --no-install stryker run --concurrency 2
         continue-on-error: true # Keep deploying the report even if mutants survive and the process exits with an error code
 
       - name: Setup GitHub Pages
@@ -49,8 +45,16 @@ jobs:
       - name: Upload Report to Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './reports/mutation' # The directory Stryker writes the HTML report to
+          path: './reports/mutation/html' # The directory Stryker writes the HTML report to
 
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
