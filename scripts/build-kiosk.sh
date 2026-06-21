@@ -61,10 +61,7 @@ fi
 # Navigate to the application directory where docker-compose.yml is uploaded
 cd $WISHBOARD_HOME/wishboard
 
-echo "Stopping existing services..."
-$RUN_CMD compose down || true
-
-echo "Starting services via Docker Compose..."
+echo "Starting/Updating services via Docker Compose..."
 # We assume the user has copied docker-compose.yml to the target directory.
 # If they are running this script in the repository root, it will find docker-compose.yml.
 export APP_VERSION=$APP_VERSION
