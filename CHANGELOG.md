@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.5.0...wishboard-v1.6.0) (2026-06-21)
+
+
+### Features
+
+* improve admin dashboard user delete modal and demo seeder ([c868942](https://github.com/plthomasva/wishboard/commit/c868942b3e8f8dce7a67e3a11ab1b71ed2801fe5))
+
+
+### Bug Fixes
+
+* conditionally render demo seeder based on runtime backend environment ([c868942](https://github.com/plthomasva/wishboard/commit/c868942b3e8f8dce7a67e3a11ab1b71ed2801fe5))
+* run entrypoint as root to fix volume permissions before dropping to node user ([c868942](https://github.com/plthomasva/wishboard/commit/c868942b3e8f8dce7a67e3a11ab1b71ed2801fe5))
+
 ## [1.5.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.4.3...wishboard-v1.5.0) (2026-06-20)
 
 
