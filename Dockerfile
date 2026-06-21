@@ -61,14 +61,18 @@ COPY --from=builder /app/data ./data
 # Fix permissions for the data directory so the node user can write to it
 RUN chown -R node:node /app/data
 
-# Switch to non-root user
-USER node
+# Copy entrypoint script and make it executable
+COPY scripts/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Expose the API port
 EXPOSE 3000
 
 # Mount the volume for persistence
 VOLUME ["/app/data"]
+
+# Define the entrypoint script (runs as root to fix permissions, then drops to node user)
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Start the Express server
 CMD ["node", "src/server/index.js"]

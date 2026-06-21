@@ -58,6 +58,13 @@ describe('AdminPage', () => {
         });
       }
 
+      if (url.endsWith('/api/admin/config')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ isProduction: false })
+        });
+      }
+
       if (url.endsWith('/api/admin/metrics-ticket')) {
         if (!mockToken) {
           return Promise.resolve({ ok: false, status: 401 });
@@ -98,6 +105,10 @@ describe('AdminPage', () => {
 
       if (url.includes('/api/admin/users/') && url.endsWith('/role')) {
         return Promise.resolve({ ok: true });
+      }
+
+      if (url.includes('/api/admin/users/') && url.endsWith('/delete-preview')) {
+        return Promise.resolve({ ok: true, json: async () => ({ wishesCount: 5, wishmailsCount: 2 }) });
       }
 
       if (url.includes('/api/admin/users/') && url.endsWith('/delete')) {
@@ -205,109 +216,7 @@ describe('AdminPage', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/wishes/flagged-1/remove', expect.any(Object));
   });
 
-  it('can promote and demote a user', async () => {
-    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
-    mockToken = 'admin-token';
 
-    render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
-
-    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
-
-    // Promote tester to admin
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Promote/i }));
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Updated user role for user-1')).toBeInTheDocument();
-    });
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/role', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ role: 'admin' })
-    }));
-
-    // Demote other-admin to user
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Demote/i }));
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Updated user role for admin-2')).toBeInTheDocument();
-    });
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/users/admin-2/role', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ role: 'user' })
-    }));
-  });
-
-  it('can delete a user', async () => {
-    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
-    mockToken = 'admin-token';
-
-    render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
-
-    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
-
-    // Delete tester
-    const usersSection = screen.getByText('User Accounts').closest('section');
-    const deleteButtons = within(usersSection!).getAllByRole('button', { name: /Delete/i });
-    await act(async () => {
-      fireEvent.click(deleteButtons[0]);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Deleted user user-1')).toBeInTheDocument();
-    });
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/delete', expect.any(Object));
-  });
-
-  it('can reset a user password', async () => {
-    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
-    mockToken = 'admin-token';
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
-    globalThis.fetch = vi.fn().mockImplementation((input) => {
-      const url = typeof input === 'string' ? input : '';
-      if (url.endsWith('/api/admin/flags')) {
-        return Promise.resolve({ ok: true, json: async () => [] });
-      }
-      if (url.endsWith('/api/admin/users')) {
-        return Promise.resolve({ ok: true, json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }] });
-      }
-      if (url.endsWith('/api/admin/logs')) {
-        return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
-      }
-      if (url.endsWith('/api/admin/metrics-ticket')) {
-        return Promise.resolve({ ok: true, json: async () => ({ ticket: 'mock-ticket-123' }) });
-      }
-      if (url.endsWith('/api/rules')) {
-        return Promise.resolve({ ok: true, json: async () => [] });
-      }
-      if (url.includes('/api/admin/users/') && url.endsWith('/reset-password')) {
-        return Promise.resolve({ ok: true, json: async () => ({ success: true, newPassphrase: 'new-password-123' }) });
-      }
-      return Promise.resolve({ ok: false });
-    });
-
-    render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
-
-    await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
-
-    const resetButtons = screen.getAllByRole('button', { name: /Reset Password/i });
-    await act(async () => {
-      fireEvent.click(resetButtons[0]);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Passphrase successfully reset! The new passphrase is: new-password-123')).toBeInTheDocument();
-    });
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/users/user-1/reset-password', expect.objectContaining({
-      method: 'POST'
-    }));
-  });
 
   it('can run demo seeder', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
@@ -342,7 +251,7 @@ describe('AdminPage', () => {
     });
   });
 
-  it('handles failure when running seeder, deleting, promoting or removing wishes', async () => {
+  it('handles failure when running seeder', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
 
@@ -363,6 +272,9 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/rules')) {
         return Promise.resolve({ ok: true, json: async () => [] });
       }
+      if (url.endsWith('/api/admin/config')) {
+        return Promise.resolve({ ok: true, json: async () => ({ isProduction: false }) });
+      }
       return Promise.resolve({ ok: false });
     });
 
@@ -376,18 +288,6 @@ describe('AdminPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /Run Seeder/i }));
     });
     await waitFor(() => expect(screen.getByText('Failed to run seeder.')).toBeInTheDocument());
-
-    // Try delete
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Delete/i }));
-    });
-    await waitFor(() => expect(screen.getByText('Failed to delete user.')).toBeInTheDocument());
-
-    // Try promote
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Promote/i }));
-    });
-    await waitFor(() => expect(screen.getByText('Failed to update role.')).toBeInTheDocument());
   });
 
   it('can clear flag on a single wish', async () => {

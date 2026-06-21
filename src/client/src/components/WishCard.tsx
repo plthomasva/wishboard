@@ -25,9 +25,10 @@ interface WishCardProps {
   onSendMail?: (id: string) => void;
   onOverflowChange?: (isOverflowing: boolean) => void;
   isEditorPreview?: boolean;
+  onAdminDelete?: (id: string) => void;
 }
 
-export default function WishCard({ wish, cardClass = 'wish-card', showFlag = true, onFlag, onSendMail, onOverflowChange, isEditorPreview = false }: Readonly<WishCardProps>) {
+export default function WishCard({ wish, cardClass = 'wish-card', showFlag = true, onFlag, onSendMail, onOverflowChange, isEditorPreview = false, onAdminDelete }: Readonly<WishCardProps>) {
   // Use lower max font size for the card, and minimum 10px so we have enough room to scale down
   const { containerRef, contentRef, isOverflowing } = useTextFit({
     minFontSize: 10,
@@ -52,6 +53,18 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
         
         {showFlag && onFlag && (
           <FlagButton onFlag={() => onFlag(wish.id)} />
+        )}
+        
+        {onAdminDelete && (
+          <button 
+            type="button"
+            className="secondary-button"
+            onClick={() => onAdminDelete(wish.id)}
+            style={{ position: 'absolute', top: '12px', right: (showFlag && onFlag) ? '50px' : '12px', padding: '4px 8px', fontSize: '0.8rem', background: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', zIndex: 10 }}
+            title="Admin Delete Wish"
+          >
+            Delete
+          </button>
         )}
         
         <p className="wish-text">{wish.content}</p>

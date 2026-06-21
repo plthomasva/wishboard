@@ -325,4 +325,167 @@ describe('AccountPage', () => {
     expect(register).toHaveBeenCalledWith('testuser', undefined, { genders: 'agender', orientations: 'ace', roles: 'attendee' });
     await screen.findByText(/Account created. Remember your passphrase: secret/);
   });
+
+  it('allows user to delete their account and handles cancellation', async () => {
+    const logout = vi.fn();
+    const fetchMock = vi.fn((input, init) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/me/delete-preview')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ wishesCount: 2, wishmailsCount: 1 }) });
+      }
+      if (url.includes('/api/users/me/delete') && init?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      }
+      if (url.includes('/api/users/me/wishes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(), register: vi.fn(), logout, refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+    
+    // Click delete account
+    const deleteBtn = screen.getByRole('button', { name: 'Delete Account' });
+    fireEvent.click(deleteBtn);
+
+    // Modal appears
+    await waitFor(() => expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument());
+
+    // Cancel modal
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByText(/This action is permanent and cannot be undone/)).not.toBeInTheDocument());
+
+    // Click delete account again
+    fireEvent.click(deleteBtn);
+    await waitFor(() => expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument());
+
+    // Confirm deletion
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete Account' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/users/me/delete'), expect.objectContaining({ method: 'POST' })));
+    expect(logout).toHaveBeenCalled();
+  });
+
+  it('shows error if account delete preview fails', async () => {
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/me/delete-preview')) {
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({ error: 'failed' }) });
+      }
+      if (url.includes('/api/users/me/wishes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+    
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
+    await waitFor(() => expect(screen.getByText('Unable to fetch delete preview.')).toBeInTheDocument());
+  });
+
+  it('handles network errors gracefully when checking username existence', async () => {
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/exists')) {
+        return Promise.reject(new Error('Network error'));
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: null, token: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'erroruser' } });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      const submitButtons = screen.getAllByRole('button');
+      const submitButton = submitButtons.find((button) => button.getAttribute('type') === 'submit');
+      expect(submitButton).toBeDefined();
+      expect(submitButton).toHaveTextContent('Register');
+    });
+  });
+
+  it('allows user to claim a wish and handles errors', async () => {
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/wishes/invalid-wish/claim')) {
+        return Promise.resolve({ ok: false, json: () => Promise.resolve({ error: 'Invalid passphrase' }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+
+    const claimIdInput = screen.getByLabelText(/Wish ID/i);
+    const claimSecretInput = screen.getByLabelText(/Passphrase/i);
+    
+    // Test missing fields
+    fireEvent.click(screen.getByRole('button', { name: 'Claim Wish' }));
+    expect(await screen.findByText('Wish ID and Passphrase are required to claim a wish.')).toBeInTheDocument();
+
+    // Test error
+    fireEvent.change(claimIdInput, { target: { value: 'invalid-wish' } });
+    fireEvent.change(claimSecretInput, { target: { value: 'wrong' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Claim Wish' }));
+    expect(await screen.findByText('Invalid passphrase')).toBeInTheDocument();
+  });
+
+  it('allows user to claim a wish and handles success', async () => {
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/wishes/valid-wish/claim')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+
+    const claimIdInput = screen.getByLabelText(/Wish ID/i);
+    const claimSecretInput = screen.getByLabelText(/Passphrase/i);
+
+    fireEvent.change(claimIdInput, { target: { value: 'valid-wish' } });
+    fireEvent.change(claimSecretInput, { target: { value: 'correct' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Claim Wish' }));
+    
+    expect(await screen.findByText('Wish claimed successfully!')).toBeInTheDocument();
+  });
+
+
 });

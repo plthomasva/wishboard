@@ -25,12 +25,12 @@ echo "Disk space OK (${AVAILABLE_MB} MB available)."
 sudo -u wishboard mkdir -p /home/wishboard/wishboard
 
 echo "Configuring environment variables..."
-if [[ "$MODE" = "prod" ]] || [[ "$MODE" = "dual" ]]; then
+if [[ "$MODE" = "prod" ]]; then
     sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_DOMAIN=$DOMAIN_NAME' > /home/wishboard/wishboard/.env"
     sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_AP_IP=10.42.0.1' >> /home/wishboard/wishboard/.env"
 else
     sudo rm -f /home/wishboard/wishboard/.env
-    sudo -u wishboard touch /home/wishboard/wishboard/.env
+    sudo -u wishboard bash -c "echo 'NODE_ENV=development' > /home/wishboard/wishboard/.env"
 fi
 sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> /home/wishboard/wishboard/.env"
 

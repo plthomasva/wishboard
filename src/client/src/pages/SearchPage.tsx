@@ -16,7 +16,7 @@ interface Wish {
 }
 
 export default function SearchPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Wish[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +109,24 @@ export default function SearchPage() {
 
   const handleFlag = useFlagWish((id) => setResults((prev) => prev.filter((wish) => wish.id !== id)));
 
+  const handleAdminDelete = React.useCallback(async (id: string) => {
+    if (!token) return;
+    if (!globalThis.confirm('Are you sure you want to delete this wish as an admin?')) return;
+    try {
+      const response = await fetch(`/api/admin/wishes/${id}/remove`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        setResults(prev => prev.filter(w => w.id !== id));
+      } else {
+        globalThis.alert('Failed to delete wish.');
+      }
+    } catch (err) {
+      globalThis.alert('Error deleting wish.');
+    }
+  }, [token]);
+
   return (
     <section>
       <h1 style={{ maxWidth: '800px', margin: '0 auto' }}>Search Wishes</h1>
@@ -189,6 +207,7 @@ export default function SearchPage() {
             wish={wish}
             onFlag={handleFlag}
             onSendMail={setMailWishId}
+            onAdminDelete={user?.role === 'admin' ? handleAdminDelete : undefined}
           />
         ))}
       </div>

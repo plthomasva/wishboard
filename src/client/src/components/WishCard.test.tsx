@@ -3,12 +3,14 @@ import { describe, it, expect, vi } from 'vitest';
 import WishCard from './WishCard';
 import React from 'react';
 
+import { useTextFit } from '../hooks/useTextFit';
+
 vi.mock('../hooks/useTextFit', () => ({
-  useTextFit: () => ({
+  useTextFit: vi.fn(() => ({
     containerRef: { current: null },
     contentRef: { current: null },
     isOverflowing: false
-  })
+  }))
 }));
 
 describe('WishCard', () => {
@@ -57,6 +59,56 @@ describe('WishCard', () => {
     const btn = screen.getByRole('button', { name: 'Send Wishmail' });
     fireEvent.click(btn);
     // No crash means it handled missing onSendMail correctly
+  });
+
+  it('renders text-overflow-hint when overflowing and isEditorPreview is true', () => {
+    vi.mocked(useTextFit).mockReturnValueOnce({
+      containerRef: { current: null },
+      contentRef: { current: null },
+      isOverflowing: true
+    } as unknown as ReturnType<typeof useTextFit>);
+    
+    const wish = { id: 'w5', content: 'Overflowing' };
+    render(<WishCard wish={wish} isEditorPreview={true} />);
+    
+    const article = screen.getByRole('article');
+    expect(article).toHaveClass('text-overflow-hint');
+  });
+
+  it('renders FlagButton when showFlag and onFlag are provided', () => {
+    const wish = { id: 'w6', content: 'Flag me' };
+    const onFlag = vi.fn();
+    render(<WishCard wish={wish} showFlag={true} onFlag={onFlag} />);
+    
+    const flagBtn = screen.getByTitle('Flag as inappropriate');
+    expect(flagBtn).toBeInTheDocument();
+    fireEvent.click(flagBtn);
+    expect(onFlag).toHaveBeenCalledWith('w6');
+  });
+
+  it('calls onOverflowChange when provided', () => {
+    vi.mocked(useTextFit).mockReturnValueOnce({
+      containerRef: { current: null },
+      contentRef: { current: null },
+      isOverflowing: true
+    } as unknown as ReturnType<typeof useTextFit>);
+    
+    const wish = { id: 'w7', content: 'Overflowing' };
+    const onOverflowChange = vi.fn();
+    render(<WishCard wish={wish} onOverflowChange={onOverflowChange} />);
+    
+    expect(onOverflowChange).toHaveBeenCalledWith(true);
+  });
+
+  it('renders Admin Delete button when onAdminDelete is provided', () => {
+    const wish = { id: 'w8', content: 'Admin delete me' };
+    const onAdminDelete = vi.fn();
+    render(<WishCard wish={wish} onAdminDelete={onAdminDelete} />);
+    
+    const deleteBtn = screen.getByTitle('Admin Delete Wish');
+    expect(deleteBtn).toBeInTheDocument();
+    fireEvent.click(deleteBtn);
+    expect(onAdminDelete).toHaveBeenCalledWith('w8');
   });
 });
 
