@@ -72,7 +72,7 @@ describe('UserAccountsSection Coverage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
-    await waitFor(() => expect(screen.getByText(/This will permanently delete/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument());
 
     // Mock fetch for actual delete to succeed
     mockFetch.mockResolvedValueOnce({ ok: true });

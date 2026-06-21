@@ -4,6 +4,9 @@ import AdminPage from './AdminPage';
 import React from 'react';
 import * as AuthContext from '../AuthContext';
 
+const mockFetch = vi.fn();
+globalThis.fetch = mockFetch;
+
 vi.mock('../AuthContext', () => ({
   useAuth: vi.fn(),
   AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>
@@ -13,6 +16,10 @@ describe('AdminPage Coverage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.location = { ...globalThis.location, hash: '' } as unknown as Location;
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ([])
+    });
   });
 
   it('toggles sidebar expansion', () => {
