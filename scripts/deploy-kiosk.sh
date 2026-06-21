@@ -26,18 +26,27 @@ echo -e "\033[1;36mStarting Wishboard Kiosk Docker Deployment to ${ADMIN_USERNAM
 # Ensure we are in the project root
 cd "$(dirname "$0")/.."
 
-echo -e "\033[1;33m1. Uploading setup script, build script, and docker-compose.yml...\033[0m"
-scp scripts/setup-kiosk.sh "${ADMIN_USERNAME}@${HOST_NAME}:/tmp/setup-kiosk.sh"
-scp scripts/build-kiosk.sh "${ADMIN_USERNAME}@${HOST_NAME}:/tmp/build-kiosk.sh"
+echo -e "\033[1;33m1. Creating remote temporary directory...\033[0m"
+REMOTE_TEMP_DIR=$(ssh "${ADMIN_USERNAME}@${HOST_NAME}" "mktemp -d")
+if [[ -z "$REMOTE_TEMP_DIR" ]]; then
+    echo "Failed to create remote temporary directory." >&2
+    exit 1
+fi
 
-scp docker-compose.yml "${ADMIN_USERNAME}@${HOST_NAME}:/tmp/docker-compose.yml"
+echo -e "\033[1;33m2. Uploading setup script, build script, and docker-compose.yml to ${REMOTE_TEMP_DIR}...\033[0m"
+scp scripts/setup-kiosk.sh "${ADMIN_USERNAME}@${HOST_NAME}:${REMOTE_TEMP_DIR}/setup-kiosk.sh"
+scp scripts/build-kiosk.sh "${ADMIN_USERNAME}@${HOST_NAME}:${REMOTE_TEMP_DIR}/build-kiosk.sh"
+scp docker-compose.yml "${ADMIN_USERNAME}@${HOST_NAME}:${REMOTE_TEMP_DIR}/docker-compose.yml"
 
-echo -e "\033[1;33m2. Executing setup script (creating user, configuring Docker and kiosk)...\033[0m"
+echo -e "\033[1;33m3. Executing setup script (creating user, configuring Docker and kiosk)...\033[0m"
 # Ensure line endings don't break bash execution by stripping \r using sed
-ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' /tmp/setup-kiosk.sh && sudo bash /tmp/setup-kiosk.sh ${MODE} ${DOMAIN_NAME}"
+ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' ${REMOTE_TEMP_DIR}/setup-kiosk.sh && sudo bash ${REMOTE_TEMP_DIR}/setup-kiosk.sh ${MODE} ${DOMAIN_NAME} ${REMOTE_TEMP_DIR}"
 
-echo -e "\033[1;33m3. Deploying Docker container...\033[0m"
+echo -e "\033[1;33m4. Deploying Docker container...\033[0m"
 # Execute the remote deployment script
-ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' /tmp/build-kiosk.sh && sudo bash /tmp/build-kiosk.sh ${MODE} ${DOMAIN_NAME} ${DEPLOY_RULES} ${APP_VERSION}"
+ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' ${REMOTE_TEMP_DIR}/build-kiosk.sh && sudo bash ${REMOTE_TEMP_DIR}/build-kiosk.sh ${MODE} ${DOMAIN_NAME} ${DEPLOY_RULES} ${APP_VERSION}"
+
+echo -e "\033[1;33m5. Cleaning up remote temporary directory...\033[0m"
+ssh "${ADMIN_USERNAME}@${HOST_NAME}" "rm -rf ${REMOTE_TEMP_DIR}"
 
 echo -e "\033[1;32mDeployment complete! Container started.\033[0m"

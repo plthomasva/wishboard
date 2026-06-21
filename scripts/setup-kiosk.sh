@@ -5,10 +5,12 @@ echo "=== Wishboard Raspberry Pi Kiosk Setup Script ==="
 
 MODE="${1:-prod}"
 DOMAIN_NAME="${2:-wishboard.painless-computing.com}"
+REMOTE_TEMP_DIR="${3:-/tmp}"
 AP_IP="10.42.0.1"
 
 echo "Deployment Mode: $MODE"
 echo "Domain Name: $DOMAIN_NAME"
+echo "Remote Temp Dir: $REMOTE_TEMP_DIR"
 
 # 1. Create wishboard user if it doesn't exist
 if id "wishboard" &>/dev/null; then
@@ -26,8 +28,8 @@ sudo usermod -a -G video,audio,input,tty,render wishboard
 echo "Creating application folder..."
 WISHBOARD_HOME=$(getent passwd wishboard | cut -d: -f6)
 sudo mkdir -p $WISHBOARD_HOME/wishboard
-if [[ -f /tmp/docker-compose.yml ]]; then
-  sudo mv /tmp/docker-compose.yml $WISHBOARD_HOME/wishboard/docker-compose.yml
+if [[ -f "$REMOTE_TEMP_DIR/docker-compose.yml" ]]; then
+  sudo mv "$REMOTE_TEMP_DIR/docker-compose.yml" $WISHBOARD_HOME/wishboard/docker-compose.yml
 fi
 sudo chown -R wishboard:wishboard $WISHBOARD_HOME
 
