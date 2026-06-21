@@ -416,6 +416,10 @@ describe('AccountPage', () => {
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'erroruser' } });
 
     await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
       const submitButtons = screen.getAllByRole('button');
       const submitButton = submitButtons.find((button) => button.getAttribute('type') === 'submit');
       expect(submitButton).toBeDefined();
@@ -453,6 +457,34 @@ describe('AccountPage', () => {
     fireEvent.change(claimSecretInput, { target: { value: 'wrong' } });
     fireEvent.click(screen.getByRole('button', { name: 'Claim Wish' }));
     expect(await screen.findByText('Invalid passphrase')).toBeInTheDocument();
+  });
+
+  it('allows user to claim a wish and handles success', async () => {
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/wishes/valid-wish/claim')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      token: 'fake-token',
+      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+    });
+
+    render(<AccountPage />);
+
+    const claimIdInput = screen.getByLabelText(/Wish ID/i);
+    const claimSecretInput = screen.getByLabelText(/Passphrase/i);
+
+    fireEvent.change(claimIdInput, { target: { value: 'valid-wish' } });
+    fireEvent.change(claimSecretInput, { target: { value: 'correct' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Claim Wish' }));
+    
+    expect(await screen.findByText('Wish claimed successfully!')).toBeInTheDocument();
   });
 
 
