@@ -36,7 +36,7 @@ jobs:
         run: npm run build
 
       - name: Run Stryker Mutation Tests
-        run: npx --no-install stryker run
+        run: npx --no-install stryker run --concurrency 2
         continue-on-error: true # Keep deploying the report even if mutants survive and the process exits with an error code
 
       - name: Setup GitHub Pages
