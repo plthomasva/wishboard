@@ -61,7 +61,7 @@ describe('AdminPage Coverage', () => {
 
     render(<AdminPage />);
     
-    const posterBtn = screen.getByRole('button', { name: /Print Event Poster/i });
+    const posterBtn = screen.getByTitle('Print Event Poster');
     fireEvent.click(posterBtn);
 
     expect(globalThis.location.hash).toBe('#poster');
