@@ -78,7 +78,7 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
               alt={wish.content || "Handwritten wish"} 
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px', display: 'block' }}
             />
-            <div style={{ position: 'absolute', bottom: '16px', right: '16px', zIndex: 5, fontSize: '10px' }}>
+            <div style={{ position: 'absolute', top: '0', right: '6px', zIndex: 5, fontSize: '10px' }}>
               <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
             </div>
             {/* Hidden text for accessibility/search */}
