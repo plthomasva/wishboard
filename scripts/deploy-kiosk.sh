@@ -32,6 +32,7 @@ if [[ -z "$REMOTE_TEMP_DIR" ]]; then
     echo "Failed to create remote temporary directory." >&2
     exit 1
 fi
+trap 'echo -e "\033[1;33mCleaning up remote temporary directory...\033[0m"; ssh "${ADMIN_USERNAME}@${HOST_NAME}" "rm -rf ${REMOTE_TEMP_DIR}"' EXIT
 
 echo -e "\033[1;33m2. Uploading setup script, build script, and docker-compose.yml to ${REMOTE_TEMP_DIR}...\033[0m"
 scp scripts/setup-kiosk.sh "${ADMIN_USERNAME}@${HOST_NAME}:${REMOTE_TEMP_DIR}/setup-kiosk.sh"
@@ -45,8 +46,5 @@ ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' ${REMOTE_TEMP_DIR}/setup-
 echo -e "\033[1;33m4. Deploying Docker container...\033[0m"
 # Execute the remote deployment script
 ssh "${ADMIN_USERNAME}@${HOST_NAME}" "sed -i 's/\r$//' ${REMOTE_TEMP_DIR}/build-kiosk.sh && sudo bash ${REMOTE_TEMP_DIR}/build-kiosk.sh ${MODE} ${DOMAIN_NAME} ${DEPLOY_RULES} ${APP_VERSION}"
-
-echo -e "\033[1;33m5. Cleaning up remote temporary directory...\033[0m"
-ssh "${ADMIN_USERNAME}@${HOST_NAME}" "rm -rf ${REMOTE_TEMP_DIR}"
 
 echo -e "\033[1;32mDeployment complete! Container started.\033[0m"

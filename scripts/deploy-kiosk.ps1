@@ -68,12 +68,15 @@ try {
         throw "Deployment failed on the target device. Check the logs above."
     }
 
-    Write-Host "5. Cleaning up remote temporary directory..." -ForegroundColor Yellow
-    ssh "${AdminUsername}@${HostName}" "rm -rf $RemoteTempDir"
-
     Write-Host "Deployment complete!" -ForegroundColor Green
 }
 catch {
     Write-Error $_.Exception.Message
     exit 1
+}
+finally {
+    if ($RemoteTempDir) {
+        Write-Host "Cleaning up remote temporary directory..." -ForegroundColor Yellow
+        ssh "${AdminUsername}@${HostName}" "rm -rf $RemoteTempDir"
+    }
 }
