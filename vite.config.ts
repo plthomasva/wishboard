@@ -36,10 +36,13 @@ export default defineConfig({
     root: projectRoot,
     globals: true,
     environment: 'jsdom',
+    environmentMatchGlobs: [
+      ['**/src/server/**', 'node'],
+      ['**/scripts/**', 'node'],
+    ],
     include: ['src/client/src/**/*.{test,spec}.{ts,tsx}', 'src/server/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
     setupFiles: 'src/client/src/setupTests.ts',
     globalSetup: 'vitest.global-setup.js',
-    maxWorkers: 1,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

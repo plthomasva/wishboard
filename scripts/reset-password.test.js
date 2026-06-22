@@ -1,12 +1,12 @@
 /** @vitest-environment node */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { resetPassword } from './reset-password.js';
 import db from '../src/server/db.js';
 
 describe('reset-password script', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // db is already initialized with :memory: from vitest setup
-    db.exec(`
+    await db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
@@ -26,18 +26,18 @@ describe('reset-password script', () => {
       );
     `);
 
-    db.exec(`
+    await db.exec(`
       INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, created_at)
       VALUES ('user-1', 'testuser', 'oldhash', 'oldsalt', 'user', '2023-01-01');
     `);
-    db.exec(`
+    await db.exec(`
       INSERT INTO sessions (token, user_id, expires_at)
       VALUES ('session-1', 'user-1', '2099-01-01');
     `);
   });
 
-  afterEach(() => {
-    db.exec(`
+  afterEach(async () => {
+    await db.exec(`
       DELETE FROM sessions;
       DELETE FROM users;
     `);
@@ -51,11 +51,11 @@ describe('reset-password script', () => {
     expect(output).toContain("Success! Passphrase for 'testuser' has been reset.");
     expect(output).toContain("New Passphrase: new-secure-pass");
 
-    const user = db.prepare('SELECT passphrase_hash, passphrase_salt FROM users WHERE username = ?').get('testuser');
+    const user = await db.prepare('SELECT passphrase_hash, passphrase_salt FROM users WHERE username = ?').get('testuser');
     expect(user.passphrase_hash).not.toBe('oldhash');
     expect(user.passphrase_salt).not.toBe('oldsalt');
 
-    const sessions = db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get('user-1').count;
+    const sessions = (await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get('user-1')).count;
     expect(sessions).toBe(0);
   }, 15000);
 
@@ -67,13 +67,13 @@ describe('reset-password script', () => {
     expect(output).toContain("Success! Passphrase for 'testuser' has been reset.");
     expect(output).toContain("New Passphrase: ");
 
-    const match = output.match(/New Passphrase: (\S+-\S+-\S+)/);
+    const match = /New Passphrase: (\S+-\S+-\S+)/.exec(output);
     expect(match).toBeTruthy();
 
-    const user = db.prepare('SELECT passphrase_hash, passphrase_salt FROM users WHERE username = ?').get('testuser');
+    const user = await db.prepare('SELECT passphrase_hash, passphrase_salt FROM users WHERE username = ?').get('testuser');
     expect(user.passphrase_hash).not.toBe('oldhash');
 
-    const sessions = db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get('user-1').count;
+    const sessions = (await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get('user-1')).count;
     expect(sessions).toBe(0);
   });
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 
 describe('Logger', () => {
-  afterEach(() => {
+  afterEach(async () => {
     vi.resetModules();
     vi.restoreAllMocks();
   });

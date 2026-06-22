@@ -94,20 +94,20 @@ function generateMadLibsWish() {
   return `${action} ${subject} ${context}`;
 }
 
-function clearDemoData() {
+async function clearDemoData() {
   // 1. Clear existing demo/user data (Keep the default admin's session)
   // Remove wishes and demo users first, then prune sessions that no
   // longer belong to any remaining user (this preserves the admin's session)
-  db.prepare("DELETE FROM wishes WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'demo_user_%')").run();
-  db.prepare("DELETE FROM users WHERE username LIKE 'demo_user_%'").run();
+  await db.prepare("DELETE FROM wishes WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'demo_user_%')").run();
+  await db.prepare("DELETE FROM users WHERE username LIKE 'demo_user_%'").run();
 
   // Remove sessions for user_ids that no longer exist (keeps admin session)
-  db.prepare('DELETE FROM sessions WHERE user_id NOT IN (SELECT id FROM users)').run();
+  await db.prepare('DELETE FROM sessions WHERE user_id NOT IN (SELECT id FROM users)').run();
 }
 
-function generateDemoUsers() {
+async function generateDemoUsers() {
   const users = [];
-  const insertUser = db.prepare(`
+  const insertUser = await db.prepare(`
     INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
@@ -166,8 +166,8 @@ function createSingleWish(insertWish, randomUser) {
   ); // NOSONAR
 }
 
-function generateDemoWishes(users) {
-  const insertWish = db.prepare(`
+async function generateDemoWishes(users) {
+  const insertWish = await db.prepare(`
     INSERT INTO wishes (
       id, user_id, content, 
       creator_genders, creator_orientations, creator_roles, 
@@ -184,11 +184,11 @@ function generateDemoWishes(users) {
   }
 }
 
-export function generateDemoData() {
+export async function generateDemoData() {
   logger.info('Clearing old demo data for seeder');
-  clearDemoData();
-  const users = generateDemoUsers();
-  generateDemoWishes(users);
+  await clearDemoData();
+  const users = await generateDemoUsers();
+  await generateDemoWishes(users);
 
   logger.info('Demo seeder completed', { usersCreated: 50, wishesCreated: 100 });
   return { usersCreated: 50, wishesCreated: 100 };

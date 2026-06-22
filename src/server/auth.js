@@ -39,10 +39,10 @@ export const hashPassphrase = (passphrase, salt) =>
 export const verifyPassphrase = (passphrase, salt, hash) =>
   hashPassphrase(passphrase, salt) === hash;
 
-export const createSessionToken = (userId) => {
+export const createSessionToken = async (userId) => {
   const token = crypto.randomBytes(24).toString('hex');
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_MS).toISOString();
-  db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, userId, expiresAt);
+  await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, userId, expiresAt);
   return token;
 };
 
@@ -69,11 +69,11 @@ export const normalizeArrayInput = (value) => {
     .filter(Boolean);
 };
 
-export const getUserFromToken = (token) => {
+export const getUserFromToken = async (token) => {
   if (!token) {
     return null;
   }
-  const row = db
+  const row = await db
     .prepare(
       'SELECT u.id, u.username, u.role, u.is_active, u.identity_genders, u.identity_orientations, u.identity_roles, u.contacts, u.wishmail_enabled FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?'
     )
@@ -94,10 +94,10 @@ export const getUserFromToken = (token) => {
   };
 };
 
-export const getUserFromRequest = (req) => getUserFromToken(getTokenFromRequest(req));
+export const getUserFromRequest = async (req) => await getUserFromToken(getTokenFromRequest(req));
 
-export const requireAuth = (req, res, next) => {
-  const user = getUserFromRequest(req);
+export const requireAuth = async (req, res, next) => {
+  const user = await getUserFromRequest(req);
   if (!user) {
     return res.status(401).json({ error: 'Authentication required.' });
   }
@@ -105,8 +105,8 @@ export const requireAuth = (req, res, next) => {
   next();
 };
 
-export const requireAdmin = (req, res, next) => {
-  const user = getUserFromRequest(req);
+export const requireAdmin = async (req, res, next) => {
+  const user = await getUserFromRequest(req);
   if (user?.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required.' });
   }

@@ -1,7 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import fs from 'node:fs';
-import path from 'node:path';
-import crypto from 'node:crypto';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('db initialization', () => {
   let db;
@@ -12,8 +9,8 @@ describe('db initialization', () => {
     db = (await import('./db.js')).default;
   });
 
-  it('creates tables', () => {
-    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+  it('creates tables', async () => {
+    const tables = await db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
     const tableNames = tables.map(t => t.name);
     expect(tableNames).toContain('users');
     expect(tableNames).toContain('sessions');
@@ -21,8 +18,8 @@ describe('db initialization', () => {
     expect(tableNames).toContain('wishmails');
   });
 
-  it('ensures all expected columns are added to users table', () => {
-    const columns = db.prepare("PRAGMA table_info(users)").all();
+  it('ensures all expected columns are added to users table', async () => {
+    const columns = await db.prepare("PRAGMA table_info(users)").all();
     const columnNames = columns.map(c => c.name);
     
     // Base columns
@@ -42,8 +39,8 @@ describe('db initialization', () => {
     expect(columnNames).toContain('is_active');
   });
 
-  it('ensures all expected columns are added to wishes table', () => {
-    const columns = db.prepare("PRAGMA table_info(wishes)").all();
+  it('ensures all expected columns are added to wishes table', async () => {
+    const columns = await db.prepare("PRAGMA table_info(wishes)").all();
     const columnNames = columns.map(c => c.name);
     
     // Ensured columns
@@ -58,8 +55,8 @@ describe('db initialization', () => {
     expect(columnNames).toContain('is_active');
   });
 
-  it('ensures default admin account exists', () => {
-    const admin = db.prepare("SELECT * FROM users WHERE role = 'admin'").get();
+  it('ensures default admin account exists', async () => {
+    const admin = await db.prepare("SELECT * FROM users WHERE role = 'admin'").get();
     expect(admin).toBeDefined();
     expect(admin.username).toBe('admin');
   });
@@ -69,13 +66,13 @@ describe('db initialization', () => {
     const existingDb = (await import('./db.js')).default;
     
     // There should only be one admin account
-    const admins = existingDb.prepare("SELECT * FROM users WHERE role = 'admin'").all();
+    const admins = await existingDb.prepare("SELECT * FROM users WHERE role = 'admin'").all();
     expect(admins.length).toBe(1);
     
     // If we call ensureDefaultAdmin again by re-importing, it should still be 1
     vi.resetModules();
     const nextDb = (await import('./db.js')).default;
-    const nextAdmins = nextDb.prepare("SELECT * FROM users WHERE role = 'admin'").all();
+    const nextAdmins = await nextDb.prepare("SELECT * FROM users WHERE role = 'admin'").all();
     expect(nextAdmins.length).toBe(1);
   });
 });

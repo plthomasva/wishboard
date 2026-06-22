@@ -21,39 +21,51 @@ if [[ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]]; then
 fi
 echo "Disk space OK (${AVAILABLE_MB} MB available)."
 
+# Determine the home directory dynamically
+WISHBOARD_HOME=$(getent passwd wishboard | cut -d: -f6 || echo "/home/wishboard")
+
 # Ensure directory exists for env file
-sudo -u wishboard mkdir -p /home/wishboard/wishboard
+sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard
 
 echo "Configuring environment variables..."
 if [[ "$MODE" = "prod" ]]; then
-    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_DOMAIN=$DOMAIN_NAME' > /home/wishboard/wishboard/.env"
-    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_AP_IP=10.42.0.1' >> /home/wishboard/wishboard/.env"
+    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_DOMAIN=$DOMAIN_NAME' > $WISHBOARD_HOME/wishboard/.env"
+    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_AP_IP=10.42.0.1' >> $WISHBOARD_HOME/wishboard/.env"
 else
-    sudo rm -f /home/wishboard/wishboard/.env
-    sudo -u wishboard bash -c "echo 'NODE_ENV=development' > /home/wishboard/wishboard/.env"
+    sudo rm -f $WISHBOARD_HOME/wishboard/.env
+    sudo -u wishboard bash -c "echo 'NODE_ENV=development' > $WISHBOARD_HOME/wishboard/.env"
 fi
-sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> /home/wishboard/wishboard/.env"
+sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> $WISHBOARD_HOME/wishboard/.env"
+
+echo "Checking for legacy standalone container..."
+if $RUN_CMD ps -a --format '{{.Names}}' | grep -Eq '^wishboard$'; then
+    echo "Stopping legacy wishboard container..."
+    $RUN_CMD stop wishboard || true
+    
+    if [[ "$DEPLOY_RULES" != "reset" ]]; then
+        echo "Migrating legacy data to new bind mount..."
+        sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard/data
+        $RUN_CMD run --rm -v wishboard_data:/from -v $WISHBOARD_HOME/wishboard/data:/to alpine sh -c 'cp -a /from/. /to/ 2>/dev/null || true'
+    fi
+
+    echo "Removing legacy wishboard container..."
+    $RUN_CMD rm wishboard || true
+fi
 
 if [[ "$DEPLOY_RULES" = "reset" ]]; then
-    echo "Resetting container volume..."
-    $RUN_CMD volume rm wishboard_data || true
+    echo "Resetting container volume and local data..."
+    $RUN_CMD volume rm wishboard_data db_data || true
+    sudo rm -rf $WISHBOARD_HOME/wishboard/data/* || true
 fi
 
-echo "Stopping and removing existing container if present..."
-$RUN_CMD stop wishboard || true
-$RUN_CMD rm wishboard || true
+# Navigate to the application directory where docker-compose.yml is uploaded
+cd $WISHBOARD_HOME/wishboard
 
-echo "Pulling image from GitHub Container Registry (ghcr.io/plthomasva/wishboard:$APP_VERSION)..."
-$RUN_CMD pull ghcr.io/plthomasva/wishboard:$APP_VERSION
-
-echo "Starting container..."
-$RUN_CMD run -d \
-    --name wishboard \
-    --restart unless-stopped \
-    --network host \
-    --env-file /home/wishboard/wishboard/.env \
-    -v wishboard_data:/app/data \
-    ghcr.io/plthomasva/wishboard:$APP_VERSION
+echo "Starting/Updating services via Docker Compose..."
+# We assume the user has copied docker-compose.yml to the target directory.
+# If they are running this script in the repository root, it will find docker-compose.yml.
+export APP_VERSION=$APP_VERSION
+$RUN_CMD compose up -d
 
 echo "Restarting Display Manager..."
 sudo systemctl restart lightdm || true

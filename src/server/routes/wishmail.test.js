@@ -7,15 +7,15 @@ const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
 const app = appModule.default;
 
-const clearTestData = () => {
-  db.exec('DELETE FROM wishmails');
-  db.exec('DELETE FROM sessions');
-  db.exec('DELETE FROM wishes');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+const clearTestData = async () => {
+  await db.exec('DELETE FROM wishmails');
+  await db.exec('DELETE FROM sessions');
+  await db.exec('DELETE FROM wishes');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
 };
 
-beforeEach(() => clearTestData());
-afterEach(() => clearTestData());
+beforeEach(async () => await clearTestData());
+afterEach(async () => await clearTestData());
 
 describe('Wishmail routes', () => {
   it('allows sending wishmail to a wish with wishmail enabled', async () => {
