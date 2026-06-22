@@ -341,14 +341,15 @@ router.get('/:id', async (req, res) => {
   res.json(row);
 });
 
-router.post('/:id/manage', async (req, res) => {
+const getAuthorizedWish = async (req, res) => {
   const { id } = req.params;
-  const { secret, content, action } = req.body;
+  const secret = req.body?.secret;
   const user = await getRequestUser(req);
 
   const row = await db.prepare('SELECT secret_hash, user_id FROM wishes WHERE id = ?').get(id);
   if (!row) {
-    return res.status(404).json({ error: 'Wish not found.' });
+    res.status(404).json({ error: 'Wish not found.' });
+    return null;
   }
 
   const isOwner = user?.id === row.user_id;
@@ -356,10 +357,21 @@ router.post('/:id/manage', async (req, res) => {
 
   if (!isAuthorized) {
     if (!secret && !isOwner && row.secret_hash) {
-      return res.status(401).json({ error: 'Secret token required for wish management.' });
+      res.status(401).json({ error: 'Secret token required for wish management.' });
+    } else {
+      res.status(403).json({ error: 'Invalid secret token or unauthorized.' });
     }
-    return res.status(403).json({ error: 'Invalid secret token or unauthorized.' });
+    return null;
   }
+
+  return { row, user, id };
+};
+
+router.post('/:id/manage', async (req, res) => {
+  const auth = await getAuthorizedWish(req, res);
+  if (!auth) return;
+  const { user, id } = auth;
+  const { content, action } = req.body;
 
   if (action === 'delete') {
     await db.prepare('DELETE FROM wishmails WHERE wish_id = ?').run(id);
@@ -382,39 +394,21 @@ router.post('/:id/manage', async (req, res) => {
 });
 
 router.post('/:id/deactivate', async (req, res) => {
-  const { id } = req.params;
-  const secret = req.body?.secret;
-  const user = await getRequestUser(req);
-
-  const row = await db.prepare('SELECT secret_hash, user_id FROM wishes WHERE id = ?').get(id);
-  if (!row) return res.status(404).json({ error: 'Wish not found.' });
-
-  const isOwner = user?.id === row.user_id;
-  const isAuthorized = isOwner || (secret && row.secret_hash && verifyPassphrase(secret.trim(), ...row.secret_hash.split(':')));
-
-  if (!isAuthorized) return res.status(403).json({ error: 'Unauthorized.' });
-
-  await db.prepare('UPDATE wishes SET is_active = 0, updated_at = ? WHERE id = ?').run(new Date().toISOString(), id);
-  emitWishDeleted(id); // Immediately remove from UI
+  const auth = await getAuthorizedWish(req, res);
+  if (!auth) return;
+  
+  await db.prepare('UPDATE wishes SET is_active = 0, updated_at = ? WHERE id = ?').run(new Date().toISOString(), auth.id);
+  emitWishDeleted(auth.id); // Immediately remove from UI
   res.json({ success: true });
 });
 
 router.post('/:id/reactivate', async (req, res) => {
-  const { id } = req.params;
-  const secret = req.body?.secret;
-  const user = await getRequestUser(req);
-
-  const row = await db.prepare('SELECT secret_hash, user_id FROM wishes WHERE id = ?').get(id);
-  if (!row) return res.status(404).json({ error: 'Wish not found.' });
-
-  const isOwner = user?.id === row.user_id;
-  const isAuthorized = isOwner || (secret && row.secret_hash && verifyPassphrase(secret.trim(), ...row.secret_hash.split(':')));
-
-  if (!isAuthorized) return res.status(403).json({ error: 'Unauthorized.' });
-
-  await db.prepare('UPDATE wishes SET is_active = 1, updated_at = ? WHERE id = ?').run(new Date().toISOString(), id);
+  const auth = await getAuthorizedWish(req, res);
+  if (!auth) return;
   
-  const wish = await db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled FROM wishes WHERE id = ?').get(id);
+  await db.prepare('UPDATE wishes SET is_active = 1, updated_at = ? WHERE id = ?').run(new Date().toISOString(), auth.id);
+  
+  const wish = await db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled FROM wishes WHERE id = ?').get(auth.id);
   const { emitWishReactivated } = await import('../socket.js');
   emitWishReactivated({
     ...wish,
