@@ -5,7 +5,7 @@ import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
 import WishPreview from '../components/WishPreview';
 import WishFormFields from '../components/WishFormFields';
-import WishScanner from '../components/WishScanner';
+const WishScanner = React.lazy(() => import('../components/WishScanner'));
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
 export default function EnterWishPage() {
@@ -306,14 +306,16 @@ export default function EnterWishPage() {
 
       {showScanner && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <WishScanner 
-            onCapture={(ocrContent, blob) => {
-              if (ocrContent) setContent(ocrContent);
-              setImageBlob(blob);
-              setShowScanner(false);
-            }} 
-            onCancel={() => setShowScanner(false)} 
-          />
+          <React.Suspense fallback={<div style={{ color: 'white' }}>Loading scanner...</div>}>
+            <WishScanner 
+              onCapture={(ocrContent, blob) => {
+                if (ocrContent) setContent(ocrContent);
+                setImageBlob(blob);
+                setShowScanner(false);
+              }} 
+              onCancel={() => setShowScanner(false)} 
+            />
+          </React.Suspense>
         </div>
       )}
     </section>
