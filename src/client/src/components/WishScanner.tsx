@@ -115,8 +115,6 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
         let maxArea = 0;
         let bestPoly: {x: number, y: number}[] | null = null;
         
-        let textCentroids: {x: number, y: number}[] = [];
-        
         for (let i = 0; i < contours.size(); ++i) {
           let cnt = contours.get(i);
           let area = cv.contourArea(cnt, false);
@@ -136,11 +134,6 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
               bestPoly.sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
             }
             approx.delete();
-          } else if (area > 20 && area < (pWidth * pHeight * 0.05)) {
-            let rect = cv.boundingRect(cnt);
-            let cx = (rect.x + rect.width / 2) / processScale;
-            let cy = (rect.y + rect.height / 2) / processScale;
-            textCentroids.push({x: cx, y: cy});
           }
         }
         
@@ -260,33 +253,7 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
             }
         }
         
-        if (textCentroids.length > 5 && smoothedCornersRef.current) {
-            let pts = smoothedCornersRef.current;
-            let topMid = { x: (pts[0].x + pts[1].x)/2, y: (pts[0].y + pts[1].y)/2 };
-            let botMid = { x: (pts[3].x + pts[2].x)/2, y: (pts[3].y + pts[2].y)/2 };
-            let topDist = 0, botDist = 0, count = 0;
-            let minX = Math.min(pts[0].x, pts[1].x, pts[2].x, pts[3].x);
-            let maxX = Math.max(pts[0].x, pts[1].x, pts[2].x, pts[3].x);
-            let minY = Math.min(pts[0].y, pts[1].y, pts[2].y, pts[3].y);
-            let maxY = Math.max(pts[0].y, pts[1].y, pts[2].y, pts[3].y);
-            
-            for (let pt of textCentroids) {
-                if (pt.x >= minX && pt.x <= maxX && pt.y >= minY && pt.y <= maxY) {
-                    topDist += Math.hypot(pt.x - topMid.x, pt.y - topMid.y);
-                    botDist += Math.hypot(pt.x - botMid.x, pt.y - botMid.y);
-                    count++;
-                }
-            }
-            
-            if (count > 5) {
-                debugLines.push(`Text Grav: Bot=${Math.floor(botDist)} Top=${Math.floor(topDist)}`);
-                if (botDist < topDist * 0.8) {
-                    pts.push(pts.shift()!);
-                    pts.push(pts.shift()!);
-                    debugLines.push("Action: Flipped 180 (Upside Down)");
-                }
-            }
-        }
+
 
         let pts = [...smoothedCornersRef.current];
 
