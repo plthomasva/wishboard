@@ -1,20 +1,32 @@
 services:
+  db:
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    container_name: wishboard-db
+    volumes:
+      - db_data:/var/lib/sqld
+    restart: unless-stopped
+    environment:
+      - RUST_LOG=info
+
   wishboard:
-    image: ghcr.io/plthomasva/wishboard:latest
+    image: ghcr.io/plthomasva/wishboard:${APP_VERSION:-latest}
     build:
       context: .
       dockerfile: Dockerfile
     container_name: wishboard
+    depends_on:
+      - db
     ports:
       - "3000:3000"
     volumes:
-      - wishboard_data:/app/data
+      - ./data:/app/data
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=http://db:8080
       # - WISHBOARD_ADMIN_USERNAME=admin
       # - WISHBOARD_ADMIN_SECRET=admin-board
       # - CORS_ALLOWED_ORIGINS=http://your-domain.com
 
 volumes:
-  wishboard_data:
+  db_data:

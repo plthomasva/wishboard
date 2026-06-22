@@ -1,22 +1,23 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "vitest",
-  "vitest": {
-    "configFile": "stryker.vite.config.ts"
-  },
   "reporters": [
     "progress",
     "clear-text",
     "html"
   ],
-  "coverageAnalysis": "off",
+  "coverageAnalysis": "perTest",
   "mutate": [
     "src/client/src/**/*.ts",
     "src/client/src/**/*.tsx",
     "src/client/src/**/*.js",
+    "src/server/**/*.js",
+    "src/server/**/*.ts",
     "!src/client/src/**/*.test.ts",
     "!src/client/src/**/*.test.tsx",
-    "!src/client/src/**/*.test.js"
+    "!src/client/src/**/*.test.js",
+    "!src/server/**/*.test.js",
+    "!src/server/**/*.test.ts"
   ],
   "ignorePatterns": [
     "!dist/**/*"

@@ -7,10 +7,10 @@ const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
 const app = appModule.default;
 
-afterEach(() => {
-  db.exec('DELETE FROM sessions');
-  db.exec('DELETE FROM wishes');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+afterEach(async () => {
+  await db.exec('DELETE FROM sessions');
+  await db.exec('DELETE FROM wishes');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
 });
 
 describe('User registration and login', () => {
@@ -139,7 +139,7 @@ describe('User registration and login', () => {
     expect(login.body.identity_roles).toEqual(['switch']);
 
     // Also verify via direct DB query for belt-and-suspenders
-    const row = db.prepare('SELECT identity_genders, identity_orientations, identity_roles FROM users WHERE username = ?').get('identity_user');
+    const row = await db.prepare('SELECT identity_genders, identity_orientations, identity_roles FROM users WHERE username = ?').get('identity_user');
     expect(JSON.parse(row.identity_genders)).toEqual(['woman']);
     expect(JSON.parse(row.identity_orientations)).toEqual(['bisexual']);
     expect(JSON.parse(row.identity_roles)).toEqual(['switch']);

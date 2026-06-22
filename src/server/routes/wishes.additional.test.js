@@ -7,18 +7,18 @@ const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
 const app = appModule.default;
 
-const clearTestData = () => {
-  db.exec('DELETE FROM sessions');
-  db.exec('DELETE FROM wishes');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+const clearTestData = async () => {
+  await db.exec('DELETE FROM sessions');
+  await db.exec('DELETE FROM wishes');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
 };
 
-beforeEach(() => {
-  clearTestData();
+beforeEach(async () => {
+  await clearTestData();
 });
 
-afterEach(() => {
-  clearTestData();
+afterEach(async () => {
+  await clearTestData();
 });
 
 describe('Wishes: anonymous and authenticated flows', () => {
@@ -39,7 +39,7 @@ describe('Wishes: anonymous and authenticated flows', () => {
     // update with correct secret
     const update = await request(app).post(`/api/wishes/${id}/manage`).send({ secret, content: 'Anon updated' });
     expect(update.status).toBe(200);
-    const row = db.prepare('SELECT content FROM wishes WHERE id = ?').get(id);
+    const row = await db.prepare('SELECT content FROM wishes WHERE id = ?').get(id);
     expect(row.content).toBe('Anon updated');
 
     // update with wrong secret
@@ -49,7 +49,7 @@ describe('Wishes: anonymous and authenticated flows', () => {
     // delete with correct secret
     const del = await request(app).post(`/api/wishes/${id}/manage`).send({ secret, action: 'delete' });
     expect(del.status).toBe(200);
-    const gone = db.prepare('SELECT id FROM wishes WHERE id = ?').get(id);
+    const gone = await db.prepare('SELECT id FROM wishes WHERE id = ?').get(id);
     expect(gone).toBeUndefined();
   });
 
@@ -66,7 +66,7 @@ describe('Wishes: anonymous and authenticated flows', () => {
     // owner can update without secret
     const update = await request(app).post(`/api/wishes/${id}/manage`).set('Authorization', `Bearer ${token}`).send({ content: 'Owned updated' });
     expect(update.status).toBe(200);
-    const row = db.prepare('SELECT content FROM wishes WHERE id = ?').get(id);
+    const row = await db.prepare('SELECT content FROM wishes WHERE id = ?').get(id);
     expect(row.content).toBe('Owned updated');
   });
 

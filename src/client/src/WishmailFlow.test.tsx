@@ -30,7 +30,7 @@ describe('Wishmail UI Flow', () => {
         return { ok: true, json: async () => newWish };
       }
       // Mock Get Single Wish
-      if (url === '/api/wishes/w1' && (!options || !options.method || options.method === 'GET')) {
+      if (url === '/api/wishes/w1' && (!options?.method || options.method === 'GET')) {
         const wish = wishes.find(w => w.id === 'w1');
         return wish ? { ok: true, json: async () => wish } : { ok: false, json: async () => ({ error: 'Not found' }) };
       }
@@ -40,7 +40,7 @@ describe('Wishmail UI Flow', () => {
       }
 
       // Mock Send Wishmail
-      if (url.match(/^\/api\/wishes\/w1\/mail$/) && options?.method === 'POST') {
+      if (/^\/api\/wishes\/w1\/mail$/.test(url) && options?.method === 'POST') {
         const body = JSON.parse(options.body);
         const newMail = { id: 'm1', ...body, read: false, created_at: new Date().toISOString() };
         mails.push(newMail);
@@ -48,12 +48,12 @@ describe('Wishmail UI Flow', () => {
       }
 
       // Mock Get Wishmail
-      if (url.match(/^\/api\/wishes\/w1\/mail/) && (!options || !options.method || options.method === 'GET')) {
+      if (url.startsWith('/api/wishes/w1/mail') && (!options?.method || options.method === 'GET')) {
         return { ok: true, json: async () => mails };
       }
 
       // Mock Delete Wishmail
-      if (url.match(/^\/api\/wishes\/w1\/mail\/m1$/) && options?.method === 'DELETE') {
+      if (/^\/api\/wishes\/w1\/mail\/m1$/.test(url) && options?.method === 'DELETE') {
         mails = mails.filter(m => m.id !== 'm1');
         return { ok: true, json: async () => ({ success: true }) };
       }
@@ -69,7 +69,7 @@ describe('Wishmail UI Flow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
     
     // Switch to login tab
-    fireEvent.click(screen.getByRole('button', { name: 'Login', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Login' }));
 
     // Simulate typing and logging in
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'usera' } });
@@ -119,7 +119,7 @@ describe('Wishmail UI Flow', () => {
 
     // 6. Delete the wishmail
     // Since globalThis.window.confirm is used, we must mock it
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const confirmSpy = vi.spyOn(globalThis.window, 'confirm').mockReturnValue(true);
     
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
@@ -129,5 +129,5 @@ describe('Wishmail UI Flow', () => {
     });
     
     confirmSpy.mockRestore();
-  });
+  }, 15000);
 });

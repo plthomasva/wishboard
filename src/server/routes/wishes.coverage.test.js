@@ -14,10 +14,10 @@ import { reloadRules } from '../rulesManager.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const clearTestData = () => {
-  db.exec('DELETE FROM sessions');
-  db.exec('DELETE FROM wishes');
-  db.exec("DELETE FROM users WHERE role != 'admin'");
+const clearTestData = async () => {
+  await db.exec('DELETE FROM sessions');
+  await db.exec('DELETE FROM wishes');
+  await db.exec("DELETE FROM users WHERE role != 'admin'");
   
   const srcRules = path.resolve(__dirname, '../../../data/rules.yaml');
   const testRules = path.resolve(__dirname, '../../../data/rules.test.yaml');
@@ -27,12 +27,12 @@ const clearTestData = () => {
   reloadRules();
 };
 
-beforeEach(() => {
-  clearTestData();
+beforeEach(async () => {
+  await clearTestData();
 });
 
-afterEach(() => {
-  clearTestData();
+afterEach(async () => {
+  await clearTestData();
 });
 
 describe('wishes.js coverage', () => {
@@ -93,7 +93,7 @@ describe('wishes.js coverage', () => {
     expect(noSecret.status).toBe(401);
 
     // Remove secret hash to test "Invalid secret token." 403
-    db.prepare('UPDATE wishes SET secret_hash = NULL WHERE id = ?').run(wishId);
+    await db.prepare('UPDATE wishes SET secret_hash = NULL WHERE id = ?').run(wishId);
     const invalidSecret = await request(app).post(`/api/wishes/${wishId}/manage`).send({ action: 'delete', secret: 'test' });
     expect(invalidSecret.status).toBe(403);
 

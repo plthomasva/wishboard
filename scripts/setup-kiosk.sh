@@ -5,10 +5,12 @@ echo "=== Wishboard Raspberry Pi Kiosk Setup Script ==="
 
 MODE="${1:-prod}"
 DOMAIN_NAME="${2:-wishboard.painless-computing.com}"
+REMOTE_TEMP_DIR="${3:-/tmp}"
 AP_IP="10.42.0.1"
 
 echo "Deployment Mode: $MODE"
 echo "Domain Name: $DOMAIN_NAME"
+echo "Remote Temp Dir: $REMOTE_TEMP_DIR"
 
 # 1. Create wishboard user if it doesn't exist
 if id "wishboard" &>/dev/null; then
@@ -24,12 +26,16 @@ sudo usermod -a -G video,audio,input,tty,render wishboard
 
 # 2. Setup the application directory
 echo "Creating application folder..."
-sudo mkdir -p /home/wishboard/wishboard
-sudo chown -R wishboard:wishboard /home/wishboard
+WISHBOARD_HOME=$(getent passwd wishboard | cut -d: -f6)
+sudo mkdir -p $WISHBOARD_HOME/wishboard
+if [[ -f "$REMOTE_TEMP_DIR/docker-compose.yml" ]]; then
+  sudo mv "$REMOTE_TEMP_DIR/docker-compose.yml" $WISHBOARD_HOME/wishboard/docker-compose.yml
+fi
+sudo chown -R wishboard:wishboard $WISHBOARD_HOME
 
 echo "Installing graphical kiosk and network dependencies..."
 sudo apt-get update
-sudo apt-get install -y imagemagick swaybg chromium network-manager iw nginx
+sudo apt-get install -y swaybg chromium network-manager iw nginx
 
 echo "Checking for Docker CE Rootless dependencies..."
 # We unconditionally ensure Docker CE, rootless-extras, uidmap and systemd-container are installed.
@@ -200,9 +206,6 @@ else
     echo "Local DNS redirection enabled."
 fi
 
-echo "Generating fallback background image..."
-sudo -u wishboard convert -size 1920x1080 xc:black -font DejaVu-Sans -pointsize 48 -fill white -gravity center -draw "text 0,0 'Please contact the Wishboard Administrator'" /home/wishboard/background.png || echo "Fallback background creation skipped (imagemagick failed or font missing)."
-
 # 3. (Systemd Node Service Removed in favor of Docker --restart always)
 
 # 4. Configure LightDM auto-login
@@ -243,10 +246,10 @@ sudo systemctl restart getty@tty1.service
 
 # 6. Configure autostart for Wayland (labwc)
 echo "Configuring labwc Wayland autostart..."
-sudo -u wishboard mkdir -p /home/wishboard/.config/labwc
-sudo -u wishboard tee /home/wishboard/.config/labwc/autostart > /dev/null << 'EOF'
+sudo -u wishboard mkdir -p $WISHBOARD_HOME/.config/labwc
+sudo -u wishboard tee $WISHBOARD_HOME/.config/labwc/autostart > /dev/null << 'EOF'
 #!/bin/bash
-swaybg -i /home/wishboard/background.png -m fill &
+swaybg -c "#000000" &
 while ! curl -s http://localhost:3000 > /dev/null; do
   sleep 1
 done
@@ -255,9 +258,9 @@ while true; do
   sleep 1
 done
 EOF
-sudo chmod +x /home/wishboard/.config/labwc/autostart
+sudo chmod +x $WISHBOARD_HOME/.config/labwc/autostart
 
-sudo -u wishboard tee /home/wishboard/.config/labwc/rc.xml > /dev/null << 'EOF'
+sudo -u wishboard tee $WISHBOARD_HOME/.config/labwc/rc.xml > /dev/null << 'EOF'
 <?xml version="1.0"?>
 <labwc_config>
   <keyboard>

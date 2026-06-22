@@ -28,17 +28,13 @@ Offline wish board for conventions, built to run on a Raspberry Pi or similar lo
 
 ### Using Docker (Recommended)
 
-You can run Wishboard using the pre-built Docker container published to the GitHub Container Registry:
+You can run Wishboard using the pre-built Docker container and `docker-compose.yml` published in this repository:
 
 ```bash
-docker run -d \
-  -p 3000:3000 \
-  -v wishboard_data:/app/data \
-  --name wishboard \
-  ghcr.io/plthomasva/wishboard:latest
+docker compose up -d
 ```
 
-Alternatively, if you prefer `docker-compose`, a `docker-compose.yml` file is provided in the repository.
+This will automatically pull the necessary images and start both the Wishboard backend and its internal libSQL database instance.
 
 ### Local Installation
 

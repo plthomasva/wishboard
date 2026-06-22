@@ -16,7 +16,7 @@ export async function resetPassword(args, consoleLog = console.log, consoleError
     passphrase = generatePassphrase();
   }
 
-  const user = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+  const user = await db.prepare('SELECT id FROM users WHERE username = ?').get(username);
 
   if (!user) {
     consoleError(`Error: User '${username}' not found in the database.`);
@@ -26,8 +26,8 @@ export async function resetPassword(args, consoleLog = console.log, consoleError
   const salt = createSalt();
   const hash = hashPassphrase(passphrase, salt);
 
-  db.prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?').run(hash, salt, user.id);
-  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+  await db.prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?').run(hash, salt, user.id);
+  await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
 
   consoleLog(`\nSuccess! Passphrase for '${username}' has been reset.`);
   consoleLog(`New Passphrase: ${passphrase}\n`);
