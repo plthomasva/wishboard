@@ -2,8 +2,6 @@ services:
   db:
     image: ghcr.io/tursodatabase/libsql-server:latest
     container_name: wishboard-db
-    ports:
-      - "8080:8080"
     volumes:
       - db_data:/var/lib/sqld
     restart: unless-stopped
