@@ -123,6 +123,7 @@ export default function SearchPage() {
         globalThis.alert('Failed to delete wish.');
       }
     } catch (err) {
+      console.error('Error deleting wish:', err);
       globalThis.alert('Error deleting wish.');
     }
   }, [token]);
