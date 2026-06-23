@@ -64,4 +64,26 @@ describe('EnterWishPage', () => {
     // Now visible
     expect(screen.getByText(/Strictly required genders/i)).toBeInTheDocument();
   });
+
+  it('allows uploading a handwritten wish image', async () => {
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:mocked-url');
+    render(<EnterWishPage />);
+    
+    const fileInput = screen.getByLabelText(/Upload Image/i);
+    const mockFile = new File(['mock content'], 'wish.jpg', { type: 'image/jpeg' });
+    
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [mockFile] } });
+    });
+
+    expect(screen.getByText(/Handwritten wish attached/i)).toBeInTheDocument();
+
+    // Verify remove functionality
+    const removeBtn = screen.getByRole('button', { name: /Remove Image/i });
+    await act(async () => {
+      fireEvent.click(removeBtn);
+    });
+
+    expect(screen.queryByText(/Handwritten wish attached/i)).not.toBeInTheDocument();
+  });
 });

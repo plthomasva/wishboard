@@ -142,7 +142,23 @@ export default function EnterWishPage() {
             ) : (
               <div>
                 <p style={{ margin: '0 0 12px 0' }}>Have a physical 3x5 wish card?</p>
-                <button type="button" onClick={() => setShowScanner(true)}>Capture Handwritten Wish</button>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button type="button" onClick={() => setShowScanner(true)}>Capture with Camera</button>
+                  <label className="secondary-button" style={{ cursor: 'pointer', display: 'inline-block', margin: 0, padding: '12px 24px', borderRadius: '24px', fontWeight: 'bold' }}>
+                    Upload Image
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      style={{ display: 'none' }} 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setImageBlob(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
             )}
           </div>
