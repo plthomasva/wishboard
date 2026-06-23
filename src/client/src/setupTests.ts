@@ -56,11 +56,12 @@ vi.mock('socket.io-client', () => {
   };
 });
 
-// Mock HTMLCanvasElement methods for jsdom
-HTMLCanvasElement.prototype.getContext = vi.fn() as any;
-HTMLCanvasElement.prototype.toBlob = vi.fn(function(this: HTMLCanvasElement, callback: BlobCallback) {
-  callback(new Blob(['mock data'], { type: 'image/jpeg' }));
-}) as any;
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = vi.fn() as any;
+  HTMLCanvasElement.prototype.toBlob = vi.fn(function(this: HTMLCanvasElement, callback: BlobCallback) {
+    callback(new Blob(['mock data'], { type: 'image/jpeg' }));
+  }) as any;
+}
 
 globalThis.ResizeObserver = ResizeObserver;
 if (globalThis.window !== undefined) {
