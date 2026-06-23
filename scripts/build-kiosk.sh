@@ -36,6 +36,7 @@ else
     sudo -u wishboard bash -c "echo 'NODE_ENV=development' > $WISHBOARD_HOME/wishboard/.env"
 fi
 sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> $WISHBOARD_HOME/wishboard/.env"
+sudo -u wishboard bash -c "echo 'APP_VERSION=$APP_VERSION' >> $WISHBOARD_HOME/wishboard/.env"
 
 echo "Checking for legacy standalone container..."
 if $RUN_CMD ps -a --format '{{.Names}}' | grep -Eq '^wishboard$'; then
