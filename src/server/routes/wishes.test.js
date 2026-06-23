@@ -108,6 +108,18 @@ describe('Authenticated wish creation', () => {
     expect(row.image_id).toBeTypeOf('string');
     expect(row.image_id).toMatch(/image-.*\.png/);
   });
+
+  it('rejects uploads of invalid file types', async () => {
+    const dummyText = Buffer.from('this is not an image');
+    const wishResponse = await request(app)
+      .post('/api/wishes')
+      .attach('image', dummyText, 'test.txt')
+      .field('content', 'This should fail')
+      .set('Accept', 'application/json');
+
+    expect(wishResponse.status).toBe(500);
+    expect(wishResponse.text).toMatch(/Invalid file type/);
+  });
 });
 
 describe('Matchmaking logic', () => {

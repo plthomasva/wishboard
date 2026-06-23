@@ -14,12 +14,21 @@ const storage = multer.diskStorage({
     cb(null, imagesDir)
   },
   filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname) || '.png';
+    const ext = path.extname(file.originalname).toLowerCase() || '.png';
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + ext)
   }
 });
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const fileFilter = (req, file, cb) => {
+  const allowedExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only PNG, JPG, and WEBP are allowed.'), false);
+  }
+};
+const upload = multer({ storage: storage, fileFilter: fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
