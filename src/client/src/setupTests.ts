@@ -43,13 +43,16 @@ import ResizeObserver from 'resize-observer-polyfill';
 
 // Mock socket.io-client so component tests don't try to open a real WebSocket
 vi.mock('socket.io-client', () => {
+  const socket = {
+    connected: false,
+    on: vi.fn(),
+    off: vi.fn(),
+    emit: vi.fn(),
+    disconnect: vi.fn(),
+  };
   return {
-    io: vi.fn(() => ({
-      on: vi.fn(),
-      off: vi.fn(),
-      emit: vi.fn(),
-      disconnect: vi.fn(),
-    }))
+    default: { io: vi.fn(() => socket) },
+    io: vi.fn(() => socket),
   };
 });
 
