@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, act } from '@testing-library/react';
 import EnterWishPage from './EnterWishPage';
 
 vi.mock('../AuthContext', () => ({
@@ -8,13 +8,14 @@ vi.mock('../AuthContext', () => ({
 
 describe('EnterWishPage', () => {
   beforeEach(() => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ id: 'wish-1', secret: 'secret-code' })
-    }) as any;
+    }));
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -27,21 +28,27 @@ describe('EnterWishPage', () => {
 
     await waitFor(() => expect(screen.getByText(/Wish saved! ID:/i)).toBeInTheDocument());
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes', expect.objectContaining({ method: 'POST' }));
+
+    // Flush any pending WishCard layout effects to prevent act() warnings
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
   });
 
 
 
   it('shows error if API request fails', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,
       json: async () => ({ error: 'Server error' })
-    }) as any;
+    }));
 
     render(<EnterWishPage />);
     fireEvent.change(screen.getByPlaceholderText(/Type your wish here/i), { target: { value: 'test wish' } });
     fireEvent.click(screen.getByRole('button', { name: /Submit Wish/i }));
     
     expect(await screen.findByText(/Server error/i)).toBeInTheDocument();
+
+    // Flush any pending WishCard layout effects to prevent act() warnings
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
   });
 
   it('toggles Advanced Match Criteria', async () => {

@@ -102,7 +102,7 @@ describe('Authenticated wish creation', () => {
     expect(wishResponse.status).toBe(201);
     expect(wishResponse.body.id).toBeTypeOf('string');
 
-    const row = db.prepare('SELECT content, wishmail_enabled, image_id FROM wishes WHERE id = ?').get(wishResponse.body.id);
+    const row = await db.prepare('SELECT content, wishmail_enabled, image_id FROM wishes WHERE id = ?').get(wishResponse.body.id);
     expect(row.content).toBe('This is my handwritten wish');
     expect(row.wishmail_enabled).toBe(1);
     expect(row.image_id).toBeTypeOf('string');
