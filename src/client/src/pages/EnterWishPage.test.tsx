@@ -2,12 +2,19 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, act } from '@testing-library/react';
 import EnterWishPage from './EnterWishPage';
 
+import * as AuthContext from '../AuthContext';
+
 vi.mock('../AuthContext', () => ({
-  useAuth: () => ({ token: null })
+  useAuth: vi.fn(() => ({ token: null }))
+}));
+
+vi.mock('../components/WishScanner', () => ({
+  default: () => <div data-testid="mock-wish-scanner">Mock WishScanner</div>
 }));
 
 describe('EnterWishPage', () => {
   beforeEach(() => {
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ id: 'wish-1', secret: 'secret-code' })
@@ -85,5 +92,21 @@ describe('EnterWishPage', () => {
     });
 
     expect(screen.queryByText(/Handwritten wish attached/i)).not.toBeInTheDocument();
+  });
+  it('handles logged-in user UI appropriately', async () => {
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' });
+    render(<EnterWishPage />);
+    expect(screen.getByText(/Your account identity attributes are applied automatically to this wish./i)).toBeInTheDocument();
+  });
+
+  it('allows capturing an image with camera', async () => {
+    render(<EnterWishPage />);
+    
+    // Desktop view shows the Capture with Camera button
+    const captureBtn = screen.getByRole('button', { name: /Capture with Camera/i });
+    fireEvent.click(captureBtn);
+
+    // Scanner should be rendered
+    expect(await screen.findByTestId('mock-wish-scanner')).toBeInTheDocument();
   });
 });

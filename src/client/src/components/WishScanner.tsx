@@ -145,20 +145,25 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
                 let area = cv.contourArea(cnt, false);
                 if (area > 50 && area < (pWidth * pHeight * 0.05)) {
                     let rect = cv.boundingRect(cnt);
-                    minX = Math.min(minX, rect.x);
-                    minY = Math.min(minY, rect.y);
-                    maxX = Math.max(maxX, rect.x + rect.width);
-                    maxY = Math.max(maxY, rect.y + rect.height);
-                    foundText = true;
+                    // Filter out noise at the very edges of the frame
+                    if (rect.x > pWidth * 0.05 && rect.y > pHeight * 0.05 && 
+                        (rect.x + rect.width) < pWidth * 0.95 && 
+                        (rect.y + rect.height) < pHeight * 0.95) {
+                        minX = Math.min(minX, rect.x);
+                        minY = Math.min(minY, rect.y);
+                        maxX = Math.max(maxX, rect.x + rect.width);
+                        maxY = Math.max(maxY, rect.y + rect.height);
+                        foundText = true;
+                    }
                 }
             }
-            if (foundText && (maxX - minX) > pWidth * 0.2) {
+            if (foundText && (maxX - minX) > pWidth * 0.1) {
                 let padX = pWidth * 0.05;
                 let padY = pHeight * 0.05;
                 minX = Math.max(0, minX - padX) / processScale;
                 minY = Math.max(0, minY - padY) / processScale;
-                maxX = Math.min(video.videoWidth, maxX / processScale + padX);
-                maxY = Math.min(video.videoHeight, maxY / processScale + padY);
+                maxX = Math.min(video.videoWidth, (maxX + padX) / processScale);
+                maxY = Math.min(video.videoHeight, (maxY + padY) / processScale);
                 
                 const cx = (minX + maxX) / 2;
                 const cy = (minY + maxY) / 2;
@@ -292,13 +297,13 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
         let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y]);
         let transform = cv.getPerspectiveTransform(srcTri, dstTri);
 
+        const pad = 20;
         const szW = 1000 * (stickerZoneHeightPercentage / 100);
         const szH = 600 * 0.15;
-        const pad = 20;
         const szX1 = 1000 - szW - pad;
-        const szY1 = pad;
+        const szY1 = 600 - szH - pad;
         const szX2 = 1000 - pad;
-        const szY2 = pad + szH;
+        const szY2 = 600 - pad;
 
         let zonePtsMat = cv.matFromArray(4, 1, cv.CV_32FC2, [szX1, szY1, szX2, szY1, szX2, szY2, szX1, szY2]);
         let outPtsMat = new cv.Mat();
