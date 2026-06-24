@@ -22,7 +22,7 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
     let activeStream: MediaStream | null = null;
     async function setupCamera() {
       try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (!navigator.mediaDevices?.getUserMedia) {
             throw new Error("Camera API not available. Make sure you are using HTTPS or localhost.");
         }
         const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -137,7 +137,9 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
           }
         }
         
-        if (!bestPoly) {
+        if (bestPoly) {
+            debugLines.push(`State: Tracked (${Math.floor(maxArea)}px)`);
+        } else {
             let minX = pWidth, minY = pHeight, maxX = 0, maxY = 0;
             let foundText = false;
             for (let i = 0; i < contours.size(); ++i) {
@@ -181,8 +183,6 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
                 ];
             }
             debugLines.push("State: Center Crop Fallback");
-        } else {
-            debugLines.push(`State: Tracked (${Math.floor(maxArea)}px)`);
         }
         
         src.delete(); contours.delete(); hierarchy.delete();
@@ -207,14 +207,13 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
             ];
         }
 
-        if (!smoothedCornersRef.current || smoothedCornersRef.current.some(p => isNaN(p.x) || isNaN(p.y))) {
+        if (!smoothedCornersRef.current || smoothedCornersRef.current.some(p => Number.isNaN(p.x) || Number.isNaN(p.y))) {
             let pts = [...bestPoly];
             let d01 = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
             let d12 = Math.hypot(pts[2].x - pts[1].x, pts[2].y - pts[1].y);
             if (d12 > d01) pts.push(pts.shift()!); 
             if (pts[0].y + pts[1].y > pts[2].y + pts[3].y) {
-                pts.push(pts.shift()!);
-                pts.push(pts.shift()!); 
+                pts.push(pts.shift()!, pts.shift()!); 
             }
             smoothedCornersRef.current = pts;
         } else {
@@ -362,7 +361,7 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
   };
 
   const processImage = async () => {
-    if (!videoRef.current || !smoothedCornersRef.current || smoothedCornersRef.current.some(p => isNaN(p.x))) return;
+    if (!videoRef.current || !smoothedCornersRef.current || smoothedCornersRef.current.some(p => Number.isNaN(p.x))) return;
     setIsProcessing(true);
     setProcessingStatus('Reading text (this may take a few moments)...');
     

@@ -79,8 +79,8 @@ await db.executeMultiple(`
 
 const ensureColumn = async (table, column, type) => {
   const rs = await db.execute(`PRAGMA table_info(${table})`);
-  const row = rs.rows.find((info) => info.name === column);
-  if (!row) {
+  const hasColumn = rs.rows.some((info) => info.name === column);
+  if (!hasColumn) {
     await db.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
   }
 };

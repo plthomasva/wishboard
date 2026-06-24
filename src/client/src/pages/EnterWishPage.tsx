@@ -145,14 +145,14 @@ export default function EnterWishPage() {
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
                   <button type="button" onClick={() => setShowScanner(true)}>Capture with Camera</button>
                   <label className="secondary-button" style={{ cursor: 'pointer', display: 'inline-block', margin: 0, padding: '12px 24px', borderRadius: '24px', fontWeight: 'bold' }}>
-                    Upload Image
+                    Upload Image{' '}
                     <input 
                       type="file" 
                       accept="image/*" 
                       style={{ display: 'none' }} 
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file && file.type.startsWith('image/')) {
+                        if (file?.type.startsWith('image/')) {
                           setImageBlob(file);
                         } else {
                           setImageBlob(null);
