@@ -50,7 +50,7 @@ function sanitizeImageId(imageId?: string): string {
   return imageId.replace(/[^a-zA-Z0-9._-]/g, '');
 }
 
-function getSafeImageSrc(wish: Wish): string {
+function getSafeImageSrc(wish: Wish): string | undefined {
   const imageUrl = wish.image_url?.trim();
   if (imageUrl && isSafeImageUrl(imageUrl)) {
     return imageUrl;
@@ -58,7 +58,7 @@ function getSafeImageSrc(wish: Wish): string {
 
   const safeImageId = sanitizeImageId(wish.image_id);
   const serverImagePath = safeImageId ? `/images/${safeImageId}` : '';
-  return serverImagePath && isSafeImageUrl(serverImagePath) ? serverImagePath : '';
+  return serverImagePath && isSafeImageUrl(serverImagePath) ? serverImagePath : undefined;
 }
 
 interface WishCardProps {

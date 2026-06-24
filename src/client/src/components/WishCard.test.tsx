@@ -124,8 +124,8 @@ describe('WishCard', () => {
     };
     render(<WishCard wish={wish} />);
     const img = screen.queryByRole('img', { name: 'Should not have image' });
-    // When getSafeImageSrc returns '', the img renders with src=""
-    expect(img).toHaveAttribute('src', '');
+    // When getSafeImageSrc returns '', the img renders without a src attribute in testing-library
+    expect(img).not.toHaveAttribute('src');
   });
 
   it('allows safe external image URLs like blob or data', () => {
