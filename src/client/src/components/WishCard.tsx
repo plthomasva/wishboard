@@ -19,28 +19,41 @@ interface Wish {
   image_id?: string;
 }
 
-function isSafeImageUrl(url?: string): boolean {
-  if (!url) return false;
+function getSafeImageUrl(url?: string): string | undefined {
+  if (!url) return undefined;
   const trimmed = url.trim();
+
+  // Explicit defense-in-depth against script execution
+  if (/^(javascript|vbscript|data(?!:image)):/i.test(trimmed)) {
+    return undefined;
+  }
 
   try {
     const parsed = new URL(trimmed, globalThis.location.origin);
 
     if (parsed.protocol === 'blob:') {
-      return true;
+      if (parsed.origin === globalThis.location.origin) {
+        return parsed.href;
+      }
+      return undefined;
     }
 
     if (parsed.protocol === 'data:') {
-      return trimmed.startsWith('data:image/');
+      if (trimmed.startsWith('data:image/')) {
+        return trimmed;
+      }
+      return undefined;
     }
 
-    if (parsed.origin === globalThis.location.origin && parsed.pathname.startsWith('/images/')) {
-      return true;
+    if ((parsed.protocol === 'http:' || parsed.protocol === 'https:') && 
+        parsed.origin === globalThis.location.origin && 
+        parsed.pathname.startsWith('/images/')) {
+      return parsed.href;
     }
 
-    return false;
+    return undefined;
   } catch {
-    return false;
+    return undefined;
   }
 }
 
@@ -51,14 +64,14 @@ function sanitizeImageId(imageId?: string): string {
 }
 
 function getSafeImageSrc(wish: Wish): string | undefined {
-  const imageUrl = wish.image_url?.trim();
-  if (imageUrl && isSafeImageUrl(imageUrl)) {
-    return imageUrl;
+  const safeUrl = getSafeImageUrl(wish.image_url);
+  if (safeUrl) {
+    return safeUrl;
   }
 
   const safeImageId = sanitizeImageId(wish.image_id);
   const serverImagePath = safeImageId ? `/images/${safeImageId}` : '';
-  return serverImagePath && isSafeImageUrl(serverImagePath) ? serverImagePath : undefined;
+  return getSafeImageUrl(serverImagePath);
 }
 
 interface WishCardProps {
