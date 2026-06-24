@@ -152,39 +152,37 @@ router.post('/me/delete', async (req, res) => {
   res.json({ success: true });
 });
 
-router.post('/me/deactivate', async (req, res) => {
+async function setUserActiveState(req, res, isActive) {
   const user = req.user;
-
-  await db.prepare('UPDATE users SET is_active = 0 WHERE id = ?').run(user.id);
+  const activeInt = isActive ? 1 : 0;
   
-  const wishes = await db.prepare('SELECT id FROM wishes WHERE user_id = ?').all(user.id);
-  const { emitWishDeleted } = await import('../socket.js');
-  wishes.forEach(w => emitWishDeleted(w.id));
+  await db.prepare('UPDATE users SET is_active = ? WHERE id = ?').run(activeInt, user.id);
   
-  logger.info('User deactivated', { user_id: user.id });
-  res.json({ success: true });
-});
-
-router.post('/me/reactivate', async (req, res) => {
-  const user = req.user;
-
-  await db.prepare('UPDATE users SET is_active = 1 WHERE id = ?').run(user.id);
-  
-  const wishes = await db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled FROM wishes WHERE user_id = ? AND is_active = 1').all(user.id);
-  const { emitWishReactivated } = await import('../socket.js');
-  wishes.forEach(w => {
-    emitWishReactivated({
-      ...w,
-      creator_genders: parseJsonArray(w.creator_genders),
-      creator_orientations: parseJsonArray(w.creator_orientations),
-      contacts: parseJsonArray(w.contacts),
-      wishmail_enabled: Boolean(w.wishmail_enabled)
+  if (isActive) {
+    const wishes = await db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled FROM wishes WHERE user_id = ? AND is_active = 1').all(user.id);
+    const { emitWishReactivated } = await import('../socket.js');
+    wishes.forEach(w => {
+      emitWishReactivated({
+        ...w,
+        creator_genders: parseJsonArray(w.creator_genders),
+        creator_orientations: parseJsonArray(w.creator_orientations),
+        contacts: parseJsonArray(w.contacts),
+        wishmail_enabled: Boolean(w.wishmail_enabled)
+      });
     });
-  });
-
-  logger.info('User reactivated', { user_id: user.id });
+    logger.info('User reactivated', { user_id: user.id });
+  } else {
+    const wishes = await db.prepare('SELECT id FROM wishes WHERE user_id = ?').all(user.id);
+    const { emitWishDeleted } = await import('../socket.js');
+    wishes.forEach(w => emitWishDeleted(w.id));
+    logger.info('User deactivated', { user_id: user.id });
+  }
+  
   res.json({ success: true });
-});
+}
+
+router.post('/me/deactivate', (req, res) => setUserActiveState(req, res, false));
+router.post('/me/reactivate', (req, res) => setUserActiveState(req, res, true));
 
 router.get('/me', async (req, res) => {
   const user = req.user;

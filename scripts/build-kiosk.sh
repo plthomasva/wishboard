@@ -36,6 +36,7 @@ else
     sudo -u wishboard bash -c "echo 'NODE_ENV=development' > $WISHBOARD_HOME/wishboard/.env"
 fi
 sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> $WISHBOARD_HOME/wishboard/.env"
+sudo -u wishboard bash -c "echo 'APP_VERSION=$APP_VERSION' >> $WISHBOARD_HOME/wishboard/.env"
 
 echo "Checking for legacy standalone container..."
 if $RUN_CMD ps -a --format '{{.Names}}' | grep -Eq '^wishboard$'; then
@@ -65,7 +66,7 @@ echo "Starting/Updating services via Docker Compose..."
 # We assume the user has copied docker-compose.yml to the target directory.
 # If they are running this script in the repository root, it will find docker-compose.yml.
 export APP_VERSION=$APP_VERSION
-$RUN_CMD compose up -d
+$RUN_CMD compose --env-file .env up -d --pull always
 
 echo "Restarting Display Manager..."
 sudo systemctl restart lightdm || true

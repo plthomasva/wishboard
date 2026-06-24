@@ -100,6 +100,56 @@ describe('WishCard', () => {
     expect(onOverflowChange).toHaveBeenCalledWith(true);
   });
 
+  it('renders image when image_url or image_id is provided', () => {
+    const wish = {
+      id: 'w8',
+      content: 'This text should be hidden',
+      image_id: 'test-image.png'
+    };
+    render(<WishCard wish={wish} />);
+    
+    const img = screen.getByRole('img', { name: 'This text should be hidden' });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', '/images/test-image.png');
+    
+    const textNode = screen.getByText('This text should be hidden');
+    expect(textNode).toHaveClass('sr-only');
+  });
+
+  it('rejects unsafe image URLs', () => {
+    const wish = {
+      id: 'w9',
+      content: 'Should not have image',
+      image_url: 'javascript:alert(1)' // Unsafe!
+    };
+    render(<WishCard wish={wish} />);
+    const img = screen.queryByRole('img', { name: 'Should not have image' });
+    // When getSafeImageSrc returns '', the img renders without a src attribute in testing-library
+    expect(img).not.toHaveAttribute('src');
+  });
+
+  it('allows safe external image URLs like blob or data', () => {
+    const wish = {
+      id: 'w10',
+      content: 'Blob image',
+      image_url: 'blob:http://localhost:3000/xyz'
+    };
+    render(<WishCard wish={wish} />);
+    const img = screen.getByRole('img', { name: 'Blob image' });
+    expect(img).toHaveAttribute('src', 'blob:http://localhost:3000/xyz');
+  });
+
+  it('allows safe data URIs', () => {
+    const wish = {
+      id: 'w11',
+      content: 'Data image',
+      image_url: 'data:image/png;base64,iVBORw0KGgo'
+    };
+    render(<WishCard wish={wish} />);
+    const img = screen.getByRole('img', { name: 'Data image' });
+    expect(img).toHaveAttribute('src', 'data:image/png;base64,iVBORw0KGgo');
+  });
+
   it('renders Admin Delete button when onAdminDelete is provided', () => {
     const wish = { id: 'w8', content: 'Admin delete me' };
     const onAdminDelete = vi.fn();

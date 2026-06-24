@@ -79,8 +79,8 @@ await db.executeMultiple(`
 
 const ensureColumn = async (table, column, type) => {
   const rs = await db.execute(`PRAGMA table_info(${table})`);
-  const row = rs.rows.find((info) => info.name === column);
-  if (!row) {
+  const hasColumn = rs.rows.some((info) => info.name === column);
+  if (!hasColumn) {
     await db.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
   }
 };
@@ -100,6 +100,7 @@ await ensureColumn('wishes', 'desired_roles', 'TEXT');
 await ensureColumn('wishes', 'contacts', 'TEXT');
 await ensureColumn('wishes', 'wishmail_enabled', 'INTEGER DEFAULT 0');
 await ensureColumn('wishes', 'is_active', 'INTEGER DEFAULT 1');
+await ensureColumn('wishes', 'image_id', 'TEXT');
 
 const defaultAdminUsername = process.env.WISHBOARD_ADMIN_USERNAME || 'admin';
 const defaultAdminSecret = process.env.WISHBOARD_ADMIN_SECRET || 'admin-board';

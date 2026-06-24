@@ -1,4 +1,34 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const imagesDir = path.resolve(__dirname, '../../../data/images');
+fs.mkdirSync(imagesDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, imagesDir)
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || '.png';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext)
+  }
+});
+const fileFilter = (req, file, cb) => {
+  const allowedExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only PNG, JPG, and WEBP are allowed.'), false);
+  }
+};
+const upload = multer({ storage: storage, fileFilter: fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
@@ -200,11 +230,13 @@ export const isCompatible = (wish, searcher, rules = []) => {
   );
 };
 
-router.post('/', async (req, res) => {
+router.post('/', upload.single('image'), async (req, res) => {
   const { content, passphrase, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled } = req.body;
   if (!content?.trim()) {
     return res.status(400).json({ error: 'Wish content is required.' });
   }
+  
+  const imageId = req.file ? req.file.filename : null;
 
   const user = await getRequestUser(req);
   const userId = user?.id || null;
@@ -231,7 +263,7 @@ router.post('/', async (req, res) => {
 
   const now = new Date().toISOString();
   await db.prepare(
-    'INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled, created_at, updated_at, image_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   ).run(
     id,
     userId,
@@ -246,7 +278,8 @@ router.post('/', async (req, res) => {
     JSON.stringify(parsedContacts),
     wme,
     now,
-    now
+    now,
+    imageId
   );
 
   logger.info('Wish created', { user_id: userId, wish_id: id });
@@ -262,6 +295,7 @@ router.post('/', async (req, res) => {
     desired_roles: desiredRoles,
     contacts: parsedContacts,
     wishmail_enabled: Boolean(wme),
+    image_id: imageId,
     is_active: true
   };
   emitNewWish(newWish);
@@ -271,7 +305,7 @@ router.post('/', async (req, res) => {
 
 router.get('/random', async (req, res) => {
   const limit = Number(req.query.limit || 12);
-  const rows = await db.prepare('SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.contacts, w.wishmail_enabled FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY RANDOM() LIMIT ?').all(limit);
+  const rows = await db.prepare('SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY RANDOM() LIMIT ?').all(limit);
   res.json(
     rows.map((wish) => ({
       id: wish.id,
@@ -279,7 +313,8 @@ router.get('/random', async (req, res) => {
       creator_genders: parseJsonArray(wish.creator_genders),
       creator_orientations: parseJsonArray(wish.creator_orientations),
       contacts: parseJsonArray(wish.contacts),
-      wishmail_enabled: Boolean(wish.wishmail_enabled)
+      wishmail_enabled: Boolean(wish.wishmail_enabled),
+      image_id: wish.image_id
     }))
   );
 });
@@ -303,10 +338,10 @@ router.get('/', async (req, res) => {
 
   const rows = query
     ? await db
-        .prepare('SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.content LIKE ? AND w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50')
+        .prepare('SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.content LIKE ? AND w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50')
         .all(`%${query}%`)
     : await db
-        .prepare('SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50')
+        .prepare('SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50')
         .all();
 
   const rules = getRules();
@@ -322,7 +357,8 @@ router.get('/', async (req, res) => {
       desired_orientations: parseJsonArray(wish.desired_orientations),
       desired_roles: parseJsonArray(wish.desired_roles),
       contacts: parseJsonArray(wish.contacts),
-      wishmail_enabled: Boolean(wish.wishmail_enabled)
+      wishmail_enabled: Boolean(wish.wishmail_enabled),
+      image_id: wish.image_id
     }))
   );
 });
@@ -330,7 +366,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   const row = await db
-    .prepare('SELECT id, content, flagged, contacts, wishmail_enabled, created_at, updated_at, is_active FROM wishes WHERE id = ?')
+    .prepare('SELECT id, content, flagged, contacts, wishmail_enabled, created_at, updated_at, is_active, image_id FROM wishes WHERE id = ?')
     .get(id);
   if (!row) {
     return res.status(404).json({ error: 'Wish not found.' });
@@ -408,14 +444,15 @@ router.post('/:id/reactivate', async (req, res) => {
   
   await db.prepare('UPDATE wishes SET is_active = 1, updated_at = ? WHERE id = ?').run(new Date().toISOString(), auth.id);
   
-  const wish = await db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled FROM wishes WHERE id = ?').get(auth.id);
+  const wish = await db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled, image_id FROM wishes WHERE id = ?').get(auth.id);
   const { emitWishReactivated } = await import('../socket.js');
   emitWishReactivated({
     ...wish,
     creator_genders: parseJsonArray(wish.creator_genders),
     creator_orientations: parseJsonArray(wish.creator_orientations),
     contacts: parseJsonArray(wish.contacts),
-    wishmail_enabled: Boolean(wish.wishmail_enabled)
+    wishmail_enabled: Boolean(wish.wishmail_enabled),
+    image_id: wish.image_id
   });
   
   res.json({ success: true });

@@ -22,7 +22,7 @@ describe('AdminPage Coverage', () => {
     });
   });
 
-  it('toggles sidebar expansion', () => {
+  it('toggles sidebar expansion', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({
       user: { id: 'admin-id', username: 'admin', role: 'admin' },
       token: 'fake-token',
@@ -34,6 +34,7 @@ describe('AdminPage Coverage', () => {
     });
 
     render(<AdminPage />);
+    await screen.findByText('No matching rules found.');
     
     // By default, sidebar is expanded, so it shows "◀ Collapse"
     const toggleBtn = screen.getByRole('button', { name: 'Toggle Sidebar' });
@@ -48,7 +49,7 @@ describe('AdminPage Coverage', () => {
     expect(toggleBtn).toHaveTextContent('◀ Collapse');
   });
 
-  it('updates location hash to #poster when Print Event Poster is clicked', () => {
+  it('updates location hash to #poster when Print Event Poster is clicked', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({
       user: { id: 'admin-id', username: 'admin', role: 'admin' },
       token: 'fake-token',
@@ -60,6 +61,7 @@ describe('AdminPage Coverage', () => {
     });
 
     render(<AdminPage />);
+    await screen.findByText('No matching rules found.');
     
     const posterBtn = screen.getByTitle('Print Event Poster');
     fireEvent.click(posterBtn);
