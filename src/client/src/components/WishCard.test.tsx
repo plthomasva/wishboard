@@ -110,7 +110,7 @@ describe('WishCard', () => {
     
     const img = screen.getByRole('img', { name: 'This text should be hidden' });
     expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute('src', 'http://localhost:3000/images/test-image.png');
+    expect(img).toHaveAttribute('src', '/images/test-image.png');
     
     const textNode = screen.getByText('This text should be hidden');
     expect(textNode).toHaveClass('sr-only');
