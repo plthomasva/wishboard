@@ -22,7 +22,26 @@ interface Wish {
 function isSafeImageUrl(url?: string): boolean {
   if (!url) return false;
   const trimmed = url.trim();
-  return trimmed.startsWith('blob:') || trimmed.startsWith('data:image/');
+
+  try {
+    const parsed = new URL(trimmed, globalThis.location.origin);
+
+    if (parsed.protocol === 'blob:') {
+      return true;
+    }
+
+    if (parsed.protocol === 'data:') {
+      return trimmed.startsWith('data:image/');
+    }
+
+    if (parsed.origin === globalThis.location.origin && parsed.pathname.startsWith('/images/')) {
+      return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 function sanitizeImageId(imageId?: string): string {
@@ -32,12 +51,14 @@ function sanitizeImageId(imageId?: string): string {
 }
 
 function getSafeImageSrc(wish: Wish): string {
-  if (isSafeImageUrl(wish.image_url)) {
-    return wish.image_url!.trim();
+  const imageUrl = wish.image_url?.trim();
+  if (imageUrl && isSafeImageUrl(imageUrl)) {
+    return imageUrl;
   }
 
   const safeImageId = sanitizeImageId(wish.image_id);
-  return safeImageId ? `/images/${safeImageId}` : '';
+  const serverImagePath = safeImageId ? `/images/${safeImageId}` : '';
+  return serverImagePath && isSafeImageUrl(serverImagePath) ? serverImagePath : '';
 }
 
 interface WishCardProps {

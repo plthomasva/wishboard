@@ -152,8 +152,10 @@ export default function EnterWishPage() {
                       style={{ display: 'none' }} 
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) {
+                        if (file && file.type.startsWith('image/')) {
                           setImageBlob(file);
+                        } else {
+                          setImageBlob(null);
                         }
                       }}
                     />
