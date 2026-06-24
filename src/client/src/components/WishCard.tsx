@@ -19,6 +19,27 @@ interface Wish {
   image_id?: string;
 }
 
+function isSafeImageUrl(url?: string): boolean {
+  if (!url) return false;
+  const trimmed = url.trim();
+  return trimmed.startsWith('blob:') || trimmed.startsWith('data:image/');
+}
+
+function sanitizeImageId(imageId?: string): string {
+  if (!imageId) return '';
+  // Restrict to filename-safe characters to avoid path/protocol injection.
+  return imageId.replace(/[^a-zA-Z0-9._-]/g, '');
+}
+
+function getSafeImageSrc(wish: Wish): string {
+  if (isSafeImageUrl(wish.image_url)) {
+    return wish.image_url!.trim();
+  }
+
+  const safeImageId = sanitizeImageId(wish.image_id);
+  return safeImageId ? `/images/${safeImageId}` : '';
+}
+
 interface WishCardProps {
   wish: Wish;
   cardClass?: 'wish-card' | 'display-card';
@@ -74,7 +95,7 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
         {wish.image_url || wish.image_id ? (
           <div style={{ width: '100%', height: '100%', position: 'relative' }}>
             <img 
-              src={wish.image_url || `/images/${wish.image_id}`} 
+              src={getSafeImageSrc(wish)} 
               alt={wish.content || "Handwritten wish"} 
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px', display: 'block' }}
             />
