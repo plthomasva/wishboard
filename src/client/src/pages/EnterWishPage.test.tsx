@@ -93,6 +93,20 @@ describe('EnterWishPage', () => {
 
     expect(screen.queryByText(/Handwritten wish attached/i)).not.toBeInTheDocument();
   });
+
+  it('rejects non-image file uploads', async () => {
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:mocked-url');
+    render(<EnterWishPage />);
+    
+    const fileInput = screen.getByLabelText(/Upload Image/i);
+    const mockFile = new File(['mock content'], 'test.txt', { type: 'text/plain' });
+    
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [mockFile] } });
+    });
+
+    expect(screen.queryByText(/Handwritten wish attached/i)).not.toBeInTheDocument();
+  });
   it('handles logged-in user UI appropriately', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' });
     render(<EnterWishPage />);
