@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.6.0...wishboard-v1.7.0) (2026-06-24)
+
+
+### Features
+
+* handwritten wish image uploads with client-side OCR ([#68](https://github.com/plthomasva/wishboard/issues/68)) ([2289521](https://github.com/plthomasva/wishboard/commit/228952102a6f68eb7fc9f814f1f41a933939fc3d))
+* migrate application to Docker Compose and libsql database ([#71](https://github.com/plthomasva/wishboard/issues/71)) ([525ddda](https://github.com/plthomasva/wishboard/commit/525ddda089a11bf38bd722cba09e578589f80310))
+
+
+### Bug Fixes
+
+* stryker action configuration and vitest segfault ([#69](https://github.com/plthomasva/wishboard/issues/69)) ([a67f50c](https://github.com/plthomasva/wishboard/commit/a67f50c95524f7ad795e74eb603f1d9e8b1f55fc))
+
 ## [1.6.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.5.0...wishboard-v1.6.0) (2026-06-21)
 
 
