@@ -6,12 +6,12 @@ interface UseTextFitProps {
   step?: number;
 }
 
-export function useTextFit(
+export function useTextFit<T extends HTMLElement = any, U extends HTMLElement = any>(
   { minFontSize = 12, maxFontSize = 24, step = 1 }: UseTextFitProps = {},
   deps: React.DependencyList = []
 ) {
-  const containerRef = useRef<HTMLElement>(null);
-  const contentRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<T>(null);
+  const contentRef = useRef<U>(null);
   const [fontSize, setFontSize] = useState(maxFontSize);
   const [isOverflowing, setIsOverflowing] = useState(false);
 
