@@ -9,6 +9,9 @@
     "clear-text",
     "html"
   ],
+  "htmlReporter": {
+    "fileName": "reports/mutation/html/index.html"
+  },
   "coverageAnalysis": "perTest",
   "mutate": [
     "src/client/src/**/*.ts",

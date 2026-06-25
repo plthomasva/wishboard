@@ -36,7 +36,7 @@ If you are working on a specific feature or file and want to see how robust your
    npx stryker run -m src/server/routes
    ```
 
-4. **View Local Results**: Once complete, Stryker will generate a local HTML report in `reports/mutation/mutation.html` which you can open in your browser.
+4. **View Local Results**: Once complete, Stryker will generate a local HTML report in `reports/mutation/html/index.html` which you can open in your browser.
 
 ## Configuration
 
