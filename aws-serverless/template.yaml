@@ -119,15 +119,18 @@ Resources:
     Properties:
       GroupDescription: Security group for Lambda functions and EFS
       VpcId: !Ref VPC
-      SecurityGroupIngress:
-        # Allow EFS mount traffic within the security group
-        - IpProtocol: tcp
-          FromPort: 2049
-          ToPort: 2049
-          SourceSecurityGroupId: !GetAtt VPC.DefaultSecurityGroup
       SecurityGroupEgress:
         - IpProtocol: "-1"
           CidrIp: 0.0.0.0/0
+
+  SecurityGroupEfsIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      SourceSecurityGroupId: !Ref SecurityGroup
 
   # =========================================================================
   # Amazon EFS (Serverless SQLite Database Storage)
@@ -337,13 +340,16 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /api/{proxy+}
             Method: ANY
-      Metadata:
-        BuildMethod: esbuild
-        BuildProperties:
-          Minify: true
-          Target: "node22"
-          EntryPoints:
-            - aws-serverless/lambda.js
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node22"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - aws-serverless/lambda.mjs
 
   WebSocketFunction:
     Type: AWS::Serverless::Function
@@ -373,13 +379,16 @@ Resources:
       Policies:
         - AWSLambdaVPCAccessExecutionRole
         - AmazonElasticFileSystemClientFullAccess
-      Metadata:
-        BuildMethod: esbuild
-        BuildProperties:
-          Minify: true
-          Target: "node22"
-          EntryPoints:
-            - aws-serverless/websocket.js
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node22"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - aws-serverless/websocket.mjs
 
   WebSocketPermission:
     Type: AWS::Lambda::Permission
@@ -432,6 +441,16 @@ Resources:
       DistributionConfig:
         Enabled: true
         Comment: CloudFront Distribution for Wishboard Serverless Application
+        DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
         Aliases: !If [UseCustomDomain, [!Ref DomainName], !Ref "AWS::NoValue"]
         ViewerCertificate:
           !If
@@ -456,12 +475,14 @@ Resources:
           # Origin 3: Express Backend HTTP API Gateway
           - Id: BackendApiOrigin
             DomainName: !Sub "${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            OriginPath: /production
             CustomOriginConfig:
               HTTPSPort: 443
               OriginProtocolPolicy: https-only
           # Origin 4: WebSocket API Gateway
           - Id: WebSocketApiOrigin
             DomainName: !Sub "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com"
+            OriginPath: /production
             CustomOriginConfig:
               HTTPSPort: 443
               OriginProtocolPolicy: https-only
@@ -491,7 +512,7 @@ Resources:
               - POST
               - DELETE
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # Managed-CachingDisabled
-            OriginRequestPolicyId: b689b0a8-53d0-40db-bafc-62e97a9601d5 # Managed-AllViewerExceptHostHeader
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac # Managed-AllViewerExceptHostHeader
           # Route /socket.io/* to the API Gateway WebSocket Stage (No Caching)
           - PathPattern: /socket.io/*
             TargetOriginId: WebSocketApiOrigin
@@ -505,7 +526,7 @@ Resources:
               - POST
               - DELETE
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # Managed-CachingDisabled
-            OriginRequestPolicyId: 2a65b793-2796-4a43-9e16-49318a97f81d # Managed-UserAgentRefererHeaders
+            OriginRequestPolicyId: acba4595-bd28-49b8-b9fe-13317c0390fa # Managed-UserAgentRefererHeaders
           # Route /images/* to the S3 Images Bucket (Cache Images)
           - PathPattern: /images/*
             TargetOriginId: ImagesS3Origin

@@ -69,9 +69,11 @@ class RawWebSocketWrapper {
 let socketInstance: Socket | null = null;
 let rawInstance: RawWebSocketWrapper | null = null;
 
-const isRawMode = import.meta.env.VITE_USE_RAW_WEBSOCKETS === 'true';
-
 export const getSocket = (): any => {
+  const isRawMode =
+    import.meta.env.VITE_USE_RAW_WEBSOCKETS === 'true' ||
+    ((window as any).__WISHBOARD_CONFIG__?.realtimeProvider === 'apigateway');
+
   if (isRawMode) {
     rawInstance ??= new RawWebSocketWrapper();
     return rawInstance;

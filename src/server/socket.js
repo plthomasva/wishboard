@@ -5,10 +5,10 @@ import logger from './logger.js';
 let io = null;
 let apigwClient = null;
 
-const provider = process.env.REALTIME_PROVIDER || 'socketio';
+const getProvider = () => process.env.REALTIME_PROVIDER || 'socketio';
 
 export const initSocket = (httpServer, corsOptions) => {
-  if (provider === 'apigateway') {
+  if (getProvider() === 'apigateway') {
     logger.info('API Gateway WebSocket mode enabled. Skipping Socket.io initialization.');
     return null;
   }
@@ -29,7 +29,7 @@ export const initSocket = (httpServer, corsOptions) => {
 };
 
 export const getIO = () => {
-  if (provider === 'apigateway') {
+  if (getProvider() === 'apigateway') {
     // Return a mock or minimal object for compatibility with test suites if needed
     return {};
   }
@@ -107,7 +107,7 @@ const broadcastToApiGateway = async (event, data) => {
 
 // Generic emit wrapper methods
 export const emitNewWish = (wish) => {
-  if (provider === 'apigateway') {
+  if (getProvider() === 'apigateway') {
     broadcastToApiGateway('wish:created', wish);
   } else if (io) {
     io.emit('wish:created', wish);
@@ -115,7 +115,7 @@ export const emitNewWish = (wish) => {
 };
 
 export const emitWishFlagged = (wish) => {
-  if (provider === 'apigateway') {
+  if (getProvider() === 'apigateway') {
     broadcastToApiGateway('wish:flagged', wish);
   } else if (io) {
     io.emit('wish:flagged', wish);
@@ -123,7 +123,7 @@ export const emitWishFlagged = (wish) => {
 };
 
 export const emitWishDeleted = (wishId) => {
-  if (provider === 'apigateway') {
+  if (getProvider() === 'apigateway') {
     broadcastToApiGateway('wish:deleted', wishId);
   } else if (io) {
     io.emit('wish:deleted', wishId);
@@ -131,7 +131,7 @@ export const emitWishDeleted = (wishId) => {
 };
 
 export const emitWishReactivated = (wish) => {
-  if (provider === 'apigateway') {
+  if (getProvider() === 'apigateway') {
     broadcastToApiGateway('wish:reactivated', wish);
   } else if (io) {
     io.emit('wish:reactivated', wish);
@@ -139,7 +139,7 @@ export const emitWishReactivated = (wish) => {
 };
 
 export const emitSystemLog = (logEntry) => {
-  if (provider === 'apigateway') {
+  if (getProvider() === 'apigateway') {
     broadcastToApiGateway('sys:log', logEntry);
   } else if (io) {
     io.emit('sys:log', logEntry);

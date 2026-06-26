@@ -22,6 +22,11 @@ describe('Logger', () => {
     const path = await import('node:path');
     vi.spyOn(path.default, 'join').mockReturnValue('dummy-path.log');
 
+    const mockEmitSystemLog = vi.fn();
+    vi.doMock('./socket.js', () => ({
+      emitSystemLog: mockEmitSystemLog
+    }));
+
     const logger = (await import('./logger.js')).default;
     expect(logger).toBeDefined();
     
@@ -31,6 +36,11 @@ describe('Logger', () => {
     logger.info('test message', { extraField: 'metaData' });
     logger.info('test empty meta');
 
+    // Wait a short moment for the async import & WebSocket emit log operation to finish
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(mockEmitSystemLog).toHaveBeenCalled();
+    
     process.env.NODE_ENV = originalEnv;
   });
 });

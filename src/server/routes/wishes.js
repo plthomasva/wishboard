@@ -242,10 +242,11 @@ router.post('/', upload.single('image'), async (req, res) => {
   const imageId = req.file ? req.file.filename : null;
 
   if (req.file && isS3Mode) {
+    const safePath = path.join(imagesDir, path.basename(req.file.filename));
     try {
       const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
       const s3 = new S3Client();
-      const fileStream = fs.createReadStream(req.file.path);
+      const fileStream = fs.createReadStream(safePath);
       
       await s3.send(new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET,
@@ -254,12 +255,12 @@ router.post('/', upload.single('image'), async (req, res) => {
         ContentType: req.file.mimetype
       }));
       
-      fs.unlinkSync(req.file.path);
+      fs.unlinkSync(safePath);
       logger.info('Uploaded image to S3', { bucket: process.env.AWS_S3_BUCKET, key: `images/${req.file.filename}` });
     } catch (err) {
       logger.error('Failed to upload image to S3:', { error: err.message });
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
+      if (fs.existsSync(safePath)) {
+        fs.unlinkSync(safePath);
       }
       return res.status(500).json({ error: 'Failed to process image upload.' });
     }

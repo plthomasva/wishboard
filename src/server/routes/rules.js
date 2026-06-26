@@ -8,7 +8,7 @@ const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
 // All routes require admin
-router.use(await requireAdmin);
+router.use(requireAdmin);
 
 router.get('/', async (req, res) => {
   res.json(getRules());

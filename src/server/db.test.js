@@ -1,5 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+let mockClient = {
+  execute: vi.fn().mockResolvedValue({ rows: [], rowsAffected: 0 }),
+  executeMultiple: vi.fn().mockResolvedValue({})
+};
+
+let mockLocalClient = {
+  execute: vi.fn().mockResolvedValue({
+    rows: [
+      { id: '1', username: 'test-user', passphrase_hash: 'h', passphrase_salt: 's', role: 'user', created_at: 'now' }
+    ],
+    rowsAffected: 0
+  })
+};
+
+vi.mock('@libsql/client', async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    ...original,
+    createClient: (options) => {
+      if (process.env.DATABASE_URL?.startsWith('http')) {
+        if (options.url.startsWith('file:')) {
+          return mockLocalClient;
+        }
+        return mockClient;
+      }
+      return original.createClient(options);
+    }
+  };
+});
+
 describe('db initialization', () => {
   let db;
 
@@ -75,4 +105,69 @@ describe('db initialization', () => {
     const nextAdmins = await nextDb.prepare("SELECT * FROM users WHERE role = 'admin'").all();
     expect(nextAdmins.length).toBe(1);
   });
+
+  it('dbWrapper methods wrap db.execute calls correctly', async () => {
+    const rs1 = await db.prepare('SELECT ? as val').get(true);
+    expect(rs1.val).toBe(1); // boolean maps to 1
+
+    const rs2 = await db.prepare('SELECT ? as val').get(undefined);
+    expect(rs2.val).toBeNull(); // undefined maps to null
+    
+    const rs3 = await db.prepare('SELECT 1 as val').all();
+    expect(rs3[0].val).toBe(1);
+
+    const rs4 = await db.prepare('UPDATE users SET is_active = ? WHERE role = ?').run(1, 'admin');
+    expect(rs4.changes).toBeDefined();
+
+    const rs5 = await db.exec('PRAGMA foreign_keys = ON');
+    expect(rs5).toBeUndefined();
+  });
+
+  it('migrates legacy local database to remote database', async () => {
+    const originalUrl = process.env.DATABASE_URL;
+    const originalNodeEnv = process.env.NODE_ENV;
+    
+    process.env.DATABASE_URL = 'http://localhost:8080';
+    process.env.NODE_ENV = 'production';
+
+    const mockExecute = vi.fn().mockResolvedValue({
+      rows: [],
+      rowsAffected: 1
+    });
+    mockClient.execute = mockExecute;
+
+    const mockLocalExecute = vi.fn().mockResolvedValue({
+      rows: [
+        { id: '1', username: 'test-user', passphrase_hash: 'h', passphrase_salt: 's', role: 'user', created_at: 'now' }
+      ]
+    });
+    mockLocalClient.execute = mockLocalExecute;
+
+    const fs = await import('node:fs');
+    const existsSpy = vi.spyOn(fs.default, 'existsSync').mockImplementation((p) => {
+      if (p.includes('wishboard.db')) return true;
+      if (p.includes('.migrated_to_libsql')) return false;
+      return true;
+    });
+    const writeSpy = vi.spyOn(fs.default, 'writeFileSync').mockImplementation(() => {});
+
+    vi.resetModules();
+    await import('./db.js');
+
+    expect(mockLocalExecute).toHaveBeenCalled();
+    expect(mockExecute).toHaveBeenCalled();
+
+    const localCalls = mockLocalExecute.mock.calls.map(([arg]) => typeof arg === 'string' ? arg : arg.sql);
+    const remoteCalls = mockExecute.mock.calls.map(([arg]) => typeof arg === 'string' ? arg : arg.sql);
+
+    expect(localCalls.some(c => c.includes('SELECT * FROM'))).toBe(true);
+    expect(remoteCalls.some(c => c.includes('INSERT OR IGNORE INTO'))).toBe(true);
+    expect(writeSpy).toHaveBeenCalled();
+
+    process.env.DATABASE_URL = originalUrl;
+    process.env.NODE_ENV = originalNodeEnv;
+    existsSpy.mockRestore();
+    writeSpy.mockRestore();
+  });
 });
+

@@ -91,6 +91,12 @@ const frontendLimiter = rateLimit({
   }
 });
 
+app.get('/api/config', (req, res) => {
+  res.json({
+    realtimeProvider: process.env.REALTIME_PROVIDER || 'socketio',
+  });
+});
+
 app.use('/api/users', usersRouter);
 app.use('/api/wishes', wishesRouter);
 app.use('/api/wishes/:id/mail', wishmailRouter);

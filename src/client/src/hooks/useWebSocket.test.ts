@@ -68,4 +68,118 @@ describe('useWebSocket', () => {
     const s2 = getSocket();
     expect(s1).toBe(s2);
   });
+
+  describe('RawWebSocketWrapper (isRawMode === true)', () => {
+    let mockWebSocketInstance;
+    
+    class MockWebSocket {
+      public onopen;
+      public onclose;
+      public onmessage;
+      public onerror;
+      
+      constructor(public url) {
+        mockWebSocketInstance = this;
+      }
+      
+      close() {
+        if (this.onclose) this.onclose();
+      }
+    }
+
+    beforeEach(() => {
+      vi.stubGlobal('location', { protocol: 'http:', host: 'localhost:3000', origin: 'http://localhost:3000' });
+      vi.stubGlobal('WebSocket', MockWebSocket);
+      import.meta.env.VITE_USE_RAW_WEBSOCKETS = 'true';
+      import.meta.env.VITE_WS_URL = 'ws://localhost:3000/raw';
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      import.meta.env.VITE_USE_RAW_WEBSOCKETS = undefined;
+      import.meta.env.VITE_WS_URL = undefined;
+      vi.useRealTimers();
+    });
+
+    it('creates a raw WebSocket connection and triggers events', async () => {
+      const { useWebSocket } = await import('./useWebSocket');
+      const { result } = renderHook(() => useWebSocket());
+
+      expect(mockWebSocketInstance).toBeDefined();
+      expect(mockWebSocketInstance.url).toBe('ws://localhost:3000/raw');
+      expect(result.current.isConnected).toBe(false);
+
+      // Trigger connect
+      act(() => {
+        mockWebSocketInstance.onopen();
+      });
+      expect(result.current.isConnected).toBe(true);
+
+      // Trigger message
+      const wishCreatedSpy = vi.fn();
+      result.current.socket.on('wish:created', wishCreatedSpy);
+      
+      act(() => {
+        mockWebSocketInstance.onmessage({
+          data: JSON.stringify({ event: 'wish:created', data: { id: 'w1' } })
+        });
+      });
+      expect(wishCreatedSpy).toHaveBeenCalledWith({ id: 'w1' });
+
+      // Trigger invalid message to test catch block
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      act(() => {
+        mockWebSocketInstance.onmessage({ data: 'invalid json' });
+      });
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+
+      // Trigger error
+      const consoleErrSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      act(() => {
+        mockWebSocketInstance.onerror(new Error('err'));
+      });
+      expect(consoleErrSpy).toHaveBeenCalled();
+      consoleErrSpy.mockRestore();
+
+      // Trigger close (disconnect & reconnect timer)
+      act(() => {
+        mockWebSocketInstance.onclose();
+      });
+      expect(result.current.isConnected).toBe(false);
+
+      // Advance timers to trigger reconnect
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(mockWebSocketInstance).toBeDefined();
+
+      // Test off method
+      result.current.socket.off('wish:created', wishCreatedSpy);
+      
+      // Test off edge case
+      result.current.socket.off('nonexistent-event', () => {});
+    });
+
+    it('handles connection error and reconnects', async () => {
+      // Mock error during constructor
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.stubGlobal('WebSocket', class FailingMockWebSocket {
+        constructor() {
+          throw new Error('Connect error');
+        }
+      });
+
+      const { useWebSocket } = await import('./useWebSocket');
+      renderHook(() => useWebSocket());
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to initialize raw WebSocket connection:',
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
+    });
+  });
 });
