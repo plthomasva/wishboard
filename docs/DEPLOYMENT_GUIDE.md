@@ -2,6 +2,9 @@
 
 This guide is designed for system owners and event managers who want to deploy a fresh instance of Wishboard on a Raspberry Pi using a custom domain. 
 
+> [!NOTE]
+> If you prefer to deploy Wishboard to the cloud rather than hosting it on local Raspberry Pi hardware, see the [**AWS Deployment Guide**](../aws-serverless/deploy-instructions.md) for deploying to AWS Serverless.
+
 Wishboard is designed to be an offline-first kiosk application. However, to provide a seamless mobile experience for users in the venue, we use a custom domain, standard SSL certificates, and local DNS hijacking so users don't get scary browser warnings when connecting.
 
 ## Prerequisites

@@ -7,9 +7,20 @@ import logger from './logger.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataDir = path.resolve(__dirname, '../../data');
-const rulesPath = process.env.NODE_ENV === 'test' 
+const defaultRulesPath = path.join(dataDir, 'rules.yaml');
+const rulesPath = process.env.RULES_PATH || (process.env.NODE_ENV === 'test' 
   ? path.join(dataDir, 'rules.test.yaml') 
-  : path.join(dataDir, 'rules.yaml');
+  : defaultRulesPath);
+
+if (process.env.RULES_PATH && !fs.existsSync(rulesPath) && fs.existsSync(defaultRulesPath)) {
+  try {
+    fs.mkdirSync(path.dirname(rulesPath), { recursive: true });
+    fs.copyFileSync(defaultRulesPath, rulesPath);
+    logger.info(`Initialized EFS rules file by copying default rules from ${defaultRulesPath} to ${rulesPath}`);
+  } catch (err) {
+    logger.error('Failed to copy default rules to EFS:', err.message);
+  }
+}
 
 let rulesCache = [];
 let yamlDoc = null;
@@ -55,7 +66,7 @@ loadRules();
 
 // Watch for changes. Use debounce to prevent multiple triggers on save.
 let watchTimeout = null;
-if (fs.existsSync(rulesPath)) {
+if (fs.existsSync(rulesPath) && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
   fs.watch(rulesPath, (eventType) => {
     if (eventType === 'change') {
       if (watchTimeout) clearTimeout(watchTimeout);

@@ -75,6 +75,11 @@ await db.executeMultiple(`
     FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY(parent_mail_id) REFERENCES wishmails(id) ON DELETE SET NULL
   );
+
+  CREATE TABLE IF NOT EXISTS websocket_connections (
+    connection_id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL
+  );
 `);
 
 const ensureColumn = async (table, column, type) => {
