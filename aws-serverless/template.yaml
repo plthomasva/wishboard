@@ -237,8 +237,11 @@ Resources:
   # =========================================================================
   HttpApi:
     Type: AWS::Serverless::HttpApi
-    Properties:
-      StageName: production
+    # No explicit StageName: SAM provisions the special "$default" stage, whose
+    # invoke URL has no stage path segment. This keeps event.rawPath as
+    # "/api/..."; a named stage (e.g. "production") would prefix it as
+    # "/production/api/...", which serverless-express forwards verbatim to
+    # Express, missing every /api route.
 
   WebSocketApi:
     Type: AWS::ApiGatewayV2::Api
@@ -348,6 +351,17 @@ Resources:
         Format: esm
         OutExtension:
           - .js=.mjs
+        # Polyfill require() for CJS dependencies (@codegenie/serverless-express)
+        # bundled into ESM output. Without this, Lambda throws:
+        # "Dynamic require of 'util' is not supported"
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+        # @libsql/linux-x64-gnu is the native .node binary that esbuild cannot
+        # bundle. The JS layer of @libsql/client bundles fine. A post-build
+        # script (aws-serverless/post-build.js) copies the Linux binary into
+        # the artifact so Lambda can load it at runtime.
+        External:
+          - "@libsql/linux-x64-gnu"
         EntryPoints:
           - aws-serverless/lambda.mjs
 
@@ -387,6 +401,13 @@ Resources:
         Format: esm
         OutExtension:
           - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+        # Bundle the @libsql/client JS layer; only the native .node binary stays
+        # external and is copied into the artifact by aws-serverless/post-build.js
+        # (same strategy as ApiFunction). See that script for details.
+        External:
+          - "@libsql/linux-x64-gnu"
         EntryPoints:
           - aws-serverless/websocket.mjs
 
@@ -475,7 +496,9 @@ Resources:
           # Origin 3: Express Backend HTTP API Gateway
           - Id: BackendApiOrigin
             DomainName: !Sub "${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
-            OriginPath: /production
+            # No OriginPath: the HTTP API uses the "$default" stage (no stage
+            # segment in the URL). The WebSocket origin below still needs its
+            # /production OriginPath because WebSocket APIs require a named stage.
             CustomOriginConfig:
               HTTPSPort: 443
               OriginProtocolPolicy: https-only
@@ -550,5 +573,14 @@ Outputs:
     Value: !Sub "https://${DomainName}"
     Description: Custom Domain URL
   HttpApiUrl:
-    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/production"
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
     Description: Direct REST API URL
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+    Description: S3 bucket hosting the built React frontend assets
+  ImagesBucketName:
+    Value: !Ref ImagesBucket
+    Description: S3 bucket storing uploaded wish images
+  CloudFrontDistributionId:
+    Value: !Ref CloudFrontDistribution
+    Description: CloudFront distribution ID (used for cache invalidation)

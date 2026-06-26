@@ -39,6 +39,29 @@ Before starting, make sure you have the following installed and configured on yo
 
 ---
 
+## Quick Deploy (Scripted)
+
+The fastest path is the bundled deploy scripts, which run every step below in
+order (frontend build → `sam build` → native-binary post-build → `sam deploy` →
+S3 upload → CloudFront invalidation). The first run with no `samconfig.toml` (or
+with `--guided`/`-Guided`) walks you through the interactive SAM configuration;
+subsequent runs reuse it.
+
+```bash
+# macOS / Linux / Git Bash
+./scripts/deploy-serverless.sh --profile wishboard      # or omit --profile for default creds
+```
+
+```powershell
+# Windows PowerShell
+./scripts/deploy-serverless.ps1 -Profile wishboard      # or omit -Profile for default creds
+```
+
+Useful flags: `--guided`/`-Guided` (force first-time config), `--frontend-only`/`-FrontendOnly`
+(rebuild + reupload the UI without touching the backend), `--stack-name`/`--region`.
+
+To run the steps manually instead, follow the sections below.
+
 ## Deployment Steps
 
 ### 1. Build the Frontend
@@ -53,6 +76,15 @@ We use AWS SAM's native `esbuild` support to bundle the backend Express code and
 ```bash
 cd aws-serverless
 sam build
+```
+
+Then copy the libSQL native binary into the build artifacts. esbuild bundles the
+JavaScript layer of `@libsql/client`, but the native `.node` binding cannot be
+bundled, so it must be added to the artifact after `sam build`. Skipping this
+step makes every API call fail with HTTP 500 (`Cannot find module
+'@libsql/linux-x64-gnu'`):
+```bash
+node post-build.js
 ```
 
 ### 3. Deploy the Stack

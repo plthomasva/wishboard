@@ -8,7 +8,7 @@ const initApp = async () => {
     try {
       const res = await fetch('/api/config');
       const config = await res.json();
-      (window as any).__WISHBOARD_CONFIG__ = config;
+      (globalThis as any).__WISHBOARD_CONFIG__ = config;
     } catch (err) {
       console.error('Failed to load server config:', err);
     }
