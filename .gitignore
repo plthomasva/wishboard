@@ -22,3 +22,7 @@ samconfig.toml
 response.json
 pr_body.md
 scratch/
+
+# Local SonarQube MCP server config (contains a SonarCloud token)
+.sonarqube.env
+.mcp.json
