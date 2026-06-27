@@ -9,4 +9,6 @@ describe('Server db.js - execute coverage', () => {
     expect(resExecute.rows[0].val).toBe(1);
 
     await dbWrapper.executeMultiple('SELECT 1 as val; SELECT 2 as val;');
+    await dbWrapper.executeMultiple('SELECT 1 as val; SELECT 2 as val;');
+  });
 });
