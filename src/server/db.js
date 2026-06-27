@@ -26,8 +26,7 @@ if (!url) {
 
 const db = createClient({ url });
 
-export const initPromise = (async () => {
-  await db.executeMultiple(`
+await db.executeMultiple(`
   PRAGMA foreign_keys = ON;
 
   CREATE TABLE IF NOT EXISTS users (
@@ -176,7 +175,6 @@ if (url.startsWith('http') && fs.existsSync(localDbPath) && !fs.existsSync(migra
   fs.writeFileSync(migrationFlag, new Date().toISOString());
   console.log('Migration complete!');
 }
-})();
 
 const mapArg = (a) => {
   if (a === undefined) return null;
@@ -187,31 +185,25 @@ const mapArg = (a) => {
 const dbWrapper = {
   prepare: (sql) => ({
     get: async (...args) => {
-      await initPromise;
       const rs = await db.execute({ sql, args: args.map(mapArg) });
       return rs.rows[0];
     },
     all: async (...args) => {
-      await initPromise;
       const rs = await db.execute({ sql, args: args.map(mapArg) });
       return rs.rows;
     },
     run: async (...args) => {
-      await initPromise;
       const rs = await db.execute({ sql, args: args.map(mapArg) });
       return { changes: rs.rowsAffected, lastInsertRowid: rs.lastInsertRowid };
     }
   }),
   exec: async (sql) => {
-    await initPromise;
     return await db.executeMultiple(sql);
   },
   execute: async (...args) => {
-    await initPromise;
     return await db.execute(...args);
   },
   executeMultiple: async (...args) => {
-    await initPromise;
     return await db.executeMultiple(...args);
   }
 };

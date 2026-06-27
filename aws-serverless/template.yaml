@@ -215,6 +215,15 @@ Resources:
             Condition:
               StringEquals:
                 AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+          - Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: 
+              - !Sub "arn:aws:s3:::${FrontendBucket}"
+              - !Sub "arn:aws:s3:::${FrontendBucket}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
 
   ImagesBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -231,6 +240,15 @@ Resources:
             Condition:
               StringEquals:
                 AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+          - Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: 
+              - !Sub "arn:aws:s3:::${ImagesBucket}"
+              - !Sub "arn:aws:s3:::${ImagesBucket}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
 
   # =========================================================================
   # API Gateways (HTTP API & WebSocket API)

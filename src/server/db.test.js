@@ -153,7 +153,7 @@ describe('db initialization', () => {
 
     vi.resetModules();
     const dbModule = await import('./db.js');
-    await dbModule.initPromise;
+
 
     expect(mockLocalExecute).toHaveBeenCalled();
     expect(mockExecute).toHaveBeenCalled();
