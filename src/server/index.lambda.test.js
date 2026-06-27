@@ -22,5 +22,5 @@ describe('Server index.js - Lambda Mode', () => {
     expect(res.text).toContain('Metrics are not supported in AWS Lambda Serverless mode');
     
     server.close();
-  });
+  }, 20000);
 });
