@@ -57,7 +57,8 @@ subsequent runs reuse it.
 ./scripts/deploy-serverless.ps1 -Profile wishboard      # or omit -Profile for default creds
 ```
 
-Useful flags: `--guided`/`-Guided` (force first-time config), `--frontend-only`/`-FrontendOnly`
+Useful flags: `--guided`/`-Guided` (force first-time config), `--mode`/`-Mode`
+(deploy as `prod` or `dev`), `--frontend-only`/`-FrontendOnly`
 (rebuild + reupload the UI without touching the backend), `--stack-name`/`--region`.
 
 To run the steps manually instead, follow the sections below.

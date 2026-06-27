@@ -55,6 +55,8 @@ param(
     [string]$Profile = "",
     [string]$StackName = "",
     [string]$Region = "",
+    [ValidateSet("prod", "dev")]
+    [string]$Mode = "prod",
     [switch]$Guided,
     [switch]$FrontendOnly,
     [switch]$SkipFrontendUpload
@@ -165,6 +167,9 @@ try {
                 )
             }
             $deployArgs += $awsCommon
+
+            $nodeEnvValue = if ($Mode -eq "dev") { "development" } else { "production" }
+            $deployArgs += @("--parameter-overrides", "NodeEnv=$nodeEnvValue")
 
             # Let boto retry transient S3/network errors while uploading artifacts.
             $env:AWS_MAX_ATTEMPTS = "6"

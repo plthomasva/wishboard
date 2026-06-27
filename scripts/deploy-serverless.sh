@@ -22,6 +22,7 @@
 #   --profile <name>        AWS CLI profile (falls back to samconfig.toml, then default creds)
 #   --stack-name <name>     CloudFormation stack name (default: from samconfig.toml or wishboard-serverless)
 #   --region <region>       AWS region (falls back to samconfig.toml, then AWS config)
+#   --mode <mode>           Deployment mode: prod or dev (default: prod)
 #   --guided                Force `sam deploy --guided` (interactive first-time setup)
 #   --frontend-only         Only rebuild + upload the frontend; skip the backend deploy
 #   --skip-frontend-upload  Deploy the backend only; skip S3 upload + CloudFront invalidation
@@ -38,6 +39,7 @@ set -euo pipefail
 PROFILE=""
 STACK_NAME=""
 REGION=""
+MODE="prod"
 GUIDED=false
 FRONTEND_ONLY=false
 SKIP_FRONTEND_UPLOAD=false
@@ -47,6 +49,7 @@ while [[ $# -gt 0 ]]; do
         --profile)              PROFILE="$2"; shift 2 ;;
         --stack-name)           STACK_NAME="$2"; shift 2 ;;
         --region)               REGION="$2"; shift 2 ;;
+        --mode)                 MODE="$2"; shift 2 ;;
         --guided)               GUIDED=true; shift ;;
         --frontend-only)        FRONTEND_ONLY=true; shift ;;
         --skip-frontend-upload) SKIP_FRONTEND_UPLOAD=true; shift ;;
@@ -54,6 +57,11 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
 done
+
+if [[ "$MODE" != "prod" && "$MODE" != "dev" ]]; then
+    echo "Invalid mode: $MODE. Must be prod or dev." >&2
+    exit 1
+fi
 
 # Colors
 C_CYAN='\033[1;36m'; C_GREEN='\033[1;32m'; C_GRAY='\033[0;90m'; C_RESET='\033[0m'
@@ -149,6 +157,10 @@ if ! $FRONTEND_ONLY; then
         DEPLOY_ARGS+=(--no-confirm-changeset --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM)
     fi
     DEPLOY_ARGS+=("${AWS_COMMON[@]}")
+
+    NODE_ENV_VAL="production"
+    if [[ "$MODE" == "dev" ]]; then NODE_ENV_VAL="development"; fi
+    DEPLOY_ARGS+=(--parameter-overrides "NodeEnv=${NODE_ENV_VAL}")
 
     # Let boto retry transient S3/network errors while uploading artifacts.
     export AWS_MAX_ATTEMPTS=6

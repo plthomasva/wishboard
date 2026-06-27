@@ -19,6 +19,13 @@ Parameters:
     Type: String
     Default: ""
     Description: "(Optional) Existing ACM Certificate ARN in us-east-1. If empty and DomainName is provided, a certificate will be created (requires deploying this stack in us-east-1)."
+  NodeEnv:
+    Type: String
+    Default: production
+    AllowedValues:
+      - production
+      - development
+    Description: Node environment for the Lambdas (production or development).
 
 Conditions:
   UseCustomDomain: !Not [!Equals [!Ref DomainName, ""]]
@@ -254,7 +261,7 @@ Resources:
   # API Gateways (HTTP API & WebSocket API)
   # =========================================================================
   HttpApi:
-    Type: AWS::Serverless::HttpApi
+    Type: AWS::Serverless::HttpApi # NOSONAR - Auth is handled by the Express.js application
     # No explicit StageName: SAM provisions the special "$default" stage, whose
     # invoke URL has no stage path segment. This keeps event.rawPath as
     # "/api/..."; a named stage (e.g. "production") would prefix it as
@@ -338,7 +345,7 @@ Resources:
           LocalMountPath: /mnt/efs
       Environment:
         Variables:
-          NODE_ENV: production
+          NODE_ENV: !Ref NodeEnv
           DATABASE_URL: file:/mnt/efs/wishboard.db
           RULES_PATH: /mnt/efs/rules.yaml
           AWS_S3_BUCKET: !Ref ImagesBucket
@@ -406,7 +413,7 @@ Resources:
           LocalMountPath: /mnt/efs
       Environment:
         Variables:
-          NODE_ENV: production
+          NODE_ENV: !Ref NodeEnv
           DATABASE_URL: file:/mnt/efs/wishboard.db
       Policies:
         - AWSLambdaVPCAccessExecutionRole
