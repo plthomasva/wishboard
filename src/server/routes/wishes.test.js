@@ -355,4 +355,49 @@ describe('Claiming wishes', () => {
       .send({ secret: 'wrong' });
     expect(wrongPass.status).toBe(403);
   });
+
+  it('correctly matches gender synonyms and variants using rules engine', async () => {
+    // 1. Wish desiring 'nonbinary', searcher is 'enby' (should match)
+    await request(app).post('/api/wishes').send({
+      content: 'Wish for nonbinary',
+      creator_genders: 'woman',
+      creator_orientations: 'pan',
+      desired_genders: 'nonbinary'
+    });
+    const resEnby = await request(app).get('/api/wishes').query({
+      sg: 'enby',
+      so: 'pan',
+      q: 'Wish for nonbinary'
+    });
+    expect(resEnby.body.length).toBe(1);
+
+    // 2. Wish desiring 'woman', searcher is 'female' (should match)
+    await request(app).post('/api/wishes').send({
+      content: 'Wish for woman',
+      creator_genders: 'man',
+      creator_orientations: 'straight',
+      desired_genders: 'woman'
+    });
+    const resFemale = await request(app).get('/api/wishes').query({
+      sg: 'female',
+      so: 'straight',
+      q: 'Wish for woman'
+    });
+    expect(resFemale.body.length).toBe(1);
+
+    // 3. Wish desiring 'man', searcher is 'male' (should match)
+    await request(app).post('/api/wishes').send({
+      content: 'Wish for man',
+      creator_genders: 'woman',
+      creator_orientations: 'straight',
+      desired_genders: 'man'
+    });
+    const resMale = await request(app).get('/api/wishes').query({
+      sg: 'male',
+      so: 'straight',
+      q: 'Wish for man'
+    });
+    expect(resMale.body.length).toBe(1);
+  });
 });
+

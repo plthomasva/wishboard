@@ -53,21 +53,6 @@ const getRequestUser = async (req) => {
 
 const normalizeToken = (value) => String(value || '').trim().toLowerCase();
 
-const parseGenderDescriptor = (value) => {
-  const token = normalizeToken(value);
-  const isTrans = token.includes('trans');
-  const isCis = token.includes('cis');
-  let base = token;
-  if (token.includes('woman') || token.includes('female')) {
-    base = 'woman';
-  } else if (token.includes('man') || token.includes('male')) {
-    base = 'man';
-  } else if ((token.includes('non') && token.includes('binary')) || token.includes('enby')) {
-    base = 'nonbinary';
-  }
-  return { token, base, isTrans, isCis };
-};
-
 const escapeRegExp = (string) => {
   return string.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 };
@@ -75,49 +60,6 @@ const escapeRegExp = (string) => {
 const hasToken = (str, token) => {
   const escapedToken = escapeRegExp(token);
   return new RegExp(String.raw`\b${escapedToken}\b`, 'i').test(normalizeToken(str));
-};
-
-const evaluateRuleConditions = (rule, userAttributes) => {
-  const triggerVals = userAttributes[rule.trigger_attribute] || [];
-  const triggerMatch = triggerVals.some(v => hasToken(v, rule.trigger_value));
-  
-  let contextMatch = true;
-  if (rule.context_attribute && rule.context_value) {
-    const ctxVals = userAttributes[rule.context_attribute] || [];
-    contextMatch = ctxVals.some(v => {
-      if (rule.context_attribute === 'gender') {
-        return parseGenderDescriptor(v).base === rule.context_value;
-      }
-      return hasToken(v, rule.context_value);
-    });
-  }
-  
-  return triggerMatch && contextMatch;
-};
-
-const enrichAttributes = (userAttributes, targetCategory, rules) => {
-  const enriched = new Set((userAttributes[targetCategory] || []).map(normalizeToken));
-  const enrichmentRules = rules.filter(r => r.rule_type === 'enrichment' && r.target_attribute === targetCategory);
-  
-  for (const rule of enrichmentRules) {
-    if (evaluateRuleConditions(rule, userAttributes)) {
-      enriched.add(rule.target_value);
-    }
-  }
-  return Array.from(enriched);
-};
-
-const buildAcceptedSet = (userAttributes, targetCategory, rules) => {
-  const accepted = new Set();
-  const acceptanceRules = rules.filter(r => r.rule_type === 'acceptance' && r.target_attribute === targetCategory);
-  
-  for (const rule of acceptanceRules) {
-    if (evaluateRuleConditions(rule, userAttributes)) {
-      const targets = rule.target_value.split(',').map(t => t.trim().toLowerCase());
-      targets.forEach(t => accepted.add(t));
-    }
-  }
-  return accepted;
 };
 
 const getExpandedDesired = (desiredVals, category, rules) => {
@@ -133,6 +75,45 @@ const getExpandedDesired = (desiredVals, category, rules) => {
     }
   }
   return Array.from(result);
+};
+
+const evaluateRuleConditions = (rule, userAttributes, rules = []) => {
+  const triggerVals = userAttributes[rule.trigger_attribute] || [];
+  const triggerMatch = triggerVals.some(v => hasToken(v, rule.trigger_value));
+  
+  let contextMatch = true;
+  if (rule.context_attribute && rule.context_value) {
+    const ctxVals = userAttributes[rule.context_attribute] || [];
+    const expandedCtxVals = getExpandedDesired(ctxVals, rule.context_attribute, rules);
+    contextMatch = expandedCtxVals.some(v => hasToken(v, rule.context_value));
+  }
+  
+  return triggerMatch && contextMatch;
+};
+
+const enrichAttributes = (userAttributes, targetCategory, rules) => {
+  const enriched = new Set((userAttributes[targetCategory] || []).map(normalizeToken));
+  const enrichmentRules = rules.filter(r => r.rule_type === 'enrichment' && r.target_attribute === targetCategory);
+  
+  for (const rule of enrichmentRules) {
+    if (evaluateRuleConditions(rule, userAttributes, rules)) {
+      enriched.add(rule.target_value);
+    }
+  }
+  return Array.from(enriched);
+};
+
+const buildAcceptedSet = (userAttributes, targetCategory, rules) => {
+  const accepted = new Set();
+  const acceptanceRules = rules.filter(r => r.rule_type === 'acceptance' && r.target_attribute === targetCategory);
+  
+  for (const rule of acceptanceRules) {
+    if (evaluateRuleConditions(rule, userAttributes, rules)) {
+      const targets = rule.target_value.split(',').map(t => t.trim().toLowerCase());
+      targets.forEach(t => accepted.add(t));
+    }
+  }
+  return accepted;
 };
 
 const getCrossMatchedDesired = (desiredVals, category, rules) => {
@@ -175,10 +156,7 @@ const matchesGenderPreferenceImplicit = (searcherAttributes, desiredGenders, rul
   const accepted = buildAcceptedSet(searcherAttributes, 'gender', rules);
   if (accepted.size === 0) return false;
 
-  return desiredGenders.some((item) => {
-    const descriptor = parseGenderDescriptor(item);
-    return [descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, item.trim().toLowerCase()].some((label) => accepted.has(label));
-  });
+  return matchesAttribute(Array.from(accepted), desiredGenders, 'gender', rules);
 };
 
 export const isCompatible = (wish, searcher, rules = []) => {
@@ -215,12 +193,7 @@ export const isCompatible = (wish, searcher, rules = []) => {
   // 2. Does the wish creator want the searcher?
   let creatorWantsSearcherGender = false;
   if (desiredGenders.length > 0) {
-    const searcherExtendedGenders = [];
-    for (const g of searcherProfile.gender) {
-      const descriptor = parseGenderDescriptor(g);
-      searcherExtendedGenders.push(descriptor.token, descriptor.base, `trans-${descriptor.base}`, `cis-${descriptor.base}`, g.trim().toLowerCase());
-    }
-    creatorWantsSearcherGender = matchesAttribute(searcherExtendedGenders, desiredGenders, 'gender', rules);
+    creatorWantsSearcherGender = matchesAttribute(searcherProfile.gender, desiredGenders, 'gender', rules);
   } else {
     creatorWantsSearcherGender = matchesGenderPreferenceImplicit(creatorProfile, searcherProfile.gender, rules);
   }

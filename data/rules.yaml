@@ -125,3 +125,100 @@ rules:
     context_value: woman
     target_attribute: gender
     target_value: "man, cis-man, men"
+
+  # ==========================================
+  # EXPANSIONS (Gender Synonyms & Variants)
+  # ==========================================
+  - id: exp_woman
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: woman
+    target_attribute: gender
+    target_value: "woman, cis-woman, trans-woman, female, women"
+  - id: exp_female
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: female
+    target_attribute: gender
+    target_value: "woman, cis-woman, trans-woman, female, women"
+  - id: exp_women
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: women
+    target_attribute: gender
+    target_value: "woman, cis-woman, trans-woman, female, women"
+  - id: exp_trans_woman
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: trans-woman
+    target_attribute: gender
+    target_value: "woman, cis-woman, trans-woman, female, women"
+  - id: exp_cis_woman
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: cis-woman
+    target_attribute: gender
+    target_value: "woman, cis-woman, trans-woman, female, women"
+
+  - id: exp_man
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: man
+    target_attribute: gender
+    target_value: "man, cis-man, trans-man, male, men"
+  - id: exp_male
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: male
+    target_attribute: gender
+    target_value: "man, cis-man, trans-man, male, men"
+  - id: exp_men
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: men
+    target_attribute: gender
+    target_value: "man, cis-man, trans-man, male, men"
+  - id: exp_trans_man
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: trans-man
+    target_attribute: gender
+    target_value: "man, cis-man, trans-man, male, men"
+  - id: exp_cis_man
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: cis-man
+    target_attribute: gender
+    target_value: "man, cis-man, trans-man, male, men"
+
+  - id: exp_nonbinary
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: nonbinary
+    target_attribute: gender
+    target_value: "nonbinary, enby, non-binary, genderqueer, agender, trans-nonbinary, cis-nonbinary"
+  - id: exp_enby
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: enby
+    target_attribute: gender
+    target_value: "nonbinary, enby, non-binary, genderqueer, agender, trans-nonbinary, cis-nonbinary"
+  - id: exp_non_binary
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: non-binary
+    target_attribute: gender
+    target_value: "nonbinary, enby, non-binary, genderqueer, agender, trans-nonbinary, cis-nonbinary"
+  - id: exp_genderqueer
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: genderqueer
+    target_attribute: gender
+    target_value: "nonbinary, enby, non-binary, genderqueer, agender, trans-nonbinary, cis-nonbinary"
+  - id: exp_agender
+    rule_type: expansion
+    trigger_attribute: gender
+    trigger_value: agender
+    target_attribute: gender
+    target_value: "nonbinary, enby, non-binary, genderqueer, agender, trans-nonbinary, cis-nonbinary"
+
