@@ -1,17 +1,22 @@
 /** @vitest-environment node */
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rulesPath = path.resolve(__dirname, '../../../data/rules.rulesRoute.test.yaml');
+
+process.env.NODE_ENV = 'test';
+process.env.RULES_PATH = rulesPath;
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
 const app = appModule.default;
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { reloadRules } from '../rulesManager.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rulesPath = path.resolve(__dirname, '../../../data/rules.test.yaml');
+const { reloadRules } = await import('../rulesManager.js');
 
 const defaultAdminUsername = 'admin';
 const defaultAdminSecret = 'admin-board';

@@ -1,18 +1,23 @@
 /** @vitest-environment node */
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const testRules = path.resolve(__dirname, '../../../data/rules.wishesCoverage.test.yaml');
+
 process.env.WISHBOARD_DB_PATH = ':memory:';
+process.env.NODE_ENV = 'test';
+process.env.RULES_PATH = testRules;
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
 const app = appModule.default;
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { reloadRules } from '../rulesManager.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { reloadRules } = await import('../rulesManager.js');
 
 const clearTestData = async () => {
   await db.exec('DELETE FROM sessions');
@@ -20,7 +25,6 @@ const clearTestData = async () => {
   await db.exec("DELETE FROM users WHERE role != 'admin'");
   
   const srcRules = path.resolve(__dirname, '../../../data/rules.yaml');
-  const testRules = path.resolve(__dirname, '../../../data/rules.test.yaml');
   if (fs.existsSync(srcRules)) {
     fs.copyFileSync(srcRules, testRules);
   }

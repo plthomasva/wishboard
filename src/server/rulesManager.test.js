@@ -1,15 +1,16 @@
 /** @vitest-environment node */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-process.env.NODE_ENV = 'test';
-delete process.env.RULES_PATH;
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rulesPath = path.resolve(__dirname, '../../data/rules.test.yaml');
+const rulesPath = path.resolve(__dirname, '../../data/rules.rulesManager.test.yaml');
+
+process.env.NODE_ENV = 'test';
+process.env.RULES_PATH = rulesPath;
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs';
 
 let rulesManager;
 

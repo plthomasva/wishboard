@@ -12,7 +12,7 @@ const rulesPath = process.env.RULES_PATH || (process.env.NODE_ENV === 'test'
   ? path.join(dataDir, 'rules.test.yaml') 
   : defaultRulesPath);
 
-if (process.env.RULES_PATH && !fs.existsSync(rulesPath) && fs.existsSync(defaultRulesPath)) {
+if (process.env.RULES_PATH && process.env.NODE_ENV !== 'test' && !fs.existsSync(rulesPath) && fs.existsSync(defaultRulesPath)) {
   try {
     fs.mkdirSync(path.dirname(rulesPath), { recursive: true });
     fs.copyFileSync(defaultRulesPath, rulesPath);
