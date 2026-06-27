@@ -8,7 +8,6 @@ const generateDemoData = (await import('./demoSeeder.js')).generateDemoData;
 
 describe('generateDemoData', () => {
   it('creates 50 demo users and 100 demo wishes while preserving admin', async () => {
-    // eslint-disable-next-line @typescript-eslint/await-thenable
     const stats = await generateDemoData();
 
     expect(stats).toEqual({ usersCreated: 50, wishesCreated: 100 });

@@ -152,7 +152,7 @@ describe('db initialization', () => {
     const writeSpy = vi.spyOn(fs.default, 'writeFileSync').mockImplementation(() => {});
 
     vi.resetModules();
-    const dbModule = await import('./db.js');
+    await import('./db.js');
 
 
     expect(mockLocalExecute).toHaveBeenCalled();

@@ -2,7 +2,6 @@
 process.env.WISHBOARD_DB_PATH = ':memory:';
 
 import fs from 'node:fs';
-import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
