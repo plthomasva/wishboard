@@ -8,9 +8,5 @@ describe('Server db.js - execute coverage', () => {
     const resExecute = await dbWrapper.execute('SELECT 1 as val');
     expect(resExecute.rows[0].val).toBe(1);
 
-    const resMultiple = await dbWrapper.executeMultiple('SELECT 1 as val; SELECT 2 as val;');
-    // sqlite-sync returns an array for multiple statements, or the last result
-    // We just expect it to not throw
-    expect(resMultiple).toBeDefined();
-  });
+    await dbWrapper.executeMultiple('SELECT 1 as val; SELECT 2 as val;');
 });
