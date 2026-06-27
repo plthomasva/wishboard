@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.7.1...wishboard-v1.8.0) (2026-06-27)
+
+
+### Features
+
+* add AWS serverless deployment target with full functional parity ([#75](https://github.com/plthomasva/wishboard/issues/75)) ([3811772](https://github.com/plthomasva/wishboard/commit/38117725879081a124d57ebb7162777d31a7716e))
+
 ## [1.7.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.7.0...wishboard-v1.7.1) (2026-06-26)
 
 
