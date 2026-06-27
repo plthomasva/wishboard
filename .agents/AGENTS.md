@@ -13,22 +13,14 @@ This document outlines the core coding conventions, architectural patterns, envi
 
 ---
 
-## 2. Environment & OS Guidelines (Windows PowerShell)
-
-* **Windows Environment:** Development primarily occurs in a Windows environment.
-* **PowerShell Native Utilities:** Prefer native PowerShell cmdlets (`Select-String`, `Get-ChildItem`, `Get-Content`) over Linux emulation commands (`grep`, `ls`, `cat`, `find`) in terminal invocations.
-* **PowerShell CLI Quoting Quirks:** Avoid passing multi-line strings or complex strings directly via CLI flags. For commands like the GitHub CLI (`gh pr create`), write the body to a temporary markdown file (e.g., in a scratch/ directory) and use the `--body-file` parameter to prevent terminal parsing crashes.
-
----
-
-## 3. Coding & Syntax Conventions
+## 2. Coding & Syntax Conventions
 
 * **Global Accessors:** In TypeScript files, always prefer `globalThis` over `window`, `self`, or `global` to align with SonarQube quality gate conventions and maintain environment-agnostic execution.
 * **Conventional Commits:** Always use conventional commit structures (e.g., `feat:`, `fix:`, `refactor:`, `test:`, `docs:`) for git commits and Pull Request titles. These are used to generate release change logs automatically.
 
 ---
 
-## 4. Architecture & Matching Engine Rules
+## 3. Architecture & Matching Engine Rules
 
 * **Configuration-Driven Rules:** Do not hardcode gender, orientation, or role matching logic inside the backend code. The matchmaking system utilizes a dynamic rule system defined in `data/rules.yaml`.
 * **Rule Types:**
@@ -40,16 +32,19 @@ This document outlines the core coding conventions, architectural patterns, envi
 
 ---
 
-## 5. Testing & Quality Gates
+## 4. Testing & Quality Gates
 
 * **Coverage Threshold:** SonarQube applies an **80% test coverage threshold** specifically to **new code** introduced on branches. Ensure any code changes are accompanied by robust unit test coverage.
 * **PR Verification:** When checking Pull Request status, use the SonarQube MCP or SonarCloud dashboard to check for test failures, duplicate code blocks, or security hotspots rather than relying solely on local test suite runs.
 * **Testing Command:**
   * To run the test suite:
+
     ```powershell
     npm test
     ```
+
   * To run tests in watch mode:
+
     ```powershell
     npm run test:watch
     ```
