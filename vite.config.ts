@@ -39,8 +39,9 @@ export default defineConfig({
     environmentMatchGlobs: [
       ['**/src/server/**', 'node'],
       ['**/scripts/**', 'node'],
+      ['**/aws-serverless/**', 'node'],
     ],
-    include: ['src/client/src/**/*.{test,spec}.{ts,tsx}', 'src/server/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}'],
+    include: ['src/client/src/**/*.{test,spec}.{ts,tsx}', 'src/server/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}', 'aws-serverless/**/*.{test,spec}.{js,ts}'],
     setupFiles: 'src/client/src/setupTests.ts',
     globalSetup: 'vitest.global-setup.js',
     coverage: {
@@ -48,7 +49,7 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
       exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/*.d.ts'],
-      include: ['src/client/src/**/*.{js,ts,tsx}', 'src/server/**/*.{js,ts}', 'scripts/**/*.{js,ts}']
+      include: ['src/client/src/**/*.{js,ts,tsx}', 'src/server/**/*.{js,ts}', 'scripts/**/*.{js,ts}', 'aws-serverless/**/*.{js,ts}']
     }
   }
 });
