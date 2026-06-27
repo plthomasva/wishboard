@@ -138,16 +138,38 @@ if ! $FRONTEND_ONLY; then
     if $GUIDED || [[ ! -f "$SAM_CONFIG" ]]; then USE_GUIDED=true; fi
 
     DEPLOY_ARGS=(deploy --stack-name "$STACK_NAME")
+    MAX_DEPLOY_ATTEMPTS=4
     if $USE_GUIDED; then
         step "[4/6] Deploying stack (sam deploy --guided)..."
         info "No samconfig.toml found or --guided specified; starting interactive setup."
         DEPLOY_ARGS+=(--guided)
+        MAX_DEPLOY_ATTEMPTS=1   # interactive; don't auto-retry
     else
         step "[4/6] Deploying stack (sam deploy)..."
         DEPLOY_ARGS+=(--no-confirm-changeset --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM)
     fi
     DEPLOY_ARGS+=("${AWS_COMMON[@]}")
-    ( cd "$SERVERLESS_DIR" && sam "${DEPLOY_ARGS[@]}" )
+
+    # Let boto retry transient S3/network errors while uploading artifacts.
+    export AWS_MAX_ATTEMPTS=6
+    export AWS_RETRY_MODE=adaptive
+
+    # Outer retry: artifact uploads to the managed bucket can drop the connection
+    # mid-stream on flaky networks. Re-running sam deploy is idempotent
+    # (already-uploaded artifacts are skipped).
+    attempt=1
+    while true; do
+        if ( cd "$SERVERLESS_DIR" && sam "${DEPLOY_ARGS[@]}" ); then
+            break
+        fi
+        if [[ $attempt -ge $MAX_DEPLOY_ATTEMPTS ]]; then
+            echo "sam deploy failed after ${attempt} attempt(s)." >&2
+            exit 1
+        fi
+        info "sam deploy attempt ${attempt} failed; likely a transient upload error. Retrying in 5s..."
+        sleep 5
+        attempt=$((attempt + 1))
+    done
 
     # Guided mode may have just written/updated samconfig.toml; pick up the
     # values the user chose so the output lookups below use them.

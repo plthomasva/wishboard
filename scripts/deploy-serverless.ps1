@@ -153,7 +153,7 @@ try {
                 Write-Step "[4/6] Deploying stack (sam deploy)..."
             }
 
-            $deployArgs = @("deploy")
+            $deployArgs = @("deploy", "--stack-name", $StackName)
             if ($useGuided) {
                 $deployArgs += "--guided"
             }
@@ -164,10 +164,24 @@ try {
                     "--capabilities", "CAPABILITY_IAM"
                 )
             }
-            $deployArgs += @("--stack-name", $StackName)
             $deployArgs += $awsCommon
-            sam @deployArgs
-            if ($LASTEXITCODE -ne 0) { throw "sam deploy failed." }
+
+            # Let boto retry transient S3/network errors while uploading artifacts.
+            $env:AWS_MAX_ATTEMPTS = "6"
+            $env:AWS_RETRY_MODE = "adaptive"
+
+            # Outer retry: artifact uploads to the managed bucket can drop the
+            # connection mid-stream on flaky networks. Re-running sam deploy is
+            # idempotent (already-uploaded artifacts are skipped). Don't retry a
+            # guided run, which is interactive.
+            $maxAttempts = if ($useGuided) { 1 } else { 4 }
+            for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+                sam @deployArgs
+                if ($LASTEXITCODE -eq 0) { break }
+                if ($attempt -ge $maxAttempts) { throw "sam deploy failed after $attempt attempt(s)." }
+                Write-Info "sam deploy attempt $attempt failed (exit $LASTEXITCODE); likely a transient upload error. Retrying in 5s..."
+                Start-Sleep -Seconds 5
+            }
         }
         finally {
             Pop-Location

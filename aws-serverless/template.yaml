@@ -355,7 +355,7 @@ Resources:
         # bundled into ESM output. Without this, Lambda throws:
         # "Dynamic require of 'util' is not supported"
         Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+          - js=import { createRequire as _cReq } from 'module'; import { fileURLToPath as _fUTP } from 'url'; import { dirname as _dName } from 'path'; globalThis.require = _cReq(import.meta.url); globalThis.__filename = _fUTP(import.meta.url); globalThis.__dirname = _dName(globalThis.__filename);
         # @libsql/linux-x64-gnu is the native .node binary that esbuild cannot
         # bundle. The JS layer of @libsql/client bundles fine. A post-build
         # script (aws-serverless/post-build.js) copies the Linux binary into
@@ -402,7 +402,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+          - js=import { createRequire as _cReq } from 'module'; import { fileURLToPath as _fUTP } from 'url'; import { dirname as _dName } from 'path'; globalThis.require = _cReq(import.meta.url); globalThis.__filename = _fUTP(import.meta.url); globalThis.__dirname = _dName(globalThis.__filename);
         # Bundle the @libsql/client JS layer; only the native .node binary stays
         # external and is copied into the artifact by aws-serverless/post-build.js
         # (same strategy as ApiFunction). See that script for details.

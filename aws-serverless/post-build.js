@@ -56,6 +56,31 @@ for (const fn of functions) {
   fs.rmSync(destPkgDir, { recursive: true, force: true });
   fs.cpSync(srcPkgDir, destPkgDir, { recursive: true });
   console.log(`Copied ${NATIVE_PKG} -> ${path.relative(repoRoot, destPkgDir)}`);
+  
+  const lambdaMjsPath = path.join(fnDir, 'lambda.mjs');
+  if (fs.existsSync(lambdaMjsPath)) {
+    let content = fs.readFileSync(lambdaMjsPath, 'utf8');
+    // Replace standalone __dirname and __filename to bypass ERR_AMBIGUOUS_MODULE_SYNTAX on Node 22
+    content = content.replace(/\b__dirname\b/g, 'globalThis.__dirname');
+    content = content.replace(/\b__filename\b/g, 'globalThis.__filename');
+    fs.writeFileSync(lambdaMjsPath, content, 'utf8');
+    console.log(`Patched ${fn}/lambda.mjs for Node 22 ESM compatibility`);
+  }
+  
+  // Copy express-status-monitor static assets
+  const statusMonitorSrc = path.join(repoRoot, 'node_modules', 'express-status-monitor', 'src');
+  if (fs.existsSync(statusMonitorSrc) && fn === 'ApiFunction') {
+    ['public'].forEach(dir => {
+      const srcDir = path.join(statusMonitorSrc, dir);
+      const destDir = path.join(fnDir, dir); // Put at root since it is bundled in lambda.mjs
+      if (fs.existsSync(srcDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+        fs.cpSync(srcDir, destDir, { recursive: true });
+      }
+    });
+    console.log(`Copied express-status-monitor assets to ${fn} root`);
+  }
+
   copied += 1;
 }
 

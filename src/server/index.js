@@ -56,9 +56,17 @@ app.use(morgan('combined', {
 }));
 
 // Setup status monitor, restricted to admin only (we mount it later, but init here)
+const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 const monitor = statusMonitor({ path: '' });
-app.use(monitor);
+
+if (!isLambda) {
+  app.use(monitor);
+}
+
 app.get('/api/admin/metrics', async (req, res, next) => {
+  if (isLambda) {
+    return res.status(200).send('<h2>Metrics are not supported in AWS Lambda Serverless mode.</h2>');
+  }
   if (req.query.ticket && consumeMetricsTicket(req.query.ticket)) {
     req.user = { role: 'admin' };
     return next();
