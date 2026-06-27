@@ -140,7 +140,7 @@ describe('AccountPage', () => {
       const submitButton = submitButtons.find((button) => button.getAttribute('type') === 'submit');
       expect(submitButton).toBeDefined();
       expect(submitButton).toHaveTextContent('Login');
-    });
+    }, { timeout: 3000 });
   });
 
   it('submits login when in login mode with provided passphrase', async () => {

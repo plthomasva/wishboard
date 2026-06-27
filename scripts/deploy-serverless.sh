@@ -65,8 +65,8 @@ fi
 
 # Colors
 C_CYAN='\033[1;36m'; C_GREEN='\033[1;32m'; C_GRAY='\033[0;90m'; C_RESET='\033[0m'
-step() { echo -e "${C_CYAN}==> $1${C_RESET}"; }
-info() { echo -e "${C_GRAY}    $1${C_RESET}"; }
+step() { local msg="$1"; echo -e "${C_CYAN}==> $msg${C_RESET}"; }
+info() { local msg="$1"; echo -e "${C_GRAY}    $msg${C_RESET}"; }
 
 # Resolve project paths
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -75,8 +75,9 @@ SAM_CONFIG="${SERVERLESS_DIR}/samconfig.toml"
 DIST_DIR="${PROJECT_ROOT}/dist"
 
 require_command() {
-    if ! command -v "$1" >/dev/null 2>&1; then
-        echo "Required command '$1' was not found in PATH. Please install it and retry." >&2
+    local cmd="$1"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Required command '$cmd' was not found in PATH. Please install it and retry." >&2
         exit 1
     fi
 }

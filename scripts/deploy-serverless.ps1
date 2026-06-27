@@ -16,7 +16,7 @@
     profile (e.g. a dedicated Wishboard account); omit it to use your default
     credentials / environment variables.
 
-.PARAMETER Profile
+.PARAMETER AwsProfile
     Named AWS CLI profile to use for sam + aws commands. If omitted, the script
     falls back to the `profile` saved in aws-serverless/samconfig.toml, then to
     your default AWS credentials.
@@ -40,7 +40,7 @@
     Deploy the backend only; skip the S3 upload and CloudFront invalidation.
 
 .EXAMPLE
-    ./scripts/deploy-serverless.ps1 -Profile wishboard
+    ./scripts/deploy-serverless.ps1 -AwsProfile wishboard
 
 .EXAMPLE
     ./scripts/deploy-serverless.ps1            # uses default AWS credentials
@@ -49,10 +49,10 @@
     ./scripts/deploy-serverless.ps1 -Guided    # first-time interactive setup
 
 .EXAMPLE
-    ./scripts/deploy-serverless.ps1 -Profile wishboard -FrontendOnly
+    ./scripts/deploy-serverless.ps1 -AwsProfile wishboard -FrontendOnly
 #>
 param(
-    [string]$Profile = "",
+    [string]$AwsProfile = "",
     [string]$StackName = "",
     [string]$Region = "",
     [ValidateSet("prod", "dev")]
@@ -69,8 +69,8 @@ $ServerlessDir = Join-Path $ProjectRoot "aws-serverless"
 $SamConfig     = Join-Path $ServerlessDir "samconfig.toml"
 $DistDir       = Join-Path $ProjectRoot "dist"
 
-function Write-Step($message) { Write-Host "==> $message" -ForegroundColor Cyan }
-function Write-Info($message) { Write-Host "    $message" -ForegroundColor DarkGray }
+function Show-Step($message) { Write-Host "==> $message" -ForegroundColor Cyan }
+function Show-Info($message) { Write-Host "    $message" -ForegroundColor DarkGray }
 
 function Assert-Command($name) {
     if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
@@ -93,25 +93,25 @@ function Get-TomlValue($key) {
 if (-not $StackName) { $StackName = Get-TomlValue "stack_name" }
 if (-not $StackName) { $StackName = "wishboard-serverless" }
 if (-not $Region)    { $Region   = Get-TomlValue "region" }
-if (-not $Profile)   { $Profile  = Get-TomlValue "profile" }
+if (-not $AwsProfile)   { $AwsProfile  = Get-TomlValue "profile" }
 
 # Common --profile / --region args shared by sam and aws invocations.
 function Get-AwsCommon {
     $common = @()
-    if ($Profile) { $common += @("--profile", $Profile) }
+    if ($AwsProfile) { $common += @("--profile", $AwsProfile) }
     if ($Region)  { $common += @("--region", $Region) }
     return ,$common
 }
 
 Write-Host ""
 Write-Host "Wishboard serverless deployment" -ForegroundColor Green
-Write-Info "Stack:   $StackName"
-Write-Info "Profile: $(if ($Profile) { $Profile } else { '(default credentials)' })"
-Write-Info "Region:  $(if ($Region) { $Region } else { '(from AWS config)' })"
+Show-Info "Stack:   $StackName"
+Show-Info "Profile: $(if ($AwsProfile) { $AwsProfile } else { '(default credentials)' })"
+Show-Info "Region:  $(if ($Region) { $Region } else { '(from AWS config)' })"
 Write-Host ""
 
 # --- Preflight ---
-Write-Step "Checking prerequisites..."
+Show-Step "Checking prerequisites..."
 Assert-Command "node"
 Assert-Command "npm"
 Assert-Command "aws"
@@ -120,13 +120,13 @@ if (-not $FrontendOnly) { Assert-Command "sam" }
 $awsCommon = Get-AwsCommon
 $account = aws sts get-caller-identity @awsCommon --query "Account" --output text
 if ($LASTEXITCODE -ne 0 -or -not $account -or $account -eq "None") {
-    throw "Unable to authenticate to AWS. Check your credentials / -Profile value."
+    throw "Unable to authenticate to AWS. Check your credentials / -AwsProfile value."
 }
-Write-Info "Authenticated to AWS account $account"
+Show-Info "Authenticated to AWS account $account"
 
 try {
     # --- 1. Frontend build ---
-    Write-Step "[1/6] Building frontend (npm run build)..."
+    Show-Step "[1/6] Building frontend (npm run build)..."
     Push-Location $ProjectRoot
     npm run build
     if ($LASTEXITCODE -ne 0) { throw "Frontend build failed." }
@@ -136,23 +136,23 @@ try {
         Push-Location $ServerlessDir
         try {
             # --- 2. Backend bundle ---
-            Write-Step "[2/6] Bundling backend (sam build)..."
+            Show-Step "[2/6] Bundling backend (sam build)..."
             sam build
             if ($LASTEXITCODE -ne 0) { throw "sam build failed." }
 
             # --- 3. Native binary post-build ---
-            Write-Step "[3/6] Copying libSQL native binary into artifacts (post-build.js)..."
+            Show-Step "[3/6] Copying libSQL native binary into artifacts (post-build.js)..."
             node post-build.js
             if ($LASTEXITCODE -ne 0) { throw "post-build.js failed." }
 
             # --- 4. Deploy stack ---
             $useGuided = $Guided -or (-not (Test-Path $SamConfig))
             if ($useGuided) {
-                Write-Step "[4/6] Deploying stack (sam deploy --guided)..."
-                Write-Info "No samconfig.toml found or -Guided specified; starting interactive setup."
+                Show-Step "[4/6] Deploying stack (sam deploy --guided)..."
+                Show-Info "No samconfig.toml found or -Guided specified; starting interactive setup."
             }
             else {
-                Write-Step "[4/6] Deploying stack (sam deploy)..."
+                Show-Step "[4/6] Deploying stack (sam deploy)..."
             }
 
             $deployArgs = @("deploy", "--stack-name", $StackName)
@@ -184,7 +184,7 @@ try {
                 sam @deployArgs
                 if ($LASTEXITCODE -eq 0) { break }
                 if ($attempt -ge $maxAttempts) { throw "sam deploy failed after $attempt attempt(s)." }
-                Write-Info "sam deploy attempt $attempt failed (exit $LASTEXITCODE); likely a transient upload error. Retrying in 5s..."
+                Show-Info "sam deploy attempt $attempt failed (exit $LASTEXITCODE); likely a transient upload error. Retrying in 5s..."
                 Start-Sleep -Seconds 5
             }
         }
@@ -195,14 +195,14 @@ try {
         # Guided mode may have just written/updated samconfig.toml; pick up any
         # values the user chose so the output lookups below use them.
         if (-not $Region)  { $Region  = Get-TomlValue "region" }
-        if (-not $Profile) { $Profile = Get-TomlValue "profile" }
+        if (-not $AwsProfile) { $AwsProfile = Get-TomlValue "profile" }
         $tomlStack = Get-TomlValue "stack_name"
         if ($tomlStack) { $StackName = $tomlStack }
         $awsCommon = Get-AwsCommon
     }
 
     # --- 5. Read stack outputs ---
-    Write-Step "[5/6] Reading stack outputs..."
+    Show-Step "[5/6] Reading stack outputs..."
     function Get-StackOutput($key) {
         $v = aws cloudformation describe-stacks --stack-name $StackName @awsCommon `
             --query "Stacks[0].Outputs[?OutputKey=='$key'].OutputValue | [0]" --output text
@@ -218,21 +218,21 @@ try {
     if (-not $frontendBucket) {
         throw "FrontendBucketName output not found. Did the stack deploy successfully?"
     }
-    Write-Info "Frontend bucket: $frontendBucket"
+    Show-Info "Frontend bucket: $frontendBucket"
 
     # --- 6. Upload frontend + invalidate CloudFront ---
     if ($SkipFrontendUpload) {
-        Write-Step "[6/6] Skipping frontend upload (-SkipFrontendUpload)."
+        Show-Step "[6/6] Skipping frontend upload (-SkipFrontendUpload)."
     }
     else {
         if (-not (Test-Path $DistDir)) { throw "Build output not found at $DistDir." }
 
-        Write-Step "[6/6] Uploading frontend to s3://$frontendBucket ..."
+        Show-Step "[6/6] Uploading frontend to s3://$frontendBucket ..."
         aws s3 sync $DistDir "s3://$frontendBucket" --delete @awsCommon
         if ($LASTEXITCODE -ne 0) { throw "Frontend upload to S3 failed." }
 
         if ($distId) {
-            Write-Info "Invalidating CloudFront cache ($distId)..."
+            Show-Info "Invalidating CloudFront cache ($distId)..."
             aws cloudfront create-invalidation --distribution-id $distId --paths "/*" @awsCommon | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "CloudFront invalidation failed." }
         }
