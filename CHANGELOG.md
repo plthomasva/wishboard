@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.7.0...wishboard-v1.7.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* address Stryker dry-run failure and IDE lint ([65c6b15](https://github.com/plthomasva/wishboard/commit/65c6b15563e26771c45f7995c8ffc418f768a2c7))
+* align stryker html report output path with workflow upload path ([#74](https://github.com/plthomasva/wishboard/issues/74)) ([53437a9](https://github.com/plthomasva/wishboard/commit/53437a9b58ac53b85bc26ab52402dd2830911f77))
+
 ## [1.7.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.6.0...wishboard-v1.7.0) (2026-06-24)
 
 
