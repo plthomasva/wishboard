@@ -26,5 +26,22 @@ describe('Server index.js', () => {
     expect(res.status).toBe(200);
     expect(res.text).toContain('<title>Wishboard</title>');
   });
+
+  it('should return configuration on /api/config', async () => {
+    const res = await request(app).get('/api/config');
+    expect(res.status).toBe(200);
+    expect(res.body.realtimeProvider).toBeDefined();
+  });
+
+  it('should grant access to /api/admin/metrics using a valid ticket', async () => {
+    const { generateMetricsTicket } = await import('./auth.js');
+    const ticket = generateMetricsTicket();
+    
+    // We expect 404 or 200 depending on if statusMonitor is initialized, but not 401
+    const res = await request(app).get(`/api/admin/metrics?ticket=${ticket}`);
+    expect(res.status).not.toBe(401);
+    expect(res.status).not.toBe(403);
+  });
+
 });
 

@@ -37,16 +37,18 @@ const logFormat = winston.format.combine(
 
 const productionTransports = [];
 if (process.env.NODE_ENV !== 'test') {
-  productionTransports.push(
-    new winston.transports.DailyRotateFile({
-      filename: path.join(__dirname, '../../data/logs/wishboard-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      zippedArchive: false,
-      maxSize: '20m',
-      maxFiles: '14d'
-    }),
-    new SocketTransport()
-  );
+  if (!process.env.AWS_LAMBDA_FUNCTION_NAME && !process.env.DISABLE_FILE_LOGGING) {
+    productionTransports.push(
+      new winston.transports.DailyRotateFile({
+        filename: path.join(__dirname, '../../data/logs/wishboard-%DATE%.log'),
+        datePattern: 'YYYY-MM-DD',
+        zippedArchive: false,
+        maxSize: '20m',
+        maxFiles: '14d'
+      })
+    );
+  }
+  productionTransports.push(new SocketTransport());
 }
 
 const transports = [

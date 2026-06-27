@@ -6,8 +6,11 @@ import fs from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const imagesDir = path.resolve(__dirname, '../../../data/images');
-fs.mkdirSync(imagesDir, { recursive: true });
+const isS3Mode = Boolean(process.env.AWS_S3_BUCKET);
+const imagesDir = isS3Mode ? '/tmp' : path.resolve(__dirname, '../../../data/images');
+if (!isS3Mode) {
+  fs.mkdirSync(imagesDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -237,6 +240,31 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
   
   const imageId = req.file ? req.file.filename : null;
+
+  if (req.file && isS3Mode) {
+    const safePath = path.join(imagesDir, path.basename(req.file.filename));
+    try {
+      const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
+      const s3 = new S3Client();
+      const fileStream = fs.createReadStream(safePath);
+      
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: `images/${req.file.filename}`,
+        Body: fileStream,
+        ContentType: req.file.mimetype
+      }));
+      
+      fs.unlinkSync(safePath);
+      logger.info('Uploaded image to S3', { bucket: process.env.AWS_S3_BUCKET, key: `images/${req.file.filename}` });
+    } catch (err) {
+      logger.error('Failed to upload image to S3:', { error: err.message });
+      if (fs.existsSync(safePath)) {
+        fs.unlinkSync(safePath);
+      }
+      return res.status(500).json({ error: 'Failed to process image upload.' });
+    }
+  }
 
   const user = await getRequestUser(req);
   const userId = user?.id || null;

@@ -36,6 +36,12 @@ docker compose up -d
 
 This will automatically pull the necessary images and start both the Wishboard backend and its internal libSQL database instance.
 
+### AWS Serverless Deployment
+
+For cloud deployments, Wishboard can be deployed to your own AWS account using **AWS SAM (CloudFormation)**, running completely serverless on Lambda, EFS, API Gateway, S3, and CloudFront.
+
+See the [**AWS Deployment Guide**](aws-serverless/deploy-instructions.md) for pricing estimates and step-by-step instructions.
+
 ### Local Installation
 
 1. Install dependencies:
@@ -62,9 +68,10 @@ This will automatically pull the necessary images and start both the Wishboard b
 
 ## Documentation
 
-Detailed guides and documentation can be found in the `docs/` directory:
+Detailed guides and documentation can be found in the `docs/` and `aws-serverless/` directories:
 
 - [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.md) - Instructions for securely deploying Wishboard as a locked-down offline Wi-Fi kiosk on a Raspberry Pi.
+- [**AWS Deployment Guide**](aws-serverless/deploy-instructions.md) - Instructions and monthly pricing analysis for deploying to AWS as a serverless application.
 - [**Matching Rules**](docs/MATCHING_RULES.md) - A deep dive into how the matchmaking engine implicitly maps, expands, and cross-matches user identities.
 - [**Mutation Testing**](docs/MUTATION_TESTING.md) - Details on how we use Stryker to guarantee robust unit testing, and how to view the daily automated reports.
 

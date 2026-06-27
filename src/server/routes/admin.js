@@ -20,12 +20,12 @@ const checkResult = (result, res, entityName) => {
   res.json({ success: true });
 };
 
-router.get('/flags', await requireAdmin, async (req, res) => {
+router.get('/flags', requireAdmin, async (req, res) => {
   const rows = await db.prepare('SELECT id, content, flagged, created_at, user_id FROM wishes WHERE flagged > 0 ORDER BY flagged DESC').all();
   res.json(rows);
 });
 
-router.post('/wishes/:id/remove', await requireAdmin, async (req, res) => {
+router.post('/wishes/:id/remove', requireAdmin, async (req, res) => {
   const result = await db.prepare('DELETE FROM wishes WHERE id = ?').run(req.params.id);
   logger.info('Admin removed wish', { admin_user_id: req.user.id, wish_id: req.params.id });
   if (result.changes > 0) {
@@ -34,24 +34,24 @@ router.post('/wishes/:id/remove', await requireAdmin, async (req, res) => {
   checkResult(result, res, 'Wish');
 });
 
-router.post('/wishes/:id/clear-flag', await requireAdmin, async (req, res) => {
+router.post('/wishes/:id/clear-flag', requireAdmin, async (req, res) => {
   const result = await db.prepare('UPDATE wishes SET flagged = 0 WHERE id = ?').run(req.params.id);
   logger.info('Admin cleared flag for wish', { admin_user_id: req.user.id, wish_id: req.params.id });
   checkResult(result, res, 'Wish');
 });
 
-router.post('/wishes/clear-all-flags', await requireAdmin, async (req, res) => {
+router.post('/wishes/clear-all-flags', requireAdmin, async (req, res) => {
   await db.prepare('UPDATE wishes SET flagged = 0').run();
   logger.info('Admin cleared all flags', { admin_user_id: req.user.id });
   res.json({ success: true });
 });
 
-router.get('/users', await requireAdmin, async (req, res) => {
+router.get('/users', requireAdmin, async (req, res) => {
   const users = await db.prepare('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC').all();
   res.json(users);
 });
 
-router.post('/users/:id/role', await requireAdmin, async (req, res) => {
+router.post('/users/:id/role', requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
   if (!role || !['user', 'admin'].includes(role)) {
@@ -63,14 +63,14 @@ router.post('/users/:id/role', await requireAdmin, async (req, res) => {
   checkResult(result, res, 'User');
 });
 
-router.get('/users/:id/delete-preview', await requireAdmin, async (req, res) => {
+router.get('/users/:id/delete-preview', requireAdmin, async (req, res) => {
   const { id } = req.params;
   const wishesCount = (await db.prepare('SELECT COUNT(*) as count FROM wishes WHERE user_id = ?').get(id)).count;
   const wishmailsCount = (await db.prepare('SELECT COUNT(*) as count FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').get(id)).count;
   res.json({ wishesCount, wishmailsCount });
 });
 
-router.post('/users/:id/delete', await requireAdmin, async (req, res) => {
+router.post('/users/:id/delete', requireAdmin, async (req, res) => {
   const { id } = req.params;
   await db.prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').run(id);
   await db.prepare('DELETE FROM wishes WHERE user_id = ?').run(id);
@@ -81,7 +81,7 @@ router.post('/users/:id/delete', await requireAdmin, async (req, res) => {
 });
 
 // POST /api/admin/users/:id/reset-password
-router.post('/users/:id/reset-password', await requireAdmin, async (req, res, next) => {
+router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     let passphrase = req.body?.passphrase;
@@ -112,7 +112,7 @@ router.post('/users/:id/reset-password', await requireAdmin, async (req, res, ne
 
 // POST /api/admin/reset-demo
 // Protected by await requireAdmin so only the 'admin' account can trigger it
-router.post('/reset-demo', await requireAdmin, async (req, res) => {
+router.post('/reset-demo', requireAdmin, async (req, res) => {
   if (process.env.NODE_ENV === 'production' && req.query.force !== 'true' && req.body?.force !== true) {
     return res.status(403).json({ error: 'Demo reset is disabled in production unless force is explicitly requested.' });
   }
@@ -130,7 +130,7 @@ router.post('/reset-demo', await requireAdmin, async (req, res) => {
 });
 
 // GET /api/admin/logs
-router.get('/logs', await requireAdmin, async (req, res) => {
+router.get('/logs', requireAdmin, async (req, res) => {
   const logsDir = path.join(__dirname, '../../../data/logs');
   try {
     if (!fs.existsSync(logsDir)) {
@@ -154,11 +154,11 @@ router.get('/logs', await requireAdmin, async (req, res) => {
   }
 });
 
-router.get('/metrics-ticket', await requireAdmin, async (req, res) => {
+router.get('/metrics-ticket', requireAdmin, async (req, res) => {
   res.json({ ticket: generateMetricsTicket() });
 });
 
-router.get('/config', await requireAdmin, async (req, res) => {
+router.get('/config', requireAdmin, async (req, res) => {
   res.json({ isProduction: process.env.NODE_ENV === 'production' });
 });
 

@@ -7,7 +7,6 @@ import crypto from 'node:crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataDir = path.resolve(__dirname, '../../data');
-fs.mkdirSync(dataDir, { recursive: true });
 
 let url = process.env.DATABASE_URL;
 
@@ -17,6 +16,10 @@ if (process.env.NODE_ENV === 'test' && !process.env.WISHBOARD_DB_PATH && !url) {
 }
 
 if (!url) {
+  // Only when there is no external DATABASE_URL do we persist to a local file
+  // under dataDir, so create it here. On AWS Lambda DATABASE_URL points at EFS
+  // and the bundle dir (/var/task) is read-only, so we must NOT mkdir there.
+  fs.mkdirSync(dataDir, { recursive: true });
   const dbPath = process.env.WISHBOARD_DB_PATH || path.join(dataDir, 'wishboard.db');
   url = dbPath === ':memory:' ? 'file::memory:' : `file:${dbPath}`;
 }
@@ -74,6 +77,11 @@ await db.executeMultiple(`
     FOREIGN KEY(wish_id) REFERENCES wishes(id) ON DELETE CASCADE,
     FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY(parent_mail_id) REFERENCES wishmails(id) ON DELETE SET NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS websocket_connections (
+    connection_id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL
   );
 `);
 
@@ -192,8 +200,12 @@ const dbWrapper = {
   exec: async (sql) => {
     return await db.executeMultiple(sql);
   },
-  execute: db.execute.bind(db),
-  executeMultiple: db.executeMultiple.bind(db)
+  execute: async (...args) => {
+    return await db.execute(...args);
+  },
+  executeMultiple: async (...args) => {
+    return await db.executeMultiple(...args);
+  }
 };
 
 export default dbWrapper;

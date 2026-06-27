@@ -1,0 +1,611 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS Serverless target for Wishboard - SQLite on EFS, API Gateway, Lambda, S3, and CloudFront.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: wishboard
+    Description: Name of the project, used for resource naming.
+  DomainName:
+    Type: String
+    Default: ""
+    Description: "(Optional) Custom domain name (e.g., wishboard.example.com)."
+  HostedZoneId:
+    Type: String
+    Default: ""
+    Description: "(Optional) Route 53 Hosted Zone ID for custom domain aliases and SSL validation."
+  AcmCertificateArn:
+    Type: String
+    Default: ""
+    Description: "(Optional) Existing ACM Certificate ARN in us-east-1. If empty and DomainName is provided, a certificate will be created (requires deploying this stack in us-east-1)."
+  NodeEnv:
+    Type: String
+    Default: production
+    AllowedValues:
+      - production
+      - development
+    Description: Node environment for the Lambdas (production or development).
+
+Conditions:
+  UseCustomDomain: !Not [!Equals [!Ref DomainName, ""]]
+  CreateCertificate: !And [
+    !Not [!Equals [!Ref DomainName, ""]],
+    !Equals [!Ref AcmCertificateArn, ""]
+  ]
+
+Resources:
+  # =========================================================================
+  # VPC Networking (Zero-NAT Cost Topology)
+  # =========================================================================
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-vpc"
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-subnet-1"
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-subnet-2"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-igw"
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-rt"
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  Subnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref RouteTable
+
+  Subnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref RouteTable
+
+  # Gateway VPC Endpoint for S3 (Completely Free, avoids NAT Gateway costs)
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      VpcId: !Ref VPC
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        - !Ref RouteTable
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Lambda functions and EFS
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+
+  SecurityGroupEfsIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      SourceSecurityGroupId: !Ref SecurityGroup
+
+  # =========================================================================
+  # Amazon EFS (Serverless SQLite Database Storage)
+  # =========================================================================
+  FileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      PerformanceMode: generalPurpose
+      ThroughputMode: elastic
+      FileSystemTags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-db-fs"
+
+  MountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystem
+      SubnetId: !Ref PublicSubnet1
+      SecurityGroups:
+        - !Ref SecurityGroup
+
+  MountTarget2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystem
+      SubnetId: !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref SecurityGroup
+
+  # EFS Access Point to guarantee non-root permissions for Lambda
+  AccessPoint:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref FileSystem
+      PosixUser:
+        Uid: '1000'
+        Gid: '1000'
+      RootDirectory:
+        Path: /wishboard
+        CreationInfo:
+          OwnerUid: '1000'
+          OwnerGid: '1000'
+          Permissions: '0777'
+
+  # =========================================================================
+  # Amazon S3 Buckets (Frontend Hosting & Wish Images)
+  # =========================================================================
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-frontend-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-images-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # S3 Bucket Policy to allow CloudFront OAC read access
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${FrontendBucket}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+          - Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: 
+              - !Sub "arn:aws:s3:::${FrontendBucket}"
+              - !Sub "arn:aws:s3:::${FrontendBucket}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+  ImagesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ImagesBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${ImagesBucket}/images/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+          - Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: 
+              - !Sub "arn:aws:s3:::${ImagesBucket}"
+              - !Sub "arn:aws:s3:::${ImagesBucket}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+  # =========================================================================
+  # API Gateways (HTTP API & WebSocket API)
+  # =========================================================================
+  HttpApi:
+    Type: AWS::Serverless::HttpApi # NOSONAR - Auth is handled by the Express.js application
+    # No explicit StageName: SAM provisions the special "$default" stage, whose
+    # invoke URL has no stage path segment. This keeps event.rawPath as
+    # "/api/..."; a named stage (e.g. "production") would prefix it as
+    # "/production/api/...", which serverless-express forwards verbatim to
+    # Express, missing every /api route.
+
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${ProjectName}-websocket-api"
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.action"
+
+  WebSocketIntegrationConnect:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketFunction.Arn}/invocations"
+
+  WebSocketIntegrationDisconnect:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketFunction.Arn}/invocations"
+
+  WebSocketConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: "$connect"
+      AuthorizationType: NONE
+      Target: !Sub "integrations/${WebSocketIntegrationConnect}"
+
+  WebSocketDisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: "$disconnect"
+      Target: !Sub "integrations/${WebSocketIntegrationDisconnect}"
+
+  WebSocketDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - WebSocketConnectRoute
+      - WebSocketDisconnectRoute
+    Properties:
+      ApiId: !Ref WebSocketApi
+
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketApi
+      StageName: production
+      DeploymentId: !Ref WebSocketDeployment
+
+  # =========================================================================
+  # AWS Lambda Functions (Serverless Compute)
+  # =========================================================================
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - MountTarget1
+      - MountTarget2
+    Properties:
+      FunctionName: !Sub "${ProjectName}-express-api"
+      CodeUri: ../
+      Handler: aws-serverless/lambda.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 1024
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SecurityGroup
+        SubnetIds:
+          - !Ref PublicSubnet1
+          - !Ref PublicSubnet2
+      FileSystemConfigs:
+        - Arn: !GetAtt AccessPoint.Arn
+          LocalMountPath: /mnt/efs
+      Environment:
+        Variables:
+          NODE_ENV: !Ref NodeEnv
+          DATABASE_URL: file:/mnt/efs/wishboard.db
+          RULES_PATH: /mnt/efs/rules.yaml
+          AWS_S3_BUCKET: !Ref ImagesBucket
+          REALTIME_PROVIDER: apigateway
+          WEBSOCKET_API_ENDPOINT: !Sub "https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/production"
+      Policies:
+        - AWSLambdaVPCAccessExecutionRole
+        - AmazonElasticFileSystemClientFullAccess
+        - S3CrudPolicy:
+            BucketName: !Ref ImagesBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/production/*"
+      Events:
+        ApiRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /api/{proxy+}
+            Method: ANY
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node22"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        # Polyfill require() for CJS dependencies (@codegenie/serverless-express)
+        # bundled into ESM output. Without this, Lambda throws:
+        # "Dynamic require of 'util' is not supported"
+        Banner:
+          - js=import { createRequire as _cReq } from 'module'; import { fileURLToPath as _fUTP } from 'url'; import { dirname as _dName } from 'path'; globalThis.require = _cReq(import.meta.url); globalThis.__filename = _fUTP(import.meta.url); globalThis.__dirname = _dName(globalThis.__filename);
+        # @libsql/linux-x64-gnu is the native .node binary that esbuild cannot
+        # bundle. The JS layer of @libsql/client bundles fine. A post-build
+        # script (aws-serverless/post-build.js) copies the Linux binary into
+        # the artifact so Lambda can load it at runtime.
+        External:
+          - "@libsql/linux-x64-gnu"
+        EntryPoints:
+          - aws-serverless/lambda.mjs
+
+  WebSocketFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - MountTarget1
+      - MountTarget2
+    Properties:
+      FunctionName: !Sub "${ProjectName}-websocket-mgr"
+      CodeUri: ../
+      Handler: aws-serverless/websocket.handler
+      Runtime: nodejs22.x
+      Timeout: 10
+      MemorySize: 512
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SecurityGroup
+        SubnetIds:
+          - !Ref PublicSubnet1
+          - !Ref PublicSubnet2
+      FileSystemConfigs:
+        - Arn: !GetAtt AccessPoint.Arn
+          LocalMountPath: /mnt/efs
+      Environment:
+        Variables:
+          NODE_ENV: !Ref NodeEnv
+          DATABASE_URL: file:/mnt/efs/wishboard.db
+      Policies:
+        - AWSLambdaVPCAccessExecutionRole
+        - AmazonElasticFileSystemClientFullAccess
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "node22"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire as _cReq } from 'module'; import { fileURLToPath as _fUTP } from 'url'; import { dirname as _dName } from 'path'; globalThis.require = _cReq(import.meta.url); globalThis.__filename = _fUTP(import.meta.url); globalThis.__dirname = _dName(globalThis.__filename);
+        # Bundle the @libsql/client JS layer; only the native .node binary stays
+        # external and is copied into the artifact by aws-serverless/post-build.js
+        # (same strategy as ApiFunction). See that script for details.
+        External:
+          - "@libsql/linux-x64-gnu"
+        EntryPoints:
+          - aws-serverless/websocket.mjs
+
+  WebSocketPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref WebSocketFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*"
+
+  # =========================================================================
+  # Route 53 & ACM Custom Domain Configuration (Conditional)
+  # =========================================================================
+  AcmCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateCertificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: UseCustomDomain
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # Global CloudFront Zone ID
+
+  # =========================================================================
+  # Amazon CloudFront Distribution (Single Gateway & CDN)
+  # =========================================================================
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Description: OAC for Wishboard Buckets
+        Name: !Sub "${ProjectName}-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: CloudFront Distribution for Wishboard Serverless Application
+        DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+        Aliases: !If [UseCustomDomain, [!Ref DomainName], !Ref "AWS::NoValue"]
+        ViewerCertificate:
+          !If
+            - UseCustomDomain
+            - AcmCertificateArn: !If [CreateCertificate, !Ref AcmCertificate, !Ref AcmCertificateArn]
+              SslSupportMethod: sni-only
+              MinimumProtocolVersion: TLSv1.2_2021
+            - CloudFrontDefaultCertificate: true
+        Origins:
+          # Origin 1: Frontend S3 Bucket
+          - Id: FrontendS3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !Ref CloudFrontOAC
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          # Origin 2: Uploaded Images S3 Bucket
+          - Id: ImagesS3Origin
+            DomainName: !GetAtt ImagesBucket.RegionalDomainName
+            OriginAccessControlId: !Ref CloudFrontOAC
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          # Origin 3: Express Backend HTTP API Gateway
+          - Id: BackendApiOrigin
+            DomainName: !Sub "${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            # No OriginPath: the HTTP API uses the "$default" stage (no stage
+            # segment in the URL). The WebSocket origin below still needs its
+            # /production OriginPath because WebSocket APIs require a named stage.
+            CustomOriginConfig:
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+          # Origin 4: WebSocket API Gateway
+          - Id: WebSocketApiOrigin
+            DomainName: !Sub "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com"
+            OriginPath: /production
+            CustomOriginConfig:
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: FrontendS3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
+          Compress: true
+        CacheBehaviors:
+          # Route /api/* to the Express API (No Caching, Forward All Headers/Cookies)
+          - PathPattern: /api/*
+            TargetOriginId: BackendApiOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - PATCH
+              - POST
+              - DELETE
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # Managed-CachingDisabled
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac # Managed-AllViewerExceptHostHeader
+          # Route /socket.io/* to the API Gateway WebSocket Stage (No Caching)
+          - PathPattern: /socket.io/*
+            TargetOriginId: WebSocketApiOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - PATCH
+              - POST
+              - DELETE
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # Managed-CachingDisabled
+            OriginRequestPolicyId: acba4595-bd28-49b8-b9fe-13317c0390fa # Managed-UserAgentRefererHeaders
+          # Route /images/* to the S3 Images Bucket (Cache Images)
+          - PathPattern: /images/*
+            TargetOriginId: ImagesS3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
+            Compress: true
+
+Outputs:
+  CloudFrontUrl:
+    Value: !Sub "https://${CloudFrontDistribution.DomainName}"
+    Description: URL of the CloudFront Distribution
+  CustomDomainUrl:
+    Condition: UseCustomDomain
+    Value: !Sub "https://${DomainName}"
+    Description: Custom Domain URL
+  HttpApiUrl:
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    Description: Direct REST API URL
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+    Description: S3 bucket hosting the built React frontend assets
+  ImagesBucketName:
+    Value: !Ref ImagesBucket
+    Description: S3 bucket storing uploaded wish images
+  CloudFrontDistributionId:
+    Value: !Ref CloudFrontDistribution
+    Description: CloudFront distribution ID (used for cache invalidation)
