@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import dbWrapper from './db.js';
+import dbWrapper, { closeDb } from './db.js';
 
 describe('Server db.js - execute coverage', () => {
-  it('should call db.execute and db.executeMultiple through dbWrapper', async () => {
+  it('should call db.execute, db.executeMultiple, and closeDb through dbWrapper', async () => {
     // Note: this uses the actual in-memory db instance created during test
     // We can just execute a simple safe statement
     const resExecute = await dbWrapper.execute('SELECT 1 as val');
     expect(resExecute.rows[0].val).toBe(1);
 
     await dbWrapper.executeMultiple('SELECT 1 as val; SELECT 2 as val;');
+
+    // Cover closeDb
+    closeDb();
   });
 });

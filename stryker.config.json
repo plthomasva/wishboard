@@ -7,12 +7,13 @@
   "reporters": [
     "progress",
     "clear-text",
-    "html"
+    "html",
+    "json"
   ],
   "htmlReporter": {
-    "fileName": "reports/mutation/html/index.html"
+    "fileName": "reports/mutation/index.html"
   },
-  "coverageAnalysis": "perTest",
+  "coverageAnalysis": "off",
   "mutate": [
     "src/client/src/**/*.ts",
     "src/client/src/**/*.tsx",

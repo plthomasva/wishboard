@@ -102,6 +102,23 @@ SAM will prompt you for the following parameters:
 
 Once deployment finishes, it will print the S3 bucket names and the CloudFront URL in the command output (e.g., `FrontendBucketName` and `CloudFrontUrl`).
 
+### 3b. Enable CloudFront Additional Metrics (one-time, post-deploy)
+
+The admin metrics dashboard uses enhanced CloudFront metrics (cache hit rate, origin latency, per-status error rates). These cannot be enabled inside the SAM template due to a CloudFormation circular dependency, so run this once after the first deploy:
+
+```bash
+DIST_ID=$(aws cloudformation describe-stacks \
+  --stack-name wishboard-serverless \
+  --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'].OutputValue" \
+  --output text)
+
+aws cloudfront create-monitoring-subscription \
+  --distribution-id "$DIST_ID" \
+  --monitoring-subscription '{"RealtimeMetricsSubscriptionConfig":{"RealtimeMetricsSubscriptionStatus":"Enabled"}}'
+```
+
+This is a global setting (~$1/distribution/month) and only needs to be run once — it persists across stack updates.
+
 ### 4. Upload Frontend Assets to S3
 Upload the built React frontend files to the S3 bucket:
 ```bash

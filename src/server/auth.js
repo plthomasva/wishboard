@@ -11,22 +11,6 @@ const getTokenFromRequest = (req) => {
   return authHeader.slice(7).trim();
 };
 
-const metricsTickets = new Map();
-
-export const generateMetricsTicket = () => {
-  const ticket = crypto.randomBytes(16).toString('hex');
-  metricsTickets.set(ticket, Date.now() + 30000); // 30s expiry
-  return ticket;
-};
-
-export const consumeMetricsTicket = (ticket) => {
-  const expires = metricsTickets.get(ticket);
-  if (!expires) return false;
-  metricsTickets.delete(ticket);
-  if (expires < Date.now()) return false;
-  return true;
-};
-
 export const createSalt = () => crypto.randomBytes(16).toString('hex');
 
 const scryptOptions = process.env.NODE_ENV === 'test' 

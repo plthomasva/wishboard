@@ -121,6 +121,33 @@ Resources:
       RouteTableIds:
         - !Ref RouteTable
 
+  CloudWatchEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.monitoring"
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      PrivateDnsEnabled: true
+
+  CloudWatchLogsEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.logs"
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      PrivateDnsEnabled: true
+
+
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -138,6 +165,16 @@ Resources:
       FromPort: 2049
       ToPort: 2049
       SourceSecurityGroupId: !Ref SecurityGroup
+
+  SecurityGroupHttpsIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref SecurityGroup
+
 
   # =========================================================================
   # Amazon EFS (Serverless SQLite Database Storage)
@@ -361,6 +398,18 @@ Resources:
               Action:
                 - execute-api:ManageConnections
               Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/production/*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudwatch:GetMetricData
+                - cloudwatch:ListMetrics
+              Resource: "*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:FilterLogEvents
+                - logs:DescribeLogGroups
+              Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
       Events:
         ApiRoute:
           Type: HttpApi
@@ -589,6 +638,16 @@ Resources:
             CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
             Compress: true
 
+  # NOTE: CloudFront additional metrics (CacheHitRate, OriginLatency, per-status
+  # error rates) are enabled via a post-deploy CLI command rather than in this
+  # template to avoid a CloudFormation circular dependency with the bucket
+  # policies that also reference CloudFrontDistribution.
+  #
+  # Run once after `sam deploy`:
+  #   aws cloudfront create-monitoring-subscription \
+  #     --distribution-id <CloudFrontDistributionId stack output> \
+  #     --monitoring-subscription '{"RealtimeMetricsSubscriptionConfig":{"RealtimeMetricsSubscriptionStatus":"Enabled"}}'
+
 Outputs:
   CloudFrontUrl:
     Value: !Sub "https://${CloudFrontDistribution.DomainName}"
@@ -608,4 +667,4 @@ Outputs:
     Description: S3 bucket storing uploaded wish images
   CloudFrontDistributionId:
     Value: !Ref CloudFrontDistribution
-    Description: CloudFront distribution ID (used for cache invalidation)
+    Description: CloudFront distribution ID (used for cache invalidation and CloudWatch metrics)

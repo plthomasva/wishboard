@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import AdminPage from './AdminPage';
 
@@ -16,112 +16,101 @@ vi.mock('../AuthContext', () => ({
 }));
 
 describe('AdminPage', () => {
+  const fetchMatchers = [
+    {
+      test: (url: string) => url.endsWith('/api/admin/flags'),
+      handler: () => mockToken
+        ? { ok: true, json: async () => [{ id: 'flagged-1', content: 'Flagged wish', flagged: 1, user_id: 'user-2' }] }
+        : { ok: false, status: 401 }
+    },
+    {
+      test: (url: string) => url.endsWith('/api/admin/users'),
+      handler: () => mockToken
+        ? { ok: true, json: async () => [
+            { id: 'user-1', username: 'tester', role: 'user' },
+            { id: 'admin-2', username: 'other-admin', role: 'admin' }
+          ] }
+        : { ok: false, status: 401 }
+    },
+    {
+      test: (url: string) => url.includes('/api/admin/logs'),
+      handler: () => mockToken
+        ? { ok: true, json: async () => ({ logs: 'Test logs output' }) }
+        : { ok: false, status: 401 }
+    },
+    {
+      test: (url: string) => url.endsWith('/api/admin/config'),
+      handler: () => ({ ok: true, json: async () => ({ isProduction: false }) })
+    },
+    {
+      test: (url: string) => url.endsWith('/api/config'),
+      handler: () => ({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) })
+    },
+    {
+      test: (url: string) => url.endsWith('/api/admin/local-metrics'),
+      handler: () => ({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) })
+    },
+    {
+      test: (url: string) => url.endsWith('/api/admin/reset-demo'),
+      handler: () => ({ ok: true, json: async () => ({ stats: { usersCreated: 50, wishesCreated: 100 } }) })
+    },
+    {
+      test: (url: string) => url.includes('/api/rules'),
+      handler: (options?: any) => {
+        if (options?.method === 'PUT' || options?.method === 'POST' || options?.method === 'DELETE') {
+          return { ok: true, json: async () => ({ success: true }) };
+        }
+        return { ok: true, json: async () => [
+          { id: 'rule-1', rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup' }
+        ] };
+      }
+    },
+    {
+      test: (url: string) => url.includes('/api/admin/wishes/') && url.endsWith('/remove'),
+      handler: () => ({ ok: true })
+    },
+    {
+      test: (url: string) => url.includes('/api/admin/wishes/') && url.endsWith('/clear-flag'),
+      handler: () => ({ ok: true })
+    },
+    {
+      test: (url: string) => url.endsWith('/api/admin/wishes/clear-all-flags'),
+      handler: () => ({ ok: true })
+    },
+    {
+      test: (url: string) => url.includes('/api/admin/users/') && url.endsWith('/role'),
+      handler: () => ({ ok: true })
+    },
+    {
+      test: (url: string) => url.includes('/api/admin/users/') && url.endsWith('/delete-preview'),
+      handler: () => ({ ok: true, json: async () => ({ wishesCount: 5, wishmailsCount: 2 }) })
+    },
+    {
+      test: (url: string) => url.includes('/api/admin/users/') && url.endsWith('/delete'),
+      handler: () => ({ ok: true })
+    }
+  ];
+
   beforeEach(() => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    globalThis.HTMLElement.prototype.scrollIntoView = vi.fn();
     mockUser = null;
     mockToken = null;
     loginMock.mockReset();
     
     globalThis.fetch = vi.fn().mockImplementation((input, options) => {
       const url = typeof input === 'string' ? input : '';
-      
-      if (url.endsWith('/api/admin/flags')) {
-        if (!mockToken) {
-          return Promise.resolve({ ok: false, status: 401 });
-        }
-        return Promise.resolve({
-          ok: true,
-          json: async () => [{ id: 'flagged-1', content: 'Flagged wish', flagged: 1, user_id: 'user-2' }]
-        });
+      const matcher = fetchMatchers.find(m => m.test(url));
+      if (matcher) {
+        return Promise.resolve(matcher.handler(options));
       }
-
-      if (url.endsWith('/api/admin/users')) {
-        if (!mockToken) {
-          return Promise.resolve({ ok: false, status: 401 });
-        }
-        return Promise.resolve({
-          ok: true,
-          json: async () => [
-            { id: 'user-1', username: 'tester', role: 'user' },
-            { id: 'admin-2', username: 'other-admin', role: 'admin' }
-          ]
-        });
-      }
-
-      if (url.endsWith('/api/admin/logs')) {
-        if (!mockToken) {
-          return Promise.resolve({ ok: false, status: 401 });
-        }
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ logs: 'Test logs output' })
-        });
-      }
-
-      if (url.endsWith('/api/admin/config')) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ isProduction: false })
-        });
-      }
-
-      if (url.endsWith('/api/admin/metrics-ticket')) {
-        if (!mockToken) {
-          return Promise.resolve({ ok: false, status: 401 });
-        }
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ ticket: 'mock-ticket-123' })
-        });
-      }
-
-      if (url.endsWith('/api/admin/reset-demo')) {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({ stats: { usersCreated: 50, wishesCreated: 100 } })
-        });
-      }
-
-      if (url.includes('/api/rules')) {
-        if (options?.method === 'PUT' || options?.method === 'POST' || options?.method === 'DELETE') {
-          return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
-        }
-        return Promise.resolve({ ok: true, json: async () => [
-          { id: 'rule-1', rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup' }
-        ] });
-      }
-
-      if (url.includes('/api/admin/wishes/') && url.endsWith('/remove')) {
-        return Promise.resolve({ ok: true });
-      }
-
-      if (url.includes('/api/admin/wishes/') && url.endsWith('/clear-flag')) {
-        return Promise.resolve({ ok: true });
-      }
-
-      if (url.endsWith('/api/admin/wishes/clear-all-flags')) {
-        return Promise.resolve({ ok: true });
-      }
-
-      if (url.includes('/api/admin/users/') && url.endsWith('/role')) {
-        return Promise.resolve({ ok: true });
-      }
-
-      if (url.includes('/api/admin/users/') && url.endsWith('/delete-preview')) {
-        return Promise.resolve({ ok: true, json: async () => ({ wishesCount: 5, wishmailsCount: 2 }) });
-      }
-
-      if (url.includes('/api/admin/users/') && url.endsWith('/delete')) {
-        return Promise.resolve({ ok: true });
-      }
-
       return Promise.resolve({ ok: false, json: async () => ({ error: 'unknown' }) });
     });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    delete window.HTMLElement.prototype.scrollIntoView;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis.HTMLElement.prototype as any).scrollIntoView = undefined;
   });
 
   it('renders login form when user is not admin', async () => {
@@ -263,17 +252,20 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/admin/users')) {
         return Promise.resolve({ ok: true, json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }] });
       }
-      if (url.endsWith('/api/admin/logs')) {
+      if (url.includes('/api/admin/logs')) {
         return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
-      }
-      if (url.endsWith('/api/admin/metrics-ticket')) {
-        return Promise.resolve({ ok: true, json: async () => ({ ticket: 'mock-ticket-123' }) });
       }
       if (url.endsWith('/api/rules')) {
         return Promise.resolve({ ok: true, json: async () => [] });
       }
       if (url.endsWith('/api/admin/config')) {
         return Promise.resolve({ ok: true, json: async () => ({ isProduction: false }) });
+      }
+      if (url.includes('/api/config')) {
+        return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) });
+      }
+      if (url.includes('/api/admin/local-metrics')) {
+        return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
       }
       return Promise.resolve({ ok: false });
     });
@@ -312,7 +304,7 @@ describe('AdminPage', () => {
   it('can clear all flags in bulk', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
 
     render(<AdminPage />);
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
@@ -347,14 +339,29 @@ describe('AdminPage', () => {
     expect(screen.getByRole('button', { name: /Resume Tailing/i })).toBeInTheDocument();
   });
 
-  it('can view metrics iframe', async () => {
+  it('can view metrics dashboard in system overview', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
+
+    globalThis.fetch = vi.fn().mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : '';
+      if (url.includes('/api/config')) {
+        return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) });
+      }
+      if (url.includes('/api/admin/logs')) {
+        return Promise.resolve({ ok: true, json: async () => ({ logs: 'Test logs output' }) });
+      }
+      if (url.includes('/api/admin/local-metrics')) {
+        return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => [] });
+    });
+
     render(<AdminPage />);
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: /System/i })); });
 
     await waitFor(() => {
-      expect(screen.getByTitle('System Metrics')).toBeInTheDocument();
+      expect(screen.getByText(/live in-process metrics/i)).toBeInTheDocument();
     });
   });
 
@@ -363,8 +370,14 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
     globalThis.fetch = vi.fn().mockImplementation(async (input) => {
       const url = typeof input === 'string' ? input : '';
-      if (url.endsWith('/api/admin/metrics-ticket') || url.endsWith('/api/admin/logs')) {
+      if (url.includes('/api/admin/logs')) {
         throw new Error('Network fail');
+      }
+      if (url.includes('/api/config')) {
+        return { ok: true, json: async () => ({ realtimeProvider: 'socketio' }) };
+      }
+      if (url.includes('/api/admin/local-metrics')) {
+        return { ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) };
       }
       return { ok: true, json: async () => [] };
     });

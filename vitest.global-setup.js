@@ -1,21 +1,61 @@
 /**
  * Vitest global setup/teardown.
- * 
- * This teardown closes the socket.io HTTP server that is initialized when
- * any test file imports `src/server/index.js`. Without this, socket.io keeps
- * the vitest process alive after all suites complete.
+ *
+ * Closes resources that keep the Vitest process alive after all suites finish:
+ *   - The socket.io HTTP server (opened by src/server/index.js)
+ *   - The libsql database client (holds file/WAL handles even for :memory: DBs)
+ *   - The Winston logger (holds stdout stream handles via Console transport)
+ *   - The metricsCollector setInterval timer
  */
 
-export async function teardown() {
+async function cleanModule(flag, modulePath, cleanFn) {
+  if (!flag) return;
   try {
-    // index.js may not have been imported at all in a coverage-only run,
-    // so guard against that with a dynamic import that won't throw.
-    const mod = await import('./src/server/index.js');
-    const server = mod.server ?? null;
-    if (server && server.listening) {
-      await new Promise((resolve) => server.close(resolve));
-    }
+    const mod = await import(modulePath);
+    await cleanFn(mod);
   } catch {
-    // If index.js wasn't loaded (e.g., client-only test run) just skip.
+    // ignore
   }
+}
+
+export async function teardown() {
+  // ── HTTP server ────────────────────────────────────────────────────────────
+  await cleanModule(
+    globalThis.__wishboardServerLoaded,
+    './src/server/index.js',
+    async (mod) => {
+      const server = mod.server ?? null;
+      if (server) {
+        await new Promise((resolve) => server.close(resolve));
+      }
+    }
+  );
+
+  // ── WebSocket server (Socket.io) ───────────────────────────────────────────
+  await cleanModule(
+    globalThis.__wishboardSocketLoaded,
+    './src/server/socket.js',
+    (mod) => mod.closeSocket()
+  );
+
+  // ── Metrics collector timer ────────────────────────────────────────────────
+  await cleanModule(
+    globalThis.__wishboardCollectorLoaded,
+    './src/server/metricsCollector.js',
+    (mod) => mod.stopCollector()
+  );
+
+  // ── libsql database client ─────────────────────────────────────────────────
+  await cleanModule(
+    globalThis.__wishboardDbLoaded,
+    './src/server/db.js',
+    (mod) => mod.closeDb()
+  );
+
+  // ── Winston logger ─────────────────────────────────────────────────────────
+  await cleanModule(
+    globalThis.__wishboardLoggerLoaded,
+    './src/server/logger.js',
+    (mod) => mod.default.close()
+  );
 }

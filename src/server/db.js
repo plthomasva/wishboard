@@ -209,3 +209,8 @@ const dbWrapper = {
 };
 
 export default dbWrapper;
+
+/** Close the underlying libsql connection. Call this in test teardown to release file handles. */
+export const closeDb = () => db.close();
+
+globalThis.__wishboardDbLoaded = true;

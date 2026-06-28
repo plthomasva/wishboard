@@ -9,10 +9,11 @@ import adminRouter from './routes/admin.js';
 import usersRouter from './routes/users.js';
 import wishmailRouter from './routes/wishmail.js';
 import rulesRouter from './routes/rules.js';
-import statusMonitor from 'express-status-monitor';
+import cloudwatchMetricsRouter from './routes/cloudwatchMetrics.js';
+import localMetricsRouter from './routes/localMetrics.js';
 import morgan from 'morgan';
 import logger from './logger.js';
-import { requireAdmin, consumeMetricsTicket } from './auth.js';
+import { metricsMiddleware, startCollector } from './metricsCollector.js';
 import { initSocket } from './socket.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -55,24 +56,12 @@ app.use(morgan('combined', {
   }
 }));
 
-// Setup status monitor, restricted to admin only (we mount it later, but init here)
+// Start in-process metrics collection in non-Lambda, non-test environments
 const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-const monitor = statusMonitor({ path: '' });
-
-if (!isLambda) {
-  app.use(monitor);
+if (!isLambda && process.env.NODE_ENV !== 'test') {
+  app.use(metricsMiddleware);
+  startCollector();
 }
-
-app.get('/api/admin/metrics', async (req, res, next) => {
-  if (isLambda) {
-    return res.status(200).send('<h2>Metrics are not supported in AWS Lambda Serverless mode.</h2>');
-  }
-  if (req.query.ticket && consumeMetricsTicket(req.query.ticket)) {
-    req.user = { role: 'admin' };
-    return next();
-  }
-  await requireAdmin(req, res, next);
-}, monitor.pageRoute);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -109,6 +98,8 @@ app.use('/api/users', usersRouter);
 app.use('/api/wishes', wishesRouter);
 app.use('/api/wishes/:id/mail', wishmailRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/admin/aws-metrics', cloudwatchMetricsRouter);
+app.use('/api/admin/local-metrics', localMetricsRouter);
 app.use('/api/rules', rulesRouter);
 
 const distPath = path.resolve(__dirname, '../../dist');
@@ -135,5 +126,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 
 // Export both app and server for testing
+globalThis.__wishboardServerLoaded = true;
 export { app, server };
 export default app;

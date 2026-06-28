@@ -220,6 +220,38 @@ try {
     }
     Show-Info "Frontend bucket: $frontendBucket"
 
+    if ($distId) {
+        Show-Step "Configuring CloudFront ID on ApiFunction environment variables..."
+        try {
+            $lambdaName = aws cloudformation describe-stack-resource --stack-name $StackName --logical-resource-id "ApiFunction" @awsCommon --query "StackResourceDetail.PhysicalResourceId" --output text
+            if ($LASTEXITCODE -ne 0 -or -not $lambdaName -or $lambdaName -eq "None") {
+                throw "Failed to resolve physical resource ID for ApiFunction"
+            }
+            $configJson = aws lambda get-function-configuration --function-name $lambdaName @awsCommon
+            if ($LASTEXITCODE -eq 0 -and $configJson) {
+                $configObj = $configJson | ConvertFrom-Json
+                $vars = $configObj.Environment.Variables
+                if (-not $vars) {
+                    $vars = @{}
+                }
+                if ($vars.CLOUDFRONT_DISTRIBUTION_ID -ne $distId) {
+                    $vars.CLOUDFRONT_DISTRIBUTION_ID = $distId
+                    $newEnv = @{ Variables = $vars } | ConvertTo-Json -Depth 10 -Compress
+                    aws lambda update-function-configuration --function-name $lambdaName --environment $newEnv @awsCommon | Out-Null
+                    Show-Info "Successfully configured CLOUDFRONT_DISTRIBUTION_ID=$distId on $lambdaName"
+                } else {
+                    Show-Info "CLOUDFRONT_DISTRIBUTION_ID is already up to date ($distId)"
+                }
+            } else {
+                throw "Failed to fetch Lambda function configuration"
+            }
+        }
+        catch {
+            Show-Info "Warning: Could not dynamically set CLOUDFRONT_DISTRIBUTION_ID on Lambda: $_"
+        }
+    }
+
+
     # --- 6. Upload frontend + invalidate CloudFront ---
     if ($SkipFrontendUpload) {
         Show-Step "[6/6] Skipping frontend upload (-SkipFrontendUpload)."
