@@ -131,6 +131,9 @@ router.post('/reset-demo', requireAdmin, async (req, res) => {
 
 // GET /api/admin/logs
 router.get('/logs', requireAdmin, async (req, res) => {
+  // Prevent CloudFront and browsers from caching log responses
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
   const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 
   // In serverless mode, pull recent logs from CloudWatch Logs
@@ -166,7 +169,7 @@ router.get('/logs', requireAdmin, async (req, res) => {
         .filter(m => m && !m.startsWith('START ') && !m.startsWith('END ') && !m.startsWith('REPORT '))
         .join('\n');
 
-      return res.json({ logs: lines || 'No log entries found in the last hour.', source: 'cloudwatch' });
+      return res.json({ logs: lines || 'No log entries found in the last hour.', source: 'cloudwatch', fetchedAt: new Date().toISOString() });
     } catch (error) {
       logger.error('Failed to read CloudWatch logs:', { error: error.message });
       return res.status(500).json({ error: `Failed to read CloudWatch logs: ${error.message}` });
@@ -190,7 +193,7 @@ router.get('/logs', requireAdmin, async (req, res) => {
     const content = fs.readFileSync(path.join(logsDir, newestFile), 'utf-8');
     const lines = content.split('\n').filter(Boolean);
     const lastLines = lines.slice(-500).join('\n');
-    res.json({ logs: lastLines });
+    res.json({ logs: lastLines, fetchedAt: new Date().toISOString() });
   } catch (error) {
     console.error('Failed to read logs:', error);
     res.status(500).json({ error: 'Failed to read logs' });

@@ -25,7 +25,9 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
 
   const loadLogs = async () => {
     try {
-      const response = await fetch('/api/admin/logs', { headers: authHeader });
+      const response = await fetch(`/api/admin/logs?_t=${Date.now()}`, {
+        headers: { ...authHeader, 'Cache-Control': 'no-cache' },
+      });
       if (!response.ok) { setRawLogs('Failed to load logs.'); return; }
       const data = await response.json();
       setRawLogs(data.logs || '');
