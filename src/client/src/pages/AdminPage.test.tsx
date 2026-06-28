@@ -65,13 +65,17 @@ describe('AdminPage', () => {
         });
       }
 
-      if (url.endsWith('/api/admin/metrics-ticket')) {
-        if (!mockToken) {
-          return Promise.resolve({ ok: false, status: 401 });
-        }
+      if (url.endsWith('/api/config')) {
         return Promise.resolve({
           ok: true,
-          json: async () => ({ ticket: 'mock-ticket-123' })
+          json: async () => ({ realtimeProvider: 'socketio' })
+        });
+      }
+
+      if (url.endsWith('/api/admin/local-metrics')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() })
         });
       }
 
@@ -266,14 +270,17 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/admin/logs')) {
         return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
       }
-      if (url.endsWith('/api/admin/metrics-ticket')) {
-        return Promise.resolve({ ok: true, json: async () => ({ ticket: 'mock-ticket-123' }) });
-      }
       if (url.endsWith('/api/rules')) {
         return Promise.resolve({ ok: true, json: async () => [] });
       }
       if (url.endsWith('/api/admin/config')) {
         return Promise.resolve({ ok: true, json: async () => ({ isProduction: false }) });
+      }
+      if (url.includes('/api/config')) {
+        return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) });
+      }
+      if (url.includes('/api/admin/local-metrics')) {
+        return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
       }
       return Promise.resolve({ ok: false });
     });
@@ -347,14 +354,29 @@ describe('AdminPage', () => {
     expect(screen.getByRole('button', { name: /Resume Tailing/i })).toBeInTheDocument();
   });
 
-  it('can view metrics iframe', async () => {
+  it('can view metrics dashboard in system overview', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
+
+    globalThis.fetch = vi.fn().mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : '';
+      if (url.includes('/api/config')) {
+        return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) });
+      }
+      if (url.includes('/api/admin/logs')) {
+        return Promise.resolve({ ok: true, json: async () => ({ logs: 'Test logs output' }) });
+      }
+      if (url.includes('/api/admin/local-metrics')) {
+        return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => [] });
+    });
+
     render(<AdminPage />);
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: /System/i })); });
 
     await waitFor(() => {
-      expect(screen.getByTitle('System Metrics')).toBeInTheDocument();
+      expect(screen.getByText(/live in-process metrics/i)).toBeInTheDocument();
     });
   });
 
@@ -363,8 +385,14 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
     globalThis.fetch = vi.fn().mockImplementation(async (input) => {
       const url = typeof input === 'string' ? input : '';
-      if (url.endsWith('/api/admin/metrics-ticket') || url.endsWith('/api/admin/logs')) {
+      if (url.includes('/api/admin/logs')) {
         throw new Error('Network fail');
+      }
+      if (url.includes('/api/config')) {
+        return { ok: true, json: async () => ({ realtimeProvider: 'socketio' }) };
+      }
+      if (url.includes('/api/admin/local-metrics')) {
+        return { ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) };
       }
       return { ok: true, json: async () => [] };
     });

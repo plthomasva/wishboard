@@ -351,6 +351,7 @@ Resources:
           AWS_S3_BUCKET: !Ref ImagesBucket
           REALTIME_PROVIDER: apigateway
           WEBSOCKET_API_ENDPOINT: !Sub "https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/production"
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistribution
       Policies:
         - AWSLambdaVPCAccessExecutionRole
         - AmazonElasticFileSystemClientFullAccess
@@ -361,6 +362,12 @@ Resources:
               Action:
                 - execute-api:ManageConnections
               Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/production/*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudwatch:GetMetricData
+                - cloudwatch:ListMetrics
+              Resource: "*"
       Events:
         ApiRoute:
           Type: HttpApi
@@ -608,4 +615,4 @@ Outputs:
     Description: S3 bucket storing uploaded wish images
   CloudFrontDistributionId:
     Value: !Ref CloudFrontDistribution
-    Description: CloudFront distribution ID (used for cache invalidation)
+    Description: CloudFront distribution ID (used for cache invalidation and CloudWatch metrics)

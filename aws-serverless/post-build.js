@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -35,12 +36,69 @@ if (!fs.existsSync(buildDir)) {
   process.exit(1);
 }
 
+// ── Resolve the Linux native binary ──────────────────────────────────────────
+// On Linux CI / Docker the package is installed natively. On Windows (dev
+// machines) npm installs the win32 binding instead, so we fetch the Linux
+// tarball from the npm registry on-the-fly using `npm pack` into a temp dir.
+
+let resolvedSrcDir = srcPkgDir;
+
 if (!fs.existsSync(srcPkgDir)) {
-  console.error(`Could not find ${NATIVE_PKG} in node_modules.`);
-  console.error('Install it so it can be packaged into the Lambda artifact, e.g.:');
-  console.error('  npm install --no-save @libsql/linux-x64-gnu');
-  process.exit(1);
+  console.log(`${NATIVE_PKG} not found in node_modules (expected on Windows).`);
+  console.log('Fetching Linux binary from npm registry via `npm pack`…');
+
+  // Determine the correct native binding version from the libsql package's
+  // optionalDependencies — the native bindings are versioned independently
+  // from @libsql/client.
+  const libsqlPkgJson = JSON.parse(
+    fs.readFileSync(path.join(repoRoot, 'node_modules', 'libsql', 'package.json'), 'utf8')
+  );
+  const bindingVersion = libsqlPkgJson.optionalDependencies?.[NATIVE_PKG];
+  if (!bindingVersion) {
+    console.error(`Could not determine version for ${NATIVE_PKG} from libsql package.json.`);
+    process.exit(1);
+  }
+  const pkgWithVersion = `${NATIVE_PKG}@${bindingVersion}`;
+
+  const tmpDir = path.join(repoRoot, '.tmp-libsql-linux');
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  fs.mkdirSync(tmpDir, { recursive: true });
+
+  try {
+    // npm pack downloads the tarball into tmpDir and prints its filename
+    const tarball = execSync(
+      `npm pack ${pkgWithVersion} --pack-destination "${tmpDir}"`,
+      { cwd: repoRoot, encoding: 'utf8' }
+    ).trim();
+
+    const tarballPath = path.join(tmpDir, tarball);
+    const extractDir = path.join(tmpDir, 'extracted');
+    fs.mkdirSync(extractDir, { recursive: true });
+
+    // Node's built-in tar (v18+) or use npm's bundled one via npx
+    execSync(`tar -xzf "${tarballPath}" -C "${extractDir}"`, { cwd: repoRoot });
+
+    // npm pack always extracts into a "package/" subfolder
+    resolvedSrcDir = path.join(extractDir, 'package');
+
+    if (!fs.existsSync(resolvedSrcDir)) {
+      console.error(`Extraction failed: expected ${resolvedSrcDir} to exist.`);
+      process.exit(1);
+    }
+
+    console.log(`Fetched ${pkgWithVersion} into temp dir.`);
+  } catch (err) {
+    console.error(`Failed to fetch ${pkgWithVersion} from npm registry:`);
+    console.error(err.message);
+    console.error('');
+    console.error('Manual workaround: run the following on a Linux machine or WSL, then copy');
+    console.error(`the resulting directory to node_modules/${NATIVE_PKG}:`);
+    console.error(`  npm install --no-save ${NATIVE_PKG}`);
+    process.exit(1);
+  }
 }
+
+// ── Copy into each function artifact ─────────────────────────────────────────
 
 let copied = 0;
 for (const fn of functions) {
@@ -54,9 +112,9 @@ for (const fn of functions) {
   const destPkgDir = path.join(fnDir, 'node_modules', NATIVE_PKG);
   fs.mkdirSync(path.dirname(destPkgDir), { recursive: true });
   fs.rmSync(destPkgDir, { recursive: true, force: true });
-  fs.cpSync(srcPkgDir, destPkgDir, { recursive: true });
+  fs.cpSync(resolvedSrcDir, destPkgDir, { recursive: true });
   console.log(`Copied ${NATIVE_PKG} -> ${path.relative(repoRoot, destPkgDir)}`);
-  
+
   const lambdaMjsPath = path.join(fnDir, 'lambda.mjs');
   if (fs.existsSync(lambdaMjsPath)) {
     let content = fs.readFileSync(lambdaMjsPath, 'utf8');
@@ -66,22 +124,16 @@ for (const fn of functions) {
     fs.writeFileSync(lambdaMjsPath, content, 'utf8');
     console.log(`Patched ${fn}/lambda.mjs for Node 22 ESM compatibility`);
   }
-  
-  // Copy express-status-monitor static assets
-  const statusMonitorSrc = path.join(repoRoot, 'node_modules', 'express-status-monitor', 'src');
-  if (fs.existsSync(statusMonitorSrc) && fn === 'ApiFunction') {
-    ['public'].forEach(dir => {
-      const srcDir = path.join(statusMonitorSrc, dir);
-      const destDir = path.join(fnDir, dir); // Put at root since it is bundled in lambda.mjs
-      if (fs.existsSync(srcDir)) {
-        fs.mkdirSync(destDir, { recursive: true });
-        fs.cpSync(srcDir, destDir, { recursive: true });
-      }
-    });
-    console.log(`Copied express-status-monitor assets to ${fn} root`);
-  }
 
   copied += 1;
+}
+
+// ── Cleanup temp dir ──────────────────────────────────────────────────────────
+
+const tmpDir = path.join(repoRoot, '.tmp-libsql-linux');
+if (fs.existsSync(tmpDir)) {
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  console.log('Cleaned up temp directory.');
 }
 
 if (copied === 0) {

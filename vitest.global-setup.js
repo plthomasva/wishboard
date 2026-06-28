@@ -18,4 +18,11 @@ export async function teardown() {
   } catch {
     // If index.js wasn't loaded (e.g., client-only test run) just skip.
   }
+
+  try {
+    const { stopCollector } = await import('./src/server/metricsCollector.js');
+    stopCollector();
+  } catch {
+    // metricsCollector may not have been loaded
+  }
 }

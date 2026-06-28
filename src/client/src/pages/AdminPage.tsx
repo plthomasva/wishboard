@@ -76,7 +76,7 @@ export default function AdminPage() {
             {activeTab === 'rules' && <MatchingRulesSection authHeader={authHeader} setMessage={setMessage} setError={setError} refreshCounter={refreshCounter} />}
             {activeTab === 'flags' && <FlaggedWishesSection authHeader={authHeader} setMessage={setMessage} setError={setError} refreshCounter={refreshCounter} />}
             {activeTab === 'users' && <UserAccountsSection authHeader={authHeader} setMessage={setMessage} error={error} setError={setError} refreshCounter={refreshCounter} triggerRefresh={triggerRefresh} />}
-            {activeTab === 'overview' && <SystemOverviewSection authHeader={authHeader} token={token} refreshCounter={refreshCounter} />}
+            {activeTab === 'overview' && <SystemOverviewSection authHeader={authHeader} refreshCounter={refreshCounter} />}
           </main>
         </div>
       ) : (

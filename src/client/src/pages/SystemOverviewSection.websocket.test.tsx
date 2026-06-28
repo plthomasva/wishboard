@@ -2,40 +2,70 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { io } from 'socket.io-client';
 import SystemOverviewSection from '../components/admin/SystemOverviewSection';
-import React from 'react';
 
 const getMockSocket = () => (io as ReturnType<typeof vi.fn>)();
 
 const defaultProps = {
   authHeader: { Authorization: 'Bearer test-token' },
-  token: 'test-token',
   refreshCounter: 0,
+};
+
+/** Helper: mock fetch with configurable per-URL responses */
+const mockFetch = (overrides: Record<string, object> = {}) => {
+  globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+    for (const [key, value] of Object.entries(overrides)) {
+      if (url.includes(key)) {
+        return Promise.resolve({ ok: true, json: async () => value });
+      }
+    }
+    // Default: /api/config → local mode; /api/admin/logs → empty; anything else fails
+    if (url.includes('/api/config')) {
+      return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) });
+    }
+    if (url.includes('/api/admin/logs')) {
+      return Promise.resolve({ ok: true, json: async () => ({ logs: 'initial log line' }) });
+    }
+    if (url.includes('/api/admin/local-metrics')) {
+      return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
+    }
+    return Promise.resolve({ ok: false });
+  }) as any;
 };
 
 describe('SystemOverviewSection WebSocket', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes('metrics-ticket')) {
-        return Promise.resolve({ ok: true, json: async () => ({ ticket: 'abc123' }) });
-      }
-      if (url.includes('logs')) {
-        return Promise.resolve({ ok: true, json: async () => ({ logs: 'initial log line' }) });
-      }
-      return Promise.resolve({ ok: false });
-    }) as any;
+    mockFetch();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
+  it('fetches /api/config on mount to detect deployment mode', async () => {
+    render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/config'),
+    ));
+  });
+
   it('loads initial logs via fetch on mount', async () => {
     render(<SystemOverviewSection {...defaultProps} />);
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/admin/logs'),
-      expect.anything()
+      expect.anything(),
     ));
+  });
+
+  it('renders LocalMetricsDashboard in local (socketio) mode', async () => {
+    render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText(/live in-process metrics/i)).toBeInTheDocument());
+  });
+
+  it('renders AwsMetricsDashboard in serverless (apigateway) mode', async () => {
+    mockFetch({ '/api/config': { realtimeProvider: 'apigateway' } });
+    render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText(/CloudWatch metrics/i)).toBeInTheDocument());
   });
 
   it('appends incoming sys:log events to the log display', async () => {
@@ -44,7 +74,7 @@ describe('SystemOverviewSection WebSocket', () => {
 
     const socket = getMockSocket();
     const sysLogHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]) => event === 'sys:log')?.[1];
+      .find(([event]: [string]) => event === 'sys:log')?.[1];
     expect(sysLogHandler).toBeDefined();
 
     act(() => {
@@ -60,7 +90,7 @@ describe('SystemOverviewSection WebSocket', () => {
 
     const socket = getMockSocket();
     const sysLogHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]) => event === 'sys:log')?.[1];
+      .find(([event]: [string]) => event === 'sys:log')?.[1];
 
     act(() => {
       sysLogHandler('Line alpha');
@@ -83,23 +113,21 @@ describe('SystemOverviewSection WebSocket', () => {
     expect(socket.off).toHaveBeenCalledWith('sys:log', expect.any(Function));
   });
 
-  it('handles metrics-ticket fetch failure gracefully', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false }) as any;
-    render(<SystemOverviewSection {...defaultProps} />);
-    await waitFor(() => expect(screen.getByText('Loading metrics...')).toBeInTheDocument());
-  });
-
   it('handles logs fetch failure gracefully', async () => {
+    mockFetch({ '/api/admin/logs': {} }); // ok:false path
     globalThis.fetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes('metrics-ticket')) {
-        return Promise.resolve({ ok: true, json: async () => ({ ticket: 'abc123' }) });
+      if (url.includes('/api/config')) {
+        return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) });
       }
+      if (url.includes('/api/admin/local-metrics')) {
+        return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
+      }
+      // logs endpoint fails
       return Promise.resolve({ ok: false });
     }) as any;
 
     render(<SystemOverviewSection {...defaultProps} />);
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
-    // Component sets rawLogs to 'Failed to load logs.' on fetch error
     await waitFor(() => expect(screen.getByText(/Failed to load logs\./i)).toBeInTheDocument());
   });
 });

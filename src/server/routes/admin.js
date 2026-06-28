@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import db from '../db.js';
-import { requireAdmin, generateMetricsTicket } from '../auth.js';
+import { requireAdmin } from '../auth.js';
 import { generateDemoData } from '../demoSeeder.js';
 import logger from '../logger.js';
 import { emitWishDeleted } from '../socket.js';
@@ -152,10 +152,6 @@ router.get('/logs', requireAdmin, async (req, res) => {
     console.error('Failed to read logs:', error);
     res.status(500).json({ error: 'Failed to read logs' });
   }
-});
-
-router.get('/metrics-ticket', requireAdmin, async (req, res) => {
-  res.json({ ticket: generateMetricsTicket() });
 });
 
 router.get('/config', requireAdmin, async (req, res) => {

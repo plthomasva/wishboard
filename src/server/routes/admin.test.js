@@ -320,13 +320,6 @@ describe('Admin routes', () => {
     expect(response.body.error).toBe('User not found.');
   });
 
-  it('generates a metrics ticket', async () => {
-    const token = await loginAsAdmin();
-    const response = await request(app).get('/api/admin/metrics-ticket').set('Authorization', `Bearer ${token}`);
-    expect(response.status).toBe(200);
-    expect(typeof response.body.ticket).toBe('string');
-  });
-
   it('reads the logs successfully', async () => {
     const token = await loginAsAdmin();
     const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);

@@ -10,8 +10,6 @@ import {
   requireAuth,
   requireAdmin,
   getTokenFromRequestHeader,
-  generateMetricsTicket,
-  consumeMetricsTicket
 } from './auth.js';
 import db from './db.js';
 
@@ -232,25 +230,4 @@ describe('Server Auth Helper Functions', () => {
     });
   });
 
-  describe('metrics tickets', () => {
-    it('generates a ticket and consumes it successfully', async () => {
-      const ticket = generateMetricsTicket();
-      expect(ticket).toBeDefined();
-      expect(typeof ticket).toBe('string');
-      expect(consumeMetricsTicket(ticket)).toBe(true);
-      // Consuming again should fail
-      expect(consumeMetricsTicket(ticket)).toBe(false);
-    });
-
-    it('fails to consume invalid ticket', async () => {
-      expect(consumeMetricsTicket('invalid-ticket')).toBe(false);
-    });
-
-    it('fails to consume expired ticket', async () => {
-      const ticket = generateMetricsTicket();
-      vi.spyOn(Date, 'now').mockImplementation(() => new Date().getTime() + 60000); // Fast forward > 30s
-      expect(consumeMetricsTicket(ticket)).toBe(false);
-      vi.restoreAllMocks();
-    });
-  });
 });

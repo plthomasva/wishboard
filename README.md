@@ -99,7 +99,6 @@ Wishboard uses `release-please` and GitHub Actions to automatically manage seman
 
 - **Admin Account**: An admin account is created automatically on first run. Default credentials can be customized via `WISHBOARD_ADMIN_USERNAME` and `WISHBOARD_ADMIN_SECRET` environment variables.
 - **Log Viewer**: Application logs and web requests are recorded to rotating files in `data/logs`. Admins can view a live-tailing log feed directly within the Admin Dashboard.
-- **System Metrics**: Admins have access to a real-time system metrics dashboard securely protected by a one-time ticket system.
 - **Demo Seeder**: The admin panel includes a demo seeder to populate users and wishes for development or testing.
 
 ## Notes
