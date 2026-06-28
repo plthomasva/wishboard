@@ -26,8 +26,11 @@ vi.mock('recharts', () => ({
   YAxis: () => null,
   CartesianGrid: () => null,
   Tooltip: ({ content }: any) => {
-    // Render with active=true so the CustomTooltip body executes
-    const el = content({ active: true, payload: [{ value: 42 }], label: '2024-01-01T12:00:00Z' });
+    // Support both function render-props and JSX element (Recharts cloneElement API)
+    const props = { active: true, payload: [{ value: 42 }], label: '2024-01-01T12:00:00Z' };
+    const el = typeof content === 'function'
+      ? content(props)
+      : React.cloneElement(content, props);
     return el ?? null;
   },
 }));

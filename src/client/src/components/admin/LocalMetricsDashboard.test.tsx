@@ -27,8 +27,11 @@ vi.mock('recharts', () => ({
   YAxis: () => null,
   CartesianGrid: () => null,
   Tooltip: ({ content }: any) => {
-    // Fires ChartTooltip with an active payload so the body executes
-    const el = content({ active: true, payload: [{ value: 42.5, name: 'cpu', color: '#60a5fa' }], label: Date.now() });
+    // Support both function render-props and JSX element (Recharts cloneElement API)
+    const props = { active: true, payload: [{ value: 42.5, name: 'cpu', color: '#60a5fa' }], label: Date.now() };
+    const el = typeof content === 'function'
+      ? content(props)
+      : React.cloneElement(content, props);
     return el ?? null;
   },
 }));
