@@ -10,6 +10,64 @@ const defaultProps = {
   refreshCounter: 0,
 };
 
+const mockLocalMetrics = {
+  osSamples: [
+    { ts: Date.now() - 10000, cpu: 12.5, heapUsed: 45.2, heapTotal: 512, rss: 110.5, load: 1.2 },
+    { ts: Date.now() - 5000, cpu: 15.0, heapUsed: 46.8, heapTotal: 512, rss: 112.1, load: 1.4 },
+    { ts: Date.now(), cpu: 18.2, heapUsed: 48.1, heapTotal: 512, rss: 115.0, load: 1.5 }
+  ],
+  httpSamples: [
+    { ts: Date.now() - 10000, r2xx: 12, r3xx: 1, r4xx: 0, r5xx: 0, count: 13, mean: 42.5 },
+    { ts: Date.now() - 5000, r2xx: 15, r3xx: 0, r4xx: 1, r5xx: 0, count: 16, mean: 45.0 },
+    { ts: Date.now(), r2xx: 20, r3xx: 2, r4xx: 0, r5xx: 1, count: 23, mean: 50.2 }
+  ],
+  intervalMs: 5000,
+  generatedAt: new Date().toISOString()
+};
+
+const mockAwsMetrics = {
+  groups: [
+    {
+      title: 'Lambda — wishboard-express-api',
+      metrics: [
+        {
+          id: 'lambda_invocations',
+          label: 'Invocations',
+          dataPoints: [
+            { t: new Date(Date.now() - 120000).toISOString(), v: 5 },
+            { t: new Date(Date.now() - 60000).toISOString(), v: 10 },
+            { t: new Date(Date.now()).toISOString(), v: 15 }
+          ]
+        },
+        {
+          id: 'lambda_errors',
+          label: 'Errors',
+          dataPoints: [
+            { t: new Date(Date.now() - 120000).toISOString(), v: 0 },
+            { t: new Date(Date.now() - 60000).toISOString(), v: 1 },
+            { t: new Date(Date.now()).toISOString(), v: 0 }
+          ]
+        }
+      ]
+    },
+    {
+      title: 'API Gateway (HTTP)',
+      metrics: [
+        {
+          id: 'apigw_count',
+          label: 'API Requests',
+          dataPoints: [
+            { t: new Date(Date.now() - 120000).toISOString(), v: 25 },
+            { t: new Date(Date.now() - 60000).toISOString(), v: 30 },
+            { t: new Date(Date.now()).toISOString(), v: 35 }
+          ]
+        }
+      ]
+    }
+  ],
+  generatedAt: new Date().toISOString()
+};
+
 /** Helper: mock fetch with configurable per-URL responses */
 const mockFetch = (overrides: Record<string, object> = {}) => {
   globalThis.fetch = vi.fn().mockImplementation((url: string) => {
@@ -26,7 +84,10 @@ const mockFetch = (overrides: Record<string, object> = {}) => {
       return Promise.resolve({ ok: true, json: async () => ({ logs: 'initial log line' }) });
     }
     if (url.includes('/api/admin/local-metrics')) {
-      return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
+      return Promise.resolve({ ok: true, json: async () => mockLocalMetrics });
+    }
+    if (url.includes('/api/admin/aws-metrics')) {
+      return Promise.resolve({ ok: true, json: async () => mockAwsMetrics });
     }
     return Promise.resolve({ ok: false });
   }) as any;
@@ -60,12 +121,14 @@ describe('SystemOverviewSection WebSocket', () => {
   it('renders LocalMetricsDashboard in local (socketio) mode', async () => {
     render(<SystemOverviewSection {...defaultProps} />);
     await waitFor(() => expect(screen.getByText(/live in-process metrics/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('CPU Usage')).toBeInTheDocument());
   });
 
   it('renders AwsMetricsDashboard in serverless (apigateway) mode', async () => {
     mockFetch({ '/api/config': { realtimeProvider: 'apigateway' } });
     render(<SystemOverviewSection {...defaultProps} />);
     await waitFor(() => expect(screen.getByText(/CloudWatch metrics/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Lambda — wishboard-express-api')).toBeInTheDocument());
   });
 
   it('appends incoming sys:log events to the log display', async () => {
@@ -130,4 +193,52 @@ describe('SystemOverviewSection WebSocket', () => {
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
     await waitFor(() => expect(screen.getByText(/Failed to load logs\./i)).toBeInTheDocument());
   });
+
+  it('handles AwsMetricsDashboard fetch error gracefully', async () => {
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/config')) {
+        return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'apigateway' }) });
+      }
+      if (url.includes('/api/admin/logs')) {
+        return Promise.resolve({ ok: true, json: async () => ({ logs: '' }) });
+      }
+      if (url.includes('/api/admin/aws-metrics')) {
+        return Promise.resolve({ ok: false, status: 403, json: async () => ({ error: 'Access Denied to CloudWatch' }) });
+      }
+      return Promise.resolve({ ok: false });
+    }) as any;
+
+    render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText(/Error:/i)).toBeInTheDocument());
+    expect(screen.getByText(/Access Denied to CloudWatch/i)).toBeInTheDocument();
+  });
+
+  it('allows toggling auto-refresh in local and serverless dashboards', async () => {
+    // 1. Local mode toggle
+    const { unmount } = render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText('CPU Usage')).toBeInTheDocument());
+
+    const checkbox = screen.getByLabelText(/Auto-refresh every 10s/i) as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
+
+    act(() => {
+      checkbox.click();
+    });
+    expect(checkbox.checked).toBe(false);
+    unmount();
+
+    // 2. Serverless mode toggle
+    mockFetch({ '/api/config': { realtimeProvider: 'apigateway' } });
+    render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText('Lambda — wishboard-express-api')).toBeInTheDocument());
+
+    const awsCheckbox = screen.getByLabelText(/Auto-refresh every 30s/i) as HTMLInputElement;
+    expect(awsCheckbox.checked).toBe(true);
+
+    act(() => {
+      awsCheckbox.click();
+    });
+    expect(awsCheckbox.checked).toBe(false);
+  });
 });
+

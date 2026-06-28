@@ -35,17 +35,17 @@ describe('Server socket.js - API Gateway Mode', () => {
   beforeEach(() => {
     originalProvider = process.env.REALTIME_PROVIDER;
     originalEndpoint = process.env.WEBSOCKET_API_ENDPOINT;
-    
+
     process.env.REALTIME_PROVIDER = 'apigateway';
     process.env.WEBSOCKET_API_ENDPOINT = 'https://fake-endpoint';
-    
+
     vi.clearAllMocks();
   });
 
   afterEach(() => {
     if (originalProvider === undefined) delete process.env.REALTIME_PROVIDER;
     else process.env.REALTIME_PROVIDER = originalProvider;
-    
+
     if (originalEndpoint === undefined) delete process.env.WEBSOCKET_API_ENDPOINT;
     else process.env.WEBSOCKET_API_ENDPOINT = originalEndpoint;
   });
@@ -58,22 +58,22 @@ describe('Server socket.js - API Gateway Mode', () => {
   it('broadcastToApiGateway sends messages to connections', async () => {
     mockSend.mockResolvedValueOnce({});
     mockSend.mockRejectedValueOnce(Object.assign(new Error('Gone'), { name: 'GoneException' }));
-    
+
     socketModule.emitNewWish({ id: 1 });
-    
+
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
     expect(mockPostToConnectionCommand).toHaveBeenCalledTimes(2);
     expect(mockSend).toHaveBeenCalledTimes(2);
     expect(db.prepare).toHaveBeenCalledWith('DELETE FROM websocket_connections WHERE connection_id = ?');
   });
-  
+
   it('handles missing WEBSOCKET_API_ENDPOINT gracefully', async () => {
     delete process.env.WEBSOCKET_API_ENDPOINT;
-    
+
     socketModule.emitWishFlagged({ id: 1 });
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
     expect(mockSend).not.toHaveBeenCalled();
   });
 
@@ -83,8 +83,12 @@ describe('Server socket.js - API Gateway Mode', () => {
     socketModule.emitWishReactivated({ id: 1 });
     socketModule.emitSystemLog({ message: 'test' });
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
     // Each calls broadcastToApiGateway which sends to 2 connections, total 6 sends
     expect(mockSend).toHaveBeenCalledTimes(6);
+  });
+
+  it('covers closeSocket', () => {
+    socketModule.closeSocket();
   });
 });
