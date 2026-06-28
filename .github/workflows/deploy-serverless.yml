@@ -38,28 +38,28 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
         with:
           node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ inputs.region || vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ github.event.inputs.region || vars.AWS_REGION || 'us-east-1' }}
           audience: sts.amazonaws.com
 
       - name: Run serverless deploy script
         run: |
           chmod +x ./scripts/deploy-serverless.sh
           ./scripts/deploy-serverless.sh \
-            --mode "${{ inputs.mode }}" \
-            --region "${{ inputs.region || vars.AWS_REGION || 'us-east-1' }}" \
-            --stack-name "${{ inputs.stack-name || vars.AWS_STACK_NAME || 'wishboard-serverless-dev' }}"
+            --mode "${{ github.event.inputs.mode }}" \
+            --region "${{ github.event.inputs.region || vars.AWS_REGION || 'us-east-1' }}" \
+            --stack-name "${{ github.event.inputs.stack_name || vars.AWS_STACK_NAME || 'wishboard-serverless-dev' }}"

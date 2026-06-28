@@ -127,90 +127,197 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:wishboard-*"
 
-              # 5. API Gateway
+              # 5a. API Gateway Creation
+              - Effect: Allow
+                Action:
+                  - apigateway:POST
+                Resource:
+                  - !Sub "arn:aws:apigateway:${AWS::Region}::/apis"
+                Condition:
+                  StringEquals:
+                    "aws:RequestTag/Project": !Ref GitHubRepo
+
+              # 5b. API Gateway Management
               - Effect: Allow
                 Action:
                   - apigateway:GET
-                  - apigateway:POST
                   - apigateway:PUT
                   - apigateway:DELETE
                   - apigateway:PATCH
+                  - apigateway:POST
                 Resource:
-                  - !Sub "arn:aws:apigateway:${AWS::Region}::/apis*"
                   - !Sub "arn:aws:apigateway:${AWS::Region}::/apis/*"
                   - !Sub "arn:aws:apigateway:${AWS::Region}::/tags/*"
+                Condition:
+                  StringEquals:
+                    "aws:ResourceTag/Project": !Ref GitHubRepo
 
-              # 6. EFS Storage
+              # 6a. EFS File System & Access Point Creation
               - Effect: Allow
                 Action:
                   - elasticfilesystem:CreateFileSystem
+                  - elasticfilesystem:CreateAccessPoint
+                Resource:
+                  - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*"
+                  - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*"
+                Condition:
+                  StringEquals:
+                    "aws:RequestTag/Project": !Ref GitHubRepo
+
+              # 6b. EFS File System & Access Point Management
+              - Effect: Allow
+                Action:
                   - elasticfilesystem:DeleteFileSystem
-                  - elasticfilesystem:DescribeFileSystems
                   - elasticfilesystem:CreateMountTarget
                   - elasticfilesystem:DeleteMountTarget
-                  - elasticfilesystem:DescribeMountTargets
-                  - elasticfilesystem:CreateAccessPoint
                   - elasticfilesystem:DeleteAccessPoint
-                  - elasticfilesystem:DescribeAccessPoints
                   - elasticfilesystem:TagResource
                 Resource:
                   - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*"
                   - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*"
+                Condition:
+                  StringEquals:
+                    "aws:ResourceTag/Project": !Ref GitHubRepo
 
-              # 7. CloudFront & OAC
+              # 6c. EFS Describing (Read-only, no resource-level permissions)
+              - Effect: Allow
+                Action:
+                  - elasticfilesystem:DescribeFileSystems
+                  - elasticfilesystem:DescribeMountTargets
+                  - elasticfilesystem:DescribeAccessPoints
+                Resource: "*"
+
+              # 7a. CloudFront Distribution Creation
               - Effect: Allow
                 Action:
                   - cloudfront:CreateDistribution
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    "aws:RequestTag/Project": !Ref GitHubRepo
+
+              # 7b. CloudFront Distribution Management
+              - Effect: Allow
+                Action:
                   - cloudfront:DeleteDistribution
                   - cloudfront:GetDistribution
                   - cloudfront:UpdateDistribution
+                  - cloudfront:CreateInvalidation
+                  - cloudfront:GetDistributionConfig
+                Resource:
+                  - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/*"
+                Condition:
+                  StringEquals:
+                    "aws:ResourceTag/Project": !Ref GitHubRepo
+
+              # 7c. CloudFront Origin Access Control Management
+              - Effect: Allow
+                Action:
                   - cloudfront:CreateOriginAccessControl
                   - cloudfront:GetOriginAccessControl
                   - cloudfront:DeleteOriginAccessControl
                   - cloudfront:UpdateOriginAccessControl
-                  - cloudfront:CreateInvalidation
-                  - cloudfront:GetDistributionConfig
                 Resource:
-                  - "*"
+                  - !Sub "arn:aws:cloudfront::${AWS::AccountId}:origin-access-control/*"
 
-              # 8. EC2 VPC Network Setup
+              # 8a. Taggable EC2 Resource Creation
               - Effect: Allow
                 Action:
                   - ec2:CreateVpc
-                  - ec2:DeleteVpc
-                  - ec2:DescribeVpcs
-                  - ec2:ModifyVpcAttribute
                   - ec2:CreateSubnet
-                  - ec2:DeleteSubnet
-                  - ec2:DescribeSubnets
-                  - ec2:ModifySubnetAttribute
                   - ec2:CreateInternetGateway
+                  - ec2:CreateRouteTable
+                  - ec2:CreateSecurityGroup
+                  - ec2:CreateVpcEndpoint
+                  - ec2:CreateNetworkInterface
+                Resource:
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*"
+                Condition:
+                  StringEquals:
+                    "aws:RequestTag/Project": !Ref GitHubRepo
+
+              # 8b. Taggable EC2 Resource Deletion / Modification
+              - Effect: Allow
+                Action:
+                  - ec2:DeleteVpc
+                  - ec2:ModifyVpcAttribute
+                  - ec2:DeleteSubnet
+                  - ec2:ModifySubnetAttribute
                   - ec2:DeleteInternetGateway
-                  - ec2:DescribeInternetGateways
+                  - ec2:DeleteRouteTable
+                  - ec2:DeleteSecurityGroup
+                  - ec2:DeleteVpcEndpoint
+                  - ec2:DeleteNetworkInterface
+                Resource:
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*"
+                Condition:
+                  StringEquals:
+                    "aws:ResourceTag/Project": !Ref GitHubRepo
+
+              # 8c. EC2 Operations on existing resources (rules, routes, attachments)
+              - Effect: Allow
+                Action:
                   - ec2:AttachInternetGateway
                   - ec2:DetachInternetGateway
-                  - ec2:CreateRouteTable
-                  - ec2:DeleteRouteTable
-                  - ec2:DescribeRouteTables
                   - ec2:AssociateRouteTable
                   - ec2:DisassociateRouteTable
                   - ec2:CreateRoute
                   - ec2:DeleteRoute
                   - ec2:ReplaceRoute
-                  - ec2:CreateSecurityGroup
-                  - ec2:DeleteSecurityGroup
-                  - ec2:DescribeSecurityGroups
                   - ec2:AuthorizeSecurityGroupIngress
                   - ec2:RevokeSecurityGroupIngress
                   - ec2:AuthorizeSecurityGroupEgress
                   - ec2:RevokeSecurityGroupEgress
-                  - ec2:CreateVpcEndpoint
-                  - ec2:DeleteVpcEndpoint
+                Resource:
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
+                Condition:
+                  StringEquals:
+                    "aws:ResourceTag/Project": !Ref GitHubRepo
+
+              # 8d. EC2 Tag Management
+              - Effect: Allow
+                Action:
+                  - ec2:CreateTags
+                  - ec2:DeleteTags
+                Resource:
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*"
+                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*"
+                Condition:
+                  StringEquals:
+                    "aws:RequestTag/Project": !Ref GitHubRepo
+
+              # 8e. EC2 Describe (Read-only, no resource-level permissions)
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeInternetGateways
+                  - ec2:DescribeRouteTables
+                  - ec2:DescribeSecurityGroups
                   - ec2:DescribeVpcEndpoints
                   - ec2:DescribeAvailabilityZones
                   - ec2:DescribeNetworkInterfaces
-                  - ec2:CreateNetworkInterface
-                  - ec2:DeleteNetworkInterface
                   - ec2:DescribeRouteTableAssociations
                 Resource: "*"
 
@@ -224,17 +331,24 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/wishboard-*"
 
-              # 10. Route 53 & ACM
+              # 10a. Route 53 Custom Domain Configuration
               - Effect: Allow
                 Action:
                   - route53:ChangeResourceRecordSets
                   - route53:GetHostedZone
                   - route53:ListResourceRecordSets
+                Resource:
+                  - !Sub "arn:aws:route53:::hostedzone/*"
+
+              # 10b. ACM Certificate Configuration
+              - Effect: Allow
+                Action:
                   - acm:RequestCertificate
                   - acm:DescribeCertificate
                   - acm:DeleteCertificate
                   - acm:AddTagsToCertificate
-                Resource: "*"
+                Resource:
+                  - !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/*"
 
               # 11. STS Get Caller Identity
               - Effect: Allow
