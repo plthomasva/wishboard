@@ -89,6 +89,14 @@ function Get-TomlValue($key) {
     return ""
 }
 
+# Extract a key's value from a space-separated Key="Value" string.
+function Get-OverrideValue($key, $overrides) {
+    if ($overrides -match "$key=`"([^`"]*)`"") {
+        return $Matches[1]
+    }
+    return ""
+}
+
 # --- Resolve configuration (CLI args win, then samconfig.toml, then defaults) ---
 if (-not $StackName) { $StackName = Get-TomlValue "stack_name" }
 if (-not $StackName) { $StackName = "wishboard-serverless" }
@@ -169,7 +177,24 @@ try {
             $deployArgs += $awsCommon
 
             $nodeEnvValue = if ($Mode -eq "dev") { "development" } else { "production" }
-            $deployArgs += @("--parameter-overrides", "NodeEnv=$nodeEnvValue")
+
+            $tomlOverrides = Get-TomlValue "parameter_overrides"
+            
+            $projectName = $env:PROJECT_NAME
+            if (-not $projectName) { $projectName = Get-OverrideValue "ProjectName" $tomlOverrides }
+            if (-not $projectName) { $projectName = "wishboard" }
+
+            $domainName = $env:DOMAIN_NAME
+            if (-not $domainName) { $domainName = Get-OverrideValue "DomainName" $tomlOverrides }
+
+            $hostedZoneId = $env:HOSTED_ZONE_ID
+            if (-not $hostedZoneId) { $hostedZoneId = Get-OverrideValue "HostedZoneId" $tomlOverrides }
+
+            $acmCertificateArn = $env:ACM_CERTIFICATE_ARN
+            if (-not $acmCertificateArn) { $acmCertificateArn = Get-OverrideValue "AcmCertificateArn" $tomlOverrides }
+
+            $mergedOverrides = "ProjectName=`"$projectName`" DomainName=`"$domainName`" HostedZoneId=`"$hostedZoneId`" AcmCertificateArn=`"$acmCertificateArn`" NodeEnv=`"$nodeEnvValue`""
+            $deployArgs += @("--parameter-overrides", $mergedOverrides)
 
             # Let boto retry transient S3/network errors while uploading artifacts.
             $env:AWS_MAX_ATTEMPTS = "6"

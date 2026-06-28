@@ -90,6 +90,13 @@ toml_value() {
         | sed -E "s/^[^=]*=[[:space:]]*//; s/^\"//; s/\"[[:space:]]*$//"
 }
 
+# Extract a key's value from a space-separated Key="Value" string.
+extract_override() {
+    local key="$1"
+    local overrides="$2"
+    echo "$overrides" | sed -nE "s/.*${key}=\"([^\"]*)\".*/\1/p"
+}
+
 # --- Resolve configuration (CLI args win, then samconfig.toml, then defaults) ---
 [[ -n "$STACK_NAME" ]] || STACK_NAME="$(toml_value stack_name)"
 [[ -n "$STACK_NAME" ]] || STACK_NAME="wishboard-serverless"
@@ -161,7 +168,17 @@ if ! $FRONTEND_ONLY; then
 
     NODE_ENV_VAL="production"
     if [[ "$MODE" == "dev" ]]; then NODE_ENV_VAL="development"; fi
-    DEPLOY_ARGS+=(--parameter-overrides "NodeEnv=${NODE_ENV_VAL}")
+
+    TOML_OVERRIDES="$(toml_value parameter_overrides)"
+    PROJECT_NAME="${PROJECT_NAME:-$(extract_override ProjectName "$TOML_OVERRIDES")}"
+    [[ -n "$PROJECT_NAME" ]] || PROJECT_NAME="wishboard"
+
+    DOMAIN_NAME="${DOMAIN_NAME:-$(extract_override DomainName "$TOML_OVERRIDES")}"
+    HOSTED_ZONE_ID="${HOSTED_ZONE_ID:-$(extract_override HostedZoneId "$TOML_OVERRIDES")}"
+    ACM_CERTIFICATE_ARN="${ACM_CERTIFICATE_ARN:-$(extract_override AcmCertificateArn "$TOML_OVERRIDES")}"
+
+    MERGED_OVERRIDES="ProjectName=\"${PROJECT_NAME}\" DomainName=\"${DOMAIN_NAME}\" HostedZoneId=\"${HOSTED_ZONE_ID}\" AcmCertificateArn=\"${ACM_CERTIFICATE_ARN}\" NodeEnv=\"${NODE_ENV_VAL}\""
+    DEPLOY_ARGS+=(--parameter-overrides "$MERGED_OVERRIDES")
 
     # Let boto retry transient S3/network errors while uploading artifacts.
     export AWS_MAX_ATTEMPTS=6
@@ -212,6 +229,36 @@ if [[ -z "$FRONTEND_BUCKET" ]]; then
     exit 1
 fi
 info "Frontend bucket: ${FRONTEND_BUCKET}"
+
+if [[ -n "$DIST_ID" ]]; then
+    step "Configuring CloudFront ID on ApiFunction environment variables..."
+    LAMBDA_NAME="$(aws cloudformation describe-stack-resource --stack-name "$STACK_NAME" --logical-resource-id "ApiFunction" "${AWS_COMMON[@]}" --query "StackResourceDetail.PhysicalResourceId" --output text 2>/dev/null || echo "")"
+    if [[ -n "$LAMBDA_NAME" && "$LAMBDA_NAME" != "None" ]]; then
+        CONFIG_JSON="$(aws lambda get-function-configuration --function-name "$LAMBDA_NAME" "${AWS_COMMON[@]}" 2>/dev/null || echo "")"
+        if [[ -n "$CONFIG_JSON" ]]; then
+            NEW_ENV_JSON="$(node -e "
+                try {
+                    const config = $CONFIG_JSON;
+                    const vars = config.Environment?.Variables || {};
+                    if (vars.CLOUDFRONT_DISTRIBUTION_ID !== '$DIST_ID') {
+                        vars.CLOUDFRONT_DISTRIBUTION_ID = '$DIST_ID';
+                        console.log(JSON.stringify({ Variables: vars }));
+                    }
+                } catch (e) {}
+            ")"
+            if [[ -n "$NEW_ENV_JSON" ]]; then
+                aws lambda update-function-configuration --function-name "$LAMBDA_NAME" --environment "$NEW_ENV_JSON" "${AWS_COMMON[@]}" >/dev/null
+                info "Successfully configured CLOUDFRONT_DISTRIBUTION_ID=$DIST_ID on $LAMBDA_NAME"
+            else
+                info "CLOUDFRONT_DISTRIBUTION_ID is already up to date ($DIST_ID)"
+            fi
+        else
+            info "Warning: Could not dynamically set CLOUDFRONT_DISTRIBUTION_ID: Failed to fetch Lambda configuration"
+        fi
+    else
+        info "Warning: Could not dynamically set CLOUDFRONT_DISTRIBUTION_ID: Failed to resolve ApiFunction physical resource ID"
+    fi
+fi
 
 # --- 6. Upload frontend + invalidate CloudFront ---
 if $SKIP_FRONTEND_UPLOAD; then

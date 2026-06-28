@@ -1,0 +1,65 @@
+name: Deploy Serverless
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Deployment mode (dev or prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+      region:
+        description: 'AWS region to deploy to (falls back to AWS_REGION variable)'
+        required: false
+        type: string
+      stack_name:
+        description: 'CloudFormation stack name (falls back to AWS_STACK_NAME variable)'
+        required: false
+        type: string
+
+permissions:
+  id-token: write # Required for requesting the AWS JWT
+  contents: read  # Required for checking out the repository
+
+jobs:
+  deploy:
+    name: Deploy Stack
+    runs-on: ubuntu-latest
+    
+    env:
+      # Inject parameter overrides from GitHub Variables if configured
+      PROJECT_NAME: ${{ vars.PROJECT_NAME }}
+      DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
+      HOSTED_ZONE_ID: ${{ vars.HOSTED_ZONE_ID }}
+      ACM_CERTIFICATE_ARN: ${{ vars.ACM_CERTIFICATE_ARN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ inputs.region || vars.AWS_REGION || 'us-east-1' }}
+          audience: sts.amazonaws.com
+
+      - name: Run serverless deploy script
+        run: |
+          chmod +x ./scripts/deploy-serverless.sh
+          ./scripts/deploy-serverless.sh \
+            --mode "${{ inputs.mode }}" \
+            --region "${{ inputs.region || vars.AWS_REGION || 'us-east-1' }}" \
+            --stack-name "${{ inputs.stack-name || vars.AWS_STACK_NAME || 'wishboard-serverless-dev' }}"
