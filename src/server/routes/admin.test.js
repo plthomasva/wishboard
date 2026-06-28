@@ -3,6 +3,22 @@ process.env.WISHBOARD_DB_PATH = ':memory:';
 
 import fs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mockCloudWatchLogsSend = vi.fn();
+function MockCloudWatchLogsClient(config) {
+  this.config = config;
+  this.send = mockCloudWatchLogsSend;
+}
+function MockFilterLogEventsCommand(args) {
+  this.args = args;
+}
+vi.mock('@aws-sdk/client-cloudwatch-logs', () => {
+  return {
+    CloudWatchLogsClient: MockCloudWatchLogsClient,
+    FilterLogEventsCommand: MockFilterLogEventsCommand,
+  };
+});
+
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
@@ -17,12 +33,21 @@ const clearTestData = async () => {
   await db.exec("DELETE FROM users WHERE role != 'admin'");
 };
 
+let originalLambdaName;
+
 beforeEach(async () => {
   await clearTestData();
+  originalLambdaName = process.env.AWS_LAMBDA_FUNCTION_NAME;
+  delete process.env.AWS_LAMBDA_FUNCTION_NAME;
 });
 
 afterEach(async () => {
   await clearTestData();
+  if (originalLambdaName !== undefined) {
+    process.env.AWS_LAMBDA_FUNCTION_NAME = originalLambdaName;
+  } else {
+    delete process.env.AWS_LAMBDA_FUNCTION_NAME;
+  }
 });
 
 describe('Admin routes', () => {
@@ -320,11 +345,80 @@ describe('Admin routes', () => {
     expect(response.body.error).toBe('User not found.');
   });
 
-  it('reads the logs successfully', async () => {
+  it('reads the logs successfully and sets no-cache headers', async () => {
     const token = await loginAsAdmin();
     const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.logs).toBeDefined();
+    expect(response.headers['cache-control']).toBe('no-store, no-cache, must-revalidate');
+    expect(response.headers['pragma']).toBe('no-cache');
+  });
+
+  describe('Serverless logs (CloudWatch)', () => {
+    let originalEnv;
+
+    beforeEach(() => {
+      originalEnv = process.env.AWS_LAMBDA_FUNCTION_NAME;
+      process.env.AWS_LAMBDA_FUNCTION_NAME = 'test-lambda-function';
+      process.env.AWS_REGION = 'us-west-2';
+      mockCloudWatchLogsSend.mockReset();
+    });
+
+    afterEach(() => {
+      process.env.AWS_LAMBDA_FUNCTION_NAME = originalEnv;
+    });
+
+    it('returns logs from CloudWatch Logs with filtering pattern', async () => {
+      const token = await loginAsAdmin();
+      mockCloudWatchLogsSend.mockResolvedValueOnce({
+        events: [
+          { message: 'START RequestId: 1' },
+          { message: 'info: Log line 1' },
+          { message: 'REPORT RequestId: 1' },
+          { message: 'error: Log line 2' }
+        ]
+      });
+
+      const response = await request(app)
+        .get('/api/admin/logs')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.source).toBe('cloudwatch');
+      expect(response.body.logs).toBe('info: Log line 1\nerror: Log line 2');
+      expect(mockCloudWatchLogsSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to no filter pattern if FilterPattern command rejects', async () => {
+      const token = await loginAsAdmin();
+      mockCloudWatchLogsSend
+        .mockRejectedValueOnce(new Error('Invalid FilterPattern'))
+        .mockResolvedValueOnce({
+          events: [
+            { message: 'info: Fallback line' }
+          ]
+        });
+
+      const response = await request(app)
+        .get('/api/admin/logs')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.logs).toBe('info: Fallback line');
+      expect(mockCloudWatchLogsSend).toHaveBeenCalledTimes(2);
+    });
+
+    it('handles AWS CloudWatch API errors gracefully and returns 500', async () => {
+      const token = await loginAsAdmin();
+      mockCloudWatchLogsSend.mockRejectedValue(new Error('AccessDenied'));
+
+      const response = await request(app)
+        .get('/api/admin/logs')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toContain('Failed to read CloudWatch logs: AccessDenied');
+    });
   });
 
   it('handles missing logs directory', async () => {

@@ -9,16 +9,13 @@ vi.mock('../AuthContext', () => ({
 }));
 
 const mockFetch = vi.fn();
-globalThis.fetch = mockFetch;
 
 describe('WishmailDashboard', () => {
   beforeEach(() => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
+    globalThis.fetch = mockFetch;
     mockFetch.mockReset();
-    Object.defineProperty(window, 'location', {
-      value: { hash: '#wishmail?id=w1&secret=sec123' },
-      writable: true
-    });
+    globalThis.window.location.hash = '#wishmail?id=w1&secret=sec123';
   });
 
   it('fetches and displays wishmails successfully', async () => {

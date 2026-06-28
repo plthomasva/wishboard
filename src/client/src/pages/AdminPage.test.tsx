@@ -48,7 +48,7 @@ describe('AdminPage', () => {
         });
       }
 
-      if (url.endsWith('/api/admin/logs')) {
+      if (url.includes('/api/admin/logs')) {
         if (!mockToken) {
           return Promise.resolve({ ok: false, status: 401 });
         }
@@ -267,7 +267,7 @@ describe('AdminPage', () => {
       if (url.endsWith('/api/admin/users')) {
         return Promise.resolve({ ok: true, json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }] });
       }
-      if (url.endsWith('/api/admin/logs')) {
+      if (url.includes('/api/admin/logs')) {
         return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
       }
       if (url.endsWith('/api/rules')) {

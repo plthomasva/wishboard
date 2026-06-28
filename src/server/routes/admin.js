@@ -158,6 +158,7 @@ router.get('/logs', requireAdmin, async (req, res) => {
         events = response.events ?? [];
       } catch (cwErr) {
         // FilterPattern may reject if no structured logs — fall back to no filter
+        logger.debug('CloudWatch filter pattern rejected, falling back to unfiltered query', { error: cwErr.message });
         const fallback = new FilterLogEventsCommand({ logGroupName, startTime, limit: 500 });
         const response = await client.send(fallback);
         events = response.events ?? [];
