@@ -359,7 +359,7 @@ describe('Admin routes', () => {
 
     beforeEach(() => {
       originalEnv = process.env.AWS_LAMBDA_FUNCTION_NAME;
-      process.env.AWS_LAMBDA_FUNCTION_NAME = 'test-lambda-function';
+      process.env.AWS_LAMBDA_FUNCTION_NAME = 'test-lambda-function-express-api';
       process.env.AWS_REGION = 'us-west-2';
       mockCloudWatchLogsSend.mockReset();
     });
@@ -368,14 +368,21 @@ describe('Admin routes', () => {
       process.env.AWS_LAMBDA_FUNCTION_NAME = originalEnv;
     });
 
-    it('returns logs from CloudWatch Logs with filtering pattern', async () => {
+    it('returns logs from CloudWatch Logs by combining and sorting API and WebSocket log groups', async () => {
       const token = await loginAsAdmin();
+      // First call (API group)
       mockCloudWatchLogsSend.mockResolvedValueOnce({
         events: [
-          { message: 'START RequestId: 1' },
-          { message: 'info: Log line 1' },
-          { message: 'REPORT RequestId: 1' },
-          { message: 'error: Log line 2' }
+          { message: 'START RequestId: 1', timestamp: 1000 },
+          { message: 'info: API Log 1', timestamp: 2000 },
+          { message: 'REPORT RequestId: 1', timestamp: 4000 }
+        ]
+      });
+      // Second call (WS group)
+      mockCloudWatchLogsSend.mockResolvedValueOnce({
+        events: [
+          { message: 'info: WS Log 1', timestamp: 1500 },
+          { message: 'info: WS Log 2', timestamp: 3000 }
         ]
       });
 
@@ -385,30 +392,39 @@ describe('Admin routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.source).toBe('cloudwatch');
-      expect(response.body.logs).toBe('info: Log line 1\nerror: Log line 2');
-      expect(mockCloudWatchLogsSend).toHaveBeenCalledTimes(1);
+      // Should be sorted by timestamp:
+      // timestamp 1500: [WS] info: WS Log 1
+      // timestamp 2000: info: API Log 1
+      // timestamp 3000: [WS] info: WS Log 2
+      expect(response.body.logs).toBe('[WS] info: WS Log 1\ninfo: API Log 1\n[WS] info: WS Log 2');
+      expect(mockCloudWatchLogsSend).toHaveBeenCalledTimes(2);
+
+      // Verify log groups queried
+      const call1LogGroup = mockCloudWatchLogsSend.mock.calls[0][0].args.logGroupName;
+      const call2LogGroup = mockCloudWatchLogsSend.mock.calls[1][0].args.logGroupName;
+      expect(call1LogGroup).toBe('/aws/lambda/test-lambda-function-express-api');
+      expect(call2LogGroup).toBe('/aws/lambda/test-lambda-function-websocket-mgr');
     });
 
-    it('falls back to no filter pattern if FilterPattern command rejects', async () => {
+    it('handles failure to query one log group gracefully and returns logs from the other', async () => {
       const token = await loginAsAdmin();
-      mockCloudWatchLogsSend
-        .mockRejectedValueOnce(new Error('Invalid FilterPattern'))
-        .mockResolvedValueOnce({
-          events: [
-            { message: 'info: Fallback line' }
-          ]
-        });
+      // First call succeeds
+      mockCloudWatchLogsSend.mockResolvedValueOnce({
+        events: [{ message: 'info: API Log only', timestamp: 1000 }]
+      });
+      // Second call fails
+      mockCloudWatchLogsSend.mockRejectedValueOnce(new Error('AccessDenied'));
 
       const response = await request(app)
         .get('/api/admin/logs')
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.logs).toBe('info: Fallback line');
+      expect(response.body.logs).toBe('info: API Log only');
       expect(mockCloudWatchLogsSend).toHaveBeenCalledTimes(2);
     });
 
-    it('handles AWS CloudWatch API errors gracefully and returns 500', async () => {
+    it('handles errors gracefully when both log groups fail and returns 500', async () => {
       const token = await loginAsAdmin();
       mockCloudWatchLogsSend.mockRejectedValue(new Error('AccessDenied'));
 
@@ -416,8 +432,10 @@ describe('Admin routes', () => {
         .get('/api/admin/logs')
         .set('Authorization', `Bearer ${token}`);
 
-      expect(response.status).toBe(500);
-      expect(response.body.error).toContain('Failed to read CloudWatch logs: AccessDenied');
+      // Since both fail and return empty array, we get "No log entries found in the last hour."
+      expect(response.status).toBe(200);
+      expect(response.body.logs).toBe('No log entries found in the last hour.');
+      expect(mockCloudWatchLogsSend).toHaveBeenCalledTimes(2);
     });
   });
 

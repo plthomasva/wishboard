@@ -142,31 +142,52 @@ router.get('/logs', requireAdmin, async (req, res) => {
       const { CloudWatchLogsClient, FilterLogEventsCommand } = await import('@aws-sdk/client-cloudwatch-logs');
       const region = process.env.AWS_REGION || 'us-east-1';
       const client = new CloudWatchLogsClient({ region });
-      const logGroupName = `/aws/lambda/${process.env.AWS_LAMBDA_FUNCTION_NAME}`;
+      const apiLogGroupName = `/aws/lambda/${process.env.AWS_LAMBDA_FUNCTION_NAME}`;
+      const wsFunctionName = process.env.AWS_LAMBDA_FUNCTION_NAME.replace(/-express-api$/, '-websocket-mgr');
+      const wsLogGroupName = `/aws/lambda/${wsFunctionName}`;
       const startTime = Date.now() - 60 * 60 * 1000; // last hour
 
-      const command = new FilterLogEventsCommand({
-        logGroupName,
-        startTime,
-        limit: 500,
-        filterPattern: '{ $.level = "*" }',
-      });
-
-      let events;
-      try {
+      // Helper to fetch logs for a specific log group
+      const fetchGroupLogs = async (logGroupName) => {
+        const command = new FilterLogEventsCommand({
+          logGroupName,
+          startTime,
+          limit: 300,
+        });
         const response = await client.send(command);
-        events = response.events ?? [];
-      } catch (cwErr) {
-        // FilterPattern may reject if no structured logs — fall back to no filter
-        logger.debug('CloudWatch filter pattern rejected, falling back to unfiltered query', { error: cwErr.message });
-        const fallback = new FilterLogEventsCommand({ logGroupName, startTime, limit: 500 });
-        const response = await client.send(fallback);
-        events = response.events ?? [];
-      }
+        return response.events ?? [];
+      };
+
+      // Fetch both in parallel
+      const [apiEvents, wsEvents] = await Promise.all([
+        fetchGroupLogs(apiLogGroupName).catch(err => {
+          logger.error(`Error querying log group ${apiLogGroupName}:`, { error: err.message });
+          return [];
+        }),
+        fetchGroupLogs(wsLogGroupName).catch(err => {
+          logger.error(`Error querying log group ${wsLogGroupName}:`, { error: err.message });
+          return [];
+        }),
+      ]);
+
+      // Tag and combine events
+      const taggedEvents = [
+        ...apiEvents.map(e => ({ ...e, group: 'api' })),
+        ...wsEvents.map(e => ({ ...e, group: 'ws' })),
+      ];
+
+      // Sort chronologically
+      taggedEvents.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
+
+      // Limit combined output
+      const finalEvents = taggedEvents.slice(-500);
 
       // Strip Lambda START/END/REPORT lines; keep application log lines only
-      const lines = events
-        .map(e => e.message?.trim())
+      const lines = finalEvents
+        .map(e => {
+          const prefix = e.group === 'ws' ? '[WS] ' : '';
+          return prefix + e.message?.trim();
+        })
         .filter(m => m && !m.startsWith('START ') && !m.startsWith('END ') && !m.startsWith('REPORT '))
         .join('\n');
 
