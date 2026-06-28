@@ -19,24 +19,24 @@ describe('AdminPage', () => {
   const fetchMatchers = [
     {
       test: (url: string) => url.endsWith('/api/admin/flags'),
-      handler: () => !mockToken
-        ? { ok: false, status: 401 }
-        : { ok: true, json: async () => [{ id: 'flagged-1', content: 'Flagged wish', flagged: 1, user_id: 'user-2' }] }
+      handler: () => mockToken
+        ? { ok: true, json: async () => [{ id: 'flagged-1', content: 'Flagged wish', flagged: 1, user_id: 'user-2' }] }
+        : { ok: false, status: 401 }
     },
     {
       test: (url: string) => url.endsWith('/api/admin/users'),
-      handler: () => !mockToken
-        ? { ok: false, status: 401 }
-        : { ok: true, json: async () => [
+      handler: () => mockToken
+        ? { ok: true, json: async () => [
             { id: 'user-1', username: 'tester', role: 'user' },
             { id: 'admin-2', username: 'other-admin', role: 'admin' }
           ] }
+        : { ok: false, status: 401 }
     },
     {
       test: (url: string) => url.includes('/api/admin/logs'),
-      handler: () => !mockToken
-        ? { ok: false, status: 401 }
-        : { ok: true, json: async () => ({ logs: 'Test logs output' }) }
+      handler: () => mockToken
+        ? { ok: true, json: async () => ({ logs: 'Test logs output' }) }
+        : { ok: false, status: 401 }
     },
     {
       test: (url: string) => url.endsWith('/api/admin/config'),

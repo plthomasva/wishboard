@@ -42,10 +42,10 @@ const osSample = (overrides: Partial<{
   ts: number; cpu: number; heapUsed: number; heapTotal: number; rss: number; load: number;
 }> = {}) => ({
   ts: Date.now(),
-  cpu: 25.0,
+  cpu: 25,
   heapUsed: 120.5,
-  heapTotal: 512.0,
-  rss: 200.0,
+  heapTotal: 512,
+  rss: 200,
   load: 0.75,
   ...overrides,
 });
@@ -182,7 +182,7 @@ describe('LocalMetricsDashboard', () => {
 
   // ── HeapCard (line 183) ───────────────────────────────────────────────────
   it('renders Heap Usage card headline and percentage note', async () => {
-    mockOk(metricsResponse([osSample({ heapUsed: 256.0, heapTotal: 512.0 })], []));
+    mockOk(metricsResponse([osSample({ heapUsed: 256, heapTotal: 512 })], []));
     await act(async () => { render(<LocalMetricsDashboard authHeader={AUTH} />); });
     expect(screen.getByText('Heap Usage')).toBeInTheDocument();
     expect(screen.getByText('256 MB')).toBeInTheDocument();
@@ -192,7 +192,7 @@ describe('LocalMetricsDashboard', () => {
 
   // ── RssCard (line 203) ────────────────────────────────────────────────────
   it('renders RSS Memory card headline', async () => {
-    mockOk(metricsResponse([osSample({ rss: 300.0 })], []));
+    mockOk(metricsResponse([osSample({ rss: 300 })], []));
     await act(async () => { render(<LocalMetricsDashboard authHeader={AUTH} />); });
     expect(screen.getByText('RSS Memory')).toBeInTheDocument();
     expect(screen.getByText('300 MB')).toBeInTheDocument();
@@ -228,8 +228,8 @@ describe('LocalMetricsDashboard', () => {
   // ── LatencyCard (line 295) ────────────────────────────────────────────────
   it('renders Mean Response Time card', async () => {
     const samples = [
-      httpSample({ count: 2, mean: 100.0 }),
-      httpSample({ count: 2, mean: 200.0 }),
+      httpSample({ count: 2, mean: 100 }),
+      httpSample({ count: 2, mean: 200 }),
     ];
     mockOk(metricsResponse([], samples));
     await act(async () => { render(<LocalMetricsDashboard authHeader={AUTH} />); });
