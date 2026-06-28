@@ -19,6 +19,9 @@ on:
         description: 'CloudFormation stack name (falls back to AWS_STACK_NAME variable)'
         required: false
         type: string
+  push:
+    branches:
+      - fix/add-gitlab-runner-deployment
 
 permissions:
   id-token: write # Required for requesting the AWS JWT
@@ -60,6 +63,6 @@ jobs:
         run: |
           chmod +x ./scripts/deploy-serverless.sh
           ./scripts/deploy-serverless.sh \
-            --mode "${{ github.event.inputs.mode }}" \
+            --mode "${{ github.event.inputs.mode || 'dev' }}" \
             --region "${{ github.event.inputs.region || vars.AWS_REGION || 'us-east-1' }}" \
             --stack-name "${{ github.event.inputs.stack_name || vars.AWS_STACK_NAME || 'wishboard-serverless-dev' }}"
