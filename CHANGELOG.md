@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.8.0...wishboard-v1.8.1) (2026-06-27)
+
+
+### Bug Fixes
+
+* isolate rules test files to prevent EBUSY locks during parallel runs ([11cf822](https://github.com/plthomasva/wishboard/commit/11cf8227df3697b1eb734c0163dd1f1d71e0ead1))
+
 ## [1.8.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.7.1...wishboard-v1.8.0) (2026-06-27)
 
 
