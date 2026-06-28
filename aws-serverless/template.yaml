@@ -596,15 +596,15 @@ Resources:
             CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
             Compress: true
 
-  # Enable additional CloudFront metrics (CacheHitRate, OriginLatency,
-  # per-status error rates) in CloudWatch. Cost: ~$1/distribution/month.
-  CloudFrontMonitoringSubscription:
-    Type: AWS::CloudFront::MonitoringSubscription
-    Properties:
-      DistributionId: !Ref CloudFrontDistribution
-      MonitoringSubscription:
-        RealtimeMetricsSubscriptionConfig:
-          RealtimeMetricsSubscriptionStatus: Enabled
+  # NOTE: CloudFront additional metrics (CacheHitRate, OriginLatency, per-status
+  # error rates) are enabled via a post-deploy CLI command rather than in this
+  # template to avoid a CloudFormation circular dependency with the bucket
+  # policies that also reference CloudFrontDistribution.
+  #
+  # Run once after `sam deploy`:
+  #   aws cloudfront create-monitoring-subscription \
+  #     --distribution-id <CloudFrontDistributionId stack output> \
+  #     --monitoring-subscription '{"RealtimeMetricsSubscriptionConfig":{"RealtimeMetricsSubscriptionStatus":"Enabled"}}'
 
 Outputs:
   CloudFrontUrl:
