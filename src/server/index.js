@@ -126,5 +126,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 
 // Export both app and server for testing
+globalThis.__wishboardServerLoaded = true;
 export { app, server };
 export default app;

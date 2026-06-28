@@ -138,3 +138,12 @@ export function getSnapshot(maxPoints = 360) {
     intervalMs: INTERVAL_MS,
   };
 }
+
+export function resetCollector() {
+  osSamples.length = 0;
+  httpSamples.length = 0;
+  currentWindow = newWindow();
+  prevCpuUsage = process.cpuUsage();
+  prevCpuTime = Date.now();
+}
+globalThis.__wishboardCollectorLoaded = true;

@@ -80,5 +80,6 @@ const logger = winston.createLogger({
   format: logFormat,
   transports
 });
+globalThis.__wishboardLoggerLoaded = true;
 
 export default logger;

@@ -39,6 +39,12 @@ export const getIO = () => {
   return io;
 };
 
+export const closeSocket = () => {
+  if (io) {
+    io.close();
+    io = null;
+  }
+};
 // AWS API Gateway WebSocket broadcasting helper
 const getApigwClient = async () => {
   if (!apigwClient) {
@@ -82,7 +88,7 @@ const broadcastToApiGateway = async (event, data) => {
   logger.debug(`Broadcasting ${event} to ${rows.length} connections...`);
 
   const promises = rows.map(async (row) => {
-    const connectionId = row.connection_id;
+    const connectionId = typeof row.connection_id === 'string' ? row.connection_id : '';
     try {
       await client.send(new PostToConnectionCommand({
         ConnectionId: connectionId,
@@ -145,3 +151,5 @@ export const emitSystemLog = (logEntry) => {
     io.emit('sys:log', logEntry);
   }
 };
+
+globalThis.__wishboardSocketLoaded = true;
