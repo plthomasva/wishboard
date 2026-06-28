@@ -438,10 +438,13 @@ describe('Admin routes', () => {
   it('handles empty logs directory', async () => {
     const token = await loginAsAdmin();
     
-    const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation(() => true);
-    const spyReadDir = vi.spyOn(fs, 'readdirSync').mockImplementation(
-      (pathStr) => (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`))) ? [] : []
-    );
+    const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation((pathStr) => {
+      return typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`));
+    });
+    const spyReadDir = vi.spyOn(fs, 'readdirSync').mockImplementation((pathStr) => {
+      const isLogs = typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`));
+      return isLogs ? [] : ['not_logs.log'];
+    });
 
     const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
