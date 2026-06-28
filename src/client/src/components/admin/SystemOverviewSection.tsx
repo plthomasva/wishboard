@@ -7,6 +7,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
   const [rawLogs, setRawLogs] = useState<string>('');
   const [filterRepeating, setFilterRepeating] = useState<boolean>(true);
   const [isTailing, setIsTailing] = useState<boolean>(true);
+  const [logsSource, setLogsSource] = useState<string>('local');
 
   /** Whether the backend is running in AWS serverless (Lambda) mode */
   const [isServerlessMode, setIsServerlessMode] = useState<boolean | null>(null);
@@ -28,6 +29,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
       if (!response.ok) { setRawLogs('Failed to load logs.'); return; }
       const data = await response.json();
       setRawLogs(data.logs || '');
+      setLogsSource(data.source || 'local');
     } catch (e) { console.error(e); setRawLogs('Failed to load logs.'); }
   };
 
@@ -92,7 +94,11 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
 
       <section>
         <h2>System Logs</h2>
-        <p>Recent server logs including rate limit warnings and failed logins.</p>
+        <p>
+          {logsSource === 'cloudwatch'
+            ? 'Recent server logs from AWS CloudWatch Logs — last hour of Lambda activity.'
+            : 'Recent server logs including rate limit warnings and failed logins.'}
+        </p>
         <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
           <button type="button" className="secondary-button" onClick={() => setIsTailing(!isTailing)}>
             {isTailing ? 'Pause Tailing' : 'Resume Tailing'}

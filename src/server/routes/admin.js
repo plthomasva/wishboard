@@ -131,6 +131,49 @@ router.post('/reset-demo', requireAdmin, async (req, res) => {
 
 // GET /api/admin/logs
 router.get('/logs', requireAdmin, async (req, res) => {
+  const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+  // In serverless mode, pull recent logs from CloudWatch Logs
+  if (isLambda) {
+    try {
+      const { CloudWatchLogsClient, FilterLogEventsCommand } = await import('@aws-sdk/client-cloudwatch-logs');
+      const region = process.env.AWS_REGION || 'us-east-1';
+      const client = new CloudWatchLogsClient({ region });
+      const logGroupName = `/aws/lambda/${process.env.AWS_LAMBDA_FUNCTION_NAME}`;
+      const startTime = Date.now() - 60 * 60 * 1000; // last hour
+
+      const command = new FilterLogEventsCommand({
+        logGroupName,
+        startTime,
+        limit: 500,
+        filterPattern: '{ $.level = "*" }',
+      });
+
+      let events;
+      try {
+        const response = await client.send(command);
+        events = response.events ?? [];
+      } catch (cwErr) {
+        // FilterPattern may reject if no structured logs — fall back to no filter
+        const fallback = new FilterLogEventsCommand({ logGroupName, startTime, limit: 500 });
+        const response = await client.send(fallback);
+        events = response.events ?? [];
+      }
+
+      // Strip Lambda START/END/REPORT lines; keep application log lines only
+      const lines = events
+        .map(e => e.message?.trim())
+        .filter(m => m && !m.startsWith('START ') && !m.startsWith('END ') && !m.startsWith('REPORT '))
+        .join('\n');
+
+      return res.json({ logs: lines || 'No log entries found in the last hour.', source: 'cloudwatch' });
+    } catch (error) {
+      logger.error('Failed to read CloudWatch logs:', { error: error.message });
+      return res.status(500).json({ error: `Failed to read CloudWatch logs: ${error.message}` });
+    }
+  }
+
+  // Local mode: read from filesystem log files
   const logsDir = path.join(__dirname, '../../../data/logs');
   try {
     if (!fs.existsSync(logsDir)) {
@@ -140,10 +183,10 @@ router.get('/logs', requireAdmin, async (req, res) => {
     if (!files.length) {
       return res.json({ logs: 'No logs found.' });
     }
-    
+
     files.sort((a, b) => fs.statSync(path.join(logsDir, b)).mtimeMs - fs.statSync(path.join(logsDir, a)).mtimeMs);
     const newestFile = files[0];
-    
+
     const content = fs.readFileSync(path.join(logsDir, newestFile), 'utf-8');
     const lines = content.split('\n').filter(Boolean);
     const lastLines = lines.slice(-500).join('\n');

@@ -391,6 +391,12 @@ Resources:
                 - cloudwatch:GetMetricData
                 - cloudwatch:ListMetrics
               Resource: "*"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:FilterLogEvents
+                - logs:DescribeLogGroups
+              Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
       Events:
         ApiRoute:
           Type: HttpApi
