@@ -478,6 +478,17 @@ Resources:
   # =========================================================================
   # Amazon CloudFront Distribution (Single Gateway & CDN)
   # =========================================================================
+  # Enable additional CloudFront metrics (CacheHitRate, OriginLatency,
+  # per-status error rates) in CloudWatch. Cost: ~$1/distribution/month.
+  CloudFrontMonitoringSubscription:
+    Type: AWS::CloudFront::MonitoringSubscription
+    DependsOn: CloudFrontDistribution
+    Properties:
+      DistributionId: !Ref CloudFrontDistribution
+      MonitoringSubscription:
+        RealtimeMetricsSubscriptionConfig:
+          RealtimeMetricsSubscriptionStatus: Enabled
+
   CloudFrontOAC:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
