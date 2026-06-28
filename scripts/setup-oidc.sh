@@ -70,6 +70,7 @@ info "Target Deployment Region: ${REGION}"
 # Check for existing OIDC provider in IAM to avoid duplicate error
 step "Checking for existing GitHub OIDC Provider in AWS account..."
 OIDC_ARN=$(aws iam list-open-id-connect-providers --query "OpenIDConnectProviderList[?contains(Arn, 'token.actions.githubusercontent.com')].Arn | [0]" --output text 2>/dev/null || echo "")
+OIDC_ARN=$(echo "$OIDC_ARN" | tr -d '\r')
 if [[ "$OIDC_ARN" == "None" || -z "$OIDC_ARN" ]]; then
     OIDC_ARN=""
     info "No existing GitHub OIDC provider found. It will be created."
