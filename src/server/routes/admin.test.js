@@ -43,10 +43,10 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await clearTestData();
-  if (originalLambdaName !== undefined) {
-    process.env.AWS_LAMBDA_FUNCTION_NAME = originalLambdaName;
-  } else {
+  if (originalLambdaName === undefined) {
     delete process.env.AWS_LAMBDA_FUNCTION_NAME;
+  } else {
+    process.env.AWS_LAMBDA_FUNCTION_NAME = originalLambdaName;
   }
 });
 
@@ -425,7 +425,7 @@ describe('Admin routes', () => {
     const token = await loginAsAdmin();
     
     const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation((pathStr) => {
-      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes('data\\logs'))) return false;
+      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`))) return false;
       return true;
     });
 
@@ -440,11 +440,12 @@ describe('Admin routes', () => {
     const token = await loginAsAdmin();
     
     const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation((pathStr) => {
-      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes('data\\logs'))) return true;
+      if (typeof pathStr !== 'string') return true;
+      if (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`)) return true;
       return true;
     });
     const spyReadDir = vi.spyOn(fs, 'readdirSync').mockImplementation((pathStr) => {
-      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes('data\\logs'))) return [];
+      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`))) return [];
       return [];
     });
 

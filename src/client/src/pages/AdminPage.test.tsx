@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import AdminPage from './AdminPage';
 
@@ -17,7 +17,7 @@ vi.mock('../AuthContext', () => ({
 
 describe('AdminPage', () => {
   beforeEach(() => {
-    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    globalThis.HTMLElement.prototype.scrollIntoView = vi.fn();
     mockUser = null;
     mockToken = null;
     loginMock.mockReset();
@@ -125,7 +125,8 @@ describe('AdminPage', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    delete window.HTMLElement.prototype.scrollIntoView;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis.HTMLElement.prototype as any).scrollIntoView = undefined;
   });
 
   it('renders login form when user is not admin', async () => {
@@ -319,7 +320,7 @@ describe('AdminPage', () => {
   it('can clear all flags in bulk', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
 
     render(<AdminPage />);
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
