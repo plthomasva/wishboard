@@ -424,10 +424,9 @@ describe('Admin routes', () => {
   it('handles missing logs directory', async () => {
     const token = await loginAsAdmin();
     
-    const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation((pathStr) => {
-      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`))) return false;
-      return true;
-    });
+    const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation(
+      (pathStr) => !(typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`)))
+    );
 
     const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
@@ -439,15 +438,10 @@ describe('Admin routes', () => {
   it('handles empty logs directory', async () => {
     const token = await loginAsAdmin();
     
-    const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation((pathStr) => {
-      if (typeof pathStr !== 'string') return true;
-      if (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`)) return true;
-      return true;
-    });
-    const spyReadDir = vi.spyOn(fs, 'readdirSync').mockImplementation((pathStr) => {
-      if (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`))) return [];
-      return [];
-    });
+    const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation(() => true);
+    const spyReadDir = vi.spyOn(fs, 'readdirSync').mockImplementation(
+      (pathStr) => (typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`))) ? [] : []
+    );
 
     const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);

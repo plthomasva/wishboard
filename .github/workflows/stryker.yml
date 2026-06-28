@@ -43,7 +43,7 @@ jobs:
       - name: Upload Report to Pages Artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: './reports/mutation/html' # The directory Stryker writes the HTML report to
+          path: './reports/mutation' # The directory Stryker writes the HTML report to
 
   deploy:
     needs: test
