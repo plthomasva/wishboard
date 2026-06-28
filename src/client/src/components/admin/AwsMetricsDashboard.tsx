@@ -77,7 +77,7 @@ const currentValue = (dataPoints: DataPoint[]): number => {
   for (let i = dataPoints.length - 1; i >= 0; i--) {
     if (dataPoints[i].v !== 0) return dataPoints[i].v;
   }
-  return dataPoints[dataPoints.length - 1].v;
+  return dataPoints.at(-1)!.v;
 };
 
 /** Sum of all values — used for invocation/error counts */
@@ -201,7 +201,7 @@ const SparklineCard: React.FC<SparklineCardProps> = ({ metric }) => {
               minTickGap={40}
             />
             <YAxis hide domain={['auto', 'auto']} />
-            <Tooltip content={(props) => <CustomTooltip active={props.active} payload={props.payload as any} label={props.label as string} metricLabel={label} />} />
+            <Tooltip content={<CustomTooltip metricLabel={label} />} />
             <Area
               type="monotone"
               dataKey="v"
@@ -250,7 +250,7 @@ interface AwsMetricsDashboardProps {
   authHeader: Record<string, string>;
 }
 
-export default function AwsMetricsDashboard({ authHeader }: AwsMetricsDashboardProps) {
+export default function AwsMetricsDashboard({ authHeader }: Readonly<AwsMetricsDashboardProps>) {
   const [data, setData] = useState<AwsMetricsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -283,8 +283,8 @@ export default function AwsMetricsDashboard({ authHeader }: AwsMetricsDashboardP
   useEffect(() => {
     if (autoRefresh) {
       intervalRef.current = setInterval(fetchMetrics, AUTO_REFRESH_MS);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -310,7 +310,7 @@ export default function AwsMetricsDashboard({ authHeader }: AwsMetricsDashboardP
             checked={autoRefresh}
             onChange={e => setAutoRefresh(e.target.checked)}
           />
-          Auto-refresh every 30s
+          <span>Auto-refresh every 30s</span>
         </label>
 
         {data?.generatedAt && (

@@ -93,9 +93,9 @@ const ChartTooltip = ({ active, payload, label, unit = '' }: TooltipProps) => {
       background: '#1e1e2e', border: '1px solid #374151', borderRadius: '6px',
       padding: '8px 12px', fontSize: '12px', color: '#e5e7eb',
     }}>
-      <div style={{ color: '#9ca3af', marginBottom: '4px' }}>{label !== undefined ? formatTime(label) : ''}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color ?? '#e5e7eb' }}>
+      <div style={{ color: '#9ca3af', marginBottom: '4px' }}>{label === undefined ? '' : formatTime(label)}</div>
+      {payload.map((p) => (
+        <div key={p.name ?? p.color} style={{ color: p.color ?? '#e5e7eb' }}>
           {p.name && <span style={{ marginRight: 4 }}>{p.name}:</span>}
           <strong>{typeof p.value === 'number' ? `${p.value.toFixed(1)}${unit}` : '—'}</strong>
         </div>
@@ -159,7 +159,7 @@ const CpuCard = ({ samples }: { samples: OsSample[] }) => {
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
             <XAxis dataKey="ts" tickFormatter={formatShortTime} tick={TICK_STYLE} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={40} />
             <YAxis hide domain={[0, 100]} />
-            <Tooltip content={(p) => <ChartTooltip {...p as any} unit="%" />} />
+            <Tooltip content={<ChartTooltip unit="%" />} />
             <Area type="monotone" dataKey="cpu" stroke={C.blue.stroke} strokeWidth={1.5} fill="url(#grad-cpu)" dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
@@ -180,7 +180,7 @@ const HeapCard = ({ samples }: { samples: OsSample[] }) => {
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
             <XAxis dataKey="ts" tickFormatter={formatShortTime} tick={TICK_STYLE} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={40} />
             <YAxis hide domain={['auto', 'auto']} />
-            <Tooltip content={(p) => <ChartTooltip {...p as any} unit=" MB" />} />
+            <Tooltip content={<ChartTooltip unit=" MB" />} />
             <Area type="monotone" dataKey="heapUsed" name="Heap Used" stroke={C.purple.stroke} strokeWidth={1.5} fill="url(#grad-heap)" dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
@@ -200,7 +200,7 @@ const RssCard = ({ samples }: { samples: OsSample[] }) => {
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
             <XAxis dataKey="ts" tickFormatter={formatShortTime} tick={TICK_STYLE} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={40} />
             <YAxis hide domain={['auto', 'auto']} />
-            <Tooltip content={(p) => <ChartTooltip {...p as any} unit=" MB" />} />
+            <Tooltip content={<ChartTooltip unit=" MB" />} />
             <Area type="monotone" dataKey="rss" stroke={C.pink.stroke} strokeWidth={1.5} fill="url(#grad-rss)" dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
@@ -220,7 +220,7 @@ const LoadCard = ({ samples }: { samples: OsSample[] }) => {
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
             <XAxis dataKey="ts" tickFormatter={formatShortTime} tick={TICK_STYLE} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={40} />
             <YAxis hide domain={['auto', 'auto']} />
-            <Tooltip content={(p) => <ChartTooltip {...p as any} />} />
+            <Tooltip content={<ChartTooltip />} />
             <Area type="monotone" dataKey="load" stroke={C.teal.stroke} strokeWidth={1.5} fill="url(#grad-load)" dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
@@ -244,7 +244,7 @@ const RequestRateCard = ({ samples }: { samples: HttpSample[] }) => {
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
             <XAxis dataKey="ts" tickFormatter={formatShortTime} tick={TICK_STYLE} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={40} />
             <YAxis hide domain={['auto', 'auto']} />
-            <Tooltip content={(p) => <ChartTooltip {...p as any} />} />
+            <Tooltip content={<ChartTooltip />} />
             <Area type="monotone" dataKey="r2xx" name="2xx" stroke={C.green.stroke} strokeWidth={1.5} fill="url(#grad-req)" dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
@@ -265,7 +265,7 @@ const ErrorRateCard = ({ samples }: { samples: HttpSample[] }) => {
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
             <XAxis dataKey="ts" tickFormatter={formatShortTime} tick={TICK_STYLE} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={40} />
             <YAxis hide domain={['auto', 'auto']} />
-            <Tooltip content={(p) => <ChartTooltip {...p as any} />} />
+            <Tooltip content={<ChartTooltip />} />
             <Line type="monotone" dataKey="r4xx" name="4xx" stroke={C.orange.stroke} strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
             <Line type="monotone" dataKey="r5xx" name="5xx" stroke={C.red.stroke}    strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
           </LineChart>
@@ -292,7 +292,7 @@ const LatencyCard = ({ samples }: { samples: HttpSample[] }) => {
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
             <XAxis dataKey="ts" tickFormatter={formatShortTime} tick={TICK_STYLE} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={40} />
             <YAxis hide domain={['auto', 'auto']} />
-            <Tooltip content={(p) => <ChartTooltip {...p as any} unit=" ms" />} />
+            <Tooltip content={<ChartTooltip unit=" ms" />} />
             <Area type="monotone" dataKey="mean" name="Mean" stroke={C.purple.stroke} strokeWidth={1.5} fill="url(#grad-lat)" dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
@@ -323,7 +323,7 @@ interface LocalMetricsDashboardProps {
   authHeader: Record<string, string>;
 }
 
-export default function LocalMetricsDashboard({ authHeader }: LocalMetricsDashboardProps) {
+export default function LocalMetricsDashboard({ authHeader }: Readonly<LocalMetricsDashboardProps>) {
   const [data, setData] = useState<LocalMetricsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -352,8 +352,8 @@ export default function LocalMetricsDashboard({ authHeader }: LocalMetricsDashbo
   useEffect(() => {
     if (autoRefresh) {
       intervalRef.current = setInterval(fetchMetrics, AUTO_REFRESH_MS);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [autoRefresh, fetchMetrics]);
@@ -367,7 +367,7 @@ export default function LocalMetricsDashboard({ authHeader }: LocalMetricsDashbo
         </button>
         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#9ca3af', cursor: 'pointer' }}>
           <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)} />
-          Auto-refresh every 10s
+          <span>Auto-refresh every 10s</span>
         </label>
         {data?.generatedAt && (
           <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#6b7280' }}>
