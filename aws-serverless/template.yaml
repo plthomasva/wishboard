@@ -48,7 +48,7 @@ Resources:
         - Key: Name
           Value: !Sub "${ProjectName}-vpc"
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   PublicSubnet1:
     Type: AWS::EC2::Subnet
@@ -61,7 +61,7 @@ Resources:
         - Key: Name
           Value: !Sub "${ProjectName}-subnet-1"
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -74,7 +74,7 @@ Resources:
         - Key: Name
           Value: !Sub "${ProjectName}-subnet-2"
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -83,7 +83,7 @@ Resources:
         - Key: Name
           Value: !Sub "${ProjectName}-igw"
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -99,7 +99,7 @@ Resources:
         - Key: Name
           Value: !Sub "${ProjectName}-rt"
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   PublicRoute:
     Type: AWS::EC2::Route
@@ -132,7 +132,7 @@ Resources:
         - !Ref RouteTable
       Tags:
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   CloudWatchEndpoint:
     Type: AWS::EC2::VPCEndpoint
@@ -148,7 +148,7 @@ Resources:
       PrivateDnsEnabled: true
       Tags:
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   CloudWatchLogsEndpoint:
     Type: AWS::EC2::VPCEndpoint
@@ -164,7 +164,7 @@ Resources:
       PrivateDnsEnabled: true
       Tags:
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
 
   SecurityGroup:
@@ -177,7 +177,7 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   SecurityGroupEfsIngress:
     Type: AWS::EC2::SecurityGroupIngress
@@ -211,7 +211,7 @@ Resources:
         - Key: Name
           Value: !Sub "${ProjectName}-db-fs"
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   MountTarget1:
     Type: AWS::EFS::MountTarget
@@ -245,7 +245,7 @@ Resources:
           Permissions: '0777'
       AccessPointTags:
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   # =========================================================================
   # Amazon S3 Buckets (Frontend Hosting & Wish Images)
@@ -261,7 +261,7 @@ Resources:
         RestrictPublicBuckets: true
       Tags:
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   ImagesBucket:
     Type: AWS::S3::Bucket
@@ -274,7 +274,7 @@ Resources:
         RestrictPublicBuckets: true
       Tags:
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   # S3 Bucket Policy to allow CloudFront OAC read access
   FrontendBucketPolicy:
@@ -334,7 +334,7 @@ Resources:
     Type: AWS::Serverless::HttpApi # NOSONAR - Auth is handled by the Express.js application
     Properties:
       Tags:
-        Project: !Ref ProjectName
+        Project: wishboard
     # No explicit StageName: SAM provisions the special "$default" stage, whose
     # invoke URL has no stage path segment. This keeps event.rawPath as
     # "/api/..."; a named stage (e.g. "production") would prefix it as
@@ -348,7 +348,7 @@ Resources:
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
       Tags:
-        Project: !Ref ProjectName
+        Project: wishboard
 
   WebSocketIntegrationConnect:
     Type: AWS::ApiGatewayV2::Integration
@@ -394,7 +394,7 @@ Resources:
       StageName: production
       DeploymentId: !Ref WebSocketDeployment
       Tags:
-        Project: !Ref ProjectName
+        Project: wishboard
 
   # =========================================================================
   # AWS Lambda Functions (Serverless Compute)
@@ -429,7 +429,7 @@ Resources:
           REALTIME_PROVIDER: apigateway
           WEBSOCKET_API_ENDPOINT: !Sub "https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/production"
       Tags:
-        Project: !Ref ProjectName
+        Project: wishboard
       Policies:
         - AWSLambdaVPCAccessExecutionRole
         - AmazonElasticFileSystemClientFullAccess
@@ -507,7 +507,7 @@ Resources:
           NODE_ENV: !Ref NodeEnv
           DATABASE_URL: file:/mnt/efs/wishboard.db
       Tags:
-        Project: !Ref ProjectName
+        Project: wishboard
       Policies:
         - AWSLambdaVPCAccessExecutionRole
         - AmazonElasticFileSystemClientFullAccess
@@ -551,7 +551,7 @@ Resources:
           HostedZoneId: !Ref HostedZoneId
       Tags:
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
 
   DnsRecord:
     Type: AWS::Route53::RecordSet
@@ -582,7 +582,7 @@ Resources:
     Properties:
       Tags:
         - Key: Project
-          Value: !Ref ProjectName
+          Value: wishboard
       DistributionConfig:
         Enabled: true
         Comment: CloudFront Distribution for Wishboard Serverless Application

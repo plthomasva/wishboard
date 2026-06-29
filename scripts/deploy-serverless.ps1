@@ -183,22 +183,22 @@ try {
             $nodeEnvValue = if ($Mode -eq "dev") { "development" } else { "production" }
 
             $tomlOverrides = Get-TomlValue "parameter_overrides"
-            
             $projectName = $env:PROJECT_NAME
             if (-not $projectName) { $projectName = Get-OverrideValue "ProjectName" $tomlOverrides }
             if (-not $projectName) { $projectName = "wishboard" }
+            if ($Mode -eq "dev" -and $projectName -eq "wishboard") {
+                $projectName = "wishboard-dev"
+            }
 
             $domainName = $env:DOMAIN_NAME
             if (-not $domainName) { $domainName = Get-OverrideValue "DomainName" $tomlOverrides }
-
             $hostedZoneId = $env:HOSTED_ZONE_ID
             if (-not $hostedZoneId) { $hostedZoneId = Get-OverrideValue "HostedZoneId" $tomlOverrides }
-
             $acmCertificateArn = $env:ACM_CERTIFICATE_ARN
             if (-not $acmCertificateArn) { $acmCertificateArn = Get-OverrideValue "AcmCertificateArn" $tomlOverrides }
 
             $mergedOverrides = "ProjectName='$projectName' DomainName='$domainName' HostedZoneId='$hostedZoneId' AcmCertificateArn='$acmCertificateArn' NodeEnv='$nodeEnvValue'"
-            $deployArgs += @("--parameter-overrides", $mergedOverrides, "--tags", "Project=$projectName")
+            $deployArgs += @("--parameter-overrides", $mergedOverrides, "--tags", "Project=wishboard")
 
             # Let boto retry transient S3/network errors while uploading artifacts.
             $env:AWS_MAX_ATTEMPTS = "6"

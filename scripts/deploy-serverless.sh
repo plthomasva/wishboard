@@ -175,13 +175,16 @@ if ! $FRONTEND_ONLY; then
     TOML_OVERRIDES="$(toml_value parameter_overrides)"
     PROJECT_NAME="${PROJECT_NAME:-$(extract_override ProjectName "$TOML_OVERRIDES")}"
     [[ -n "$PROJECT_NAME" ]] || PROJECT_NAME="wishboard"
+    if [[ "$MODE" == "dev" && "$PROJECT_NAME" == "wishboard" ]]; then
+        PROJECT_NAME="wishboard-dev"
+    fi
 
     DOMAIN_NAME="${DOMAIN_NAME:-$(extract_override DomainName "$TOML_OVERRIDES")}"
     HOSTED_ZONE_ID="${HOSTED_ZONE_ID:-$(extract_override HostedZoneId "$TOML_OVERRIDES")}"
     ACM_CERTIFICATE_ARN="${ACM_CERTIFICATE_ARN:-$(extract_override AcmCertificateArn "$TOML_OVERRIDES")}"
 
     MERGED_OVERRIDES="ProjectName=\"${PROJECT_NAME}\" DomainName=\"${DOMAIN_NAME}\" HostedZoneId=\"${HOSTED_ZONE_ID}\" AcmCertificateArn=\"${ACM_CERTIFICATE_ARN}\" NodeEnv=\"${NODE_ENV_VAL}\""
-    DEPLOY_ARGS+=(--parameter-overrides "$MERGED_OVERRIDES" --tags "Project=${PROJECT_NAME}")
+    DEPLOY_ARGS+=(--parameter-overrides "$MERGED_OVERRIDES" --tags "Project=wishboard")
 
     # Let boto retry transient S3/network errors while uploading artifacts.
     export AWS_MAX_ATTEMPTS=6
