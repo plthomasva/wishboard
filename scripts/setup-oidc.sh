@@ -14,10 +14,22 @@ set -euo pipefail
 
 # Colors
 C_CYAN='\033[1;36m'; C_GREEN='\033[1;32m'; C_YELLOW='\033[1;33m'; C_RED='\033[1;31m'; C_RESET='\033[0m'
-step() { echo -e "${C_CYAN}==>${C_RESET} $1"; }
-info() { echo -e "    $1"; }
-warn() { echo -e "${C_YELLOW}WARNING:${C_RESET} $1"; }
-error() { echo -e "${C_RED}ERROR:${C_RESET} $1"; }
+step() {
+    local msg="$1"
+    echo -e "${C_CYAN}==>${C_RESET} $msg"
+}
+info() {
+    local msg="$1"
+    echo -e "    $msg"
+}
+warn() {
+    local msg="$1"
+    echo -e "${C_YELLOW}WARNING:${C_RESET} $msg"
+}
+error() {
+    local msg="$1"
+    echo -e "${C_RED}ERROR:${C_RESET} $msg" >&2
+}
 
 ORG=""
 REPO=""

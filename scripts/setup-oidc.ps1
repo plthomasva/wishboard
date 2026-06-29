@@ -45,7 +45,7 @@ if (-not $Org -or -not $Repo) {
         }
     }
     catch {
-        # ignore git error, fall back to defaults
+        Write-Verbose "Failed to detect git repository info: $_"
     }
     if (-not $Org) { $Org = "plthomasva" }
     if (-not $Repo) { $Repo = "wishboard" }
@@ -85,7 +85,9 @@ try {
     if ($physicalId -and $physicalId -ne "None") {
         $managedByStack = $true
     }
-} catch {}
+} catch {
+    Write-Verbose "describe-stack-resource failed: $_"
+}
 
 # Check for existing OIDC provider in IAM to avoid duplicate error
 Show-Step "Checking for existing GitHub OIDC Provider in AWS account..."
@@ -146,7 +148,7 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
     gh auth status *>$null
     if ($LASTEXITCODE -eq 0) {
         Show-Info "GitHub CLI (gh) detected and authenticated. Configuring repository settings..."
-        
+
         # Set Secret
         gh secret set AWS_ROLE_TO_ASSUME --body "$roleArn"
         if ($LASTEXITCODE -eq 0) {
@@ -169,7 +171,7 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
         } else {
             Show-Warn "Failed to set variable AWS_STACK_NAME."
         }
-        
+
         $ghConfigured = $true
     } else {
         Show-Warn "GitHub CLI (gh) is installed but not authenticated. Run 'gh auth login' to authenticate."

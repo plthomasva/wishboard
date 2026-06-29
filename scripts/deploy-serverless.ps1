@@ -216,15 +216,17 @@ try {
                         $outputLines += $_
                         Write-Host $_
                     }
-                } catch {}
-                
+                } catch {
+                    Write-Verbose "sam deploy execution failed: $_"
+                }
+
                 if ($LASTEXITCODE -eq 0) { break }
-                
+
                 $outputString = $outputLines -join "`n"
-                
-                if ($outputString -match "ROLLBACK_COMPLETE" -or 
-                    $outputString -match "ValidationError" -or 
-                    $outputString -match "AccessDenied" -or 
+
+                if ($outputString -match "ROLLBACK_COMPLETE" -or
+                    $outputString -match "ValidationError" -or
+                    $outputString -match "AccessDenied" -or
                     $outputString -match "not authorized to perform") {
                     throw "sam deploy failed with a non-recoverable error. Aborting retries."
                 }

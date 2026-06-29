@@ -49,7 +49,7 @@ if [[ -n "$REGION" ]]; then
 fi
 
 if [[ ! "$STACK_NAME" =~ "dev" ]] && [[ "$FORCE" != "true" ]]; then
-    echo "ERROR: Attempting to delete a production stack '$STACK_NAME'. You must supply the --force flag to acknowledge deletion of all images and databases."
+    echo "ERROR: Attempting to delete a production stack '$STACK_NAME'. You must supply the --force flag to acknowledge deletion of all images and databases." >&2
     exit 1
 fi
 

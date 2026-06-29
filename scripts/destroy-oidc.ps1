@@ -34,7 +34,9 @@ if (-not $Org -or -not $Repo) {
             if (-not $Org) { $Org = $Matches[1] }
             if (-not $Repo) { $Repo = $Matches[2] }
         }
-    } catch {}
+    } catch {
+        Write-Verbose "Failed to get git remote: $_"
+    }
     if (-not $Org) { $Org = "plthomasva" }
     if (-not $Repo) { $Repo = "wishboard" }
 }
@@ -52,10 +54,10 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
     if ($LASTEXITCODE -eq 0) {
         gh secret delete AWS_ROLE_TO_ASSUME *>$null
         Show-Info "Deleted secret: AWS_ROLE_TO_ASSUME"
-        
+
         gh variable delete AWS_REGION *>$null
         Show-Info "Deleted variable: AWS_REGION"
-        
+
         gh variable delete AWS_STACK_NAME *>$null
         Show-Info "Deleted variable: AWS_STACK_NAME"
     } else {

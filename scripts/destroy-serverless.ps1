@@ -66,7 +66,9 @@ if ($StackName -notmatch "dev" -and -not $Force) {
 Show-Step "Checking for existing stack '$StackName'..."
 try {
     $stackStatus = aws cloudformation describe-stacks --stack-name $StackName @awsCommon --query "Stacks[0].StackStatus" --output text 2>$null
-} catch {}
+} catch {
+    Write-Verbose "describe-stacks failed: $_"
+}
 
 if (-not $stackStatus -or $stackStatus -eq "None") {
     Show-Info "Stack '$StackName' does not exist or is already deleted."
@@ -74,18 +76,20 @@ if (-not $stackStatus -or $stackStatus -eq "None") {
 }
 
 Show-Step "Emptying S3 buckets for stack '$StackName'..."
-function Empty-BucketIfOutput($key) {
+function Clear-BucketIfOutput($key) {
     try {
         $bucketName = aws cloudformation describe-stacks --stack-name $StackName @awsCommon --query "Stacks[0].Outputs[?OutputKey=='$key'].OutputValue | [0]" --output text 2>$null
         if ($bucketName -and $bucketName -ne "None") {
             Show-Info "Emptying s3://$bucketName..."
             aws s3 rm "s3://$bucketName" --recursive @awsCommon | Out-Null
         }
-    } catch {}
+    } catch {
+        Write-Verbose "Clear-BucketIfOutput failed: $_"
+    }
 }
 
-Empty-BucketIfOutput "FrontendBucketName"
-Empty-BucketIfOutput "ImagesBucketName"
+Clear-BucketIfOutput "FrontendBucketName"
+Clear-BucketIfOutput "ImagesBucketName"
 
 Show-Step "Deleting CloudFormation stack '$StackName'..."
 $deleteArgs = @("delete", "--stack-name", $StackName, "--no-prompts")
