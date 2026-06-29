@@ -137,11 +137,9 @@ Resources:
               - Effect: Allow
                 Action:
                   - apigateway:POST
+                  - apigateway:PUT
                 Resource:
                   - !Sub "arn:aws:apigateway:${AWS::Region}::/apis"
-                Condition:
-                  StringEquals:
-                    "aws:RequestTag/Project": !Ref GitHubRepo
 
               # 5b. API Gateway Management
               - Effect: Allow
