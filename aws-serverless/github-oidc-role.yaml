@@ -186,6 +186,7 @@ Resources:
                   - elasticfilesystem:DescribeFileSystems
                   - elasticfilesystem:DescribeMountTargets
                   - elasticfilesystem:DescribeAccessPoints
+                  - elasticfilesystem:DescribeReplicationConfigurations
                 Resource: "*"
 
               # 7a. CloudFront Distribution Creation
