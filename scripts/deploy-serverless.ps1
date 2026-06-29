@@ -210,8 +210,25 @@ try {
             # guided run, which is interactive.
             $maxAttempts = if ($useGuided) { 1 } else { 4 }
             for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-                sam @deployArgs
+                $outputLines = @()
+                try {
+                    sam @deployArgs *>&1 | ForEach-Object {
+                        $outputLines += $_
+                        Write-Host $_
+                    }
+                } catch {}
+                
                 if ($LASTEXITCODE -eq 0) { break }
+                
+                $outputString = $outputLines -join "`n"
+                
+                if ($outputString -match "ROLLBACK_COMPLETE" -or 
+                    $outputString -match "ValidationError" -or 
+                    $outputString -match "AccessDenied" -or 
+                    $outputString -match "not authorized to perform") {
+                    throw "sam deploy failed with a non-recoverable error. Aborting retries."
+                }
+
                 if ($attempt -ge $maxAttempts) { throw "sam deploy failed after $attempt attempt(s)." }
                 Show-Info "sam deploy attempt $attempt failed (exit $LASTEXITCODE); likely a transient upload error. Retrying in 5s..."
                 Start-Sleep -Seconds 5

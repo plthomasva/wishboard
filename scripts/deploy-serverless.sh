@@ -195,9 +195,21 @@ if ! $FRONTEND_ONLY; then
     # (already-uploaded artifacts are skipped).
     attempt=1
     while true; do
-        if ( cd "$SERVERLESS_DIR" && sam "${DEPLOY_ARGS[@]}" ); then
+        set +e
+        # Use tee to stream output to console while capturing to a variable
+        OUTPUT=$(cd "$SERVERLESS_DIR" && sam "${DEPLOY_ARGS[@]}" 2>&1 | tee /dev/tty)
+        EXIT_CODE=${PIPESTATUS[0]}
+        set -e
+        
+        if [[ $EXIT_CODE -eq 0 ]]; then
             break
         fi
+        
+        if echo "$OUTPUT" | grep -qE "ROLLBACK_COMPLETE|ValidationError|AccessDenied|not authorized to perform"; then
+            echo "ERROR: sam deploy failed with a non-recoverable error. Aborting retries." >&2
+            exit 1
+        fi
+        
         if [[ $attempt -ge $MAX_DEPLOY_ATTEMPTS ]]; then
             echo "sam deploy failed after ${attempt} attempt(s)." >&2
             exit 1
