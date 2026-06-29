@@ -72,6 +72,7 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/wishboard-serverless*/*"
                   - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/aws-sam-cli-managed-default/*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31"
 
               # 2. S3 Bucket Management (SAM source artifacts, frontend assets, images)
               - Effect: Allow

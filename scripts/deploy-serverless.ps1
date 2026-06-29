@@ -197,7 +197,7 @@ try {
             $acmCertificateArn = $env:ACM_CERTIFICATE_ARN
             if (-not $acmCertificateArn) { $acmCertificateArn = Get-OverrideValue "AcmCertificateArn" $tomlOverrides }
 
-            $mergedOverrides = "ProjectName=`"$projectName`" DomainName=`"$domainName`" HostedZoneId=`"$hostedZoneId`" AcmCertificateArn=`"$acmCertificateArn`" NodeEnv=`"$nodeEnvValue`""
+            $mergedOverrides = "ProjectName='$projectName' DomainName='$domainName' HostedZoneId='$hostedZoneId' AcmCertificateArn='$acmCertificateArn' NodeEnv='$nodeEnvValue'"
             $deployArgs += @("--parameter-overrides", $mergedOverrides, "--tags", "Project=$projectName")
 
             # Let boto retry transient S3/network errors while uploading artifacts.
