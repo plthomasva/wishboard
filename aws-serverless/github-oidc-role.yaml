@@ -149,12 +149,11 @@ Resources:
                   - apigateway:DELETE
                   - apigateway:PATCH
                   - apigateway:POST
+                  - apigateway:TagResource
+                  - apigateway:UntagResource
                 Resource:
                   - !Sub "arn:aws:apigateway:${AWS::Region}::/apis/*"
                   - !Sub "arn:aws:apigateway:${AWS::Region}::/tags/*"
-                Condition:
-                  StringEquals:
-                    "aws:ResourceTag/Project": !Ref GitHubRepo
 
               # 6a. EFS File System & Access Point Creation
               - Effect: Allow
