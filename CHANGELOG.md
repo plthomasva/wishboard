@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.9.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.9.0...wishboard-v1.9.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* enable deployment from GitLab runners ([#92](https://github.com/plthomasva/wishboard/issues/92)) ([e1efaff](https://github.com/plthomasva/wishboard/commit/e1efaffd9a7098ff2a5f87f4d37b71e46399d2d7))
+* query API and WebSocket log groups in parallel, remove invalid filter pattern ([fbd8609](https://github.com/plthomasva/wishboard/commit/fbd860931e41bb7a4b26785c5ecc18d34a208ceb))
+* seed default rules on EFS if existing rules file is empty or invalid ([#93](https://github.com/plthomasva/wishboard/issues/93)) ([6b54587](https://github.com/plthomasva/wishboard/commit/6b545870e1041b4938ca8b2061ae905f56f30caf))
+
 ## [1.9.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.8.1...wishboard-v1.9.0) (2026-06-28)
 
 
