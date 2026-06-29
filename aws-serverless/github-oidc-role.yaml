@@ -92,6 +92,8 @@ Resources:
                   - s3:PutBucketVersioning
                   - s3:PutEncryptionConfiguration
                   - s3:PutLifecycleConfiguration
+                  - s3:GetBucketTagging
+                  - s3:PutBucketTagging
                 Resource:
                   - "arn:aws:s3:::wishboard-*"
                   - "arn:aws:s3:::aws-sam-cli-managed-default-*"
@@ -108,6 +110,9 @@ Resources:
                   - iam:AttachRolePolicy
                   - iam:DetachRolePolicy
                   - iam:PassRole
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:ListRoleTags
                 Resource:
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/wishboard-*"
 
@@ -173,6 +178,7 @@ Resources:
                   - elasticfilesystem:DeleteMountTarget
                   - elasticfilesystem:DeleteAccessPoint
                   - elasticfilesystem:TagResource
+                  - elasticfilesystem:UntagResource
                 Resource:
                   - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*"
                   - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*"
@@ -206,6 +212,8 @@ Resources:
                   - cloudfront:UpdateDistribution
                   - cloudfront:CreateInvalidation
                   - cloudfront:GetDistributionConfig
+                  - cloudfront:TagResource
+                  - cloudfront:UntagResource
                 Resource:
                   - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/*"
                 Condition:
@@ -330,6 +338,8 @@ Resources:
                   - logs:DeleteLogGroup
                   - logs:DescribeLogGroups
                   - logs:PutRetentionPolicy
+                  - logs:TagResource
+                  - logs:UntagResource
                 Resource:
                   - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/wishboard-*"
 
@@ -339,8 +349,10 @@ Resources:
                   - route53:ChangeResourceRecordSets
                   - route53:GetHostedZone
                   - route53:ListResourceRecordSets
+                  - route53:GetChange
                 Resource:
                   - !Sub "arn:aws:route53:::hostedzone/*"
+                  - !Sub "arn:aws:route53:::change/*"
 
               # 10b. ACM Certificate Configuration
               - Effect: Allow
@@ -349,6 +361,7 @@ Resources:
                   - acm:DescribeCertificate
                   - acm:DeleteCertificate
                   - acm:AddTagsToCertificate
+                  - acm:RemoveTagsFromCertificate
                 Resource:
                   - !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/*"
 
