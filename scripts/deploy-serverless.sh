@@ -196,9 +196,12 @@ if ! $FRONTEND_ONLY; then
     attempt=1
     while true; do
         set +e
-        # Use tee to stream output to console while capturing to a variable
-        OUTPUT=$(cd "$SERVERLESS_DIR" && sam "${DEPLOY_ARGS[@]}" 2>&1 | tee /dev/tty)
+        OUTPUT_FILE=$(mktemp)
+        # Use tee to stream output to console while capturing to a temporary file
+        ( cd "$SERVERLESS_DIR" && sam "${DEPLOY_ARGS[@]}" 2>&1 ) | tee "$OUTPUT_FILE"
         EXIT_CODE=${PIPESTATUS[0]}
+        OUTPUT=$(cat "$OUTPUT_FILE")
+        rm -f "$OUTPUT_FILE"
         set -e
         
         if [[ $EXIT_CODE -eq 0 ]]; then
