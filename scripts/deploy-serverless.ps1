@@ -155,6 +155,9 @@ try {
 
             # --- 4. Deploy stack ---
             $useGuided = $Guided -or (-not (Test-Path $SamConfig))
+            if ($env:CI) {
+                $useGuided = $false
+            }
             if ($useGuided) {
                 Show-Step "[4/6] Deploying stack (sam deploy --guided)..."
                 Show-Info "No samconfig.toml found or -Guided specified; starting interactive setup."
@@ -171,7 +174,8 @@ try {
                 $deployArgs += @(
                     "--no-confirm-changeset",
                     "--no-fail-on-empty-changeset",
-                    "--capabilities", "CAPABILITY_IAM"
+                    "--capabilities", "CAPABILITY_IAM",
+                    "--resolve-s3"
                 )
             }
             $deployArgs += $awsCommon

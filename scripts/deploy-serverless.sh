@@ -152,6 +152,9 @@ if ! $FRONTEND_ONLY; then
     # --- 4. Deploy stack ---
     USE_GUIDED=false
     if $GUIDED || [[ ! -f "$SAM_CONFIG" ]]; then USE_GUIDED=true; fi
+    if [[ -n "${CI:-}" ]]; then
+        USE_GUIDED=false
+    fi
 
     DEPLOY_ARGS=(deploy --stack-name "$STACK_NAME")
     MAX_DEPLOY_ATTEMPTS=4
@@ -162,7 +165,7 @@ if ! $FRONTEND_ONLY; then
         MAX_DEPLOY_ATTEMPTS=1   # interactive; don't auto-retry
     else
         step "[4/6] Deploying stack (sam deploy)..."
-        DEPLOY_ARGS+=(--no-confirm-changeset --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM)
+        DEPLOY_ARGS+=(--no-confirm-changeset --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM --resolve-s3)
     fi
     DEPLOY_ARGS+=("${AWS_COMMON[@]}")
 
