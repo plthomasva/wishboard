@@ -248,9 +248,6 @@ Resources:
                   - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
                   - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*"
                   - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*"
-                Condition:
-                  StringEquals:
-                    "aws:RequestTag/Project": !Ref GitHubRepo
 
               # 8b. Taggable EC2 Resource Deletion / Modification
               - Effect: Allow
