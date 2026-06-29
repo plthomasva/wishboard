@@ -195,4 +195,65 @@ rules:
     expect(rulesManager.updateRule('some-id', { trigger_value: 'val' })).toBe(false);
     expect(rulesManager.deleteRule('some-id')).toBe(false);
   });
+
+  describe('auto-seeding rules', () => {
+    const originalEnv = process.env.NODE_ENV;
+    const defaultRulesVal = fs.readFileSync(path.resolve(__dirname, '../../data/rules.yaml'), 'utf8');
+
+    beforeEach(() => {
+      process.env.NODE_ENV = 'development';
+    });
+
+    afterEach(() => {
+      process.env.NODE_ENV = originalEnv;
+    });
+
+    it('seeds rules if the target file does not exist', async () => {
+      if (fs.existsSync(rulesPath)) {
+        fs.unlinkSync(rulesPath);
+      }
+      
+      vi.resetModules();
+      await import('./rulesManager.js');
+      
+      expect(fs.existsSync(rulesPath)).toBe(true);
+      const content = fs.readFileSync(rulesPath, 'utf8');
+      expect(content).toEqual(defaultRulesVal);
+    });
+
+    it('seeds rules if the target file is empty', async () => {
+      fs.writeFileSync(rulesPath, '', 'utf8');
+      
+      vi.resetModules();
+      await import('./rulesManager.js');
+      
+      expect(fs.existsSync(rulesPath)).toBe(true);
+      const content = fs.readFileSync(rulesPath, 'utf8');
+      expect(content).toEqual(defaultRulesVal);
+    });
+
+    it('seeds rules if the target file has zero rules', async () => {
+      fs.writeFileSync(rulesPath, 'rules: []\n', 'utf8');
+      
+      vi.resetModules();
+      await import('./rulesManager.js');
+      
+      expect(fs.existsSync(rulesPath)).toBe(true);
+      const content = fs.readFileSync(rulesPath, 'utf8');
+      expect(content).toEqual(defaultRulesVal);
+    });
+
+    it('does not overwrite rules if the target file has rules', async () => {
+      const customRules = 'rules:\n  - id: custom-rule\n    rule_type: expansion\n    trigger_attribute: role\n    trigger_value: custom\n    target_attribute: role\n    target_value: custom-val\n';
+      fs.writeFileSync(rulesPath, customRules, 'utf8');
+      
+      vi.resetModules();
+      await import('./rulesManager.js');
+      
+      expect(fs.existsSync(rulesPath)).toBe(true);
+      const content = fs.readFileSync(rulesPath, 'utf8');
+      expect(content).toEqual(customRules);
+    });
+  });
 });
+

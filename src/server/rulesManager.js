@@ -12,15 +12,48 @@ const rulesPath = process.env.RULES_PATH || (process.env.NODE_ENV === 'test'
   ? path.join(dataDir, 'rules.test.yaml') 
   : defaultRulesPath);
 
-if (process.env.RULES_PATH && process.env.NODE_ENV !== 'test' && !fs.existsSync(rulesPath) && fs.existsSync(defaultRulesPath)) {
-  try {
-    fs.mkdirSync(path.dirname(rulesPath), { recursive: true });
-    fs.copyFileSync(defaultRulesPath, rulesPath);
-    logger.info(`Initialized EFS rules file by copying default rules from ${defaultRulesPath} to ${rulesPath}`);
-  } catch (err) {
-    logger.error('Failed to copy default rules to EFS:', err.message);
+const ensureRulesSeeded = () => {
+  if (!process.env.RULES_PATH || process.env.NODE_ENV === 'test') {
+    return;
   }
-}
+
+  let shouldSeed = false;
+
+  if (!fs.existsSync(rulesPath)) {
+    logger.info(`Rules file not found at ${rulesPath}. Seeding default rules.`);
+    shouldSeed = true;
+  } else {
+    try {
+      const content = fs.readFileSync(rulesPath, 'utf8').trim();
+      if (!content) {
+        logger.info(`Rules file at ${rulesPath} is empty. Seeding default rules.`);
+        shouldSeed = true;
+      } else {
+        const parsed = YAML.parse(content);
+        if (!parsed || !Array.isArray(parsed.rules) || parsed.rules.length === 0) {
+          logger.info(`Rules file at ${rulesPath} has zero or missing rules array. Seeding default rules.`);
+          shouldSeed = true;
+        }
+      }
+    } catch (err) {
+      logger.warn(`Rules file at ${rulesPath} is corrupt or unparseable: ${err.message}. Seeding default rules.`);
+      shouldSeed = true;
+    }
+  }
+
+  if (shouldSeed && fs.existsSync(defaultRulesPath)) {
+    try {
+      fs.mkdirSync(path.dirname(rulesPath), { recursive: true });
+      fs.copyFileSync(defaultRulesPath, rulesPath);
+      logger.info(`Successfully seeded rules file from ${defaultRulesPath} to ${rulesPath}`);
+    } catch (err) {
+      logger.error('Failed to seed default rules to EFS:', err.message);
+    }
+  }
+};
+
+ensureRulesSeeded();
+
 
 let rulesCache = [];
 let yamlDoc = null;
