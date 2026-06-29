@@ -75,19 +75,32 @@ if (-not $accountId -or $accountId -eq "None") {
 Show-Info "Authenticated to AWS Account: $accountId"
 Show-Info "Target Deployment Region: $Region"
 
+# Deploy OIDC setup stack
+$stackName = "$Repo-github-oidc-setup"
+
+# Check if OIDC provider is already managed by this stack to avoid deleting it on updates
+$managedByStack = $false
+try {
+    $physicalId = aws cloudformation describe-stack-resource --stack-name $stackName --logical-resource-id "GithubOidcProvider" --query "StackResourceDetail.PhysicalResourceId" --output text 2>$null
+    if ($physicalId -and $physicalId -ne "None") {
+        $managedByStack = $true
+    }
+} catch {}
+
 # Check for existing OIDC provider in IAM to avoid duplicate error
 Show-Step "Checking for existing GitHub OIDC Provider in AWS account..."
 $oidcArn = aws iam list-open-id-connect-providers --query "OpenIDConnectProviderList[?contains(Arn, 'token.actions.githubusercontent.com')].Arn | [0]" --output text
 if ($oidcArn) { $oidcArn = $oidcArn.Trim() }
-if ($LASTEXITCODE -ne 0 -or -not $oidcArn -or $oidcArn -eq "None" -or $oidcArn -eq "") {
+
+if ($managedByStack) {
+    $oidcArn = ""
+    Show-Info "GitHub OIDC provider is managed by this stack. Keeping it."
+} elseif ($LASTEXITCODE -ne 0 -or -not $oidcArn -or $oidcArn -eq "None" -or $oidcArn -eq "") {
     $oidcArn = ""
     Show-Info "No existing GitHub OIDC provider found. It will be created."
 } else {
-    Show-Info "Found existing GitHub OIDC provider: $oidcArn"
+    Show-Info "Found existing external GitHub OIDC provider: $oidcArn"
 }
-
-# Deploy OIDC setup stack
-$stackName = "$Repo-github-oidc-setup"
 Show-Step "Deploying CloudFormation stack: $stackName..."
 
 $parameters = @(

@@ -67,19 +67,30 @@ ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/nu
 info "Authenticated to AWS Account: ${ACCOUNT_ID}"
 info "Target Deployment Region: ${REGION}"
 
+# Deploy OIDC setup stack
+STACK_NAME="${REPO}-github-oidc-setup"
+
+# Check if OIDC provider is already managed by this stack to avoid deleting it on updates
+MANAGED_BY_STACK=false
+PHYSICAL_ID=$(aws cloudformation describe-stack-resource --stack-name "$STACK_NAME" --logical-resource-id "GithubOidcProvider" --query "StackResourceDetail.PhysicalResourceId" --output text 2>/dev/null || echo "")
+if [[ -n "$PHYSICAL_ID" && "$PHYSICAL_ID" != "None" ]]; then
+    MANAGED_BY_STACK=true
+fi
+
 # Check for existing OIDC provider in IAM to avoid duplicate error
 step "Checking for existing GitHub OIDC Provider in AWS account..."
 OIDC_ARN=$(aws iam list-open-id-connect-providers --query "OpenIDConnectProviderList[?contains(Arn, 'token.actions.githubusercontent.com')].Arn | [0]" --output text 2>/dev/null || echo "")
 OIDC_ARN=$(echo "$OIDC_ARN" | tr -d '\r')
-if [[ "$OIDC_ARN" == "None" || -z "$OIDC_ARN" ]]; then
+
+if $MANAGED_BY_STACK; then
+    OIDC_ARN=""
+    info "GitHub OIDC provider is managed by this stack. Keeping it."
+elif [[ "$OIDC_ARN" == "None" || -z "$OIDC_ARN" ]]; then
     OIDC_ARN=""
     info "No existing GitHub OIDC provider found. It will be created."
 else
-    info "Found existing GitHub OIDC provider: ${OIDC_ARN}"
+    info "Found existing external GitHub OIDC provider: ${OIDC_ARN}"
 fi
-
-# Deploy OIDC setup stack
-STACK_NAME="${REPO}-github-oidc-setup"
 step "Deploying CloudFormation stack: ${STACK_NAME}..."
 aws cloudformation deploy \
     --template-file aws-serverless/github-oidc-role.yaml \
