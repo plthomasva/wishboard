@@ -89,6 +89,14 @@ function Get-TomlValue($key) {
     return ""
 }
 
+# Extract a key's value from a space-separated Key="Value" string.
+function Get-OverrideValue($key, $overrides) {
+    if ($overrides -match "$key=`"([^`"]*)`"") {
+        return $Matches[1]
+    }
+    return ""
+}
+
 # --- Resolve configuration (CLI args win, then samconfig.toml, then defaults) ---
 if (-not $StackName) { $StackName = Get-TomlValue "stack_name" }
 if (-not $StackName) { $StackName = "wishboard-serverless" }
@@ -147,6 +155,9 @@ try {
 
             # --- 4. Deploy stack ---
             $useGuided = $Guided -or (-not (Test-Path $SamConfig))
+            if ($env:CI) {
+                $useGuided = $false
+            }
             if ($useGuided) {
                 Show-Step "[4/6] Deploying stack (sam deploy --guided)..."
                 Show-Info "No samconfig.toml found or -Guided specified; starting interactive setup."
@@ -163,13 +174,31 @@ try {
                 $deployArgs += @(
                     "--no-confirm-changeset",
                     "--no-fail-on-empty-changeset",
-                    "--capabilities", "CAPABILITY_IAM"
+                    "--capabilities", "CAPABILITY_IAM",
+                    "--resolve-s3"
                 )
             }
             $deployArgs += $awsCommon
 
             $nodeEnvValue = if ($Mode -eq "dev") { "development" } else { "production" }
-            $deployArgs += @("--parameter-overrides", "NodeEnv=$nodeEnvValue")
+
+            $tomlOverrides = Get-TomlValue "parameter_overrides"
+            $projectName = $env:PROJECT_NAME
+            if (-not $projectName) { $projectName = Get-OverrideValue "ProjectName" $tomlOverrides }
+            if (-not $projectName) { $projectName = "wishboard" }
+            if ($Mode -eq "dev" -and $projectName -eq "wishboard") {
+                $projectName = "wishboard-dev"
+            }
+
+            $domainName = $env:DOMAIN_NAME
+            if (-not $domainName) { $domainName = Get-OverrideValue "DomainName" $tomlOverrides }
+            $hostedZoneId = $env:HOSTED_ZONE_ID
+            if (-not $hostedZoneId) { $hostedZoneId = Get-OverrideValue "HostedZoneId" $tomlOverrides }
+            $acmCertificateArn = $env:ACM_CERTIFICATE_ARN
+            if (-not $acmCertificateArn) { $acmCertificateArn = Get-OverrideValue "AcmCertificateArn" $tomlOverrides }
+
+            $mergedOverrides = "ProjectName='$projectName' DomainName='$domainName' HostedZoneId='$hostedZoneId' AcmCertificateArn='$acmCertificateArn' NodeEnv='$nodeEnvValue'"
+            $deployArgs += @("--parameter-overrides", $mergedOverrides, "--tags", "Project=wishboard")
 
             # Let boto retry transient S3/network errors while uploading artifacts.
             $env:AWS_MAX_ATTEMPTS = "6"
@@ -181,8 +210,27 @@ try {
             # guided run, which is interactive.
             $maxAttempts = if ($useGuided) { 1 } else { 4 }
             for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-                sam @deployArgs
+                $outputLines = @()
+                try {
+                    sam @deployArgs *>&1 | ForEach-Object {
+                        $outputLines += $_
+                        Write-Host $_
+                    }
+                } catch {
+                    Write-Verbose "sam deploy execution failed: $_"
+                }
+
                 if ($LASTEXITCODE -eq 0) { break }
+
+                $outputString = $outputLines -join "`n"
+
+                if ($outputString -match "ROLLBACK_COMPLETE" -or
+                    $outputString -match "ValidationError" -or
+                    $outputString -match "AccessDenied" -or
+                    $outputString -match "not authorized to perform") {
+                    throw "sam deploy failed with a non-recoverable error. Aborting retries."
+                }
+
                 if ($attempt -ge $maxAttempts) { throw "sam deploy failed after $attempt attempt(s)." }
                 Show-Info "sam deploy attempt $attempt failed (exit $LASTEXITCODE); likely a transient upload error. Retrying in 5s..."
                 Start-Sleep -Seconds 5

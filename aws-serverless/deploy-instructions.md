@@ -41,11 +41,26 @@ Before starting, make sure you have the following installed and configured on yo
 
 ## Quick Deploy (Scripted)
 
-The fastest path is the bundled deploy scripts, which run every step below in
-order (frontend build → `sam build` → native-binary post-build → `sam deploy` →
-S3 upload → CloudFront invalidation). The first run with no `samconfig.toml` (or
-with `--guided`/`-Guided`) walks you through the interactive SAM configuration;
-subsequent runs reuse it.
+The fastest path to manual deployment is using the bundled deploy scripts. However, for a fully automated CI/CD pipeline, you can use the **GitHub Actions Deployment** workflow.
+
+### GitHub Actions Deployment (Recommended)
+
+Wishboard includes a GitHub Actions workflow that automatically builds and deploys the serverless stack on every push to the `main` branch.
+
+To enable this, you must first configure AWS OIDC (OpenID Connect) authentication to allow GitHub to deploy without long-lived credentials.
+
+1. **Run the OIDC Setup Script:**
+   ```bash
+   ./scripts/setup-oidc.sh --org <your-github-org> --repo <your-repo-name>
+   ```
+   *This creates an IAM Role in your AWS account and automatically configures the necessary Repository Secrets and Variables in your GitHub repository using the `gh` CLI.*
+
+2. **Trigger a Deployment:**
+   Push a commit to the `main` branch, or manually trigger the `Deploy Serverless` workflow from the GitHub Actions tab.
+
+### Local Script Deployment
+
+If you prefer to deploy locally, run the bundled deploy scripts, which execute every step in order (frontend build → `sam build` → native-binary post-build → `sam deploy` → S3 upload → CloudFront invalidation). The first run walks you through interactive SAM configuration; subsequent runs reuse it.
 
 ```bash
 # macOS / Linux / Git Bash
@@ -162,3 +177,22 @@ If you modify any frontend files:
 - Access your board at the custom domain URL (if configured) or the default CloudFront URL (e.g. `https://dxxxxxxxxxxxxx.cloudfront.net`).
 - File uploads are securely and automatically uploaded to S3 and served directly via CloudFront at `/images/*`.
 - WebSockets operate seamlessly at `/socket.io/*` using API Gateway WebSockets, with connection states persisted automatically inside the SQLite database on EFS.
+
+---
+
+## Uninstalling / Teardown
+
+If you want to completely remove Wishboard from your AWS account to stop incurring charges, you must run the teardown scripts. CloudFormation will fail to delete S3 buckets if they contain data, so the bundled script automates emptying the buckets before deletion.
+
+> [!WARNING]
+> This action is permanent. All uploaded images and database records will be permanently deleted. **A `-Force` flag is required when deleting a production stack.**
+
+1. **Destroy the Application Stack:**
+   ```bash
+   ./scripts/destroy-serverless.sh --force
+   ```
+
+2. **Destroy the OIDC Deployment Role (Optional):**
+   ```bash
+   ./scripts/destroy-oidc.sh
+   ```

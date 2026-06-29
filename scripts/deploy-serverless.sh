@@ -90,6 +90,13 @@ toml_value() {
         | sed -E "s/^[^=]*=[[:space:]]*//; s/^\"//; s/\"[[:space:]]*$//"
 }
 
+# Extract a key's value from a space-separated Key="Value" string.
+extract_override() {
+    local key="$1"
+    local overrides="$2"
+    echo "$overrides" | sed -nE "s/.*${key}=\"([^\"]*)\".*/\1/p"
+}
+
 # --- Resolve configuration (CLI args win, then samconfig.toml, then defaults) ---
 [[ -n "$STACK_NAME" ]] || STACK_NAME="$(toml_value stack_name)"
 [[ -n "$STACK_NAME" ]] || STACK_NAME="wishboard-serverless"
@@ -145,6 +152,9 @@ if ! $FRONTEND_ONLY; then
     # --- 4. Deploy stack ---
     USE_GUIDED=false
     if $GUIDED || [[ ! -f "$SAM_CONFIG" ]]; then USE_GUIDED=true; fi
+    if [[ -n "${CI:-}" ]]; then
+        USE_GUIDED=false
+    fi
 
     DEPLOY_ARGS=(deploy --stack-name "$STACK_NAME")
     MAX_DEPLOY_ATTEMPTS=4
@@ -155,13 +165,26 @@ if ! $FRONTEND_ONLY; then
         MAX_DEPLOY_ATTEMPTS=1   # interactive; don't auto-retry
     else
         step "[4/6] Deploying stack (sam deploy)..."
-        DEPLOY_ARGS+=(--no-confirm-changeset --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM)
+        DEPLOY_ARGS+=(--no-confirm-changeset --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM --resolve-s3)
     fi
     DEPLOY_ARGS+=("${AWS_COMMON[@]}")
 
     NODE_ENV_VAL="production"
     if [[ "$MODE" == "dev" ]]; then NODE_ENV_VAL="development"; fi
-    DEPLOY_ARGS+=(--parameter-overrides "NodeEnv=${NODE_ENV_VAL}")
+
+    TOML_OVERRIDES="$(toml_value parameter_overrides)"
+    PROJECT_NAME="${PROJECT_NAME:-$(extract_override ProjectName "$TOML_OVERRIDES")}"
+    [[ -n "$PROJECT_NAME" ]] || PROJECT_NAME="wishboard"
+    if [[ "$MODE" == "dev" && "$PROJECT_NAME" == "wishboard" ]]; then
+        PROJECT_NAME="wishboard-dev"
+    fi
+
+    DOMAIN_NAME="${DOMAIN_NAME:-$(extract_override DomainName "$TOML_OVERRIDES")}"
+    HOSTED_ZONE_ID="${HOSTED_ZONE_ID:-$(extract_override HostedZoneId "$TOML_OVERRIDES")}"
+    ACM_CERTIFICATE_ARN="${ACM_CERTIFICATE_ARN:-$(extract_override AcmCertificateArn "$TOML_OVERRIDES")}"
+
+    MERGED_OVERRIDES="ProjectName=\"${PROJECT_NAME}\" DomainName=\"${DOMAIN_NAME}\" HostedZoneId=\"${HOSTED_ZONE_ID}\" AcmCertificateArn=\"${ACM_CERTIFICATE_ARN}\" NodeEnv=\"${NODE_ENV_VAL}\""
+    DEPLOY_ARGS+=(--parameter-overrides "$MERGED_OVERRIDES" --tags "Project=wishboard")
 
     # Let boto retry transient S3/network errors while uploading artifacts.
     export AWS_MAX_ATTEMPTS=6
@@ -172,9 +195,24 @@ if ! $FRONTEND_ONLY; then
     # (already-uploaded artifacts are skipped).
     attempt=1
     while true; do
-        if ( cd "$SERVERLESS_DIR" && sam "${DEPLOY_ARGS[@]}" ); then
+        set +e
+        OUTPUT_FILE=$(mktemp)
+        # Use tee to stream output to console while capturing to a temporary file
+        ( cd "$SERVERLESS_DIR" && sam "${DEPLOY_ARGS[@]}" 2>&1 ) | tee "$OUTPUT_FILE"
+        EXIT_CODE=${PIPESTATUS[0]}
+        OUTPUT=$(cat "$OUTPUT_FILE")
+        rm -f "$OUTPUT_FILE"
+        set -e
+        
+        if [[ $EXIT_CODE -eq 0 ]]; then
             break
         fi
+        
+        if echo "$OUTPUT" | grep -qE "ROLLBACK_COMPLETE|ValidationError|AccessDenied|not authorized to perform"; then
+            echo "ERROR: sam deploy failed with a non-recoverable error. Aborting retries." >&2
+            exit 1
+        fi
+        
         if [[ $attempt -ge $MAX_DEPLOY_ATTEMPTS ]]; then
             echo "sam deploy failed after ${attempt} attempt(s)." >&2
             exit 1
@@ -212,6 +250,36 @@ if [[ -z "$FRONTEND_BUCKET" ]]; then
     exit 1
 fi
 info "Frontend bucket: ${FRONTEND_BUCKET}"
+
+if [[ -n "$DIST_ID" ]]; then
+    step "Configuring CloudFront ID on ApiFunction environment variables..."
+    LAMBDA_NAME="$(aws cloudformation describe-stack-resource --stack-name "$STACK_NAME" --logical-resource-id "ApiFunction" "${AWS_COMMON[@]}" --query "StackResourceDetail.PhysicalResourceId" --output text 2>/dev/null || echo "")"
+    if [[ -n "$LAMBDA_NAME" && "$LAMBDA_NAME" != "None" ]]; then
+        CONFIG_JSON="$(aws lambda get-function-configuration --function-name "$LAMBDA_NAME" "${AWS_COMMON[@]}" 2>/dev/null || echo "")"
+        if [[ -n "$CONFIG_JSON" ]]; then
+            NEW_ENV_JSON="$(node -e "
+                try {
+                    const config = $CONFIG_JSON;
+                    const vars = config.Environment?.Variables || {};
+                    if (vars.CLOUDFRONT_DISTRIBUTION_ID !== '$DIST_ID') {
+                        vars.CLOUDFRONT_DISTRIBUTION_ID = '$DIST_ID';
+                        console.log(JSON.stringify({ Variables: vars }));
+                    }
+                } catch (e) {}
+            ")"
+            if [[ -n "$NEW_ENV_JSON" ]]; then
+                aws lambda update-function-configuration --function-name "$LAMBDA_NAME" --environment "$NEW_ENV_JSON" "${AWS_COMMON[@]}" >/dev/null
+                info "Successfully configured CLOUDFRONT_DISTRIBUTION_ID=$DIST_ID on $LAMBDA_NAME"
+            else
+                info "CLOUDFRONT_DISTRIBUTION_ID is already up to date ($DIST_ID)"
+            fi
+        else
+            info "Warning: Could not dynamically set CLOUDFRONT_DISTRIBUTION_ID: Failed to fetch Lambda configuration"
+        fi
+    else
+        info "Warning: Could not dynamically set CLOUDFRONT_DISTRIBUTION_ID: Failed to resolve ApiFunction physical resource ID"
+    fi
+fi
 
 # --- 6. Upload frontend + invalidate CloudFront ---
 if $SKIP_FRONTEND_UPLOAD; then
