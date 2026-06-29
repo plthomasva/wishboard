@@ -12,7 +12,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
   /** Whether the backend is running in AWS serverless (Lambda) mode */
   const [isServerlessMode, setIsServerlessMode] = useState<boolean | null>(null);
 
-  const logsEndRef = useRef<HTMLPreElement>(null);
+  const logsEndRef = useRef<HTMLDivElement>(null);
   const { socket } = useWebSocket();
 
   // Detect deployment mode from /api/config
@@ -38,18 +38,83 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadLogs(); }, [refreshCounter]);
 
-  const displayLogs = useMemo(() => {
+  const parsedLogs = useMemo(() => {
     const logsString = rawLogs || '';
-    if (!filterRepeating) return logsString;
-    return logsString
-      .split('\n')
-      .filter(line => !line.includes('/api/admin/logs') && !line.includes('/api/wishes/random') && !line.includes('/api/admin/local-metrics'))
-      .join('\n');
+    if (logsString === 'Failed to load logs.') {
+      return [{
+        id: 'error-load',
+        prefix: '',
+        timestamp: '',
+        level: 'error' as const,
+        message: 'Failed to load logs.',
+        raw: 'Failed to load logs.'
+      }];
+    }
+    const lines = logsString.split('\n');
+    const filteredLines = filterRepeating
+      ? lines.filter(line => !line.includes('/api/admin/logs') && !line.includes('/api/wishes/random') && !line.includes('/api/admin/local-metrics'))
+      : lines;
+
+    const ansiRegex = /(\u001b)?\[[0-9;]*m/g;
+    const logRegex = /^(\[WS\]\s*)?(?:\[([\d\s:-]+)\]\s*)?(\w+):\s*(.*)$/;
+
+    return filteredLines.map((line, idx) => {
+      const cleanLine = line.replace(ansiRegex, '').trim();
+      if (!cleanLine) {
+        return {
+          id: `${idx}-empty`,
+          prefix: '',
+          timestamp: '',
+          level: 'other' as const,
+          message: '',
+          raw: ''
+        };
+      }
+
+      const match = cleanLine.match(logRegex);
+      if (match) {
+        const prefix = match[1]?.trim() || '';
+        const timestamp = match[2]?.trim() || '';
+        const rawLevel = match[3]?.trim().toLowerCase() || 'other';
+        const message = match[4] || '';
+
+        let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
+        if (rawLevel === 'info') level = 'info';
+        else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
+        else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
+        else if (rawLevel === 'debug') level = 'debug';
+
+        return {
+          id: `${idx}-${timestamp}-${message.slice(0, 10)}`,
+          prefix,
+          timestamp,
+          level,
+          message,
+          raw: cleanLine
+        };
+      }
+
+      let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
+      const cleanLower = cleanLine.toLowerCase();
+      if (cleanLower.includes('error') || cleanLower.includes('err:')) level = 'error';
+      else if (cleanLower.includes('warn') || cleanLower.includes('warning:')) level = 'warn';
+      else if (cleanLower.includes('info:')) level = 'info';
+      else if (cleanLower.includes('debug:')) level = 'debug';
+
+      return {
+        id: `${idx}-fallback`,
+        prefix: cleanLine.startsWith('[WS]') ? '[WS]' : '',
+        timestamp: '',
+        level,
+        message: cleanLine.startsWith('[WS]') ? cleanLine.replace(/^\[WS\]\s*/, '') : cleanLine,
+        raw: cleanLine
+      };
+    });
   }, [rawLogs, filterRepeating]);
 
   useEffect(() => {
     if (isTailing && logsEndRef.current) logsEndRef.current.scrollTop = logsEndRef.current.scrollHeight;
-  }, [displayLogs, isTailing]);
+  }, [parsedLogs, isTailing]);
 
   useEffect(() => {
     if (!socket) return;
@@ -111,9 +176,83 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
             <span>Filter repeating logs</span>
           </label>
         </div>
-        <pre ref={logsEndRef} style={{ background: '#1e1e1e', color: '#d4d4d4', padding: '12px', overflowX: 'auto', height: '400px', borderRadius: '4px', fontSize: '12px' }}>
-          {displayLogs || 'No logs available.'}
-        </pre>
+        <div 
+          ref={logsEndRef} 
+          style={{ 
+            background: '#121214', 
+            border: '1px solid #2a2a2e',
+            borderRadius: '6px',
+            padding: '12px', 
+            overflowY: 'auto', 
+            height: '400px', 
+            fontFamily: 'JetBrains Mono, Fira Code, Monaco, Consolas, monospace',
+            fontSize: '12px',
+            lineHeight: '1.5',
+            color: '#e4e4e7',
+          }}
+        >
+          {parsedLogs.length > 0 && parsedLogs.some(line => line.raw) ? (
+            parsedLogs.map((line, idx) => {
+              if (!line.raw) return null;
+
+              let levelColor = '#a1a1aa';
+              let levelBg = 'transparent';
+              if (line.level === 'info') {
+                levelColor = '#4ade80';
+              } else if (line.level === 'warn') {
+                levelColor = '#fbbf24';
+              } else if (line.level === 'error') {
+                levelColor = '#f87171';
+                levelBg = 'rgba(248, 113, 113, 0.1)';
+              } else if (line.level === 'debug') {
+                levelColor = '#60a5fa';
+              }
+
+              return (
+                <div 
+                  key={line.id || idx} 
+                  style={{ 
+                    display: 'flex', 
+                    padding: '2px 4px',
+                    borderRadius: '3px',
+                    backgroundColor: levelBg,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-all',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                    borderBottom: '1px solid #1a1a1c'
+                  }}
+                >
+                  {line.timestamp && (
+                    <span style={{ color: '#71717a', flexShrink: 0, userSelect: 'none' }}>
+                      [{line.timestamp}]
+                    </span>
+                  )}
+                  
+                  {line.prefix && (
+                    <span style={{ color: '#c084fc', fontWeight: 'bold', flexShrink: 0 }}>
+                      [{line.prefix}]
+                    </span>
+                  )}
+
+                  {line.level !== 'other' && (
+                    <span style={{ color: levelColor, fontWeight: 'bold', minWidth: '45px', display: 'inline-block', flexShrink: 0 }}>
+                      {line.level.toUpperCase()}
+                    </span>
+                  )}
+
+                  <span style={{ color: line.level === 'other' ? '#a1a1aa' : '#e4e4e7', flexGrow: 1 }}>
+                    {line.message}
+                  </span>
+                </div>
+              );
+            })
+          ) : (
+            <div style={{ color: '#71717a', textAlign: 'center', paddingTop: '180px' }}>
+              No logs available.
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
