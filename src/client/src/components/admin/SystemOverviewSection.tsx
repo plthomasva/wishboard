@@ -55,7 +55,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
       ? lines.filter(line => !line.includes('/api/admin/logs') && !line.includes('/api/wishes/random') && !line.includes('/api/admin/local-metrics'))
       : lines;
 
-    const ansiRegex = /(\u001b)?\[[0-9;]*m/g;
+    const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
     const logRegex = /^(\[WS\]\s*)?(?:\[([\d\s:-]+)\]\s*)?(\w+):\s*(.*)$/;
 
     return filteredLines.map((line, idx) => {
@@ -71,7 +71,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
         };
       }
 
-      const match = cleanLine.match(logRegex);
+      const match = logRegex.exec(cleanLine);
       if (match) {
         const prefix = match[1]?.trim() || '';
         const timestamp = match[2]?.trim() || '';
@@ -191,7 +191,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
             color: '#e4e4e7',
           }}
         >
-          {parsedLogs.length > 0 && parsedLogs.some(line => line.raw) ? (
+          {parsedLogs.some(line => line.raw) ? (
             parsedLogs.map((line, idx) => {
               if (!line.raw) return null;
 
