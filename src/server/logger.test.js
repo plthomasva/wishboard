@@ -43,4 +43,29 @@ describe('Logger', () => {
     
     process.env.NODE_ENV = originalEnv;
   });
+
+  it('enables colorize in console transport under development TTY environment', async () => {
+    const originalEnv = process.env.NODE_ENV;
+    const originalLambda = process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const originalIsTTY = process.stdout ? process.stdout.isTTY : undefined;
+
+    process.env.NODE_ENV = 'development';
+    delete process.env.AWS_LAMBDA_FUNCTION_NAME;
+    if (process.stdout) {
+      process.stdout.isTTY = true;
+    }
+
+    const logger = (await import('./logger.js')).default;
+    expect(logger).toBeDefined();
+
+    process.env.NODE_ENV = originalEnv;
+    if (originalLambda === undefined) {
+      delete process.env.AWS_LAMBDA_FUNCTION_NAME;
+    } else {
+      process.env.AWS_LAMBDA_FUNCTION_NAME = originalLambda;
+    }
+    if (process.stdout) {
+      process.stdout.isTTY = originalIsTTY;
+    }
+  });
 });
