@@ -3,7 +3,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import { io } from 'socket.io-client';
 import SystemOverviewSection from '../components/admin/SystemOverviewSection';
 
-const getMockSocket = () => (io as ReturnType<typeof vi.fn>)();
+const getMockSocket = () => (io as any)();
 
 const defaultProps = {
   authHeader: { Authorization: 'Bearer test-token' },
@@ -136,8 +136,8 @@ describe('SystemOverviewSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText(/initial log line/i)).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const sysLogHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]: [string]) => event === 'sys:log')?.[1];
+    const sysLogHandler = (socket.on as any).mock.calls
+      .find((call: any) => call[0] === 'sys:log')?.[1];
     expect(sysLogHandler).toBeDefined();
 
     act(() => {
@@ -152,8 +152,8 @@ describe('SystemOverviewSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText(/initial log line/i)).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const sysLogHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]: [string]) => event === 'sys:log')?.[1];
+    const sysLogHandler = (socket.on as any).mock.calls
+      .find((call: any) => call[0] === 'sys:log')?.[1];
 
     act(() => {
       sysLogHandler('Line alpha');
@@ -326,8 +326,8 @@ describe('SystemOverviewSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText('log line 2004')).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const sysLogHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]: [string]) => event === 'sys:log')?.[1];
+    const sysLogHandler = (socket.on as any).mock.calls
+      .find((call: any) => call[0] === 'sys:log')?.[1];
 
     act(() => {
       sysLogHandler('new live log line');
