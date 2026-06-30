@@ -3,7 +3,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import { io } from 'socket.io-client';
 import SystemOverviewSection from '../components/admin/SystemOverviewSection';
 
-const getMockSocket = () => (io as ReturnType<typeof vi.fn>)();
+const getMockSocket = () => (io as any)();
 
 const defaultProps = {
   authHeader: { Authorization: 'Bearer test-token' },
@@ -13,12 +13,12 @@ const defaultProps = {
 const mockLocalMetrics = {
   osSamples: [
     { ts: Date.now() - 10000, cpu: 12.5, heapUsed: 45.2, heapTotal: 512, rss: 110.5, load: 1.2 },
-    { ts: Date.now() - 5000, cpu: 15.0, heapUsed: 46.8, heapTotal: 512, rss: 112.1, load: 1.4 },
-    { ts: Date.now(), cpu: 18.2, heapUsed: 48.1, heapTotal: 512, rss: 115.0, load: 1.5 }
+    { ts: Date.now() - 5000, cpu: 15, heapUsed: 46.8, heapTotal: 512, rss: 112.1, load: 1.4 },
+    { ts: Date.now(), cpu: 18.2, heapUsed: 48.1, heapTotal: 512, rss: 115, load: 1.5 }
   ],
   httpSamples: [
     { ts: Date.now() - 10000, r2xx: 12, r3xx: 1, r4xx: 0, r5xx: 0, count: 13, mean: 42.5 },
-    { ts: Date.now() - 5000, r2xx: 15, r3xx: 0, r4xx: 1, r5xx: 0, count: 16, mean: 45.0 },
+    { ts: Date.now() - 5000, r2xx: 15, r3xx: 0, r4xx: 1, r5xx: 0, count: 16, mean: 45 },
     { ts: Date.now(), r2xx: 20, r3xx: 2, r4xx: 0, r5xx: 1, count: 23, mean: 50.2 }
   ],
   intervalMs: 5000,
@@ -136,8 +136,8 @@ describe('SystemOverviewSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText(/initial log line/i)).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const sysLogHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]: [string]) => event === 'sys:log')?.[1];
+    const sysLogHandler = (socket.on as any).mock.calls
+      .find((call: any) => call[0] === 'sys:log')?.[1];
     expect(sysLogHandler).toBeDefined();
 
     act(() => {
@@ -152,8 +152,8 @@ describe('SystemOverviewSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText(/initial log line/i)).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const sysLogHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]: [string]) => event === 'sys:log')?.[1];
+    const sysLogHandler = (socket.on as any).mock.calls
+      .find((call: any) => call[0] === 'sys:log')?.[1];
 
     act(() => {
       sysLogHandler('Line alpha');
@@ -239,6 +239,103 @@ describe('SystemOverviewSection WebSocket', () => {
       awsCheckbox.click();
     });
     expect(awsCheckbox.checked).toBe(false);
+  });
+
+  it('covers various log levels and fallback parsing logic', async () => {
+    mockFetch({
+      '/api/admin/logs': {
+        logs: [
+          '', // empty line
+          '[WS] [2026-01-01 12:00:00] info: WS Info msg',
+          '[2026-01-01 12:00:01] warn: Warning msg',
+          '[2026-01-01 12:00:02] warning: Warning2 msg',
+          '[2026-01-01 12:00:03] error: Error msg',
+          '[2026-01-01 12:00:04] err: Err msg',
+          '[2026-01-01 12:00:05] debug: Debug msg',
+          '[2026-01-01 12:00:06] other: Other msg',
+          'Fallback error message',
+          'Fallback warn message',
+          'Fallback warning: message',
+          'Fallback info: message',
+          'Fallback debug: message',
+          'Fallback other message',
+          '[WS] Fallback ws message'
+        ].join('\n')
+      }
+    });
+
+    render(<SystemOverviewSection {...defaultProps} />);
+    // Verify one of them shows up to confirm rendering
+    await waitFor(() => expect(screen.getByText('WS Info msg')).toBeInTheDocument());
+    expect(screen.getByText('Warning msg')).toBeInTheDocument();
+    expect(screen.getByText('Warning2 msg')).toBeInTheDocument();
+    expect(screen.getByText('Error msg')).toBeInTheDocument();
+    expect(screen.getByText('Err msg')).toBeInTheDocument();
+    expect(screen.getByText('Debug msg')).toBeInTheDocument();
+    expect(screen.getByText('Other msg')).toBeInTheDocument();
+    expect(screen.getByText('Fallback error message')).toBeInTheDocument();
+    expect(screen.getByText('Fallback warn message')).toBeInTheDocument();
+    expect(screen.getByText('Fallback warning: message')).toBeInTheDocument();
+    expect(screen.getByText('Fallback info: message')).toBeInTheDocument();
+    expect(screen.getByText('Fallback debug: message')).toBeInTheDocument();
+    expect(screen.getByText('Fallback other message')).toBeInTheDocument();
+    expect(screen.getByText('Fallback ws message')).toBeInTheDocument();
+  });
+
+  it('toggles repeating logs filter', async () => {
+    mockFetch({
+      '/api/admin/logs': {
+        logs: [
+          'Line 1',
+          'GET /api/admin/logs 200',
+          'GET /api/wishes/random 200',
+          'GET /api/admin/local-metrics 200'
+        ].join('\n')
+      }
+    });
+
+    render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText('Line 1')).toBeInTheDocument());
+    
+    // By default, repeating logs are filtered out
+    expect(screen.queryByText(/GET \/api\/admin\/logs/)).not.toBeInTheDocument();
+
+    // Toggle the filter repeating logs checkbox
+    const filterCheckbox = screen.getByLabelText(/Filter repeating logs/i) as HTMLInputElement;
+    expect(filterCheckbox.checked).toBe(true);
+
+    act(() => {
+      filterCheckbox.click();
+    });
+    expect(filterCheckbox.checked).toBe(false);
+
+    // Now repeating logs should be visible
+    await waitFor(() => expect(screen.getByText(/GET \/api\/admin\/logs/)).toBeInTheDocument());
+    expect(screen.getByText(/GET \/api\/wishes\/random/)).toBeInTheDocument();
+    expect(screen.getByText(/GET \/api\/admin\/local-metrics/)).toBeInTheDocument();
+  });
+
+  it('clips logs exceeding 2000 lines', async () => {
+    // Generate 2005 log lines
+    const initialLogs = Array.from({ length: 2005 }, (_, i) => `log line ${i}`).join('\n');
+    mockFetch({
+      '/api/admin/logs': { logs: initialLogs }
+    });
+
+    render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText('log line 2004')).toBeInTheDocument());
+
+    const socket = getMockSocket();
+    const sysLogHandler = (socket.on as any).mock.calls
+      .find((call: any) => call[0] === 'sys:log')?.[1];
+
+    act(() => {
+      sysLogHandler('new live log line');
+    });
+
+    await waitFor(() => expect(screen.getByText('new live log line')).toBeInTheDocument());
+    // Since it exceeded 2000 lines, log line 0 should be gone
+    expect(screen.queryByText('log line 0')).not.toBeInTheDocument();
   });
 });
 

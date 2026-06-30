@@ -127,6 +127,44 @@ describe('Admin routes coverage', () => {
     expect(response.body).toHaveProperty('logs');
   });
 
+  it('parses and formats logs successfully', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const logsDir = path.join(process.cwd(), 'data/logs');
+    
+    // Ensure logs directory exists
+    fs.mkdirSync(logsDir, { recursive: true });
+    
+    // Create a temporary log file
+    const testLogFile = path.join(logsDir, 'test-formatting.log');
+    const logsContent = [
+      JSON.stringify({ timestamp: '2026-01-01', level: 'info', message: 'Hello world', userId: 123 }),
+      JSON.stringify({ timestamp: '2026-01-01', level: 'warn', message: 'Warning msg' }),
+      JSON.stringify({ message: 'Only message' }),
+      'Raw non-JSON log line'
+    ].join('\n');
+    
+    fs.writeFileSync(testLogFile, logsContent, 'utf-8');
+    
+    try {
+      const token = await loginAsAdmin();
+      const response = await request(app)
+        .get('/api/admin/logs')
+        .set('Authorization', `Bearer ${token}`);
+      
+      expect(response.status).toBe(200);
+      expect(response.body.logs).toContain('[2026-01-01] info: Hello world {"userId":123}');
+      expect(response.body.logs).toContain('[2026-01-01] warn: Warning msg');
+      expect(response.body.logs).toContain('[] : Only message');
+      expect(response.body.logs).toContain('Raw non-JSON log line');
+    } finally {
+      // Clean up
+      if (fs.existsSync(testLogFile)) {
+        fs.unlinkSync(testLogFile);
+      }
+    }
+  });
+
   it('returns config successfully', async () => {
     const token = await loginAsAdmin();
     const response = await request(app)

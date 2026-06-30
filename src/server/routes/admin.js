@@ -213,8 +213,19 @@ router.get('/logs', requireAdmin, async (req, res) => {
     const newestFile = files[0];
 
     const content = fs.readFileSync(path.join(logsDir, newestFile), 'utf-8');
-    const lines = content.split('\n').filter(Boolean);
-    const lastLines = lines.slice(-500).join('\n');
+    const rawLines = content.split('\n').filter(Boolean);
+    const formattedLines = rawLines.map(line => {
+      try {
+        const parsed = JSON.parse(line);
+        const { timestamp, level, message, ...meta } = parsed;
+        const metaStr = Object.keys(meta).length ? ' ' + JSON.stringify(meta) : '';
+        return `[${timestamp || ''}] ${level || ''}: ${message || ''}${metaStr}`;
+      } catch {
+        return line;
+      }
+    });
+
+    const lastLines = formattedLines.slice(-500).join('\n');
     res.json({ logs: lastLines, fetchedAt: new Date().toISOString() });
   } catch (error) {
     console.error('Failed to read logs:', error);

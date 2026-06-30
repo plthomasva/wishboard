@@ -50,7 +50,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.use(morgan('combined', {
+const morganFormat = ':remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"';
+app.use(morgan(morganFormat, {
   stream: {
     write: (message) => logger.info(message.trim())
   }

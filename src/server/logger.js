@@ -56,7 +56,7 @@ const transports = [
   new winston.transports.Console({
     silent: process.env.NODE_ENV === 'test',
     format: winston.format.combine(
-      winston.format.colorize(),
+      ...(process.env.NODE_ENV !== 'production' && !process.env.AWS_LAMBDA_FUNCTION_NAME && process.stdout && process.stdout.isTTY ? [winston.format.colorize()] : []),
       winston.format.printf(
         /**
          * @param {Object} info
