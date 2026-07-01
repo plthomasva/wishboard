@@ -151,11 +151,11 @@ function getDeployRoleArn(stackName, region, accountId, repo, dryRun) {
     '--region', region
   ], { stdio: 'pipe' });
   
-  if (describeResult.status !== 0 || !describeResult.stdout || describeResult.stdout.trim() === 'None') {
-    logError('Failed to retrieve RoleArn output from CloudFormation stack.');
-    throw new Error('Failed to retrieve RoleArn');
+  if (describeResult.status === 0 && describeResult.stdout && describeResult.stdout.trim() !== 'None') {
+    return describeResult.stdout.trim();
   }
-  return describeResult.stdout.trim();
+  logError('Failed to retrieve RoleArn output from CloudFormation stack.');
+  throw new Error('Failed to retrieve RoleArn');
 }
 
 /**
@@ -263,9 +263,7 @@ export function destroyOidc(options) {
   logStep(`Deleting CloudFormation stack: ${stackName}...`);
   execCommand('aws', ['cloudformation', 'delete-stack', '--stack-name', stackName, '--region', region], { dryRun });
   
-  if (dryRun) {
-    // Wait command skipped in dry run
-  } else {
+  if (!dryRun) {
     execCommand('aws', ['cloudformation', 'wait', 'stack-delete-complete', '--stack-name', stackName, '--region', region]);
   }
   logInfo('Stack deleted successfully.');
