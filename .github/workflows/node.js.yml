@@ -29,7 +29,7 @@ jobs:
           cache: 'npm'
 
       - name: Cache SonarCloud packages
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
