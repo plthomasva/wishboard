@@ -1,209 +1,19 @@
 import React, { useRef, useState, useEffect } from 'react';
 import cv from '@techstark/opencv-js';
-import Tesseract from 'tesseract.js';
+import {
+  Point,
+  calculateDrawDimensions,
+  detectDocumentContour,
+  fallbackTextContour,
+  getDefaultPoly,
+  applyTemporalSmoothing,
+  processCardImage
+} from '../cardProcessor';
 
 interface WishScannerProps {
   onCapture: (content: string, imageBlob: Blob) => void;
   onCancel: () => void;
   stickerZoneHeightPercentage?: number;
-}
-
-type Point = { x: number; y: number };
-
-function calculateDrawDimensions(video: HTMLVideoElement, canvas: HTMLCanvasElement) {
-  const targetW = canvas.clientWidth;
-  const targetH = canvas.clientHeight;
-  if (canvas.width !== targetW) canvas.width = targetW;
-  if (canvas.height !== targetH) canvas.height = targetH;
-  
-  const videoRatio = video.videoWidth / video.videoHeight;
-  const canvasRatio = canvas.width / canvas.height;
-  
-  let drawW = canvas.width;
-  let drawH = canvas.height;
-  let drawX = 0;
-  let drawY = 0;
-  
-  if (videoRatio > canvasRatio) {
-      drawW = canvas.height * videoRatio;
-      drawX = (canvas.width - drawW) / 2;
-  } else {
-      drawH = canvas.width / videoRatio;
-      drawY = (canvas.height - drawH) / 2;
-  }
-  return { drawW, drawH, drawX, drawY };
-}
-
-function detectDocumentContour(video: HTMLVideoElement, processScale: number, pWidth: number, pHeight: number) {
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = pWidth;
-  tempCanvas.height = pHeight;
-  const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
-  tempCtx?.drawImage(video, 0, 0, pWidth, pHeight);
-  
-  let src = cv.imread(tempCanvas);
-  cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
-  cv.GaussianBlur(src, src, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
-  cv.Canny(src, src, 75, 200, 3, false);
-  
-  let contours = new cv.MatVector();
-  let hierarchy = new cv.Mat();
-  cv.findContours(src, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
-  
-  let maxArea = 0;
-  let bestPoly: Point[] | null = null;
-  
-  for (let i = 0; i < contours.size(); ++i) {
-    let cnt = contours.get(i);
-    let area = cv.contourArea(cnt, false);
-    if (area > (pWidth * pHeight * 0.1)) {
-      let approx = new cv.Mat();
-      cv.approxPolyDP(cnt, approx, 0.02 * cv.arcLength(cnt, true), true);
-      if (approx.rows === 4 && area > maxArea) {
-        maxArea = area;
-        bestPoly = [];
-        let cx = 0, cy = 0;
-        for (let j = 0; j < 4; j++) {
-            let p = { x: approx.data32S[j * 2] / processScale, y: approx.data32S[j * 2 + 1] / processScale };
-            bestPoly.push(p);
-            cx += p.x; cy += p.y;
-        }
-        cx /= 4; cy /= 4;
-        bestPoly.sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
-      }
-      approx.delete();
-    }
-  }
-  return { src, contours, hierarchy, maxArea, bestPoly };
-}
-
-function fallbackTextContour(video: HTMLVideoElement, contours: any, processScale: number, pWidth: number, pHeight: number): Point[] | null {
-  let minX = pWidth, minY = pHeight, maxX = 0, maxY = 0;
-  let foundText = false;
-  for (let i = 0; i < contours.size(); ++i) {
-      let cnt = contours.get(i);
-      let area = cv.contourArea(cnt, false);
-      if (area > 50 && area < (pWidth * pHeight * 0.05)) {
-          let rect = cv.boundingRect(cnt);
-          if (rect.x > pWidth * 0.05 && rect.y > pHeight * 0.05 && 
-              (rect.x + rect.width) < pWidth * 0.95 && 
-              (rect.y + rect.height) < pHeight * 0.95) {
-              minX = Math.min(minX, rect.x);
-              minY = Math.min(minY, rect.y);
-              maxX = Math.max(maxX, rect.x + rect.width);
-              maxY = Math.max(maxY, rect.y + rect.height);
-              foundText = true;
-          }
-      }
-  }
-  if (foundText && (maxX - minX) > pWidth * 0.1) {
-      let padX = pWidth * 0.05;
-      let padY = pHeight * 0.05;
-      minX = Math.max(0, minX - padX) / processScale;
-      minY = Math.max(0, minY - padY) / processScale;
-      maxX = Math.min(video.videoWidth, (maxX + padX) / processScale);
-      maxY = Math.min(video.videoHeight, (maxY + padY) / processScale);
-      
-      const cx = (minX + maxX) / 2;
-      const cy = (minY + maxY) / 2;
-      let w = maxX - minX;
-      let h = maxY - minY;
-      
-      if (w / h > (5/3)) h = w * (3/5);
-      else w = h * (5/3);
-      
-      return [
-          { x: cx - w/2, y: cy - h/2 },
-          { x: cx + w/2, y: cy - h/2 },
-          { x: cx + w/2, y: cy + h/2 },
-          { x: cx - w/2, y: cy + h/2 }
-      ];
-  }
-  return null;
-}
-
-function getDefaultPoly(video: HTMLVideoElement): Point[] {
-  let ratio = video.videoWidth / video.videoHeight;
-  let w, h;
-  if (ratio > (5/3)) {
-      h = video.videoHeight * 0.9;
-      w = h * (5/3);
-  } else {
-      w = video.videoWidth * 0.9;
-      h = w * (3/5);
-  }
-  const cx = video.videoWidth / 2;
-  const cy = video.videoHeight / 2;
-  return [
-      { x: cx - w/2, y: cy - h/2 },
-      { x: cx + w/2, y: cy - h/2 },
-      { x: cx + w/2, y: cy + h/2 },
-      { x: cx - w/2, y: cy + h/2 }
-  ];
-}
-
-function alignPolygons(bestPoly: Point[], previousPoly: Point[]) {
-    let minTotalDist = Infinity;
-    let bestShift = 0;
-    for (let shift = 0; shift < 4; shift++) {
-        let totalDist = 0;
-        for (let i = 0; i < 4; i++) {
-            let p2 = bestPoly[(i + shift) % 4];
-            let p1 = previousPoly[i];
-            totalDist += Math.hypot(p1.x - p2.x, p1.y - p2.y);
-        }
-        if (totalDist < minTotalDist) {
-            minTotalDist = totalDist;
-            bestShift = shift;
-        }
-    }
-    let alignedPoly = [];
-    for (let i = 0; i < 4; i++) alignedPoly.push(bestPoly[(i + bestShift) % 4]);
-    return alignedPoly;
-}
-
-function applyDampening(bestPoly: Point[], previousPoly: Point[], debugLines: string[]) {
-    let maxDist = 0;
-    for (let i = 0; i < 4; i++) {
-        let dist = Math.hypot(previousPoly[i].x - bestPoly[i].x, previousPoly[i].y - bestPoly[i].y);
-        if (dist > maxDist) maxDist = dist;
-    }
-
-    let result = [];
-    if (maxDist > 150) {
-        for (let i = 0; i < 4; i++) {
-            result.push({
-                x: previousPoly[i].x * 0.95 + bestPoly[i].x * 0.05,
-                y: previousPoly[i].y * 0.95 + bestPoly[i].y * 0.05
-            });
-        }
-        debugLines.push("Filter: Heavy Dampening");
-    } else {
-        for (let i = 0; i < 4; i++) {
-            result.push({
-                x: previousPoly[i].x * 0.6 + bestPoly[i].x * 0.4,
-                y: previousPoly[i].y * 0.6 + bestPoly[i].y * 0.4
-            });
-        }
-        debugLines.push("Filter: Locked");
-    }
-    return result;
-}
-
-function applyTemporalSmoothing(bestPoly: Point[], previousPoly: Point[] | null, debugLines: string[]): Point[] {
-  if (!previousPoly || previousPoly.some(p => Number.isNaN(p.x) || Number.isNaN(p.y))) {
-      let pts = [...bestPoly];
-      let d01 = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
-      let d12 = Math.hypot(pts[2].x - pts[1].x, pts[2].y - pts[1].y);
-      if (d12 > d01) pts.push(pts.shift()!); 
-      if (pts[0].y + pts[1].y > pts[2].y + pts[3].y) {
-          pts.push(pts.shift()!, pts.shift()!); 
-      }
-      return pts;
-  }
-  
-  const alignedPoly = alignPolygons(bestPoly, previousPoly);
-  return applyDampening(alignedPoly, previousPoly, debugLines);
 }
 
 interface DrawConfig {
@@ -418,48 +228,20 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
     const video = videoRef.current;
 
     try {
-        let srcOriginal = document.createElement('canvas');
-        srcOriginal.width = video.videoWidth;
-        srcOriginal.height = video.videoHeight;
-        srcOriginal.getContext('2d')?.drawImage(video, 0, 0);
-        
-        let cvSrc = cv.imread(srcOriginal);
-        let cvDst = new cv.Mat();
-        
-        let pts = [...smoothedCornersRef.current];
-        let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y]);
-        
-        const WARP_W = 1000;
-        const WARP_H = 600;
-        let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, WARP_W, 0, WARP_W, WARP_H, 0, WARP_H]);
-        
-        let transform = cv.getPerspectiveTransform(srcTri, dstTri);
-        cv.warpPerspective(cvSrc, cvDst, transform, new cv.Size(WARP_W, WARP_H), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-        
-        let finalCanvas = document.createElement('canvas');
-        finalCanvas.width = WARP_W;
-        finalCanvas.height = WARP_H;
-        cv.imshow(finalCanvas, cvDst);
-        
-        cvSrc.delete(); cvDst.delete(); srcTri.delete(); dstTri.delete(); transform.delete();
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d')?.drawImage(video, 0, 0);
 
         if (stream) stream.getTracks().forEach(t => t.stop());
 
-        const { data: { text } } = await Tesseract.recognize(
-            finalCanvas.toDataURL('image/jpeg'),
-            'eng',
-            { logger: m => console.log(m) }
-        );
+        const img = new Image();
+        img.src = canvas.toDataURL('image/jpeg');
+        await new Promise(r => { img.onload = r; });
 
-        finalCanvas.toBlob((blob) => {
-            if (blob) {
-                onCapture(text || '', blob);
-            } else {
-                setProcessingStatus('Failed to generate image blob');
-                setIsProcessing(false);
-            }
-        }, 'image/jpeg', 0.85);
+        const { blob, text } = await processCardImage(img);
 
+        onCapture(text, blob);
     } catch (err) {
       console.error(err);
       setProcessingStatus('Error processing image');

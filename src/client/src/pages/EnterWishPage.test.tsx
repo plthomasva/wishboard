@@ -9,12 +9,51 @@ vi.mock('../AuthContext', () => ({
 }));
 
 vi.mock('../components/WishScanner', () => ({
-  default: () => <div data-testid="mock-wish-scanner">Mock WishScanner</div>
+  default: ({ onCapture, onCancel }: { onCapture: any; onCancel: any }) => (
+    <div data-testid="mock-wish-scanner">
+      <button data-testid="mock-capture" onClick={() => onCapture('Camera OCR text', new Blob(['cam'], { type: 'image/jpeg' }))}>Capture</button>
+      <button data-testid="mock-cancel" onClick={onCancel}>Cancel</button>
+    </div>
+  )
+}));
+
+let mockEngineReject = false;
+
+vi.mock('../cardProcessor', () => ({
+  processCardImage: vi.fn(async () => {
+    if (mockEngineReject) {
+      throw new Error('OCR Engine Failed');
+    }
+    return {
+      blob: new Blob(['mock data'], { type: 'image/jpeg' }),
+      text: 'Mocked OCR Text from Card'
+    };
+  })
 }));
 
 describe('EnterWishPage', () => {
+  let originalImage: any;
+
   beforeEach(() => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null } as unknown as ReturnType<typeof AuthContext.useAuth>);
+    mockEngineReject = false;
+
+    originalImage = globalThis.Image;
+    globalThis.Image = class {
+      onload: any = null;
+      onerror: any = null;
+      _src: string = '';
+      set src(s: string) {
+        this._src = s;
+        setTimeout(() => {
+          if (this.onload) this.onload({} as any);
+        }, 0);
+      }
+      get src() {
+        return this._src;
+      }
+    } as any;
+
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ id: 'wish-1', secret: 'secret-code' })
@@ -22,6 +61,7 @@ describe('EnterWishPage', () => {
   });
 
   afterEach(() => {
+    globalThis.Image = originalImage;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -74,24 +114,25 @@ describe('EnterWishPage', () => {
 
   it('allows uploading a handwritten wish image', async () => {
     URL.createObjectURL = vi.fn().mockReturnValue('blob:mocked-url');
+    URL.revokeObjectURL = vi.fn();
     render(<EnterWishPage />);
     
     const fileInput = screen.getByLabelText(/Upload Image/i);
     const mockFile = new File(['mock content'], 'wish.jpg', { type: 'image/jpeg' });
     
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [mockFile] } });
-    });
+    fireEvent.change(fileInput, { target: { files: [mockFile] } });
 
-    expect(screen.getByText(/Handwritten wish attached/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Handwritten wish attached/i)).toBeInTheDocument();
+    });
 
     // Verify remove functionality
     const removeBtn = screen.getByRole('button', { name: /Remove Image/i });
-    await act(async () => {
-      fireEvent.click(removeBtn);
-    });
+    fireEvent.click(removeBtn);
 
-    expect(screen.queryByText(/Handwritten wish attached/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/Handwritten wish attached/i)).not.toBeInTheDocument();
+    });
   });
 
   it('rejects non-image file uploads', async () => {
@@ -108,7 +149,7 @@ describe('EnterWishPage', () => {
     expect(screen.queryByText(/Handwritten wish attached/i)).not.toBeInTheDocument();
   });
   it('handles logged-in user UI appropriately', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as unknown as ReturnType<typeof AuthContext.useAuth>);
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' });
     render(<EnterWishPage />);
     expect(screen.getByText(/Your account identity attributes are applied automatically to this wish./i)).toBeInTheDocument();
   });
@@ -123,4 +164,84 @@ describe('EnterWishPage', () => {
     // Scanner should be rendered
     expect(await screen.findByTestId('mock-wish-scanner')).toBeInTheDocument();
   });
+
+  it('allows capturing an image with camera, triggering capture and cancel callbacks', async () => {
+    render(<EnterWishPage />);
+    
+    // Open scanner
+    const captureBtn = screen.getByRole('button', { name: /Capture with Camera/i });
+    fireEvent.click(captureBtn);
+    
+    // Trigger capture callback
+    const triggerCaptureBtn = await screen.findByTestId('mock-capture');
+    fireEvent.click(triggerCaptureBtn);
+
+    // Scanner should be closed and content updated
+    await waitFor(() => {
+      expect(screen.queryByTestId('mock-wish-scanner')).not.toBeInTheDocument();
+      expect(screen.getByText(/Handwritten wish attached/i)).toBeInTheDocument();
+    });
+
+    // Verify remove works
+    const removeBtn = screen.getByRole('button', { name: /Remove Image/i });
+    fireEvent.click(removeBtn);
+
+    // Open scanner again and cancel
+    const freshCaptureBtn = screen.getByRole('button', { name: /Capture with Camera/i });
+    fireEvent.click(freshCaptureBtn);
+    const triggerCancelBtn = await screen.findByTestId('mock-cancel');
+    fireEvent.click(triggerCancelBtn);
+    
+    await waitFor(() => {
+      expect(screen.queryByTestId('mock-wish-scanner')).not.toBeInTheDocument();
+    });
+  });
+
+  it('allows uploading a handwritten wish image and submitting it', async () => {
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:mocked-url');
+    render(<EnterWishPage />);
+    
+    const fileInput = screen.getByLabelText(/Upload Image/i);
+    const mockFile = new File(['mock content'], 'wish.jpg', { type: 'image/jpeg' });
+    
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [mockFile] } });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Handwritten wish attached/i)).toBeInTheDocument();
+    });
+
+    // Submit form with image
+    fireEvent.click(screen.getByRole('button', { name: /Submit Wish/i }));
+
+    await waitFor(() => expect(screen.getByText(/Wish saved! ID:/i)).toBeInTheDocument());
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes', expect.objectContaining({
+      method: 'POST',
+      body: expect.any(FormData)
+    }));
+
+    // Flush any pending layout effects
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+  });
+
+  it('handles image processing errors gracefully', async () => {
+    mockEngineReject = true;
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:mocked-url');
+
+    render(<EnterWishPage />);
+    
+    const fileInput = screen.getByLabelText(/Upload Image/i);
+    const mockFile = new File(['mock content'], 'wish.jpg', { type: 'image/jpeg' });
+    
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [mockFile] } });
+    });
+
+    // Error message should be visible
+    await waitFor(() => {
+      expect(screen.getByText(/OCR Engine Failed/i)).toBeInTheDocument();
+    });
+  });
 });
+
