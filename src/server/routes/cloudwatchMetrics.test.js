@@ -12,7 +12,7 @@ vi.mock('../auth.js', () => ({
       return next();
     }
     return res.status(403).json({ error: 'Admin access required.' });
-  }
+  },
 }));
 
 // Create standard mocks for CloudWatch SDK using standard constructible functions
@@ -32,10 +32,9 @@ function mockGetMetricDataCommand(args) {
 vi.mock('@aws-sdk/client-cloudwatch', () => {
   return {
     CloudWatchClient: mockCloudWatchClient,
-    GetMetricDataCommand: mockGetMetricDataCommand
+    GetMetricDataCommand: mockGetMetricDataCommand,
   };
 });
-
 
 const app = express();
 app.use(express.json());
@@ -86,28 +85,28 @@ describe('cloudwatchMetrics route', () => {
           Id: 'lambda_invocations',
           Label: 'Invocations',
           Timestamps: [now, earlier],
-          Values: [5, 2]
+          Values: [5, 2],
         },
         {
           Id: 'ws_invocations',
           Label: 'WS Invocations',
           Timestamps: [now],
-          Values: [10]
+          Values: [10],
         },
         {
           Id: 'cf_requests',
           Label: 'CF Requests',
           Timestamps: [now],
-          Values: [15]
+          Values: [15],
         },
         {
           Id: 'apigw_count',
           Label: 'API Requests',
           Timestamps: [now],
-          Values: [25]
-        }
+          Values: [25],
+        },
       ],
-      NextToken: null
+      NextToken: null,
     });
 
     const res = await request
@@ -117,7 +116,6 @@ describe('cloudwatchMetrics route', () => {
     expect(res.status).toBe(200);
     expect(res.body.generatedAt).toBeDefined();
     expect(res.body.groups).toBeDefined();
-
 
     // Verify CloudWatchClient region config
     expect(clientInstances).toHaveLength(1);
@@ -138,12 +136,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/Lambda',
             MetricName: 'Invocations',
-            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }]
+            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'Invocations'
+        Label: 'Invocations',
       },
       {
         Id: 'lambda_errors',
@@ -151,12 +149,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/Lambda',
             MetricName: 'Errors',
-            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }]
+            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'Errors'
+        Label: 'Errors',
       },
       {
         Id: 'lambda_throttles',
@@ -164,12 +162,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/Lambda',
             MetricName: 'Throttles',
-            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }]
+            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'Throttles'
+        Label: 'Throttles',
       },
       {
         Id: 'lambda_duration_p50',
@@ -177,12 +175,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/Lambda',
             MetricName: 'Duration',
-            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }]
+            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }],
           },
           Period: 60,
-          Stat: 'p50'
+          Stat: 'p50',
         },
-        Label: 'Duration p50 (ms)'
+        Label: 'Duration p50 (ms)',
       },
       {
         Id: 'lambda_duration_p99',
@@ -190,12 +188,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/Lambda',
             MetricName: 'Duration',
-            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }]
+            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }],
           },
           Period: 60,
-          Stat: 'p99'
+          Stat: 'p99',
         },
-        Label: 'Duration p99 (ms)'
+        Label: 'Duration p99 (ms)',
       },
       {
         Id: 'lambda_concurrent',
@@ -203,12 +201,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/Lambda',
             MetricName: 'ConcurrentExecutions',
-            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }]
+            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-express-api' }],
           },
           Period: 60,
-          Stat: 'Maximum'
+          Stat: 'Maximum',
         },
-        Label: 'Concurrent Executions'
+        Label: 'Concurrent Executions',
       },
       {
         Id: 'ws_invocations',
@@ -216,12 +214,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/Lambda',
             MetricName: 'Invocations',
-            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-websocket-mgr' }]
+            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-websocket-mgr' }],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'WS Invocations'
+        Label: 'WS Invocations',
       },
       {
         Id: 'ws_errors',
@@ -229,12 +227,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/Lambda',
             MetricName: 'Errors',
-            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-websocket-mgr' }]
+            Dimensions: [{ Name: 'FunctionName', Value: 'wishboard-websocket-mgr' }],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'WS Errors'
+        Label: 'WS Errors',
       },
       {
         Id: 'apigw_count',
@@ -242,12 +240,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/ApiGateway',
             MetricName: 'Count',
-            Dimensions: [{ Name: 'Stage', Value: '$default' }]
+            Dimensions: [{ Name: 'Stage', Value: '$default' }],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'API Requests'
+        Label: 'API Requests',
       },
       {
         Id: 'apigw_4xx',
@@ -255,12 +253,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/ApiGateway',
             MetricName: '4XXError',
-            Dimensions: [{ Name: 'Stage', Value: '$default' }]
+            Dimensions: [{ Name: 'Stage', Value: '$default' }],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'API 4xx Errors'
+        Label: 'API 4xx Errors',
       },
       {
         Id: 'apigw_5xx',
@@ -268,12 +266,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/ApiGateway',
             MetricName: '5XXError',
-            Dimensions: [{ Name: 'Stage', Value: '$default' }]
+            Dimensions: [{ Name: 'Stage', Value: '$default' }],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'API 5xx Errors'
+        Label: 'API 5xx Errors',
       },
       {
         Id: 'apigw_latency',
@@ -281,12 +279,12 @@ describe('cloudwatchMetrics route', () => {
           Metric: {
             Namespace: 'AWS/ApiGateway',
             MetricName: 'Latency',
-            Dimensions: [{ Name: 'Stage', Value: '$default' }]
+            Dimensions: [{ Name: 'Stage', Value: '$default' }],
           },
           Period: 60,
-          Stat: 'p99'
+          Stat: 'p99',
         },
-        Label: 'API Latency p99 (ms)'
+        Label: 'API Latency p99 (ms)',
       },
       {
         Id: 'cf_requests',
@@ -296,13 +294,13 @@ describe('cloudwatchMetrics route', () => {
             MetricName: 'Requests',
             Dimensions: [
               { Name: 'DistributionId', Value: 'EDIST12345' },
-              { Name: 'Region', Value: 'Global' }
-            ]
+              { Name: 'Region', Value: 'Global' },
+            ],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'CF Requests'
+        Label: 'CF Requests',
       },
       {
         Id: 'cf_bytes_dl',
@@ -312,13 +310,13 @@ describe('cloudwatchMetrics route', () => {
             MetricName: 'BytesDownloaded',
             Dimensions: [
               { Name: 'DistributionId', Value: 'EDIST12345' },
-              { Name: 'Region', Value: 'Global' }
-            ]
+              { Name: 'Region', Value: 'Global' },
+            ],
           },
           Period: 60,
-          Stat: 'Sum'
+          Stat: 'Sum',
         },
-        Label: 'CF Bytes Downloaded'
+        Label: 'CF Bytes Downloaded',
       },
       {
         Id: 'cf_4xx_rate',
@@ -328,13 +326,13 @@ describe('cloudwatchMetrics route', () => {
             MetricName: '4xxErrorRate',
             Dimensions: [
               { Name: 'DistributionId', Value: 'EDIST12345' },
-              { Name: 'Region', Value: 'Global' }
-            ]
+              { Name: 'Region', Value: 'Global' },
+            ],
           },
           Period: 60,
-          Stat: 'Average'
+          Stat: 'Average',
         },
-        Label: 'CF 4xx Error Rate (%)'
+        Label: 'CF 4xx Error Rate (%)',
       },
       {
         Id: 'cf_5xx_rate',
@@ -344,13 +342,13 @@ describe('cloudwatchMetrics route', () => {
             MetricName: '5xxErrorRate',
             Dimensions: [
               { Name: 'DistributionId', Value: 'EDIST12345' },
-              { Name: 'Region', Value: 'Global' }
-            ]
+              { Name: 'Region', Value: 'Global' },
+            ],
           },
           Period: 60,
-          Stat: 'Average'
+          Stat: 'Average',
         },
-        Label: 'CF 5xx Error Rate (%)'
+        Label: 'CF 5xx Error Rate (%)',
       },
       {
         Id: 'cf_cache_hit_rate',
@@ -360,13 +358,13 @@ describe('cloudwatchMetrics route', () => {
             MetricName: 'CacheHitRate',
             Dimensions: [
               { Name: 'DistributionId', Value: 'EDIST12345' },
-              { Name: 'Region', Value: 'Global' }
-            ]
+              { Name: 'Region', Value: 'Global' },
+            ],
           },
           Period: 60,
-          Stat: 'Average'
+          Stat: 'Average',
         },
-        Label: 'CF Cache Hit Rate (%)'
+        Label: 'CF Cache Hit Rate (%)',
       },
       {
         Id: 'cf_origin_latency',
@@ -376,22 +374,22 @@ describe('cloudwatchMetrics route', () => {
             MetricName: 'OriginLatency',
             Dimensions: [
               { Name: 'DistributionId', Value: 'EDIST12345' },
-              { Name: 'Region', Value: 'Global' }
-            ]
+              { Name: 'Region', Value: 'Global' },
+            ],
           },
           Period: 60,
-          Stat: 'p99'
+          Stat: 'p99',
         },
-        Label: 'CF Origin Latency p99 (ms)'
-      }
+        Label: 'CF Origin Latency p99 (ms)',
+      },
     ];
 
     expect(queries).toEqual(expectedQueries);
 
-
-    
     // Check that groups structure contains our returned metrics
-    const lambdaGroup = res.body.groups.find(g => g.title.includes('Lambda — wishboard-express-api'));
+    const lambdaGroup = res.body.groups.find((g) =>
+      g.title.includes('Lambda — wishboard-express-api')
+    );
     expect(lambdaGroup).toBeDefined();
     expect(lambdaGroup.metrics).toHaveLength(1);
     expect(lambdaGroup.metrics[0].id).toBe('lambda_invocations');
@@ -400,16 +398,16 @@ describe('cloudwatchMetrics route', () => {
     expect(lambdaGroup.metrics[0].dataPoints[0].v).toBe(2);
     expect(lambdaGroup.metrics[0].dataPoints[1].v).toBe(5);
 
-    const wsGroup = res.body.groups.find(g => g.title.includes('WebSocket Manager'));
+    const wsGroup = res.body.groups.find((g) => g.title.includes('WebSocket Manager'));
     expect(wsGroup).toBeDefined();
     expect(wsGroup.metrics[0].id).toBe('ws_invocations');
 
-    const cfGroup = res.body.groups.find(g => g.title.includes('CloudFront'));
+    const cfGroup = res.body.groups.find((g) => g.title.includes('CloudFront'));
     expect(cfGroup).toBeDefined();
     expect(cfGroup.metrics).toHaveLength(1);
     expect(cfGroup.metrics[0].id).toBe('cf_requests');
 
-    const apigwGroup = res.body.groups.find(g => g.title.includes('API Gateway'));
+    const apigwGroup = res.body.groups.find((g) => g.title.includes('API Gateway'));
     expect(apigwGroup).toBeDefined();
     expect(apigwGroup.metrics).toHaveLength(1);
     expect(apigwGroup.metrics[0].id).toBe('apigw_count');
@@ -421,17 +419,15 @@ describe('cloudwatchMetrics route', () => {
 
     mockSend.mockResolvedValueOnce({
       MetricDataResults: [],
-      NextToken: null
+      NextToken: null,
     });
 
-    await request
-      .get('/api/admin/aws-metrics')
-      .set('Authorization', 'Bearer admin-token');
+    await request.get('/api/admin/aws-metrics').set('Authorization', 'Bearer admin-token');
 
     expect(mockSend).toHaveBeenCalledTimes(1);
     const command = mockSend.mock.calls[0][0];
     const queries = command.args.MetricDataQueries;
-    const cfReqQuery = queries.find(q => q.Id === 'cf_requests');
+    const cfReqQuery = queries.find((q) => q.Id === 'cf_requests');
     expect(cfReqQuery).toBeUndefined();
   });
 
@@ -446,10 +442,10 @@ describe('cloudwatchMetrics route', () => {
             Id: 'lambda_invocations',
             Label: 'Invocations',
             Timestamps: [new Date(nowIso)],
-            Values: [5]
-          }
+            Values: [5],
+          },
         ],
-        NextToken: 'page-2-token'
+        NextToken: 'page-2-token',
       })
       .mockResolvedValueOnce({
         MetricDataResults: [
@@ -457,10 +453,10 @@ describe('cloudwatchMetrics route', () => {
             Id: 'ws_invocations',
             Label: 'WS Invocations',
             Timestamps: [new Date(nowIso)],
-            Values: [10]
-          }
+            Values: [10],
+          },
         ],
-        NextToken: null
+        NextToken: null,
       });
 
     const res = await request
@@ -469,16 +465,18 @@ describe('cloudwatchMetrics route', () => {
 
     expect(res.status).toBe(200);
     expect(mockSend).toHaveBeenCalledTimes(2);
-    
+
     // Check next token is passed to subsequent command call
     const secondCallCommand = mockSend.mock.calls[1][0];
     expect(secondCallCommand.args.NextToken).toBe('page-2-token');
 
-    const lambdaGroup = res.body.groups.find(g => g.title.includes('Lambda — wishboard-express-api'));
+    const lambdaGroup = res.body.groups.find((g) =>
+      g.title.includes('Lambda — wishboard-express-api')
+    );
     expect(lambdaGroup).toBeDefined();
     expect(lambdaGroup.metrics[0].id).toBe('lambda_invocations');
 
-    const wsGroup = res.body.groups.find(g => g.title.includes('WebSocket Manager'));
+    const wsGroup = res.body.groups.find((g) => g.title.includes('WebSocket Manager'));
     expect(wsGroup).toBeDefined();
     expect(wsGroup.metrics[0].id).toBe('ws_invocations');
   });
@@ -492,7 +490,8 @@ describe('cloudwatchMetrics route', () => {
       .set('Authorization', 'Bearer admin-token');
 
     expect(res.status).toBe(500);
-    expect(res.body.error).toContain('Failed to fetch CloudWatch metrics: AccessDenied to CloudWatch');
+    expect(res.body.error).toContain(
+      'Failed to fetch CloudWatch metrics: AccessDenied to CloudWatch'
+    );
   });
 });
-

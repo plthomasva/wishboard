@@ -14,13 +14,13 @@ if (!isS3Mode) {
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, imagesDir)
+    cb(null, imagesDir);
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext)
-  }
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  },
 });
 const fileFilter = (req, file, cb) => {
   const allowedExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
@@ -31,11 +31,23 @@ const fileFilter = (req, file, cb) => {
     cb(new Error('Invalid file type. Only PNG, JPG, and WEBP are allowed.'), false);
   }
 };
-const upload = multer({ storage: storage, fileFilter: fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
-import { getUserFromToken, getTokenFromRequestHeader, hashPassphrase, verifyPassphrase, parseJsonArray, normalizeArrayInput, createSalt } from '../auth.js';
+import {
+  getUserFromToken,
+  getTokenFromRequestHeader,
+  hashPassphrase,
+  verifyPassphrase,
+  parseJsonArray,
+  normalizeArrayInput,
+  createSalt,
+} from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
 import logger from '../logger.js';
 import { getRules } from '../rulesManager.js';
@@ -44,14 +56,15 @@ import { emitNewWish, emitWishFlagged, emitWishDeleted } from '../socket.js';
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
-
 const getRequestUser = async (req) => {
   const token = getTokenFromRequestHeader(req);
   return await getUserFromToken(token);
 };
 
-
-const normalizeToken = (value) => String(value || '').trim().toLowerCase();
+const normalizeToken = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase();
 
 const escapeRegExp = (string) => {
   return string.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
@@ -64,13 +77,18 @@ const hasToken = (str, token) => {
 
 const getExpandedDesired = (desiredVals, category, rules) => {
   const result = new Set(desiredVals.map(normalizeToken));
-  const expandRules = rules.filter(r => r.rule_type === 'expansion' && r.trigger_attribute === category && r.target_attribute === category);
-  
+  const expandRules = rules.filter(
+    (r) =>
+      r.rule_type === 'expansion' &&
+      r.trigger_attribute === category &&
+      r.target_attribute === category
+  );
+
   for (const val of desiredVals) {
     for (const rule of expandRules) {
       if (hasToken(val, rule.trigger_value)) {
-        const targets = rule.target_value.split(',').map(t => t.trim().toLowerCase());
-        targets.forEach(t => result.add(t));
+        const targets = rule.target_value.split(',').map((t) => t.trim().toLowerCase());
+        targets.forEach((t) => result.add(t));
       }
     }
   }
@@ -79,22 +97,24 @@ const getExpandedDesired = (desiredVals, category, rules) => {
 
 const evaluateRuleConditions = (rule, userAttributes, rules = []) => {
   const triggerVals = userAttributes[rule.trigger_attribute] || [];
-  const triggerMatch = triggerVals.some(v => hasToken(v, rule.trigger_value));
-  
+  const triggerMatch = triggerVals.some((v) => hasToken(v, rule.trigger_value));
+
   let contextMatch = true;
   if (rule.context_attribute && rule.context_value) {
     const ctxVals = userAttributes[rule.context_attribute] || [];
     const expandedCtxVals = getExpandedDesired(ctxVals, rule.context_attribute, rules);
-    contextMatch = expandedCtxVals.some(v => hasToken(v, rule.context_value));
+    contextMatch = expandedCtxVals.some((v) => hasToken(v, rule.context_value));
   }
-  
+
   return triggerMatch && contextMatch;
 };
 
 const enrichAttributes = (userAttributes, targetCategory, rules) => {
   const enriched = new Set((userAttributes[targetCategory] || []).map(normalizeToken));
-  const enrichmentRules = rules.filter(r => r.rule_type === 'enrichment' && r.target_attribute === targetCategory);
-  
+  const enrichmentRules = rules.filter(
+    (r) => r.rule_type === 'enrichment' && r.target_attribute === targetCategory
+  );
+
   for (const rule of enrichmentRules) {
     if (evaluateRuleConditions(rule, userAttributes, rules)) {
       enriched.add(rule.target_value);
@@ -105,12 +125,14 @@ const enrichAttributes = (userAttributes, targetCategory, rules) => {
 
 const buildAcceptedSet = (userAttributes, targetCategory, rules) => {
   const accepted = new Set();
-  const acceptanceRules = rules.filter(r => r.rule_type === 'acceptance' && r.target_attribute === targetCategory);
-  
+  const acceptanceRules = rules.filter(
+    (r) => r.rule_type === 'acceptance' && r.target_attribute === targetCategory
+  );
+
   for (const rule of acceptanceRules) {
     if (evaluateRuleConditions(rule, userAttributes, rules)) {
-      const targets = rule.target_value.split(',').map(t => t.trim().toLowerCase());
-      targets.forEach(t => accepted.add(t));
+      const targets = rule.target_value.split(',').map((t) => t.trim().toLowerCase());
+      targets.forEach((t) => accepted.add(t));
     }
   }
   return accepted;
@@ -118,15 +140,20 @@ const buildAcceptedSet = (userAttributes, targetCategory, rules) => {
 
 const getCrossMatchedDesired = (desiredVals, category, rules) => {
   const result = new Set();
-  const crossRules = rules.filter(r => r.rule_type === 'cross_match' && r.trigger_attribute === category && r.target_attribute === category);
-  
+  const crossRules = rules.filter(
+    (r) =>
+      r.rule_type === 'cross_match' &&
+      r.trigger_attribute === category &&
+      r.target_attribute === category
+  );
+
   for (const val of desiredVals) {
     for (const rule of crossRules) {
       if (hasToken(val, rule.trigger_value)) {
-        const targets = rule.target_value.split(',').map(t => t.trim().toLowerCase());
-        targets.forEach(t => result.add(t));
+        const targets = rule.target_value.split(',').map((t) => t.trim().toLowerCase());
+        targets.forEach((t) => result.add(t));
       }
-      if (rule.target_value.split(',').some(t => hasToken(val, t.trim().toLowerCase()))) {
+      if (rule.target_value.split(',').some((t) => hasToken(val, t.trim().toLowerCase()))) {
         result.add(rule.trigger_value.toLowerCase());
       }
     }
@@ -143,9 +170,13 @@ const matchesAttribute = (searcherVals, desiredVals, category, rules) => {
   const crossMatchedDesired = getCrossMatchedDesired(desiredVals, category, rules);
   const expandedCrossMatched = getExpandedDesired(Array.from(crossMatchedDesired), category, rules);
 
-  const allAcceptable = new Set([...expandedDesired, ...crossMatchedDesired, ...expandedCrossMatched]);
+  const allAcceptable = new Set([
+    ...expandedDesired,
+    ...crossMatchedDesired,
+    ...expandedCrossMatched,
+  ]);
 
-  return Array.from(allAcceptable).some(desired => normalizedSearcher.has(desired));
+  return Array.from(allAcceptable).some((desired) => normalizedSearcher.has(desired));
 };
 
 const matchesGenderPreferenceImplicit = (searcherAttributes, desiredGenders, rules) => {
@@ -163,39 +194,60 @@ export const isCompatible = (wish, searcher, rules = []) => {
   const desiredGenders = parseJsonArray(wish.desired_genders);
   const desiredOrientations = parseJsonArray(wish.desired_orientations);
   const desiredRoles = parseJsonArray(wish.desired_roles);
-  
+
   const creatorGendersRaw = parseJsonArray(wish.creator_genders);
   const creatorOrientationsRaw = parseJsonArray(wish.creator_orientations);
   const creatorRolesRaw = parseJsonArray(wish.creator_roles);
-  
+
   const searcherGendersRaw = searcher.identity_genders || [];
   const searcherOrientationsRaw = searcher.identity_orientations || [];
   const searcherRolesRaw = searcher.identity_roles || [];
 
-  const creatorProfileRaw = { gender: creatorGendersRaw, orientation: creatorOrientationsRaw, role: creatorRolesRaw };
-  const searcherProfileRaw = { gender: searcherGendersRaw, orientation: searcherOrientationsRaw, role: searcherRolesRaw };
+  const creatorProfileRaw = {
+    gender: creatorGendersRaw,
+    orientation: creatorOrientationsRaw,
+    role: creatorRolesRaw,
+  };
+  const searcherProfileRaw = {
+    gender: searcherGendersRaw,
+    orientation: searcherOrientationsRaw,
+    role: searcherRolesRaw,
+  };
 
   const creatorProfile = {
     gender: enrichAttributes(creatorProfileRaw, 'gender', rules),
     orientation: enrichAttributes(creatorProfileRaw, 'orientation', rules),
-    role: creatorProfileRaw.role
+    role: creatorProfileRaw.role,
   };
-  
+
   const searcherProfile = {
     gender: enrichAttributes(searcherProfileRaw, 'gender', rules),
     orientation: enrichAttributes(searcherProfileRaw, 'orientation', rules),
-    role: searcherProfileRaw.role
+    role: searcherProfileRaw.role,
   };
 
   // 1. Does the searcher want the wish creator?
-  const searcherWantsCreatorGender = matchesGenderPreferenceImplicit(searcherProfile, creatorProfile.gender, rules);
+  const searcherWantsCreatorGender = matchesGenderPreferenceImplicit(
+    searcherProfile,
+    creatorProfile.gender,
+    rules
+  );
 
   // 2. Does the wish creator want the searcher?
   let creatorWantsSearcherGender = false;
   if (desiredGenders.length > 0) {
-    creatorWantsSearcherGender = matchesAttribute(searcherProfile.gender, desiredGenders, 'gender', rules);
+    creatorWantsSearcherGender = matchesAttribute(
+      searcherProfile.gender,
+      desiredGenders,
+      'gender',
+      rules
+    );
   } else {
-    creatorWantsSearcherGender = matchesGenderPreferenceImplicit(creatorProfile, searcherProfile.gender, rules);
+    creatorWantsSearcherGender = matchesGenderPreferenceImplicit(
+      creatorProfile,
+      searcherProfile.gender,
+      rules
+    );
   }
 
   return (
@@ -207,11 +259,22 @@ export const isCompatible = (wish, searcher, rules = []) => {
 };
 
 router.post('/', upload.single('image'), async (req, res) => {
-  const { content, passphrase, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled } = req.body;
+  const {
+    content,
+    passphrase,
+    creator_genders,
+    creator_orientations,
+    creator_roles,
+    desired_genders,
+    desired_orientations,
+    desired_roles,
+    contacts,
+    wishmail_enabled,
+  } = req.body;
   if (!content?.trim()) {
     return res.status(400).json({ error: 'Wish content is required.' });
   }
-  
+
   const imageId = req.file ? req.file.filename : null;
 
   if (req.file && isS3Mode) {
@@ -220,16 +283,21 @@ router.post('/', upload.single('image'), async (req, res) => {
       const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
       const s3 = new S3Client();
       const fileStream = fs.createReadStream(safePath);
-      
-      await s3.send(new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: `images/${req.file.filename}`,
-        Body: fileStream,
-        ContentType: req.file.mimetype
-      }));
-      
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET,
+          Key: `images/${req.file.filename}`,
+          Body: fileStream,
+          ContentType: req.file.mimetype,
+        })
+      );
+
       fs.unlinkSync(safePath);
-      logger.info('Uploaded image to S3', { bucket: process.env.AWS_S3_BUCKET, key: `images/${req.file.filename}` });
+      logger.info('Uploaded image to S3', {
+        bucket: process.env.AWS_S3_BUCKET,
+        key: `images/${req.file.filename}`,
+      });
     } catch (err) {
       logger.error('Failed to upload image to S3:', { error: err.message });
       if (fs.existsSync(safePath)) {
@@ -253,7 +321,8 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 
   const creatorGenders = user?.identity_genders ?? normalizeArrayInput(creator_genders);
-  const creatorOrientations = user?.identity_orientations ?? normalizeArrayInput(creator_orientations);
+  const creatorOrientations =
+    user?.identity_orientations ?? normalizeArrayInput(creator_orientations);
   const creatorRoles = user?.identity_roles ?? normalizeArrayInput(creator_roles);
   const desiredGenders = normalizeArrayInput(desired_genders);
   const desiredOrientations = normalizeArrayInput(desired_orientations);
@@ -263,25 +332,27 @@ router.post('/', upload.single('image'), async (req, res) => {
   const wme = wishmail_enabled ? 1 : 0;
 
   const now = new Date().toISOString();
-  await db.prepare(
-    'INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled, created_at, updated_at, image_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).run(
-    id,
-    userId,
-    content.trim(),
-    secretHash,
-    JSON.stringify(creatorGenders),
-    JSON.stringify(creatorOrientations),
-    JSON.stringify(creatorRoles),
-    JSON.stringify(desiredGenders),
-    JSON.stringify(desiredOrientations),
-    JSON.stringify(desiredRoles),
-    JSON.stringify(parsedContacts),
-    wme,
-    now,
-    now,
-    imageId
-  );
+  await db
+    .prepare(
+      'INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled, created_at, updated_at, image_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    )
+    .run(
+      id,
+      userId,
+      content.trim(),
+      secretHash,
+      JSON.stringify(creatorGenders),
+      JSON.stringify(creatorOrientations),
+      JSON.stringify(creatorRoles),
+      JSON.stringify(desiredGenders),
+      JSON.stringify(desiredOrientations),
+      JSON.stringify(desiredRoles),
+      JSON.stringify(parsedContacts),
+      wme,
+      now,
+      now,
+      imageId
+    );
 
   logger.info('Wish created', { user_id: userId, wish_id: id });
   const newWish = {
@@ -297,7 +368,7 @@ router.post('/', upload.single('image'), async (req, res) => {
     contacts: parsedContacts,
     wishmail_enabled: Boolean(wme),
     image_id: imageId,
-    is_active: true
+    is_active: true,
   };
   emitNewWish(newWish);
 
@@ -306,7 +377,11 @@ router.post('/', upload.single('image'), async (req, res) => {
 
 router.get('/random', async (req, res) => {
   const limit = Number(req.query.limit || 12);
-  const rows = await db.prepare('SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY RANDOM() LIMIT ?').all(limit);
+  const rows = await db
+    .prepare(
+      'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY RANDOM() LIMIT ?'
+    )
+    .all(limit);
   res.json(
     rows.map((wish) => ({
       id: wish.id,
@@ -315,7 +390,7 @@ router.get('/random', async (req, res) => {
       creator_orientations: parseJsonArray(wish.creator_orientations),
       contacts: parseJsonArray(wish.contacts),
       wishmail_enabled: Boolean(wish.wishmail_enabled),
-      image_id: wish.image_id
+      image_id: wish.image_id,
     }))
   );
 });
@@ -334,19 +409,25 @@ router.get('/', async (req, res) => {
   const searcherProfile = {
     identity_genders: searcherGenders,
     identity_orientations: searcherOrientations,
-    identity_roles: searcherRoles
+    identity_roles: searcherRoles,
   };
 
   const rows = query
     ? await db
-        .prepare('SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.content LIKE ? AND w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50')
+        .prepare(
+          'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.content LIKE ? AND w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50'
+        )
         .all(`%${query}%`)
     : await db
-        .prepare('SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50')
+        .prepare(
+          'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50'
+        )
         .all();
 
   const rules = getRules();
-  const filtered = ignoreAttributes ? rows : rows.filter((wish) => isCompatible(wish, searcherProfile, rules));
+  const filtered = ignoreAttributes
+    ? rows
+    : rows.filter((wish) => isCompatible(wish, searcherProfile, rules));
   res.json(
     filtered.map((wish) => ({
       id: wish.id,
@@ -359,7 +440,7 @@ router.get('/', async (req, res) => {
       desired_roles: parseJsonArray(wish.desired_roles),
       contacts: parseJsonArray(wish.contacts),
       wishmail_enabled: Boolean(wish.wishmail_enabled),
-      image_id: wish.image_id
+      image_id: wish.image_id,
     }))
   );
 });
@@ -367,7 +448,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   const row = await db
-    .prepare('SELECT id, content, flagged, contacts, wishmail_enabled, created_at, updated_at, is_active, image_id FROM wishes WHERE id = ?')
+    .prepare(
+      'SELECT id, content, flagged, contacts, wishmail_enabled, created_at, updated_at, is_active, image_id FROM wishes WHERE id = ?'
+    )
     .get(id);
   if (!row) {
     return res.status(404).json({ error: 'Wish not found.' });
@@ -390,7 +473,9 @@ const getAuthorizedWish = async (req, res) => {
   }
 
   const isOwner = user?.id === row.user_id;
-  const isAuthorized = isOwner || (secret && row.secret_hash && verifyPassphrase(secret.trim(), ...row.secret_hash.split(':')));
+  const isAuthorized =
+    isOwner ||
+    (secret && row.secret_hash && verifyPassphrase(secret.trim(), ...row.secret_hash.split(':')));
 
   if (!isAuthorized) {
     if (!secret && !isOwner && row.secret_hash) {
@@ -423,7 +508,11 @@ router.post('/:id/manage', async (req, res) => {
     const parsedContacts = Array.isArray(contacts) ? contacts : [];
     const wme = wishmail_enabled ? 1 : 0;
     const now = new Date().toISOString();
-    await db.prepare('UPDATE wishes SET content = ?, contacts = ?, wishmail_enabled = ?, updated_at = ? WHERE id = ?').run(content.trim(), JSON.stringify(parsedContacts), wme, now, id);
+    await db
+      .prepare(
+        'UPDATE wishes SET content = ?, contacts = ?, wishmail_enabled = ?, updated_at = ? WHERE id = ?'
+      )
+      .run(content.trim(), JSON.stringify(parsedContacts), wme, now, id);
     return res.json({ success: true });
   }
 
@@ -433,8 +522,10 @@ router.post('/:id/manage', async (req, res) => {
 router.post('/:id/deactivate', async (req, res) => {
   const auth = await getAuthorizedWish(req, res);
   if (!auth) return;
-  
-  await db.prepare('UPDATE wishes SET is_active = 0, updated_at = ? WHERE id = ?').run(new Date().toISOString(), auth.id);
+
+  await db
+    .prepare('UPDATE wishes SET is_active = 0, updated_at = ? WHERE id = ?')
+    .run(new Date().toISOString(), auth.id);
   emitWishDeleted(auth.id); // Immediately remove from UI
   res.json({ success: true });
 });
@@ -442,10 +533,16 @@ router.post('/:id/deactivate', async (req, res) => {
 router.post('/:id/reactivate', async (req, res) => {
   const auth = await getAuthorizedWish(req, res);
   if (!auth) return;
-  
-  await db.prepare('UPDATE wishes SET is_active = 1, updated_at = ? WHERE id = ?').run(new Date().toISOString(), auth.id);
-  
-  const wish = await db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled, image_id FROM wishes WHERE id = ?').get(auth.id);
+
+  await db
+    .prepare('UPDATE wishes SET is_active = 1, updated_at = ? WHERE id = ?')
+    .run(new Date().toISOString(), auth.id);
+
+  const wish = await db
+    .prepare(
+      'SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled, image_id FROM wishes WHERE id = ?'
+    )
+    .get(auth.id);
   const { emitWishReactivated } = await import('../socket.js');
   emitWishReactivated({
     ...wish,
@@ -453,9 +550,9 @@ router.post('/:id/reactivate', async (req, res) => {
     creator_orientations: parseJsonArray(wish.creator_orientations),
     contacts: parseJsonArray(wish.contacts),
     wishmail_enabled: Boolean(wish.wishmail_enabled),
-    image_id: wish.image_id
+    image_id: wish.image_id,
   });
-  
+
   res.json({ success: true });
 });
 
@@ -492,7 +589,9 @@ router.post('/:id/claim', async (req, res) => {
 
   const now = new Date().toISOString();
   // Assign to user and clear the secret_hash since it's now managed via user authentication
-  await db.prepare('UPDATE wishes SET user_id = ?, secret_hash = NULL, updated_at = ? WHERE id = ?').run(user.id, now, id);
+  await db
+    .prepare('UPDATE wishes SET user_id = ?, secret_hash = NULL, updated_at = ? WHERE id = ?')
+    .run(user.id, now, id);
 
   logger.info('Wish claimed by user', { user_id: user.id, wish_id: id });
   res.json({ success: true });
@@ -504,8 +603,10 @@ router.post('/:id/flag', async (req, res) => {
   if (result.changes === 0) {
     return res.status(404).json({ error: 'Wish not found.' });
   }
-  
-  const flaggedWish = await db.prepare('SELECT id, content, flagged, user_id FROM wishes WHERE id = ?').get(id);
+
+  const flaggedWish = await db
+    .prepare('SELECT id, content, flagged, user_id FROM wishes WHERE id = ?')
+    .get(id);
   emitWishFlagged(flaggedWish);
 
   logger.warn('Wish flagged for moderation', { wish_id: id });

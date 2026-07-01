@@ -43,8 +43,12 @@ describe('rules routes', () => {
   };
 
   const loginAsUser = async () => {
-    await request(app).post('/api/users/register').send({ username: 'testuser', passphrase: 'password' });
-    const response = await request(app).post('/api/users/login').send({ username: 'testuser', passphrase: 'password' });
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: 'testuser', passphrase: 'password' });
+    const response = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'testuser', passphrase: 'password' });
     return response.body.token;
   };
 
@@ -63,16 +67,13 @@ describe('rules routes', () => {
 
   it('allows admin to add a rule', async () => {
     const token = await loginAsAdmin();
-    const res = await request(app)
-      .post('/api/rules')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        rule_type: 'expansion',
-        trigger_attribute: 'role',
-        trigger_value: 'pet',
-        target_attribute: 'role',
-        target_value: 'pup'
-      });
+    const res = await request(app).post('/api/rules').set('Authorization', `Bearer ${token}`).send({
+      rule_type: 'expansion',
+      trigger_attribute: 'role',
+      trigger_value: 'pet',
+      target_attribute: 'role',
+      target_value: 'pup',
+    });
     expect(res.status).toBe(200);
     expect(res.body.id).toBeDefined();
 
@@ -83,22 +84,29 @@ describe('rules routes', () => {
 
   it('allows admin to update a rule', async () => {
     const token = await loginAsAdmin();
-    const createRes = await request(app).post('/api/rules').set('Authorization', `Bearer ${token}`).send({
-      rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup'
-    });
+    const createRes = await request(app)
+      .post('/api/rules')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        rule_type: 'expansion',
+        trigger_attribute: 'role',
+        trigger_value: 'pet',
+        target_attribute: 'role',
+        target_value: 'pup',
+      });
     const ruleId = createRes.body.id;
 
     const updateRes = await request(app)
       .put(`/api/rules/${ruleId}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ 
-        rule_type: 'expansion', 
-        trigger_attribute: 'role', 
-        trigger_value: 'pet', 
-        target_attribute: 'role', 
-        target_value: 'pup, kitten' 
+      .send({
+        rule_type: 'expansion',
+        trigger_attribute: 'role',
+        trigger_value: 'pet',
+        target_attribute: 'role',
+        target_value: 'pup, kitten',
       });
-    
+
     expect(updateRes.status).toBe(200);
     expect(updateRes.body.success).toBe(true);
 
@@ -108,34 +116,56 @@ describe('rules routes', () => {
 
   it('returns 404 when updating non-existent rule', async () => {
     const token = await loginAsAdmin();
-    const res = await request(app).put('/api/rules/missing-id').set('Authorization', `Bearer ${token}`).send({
-        rule_type: 'expansion', 
-        trigger_attribute: 'role', 
-        trigger_value: 'pet', 
-        target_attribute: 'role', 
-        target_value: 'pup, kitten'
-    });
+    const res = await request(app)
+      .put('/api/rules/missing-id')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        rule_type: 'expansion',
+        trigger_attribute: 'role',
+        trigger_value: 'pet',
+        target_attribute: 'role',
+        target_value: 'pup, kitten',
+      });
     expect(res.status).toBe(404);
   });
 
   it('handles malformed updates gracefully', async () => {
     const token = await loginAsAdmin();
-    const createRes = await request(app).post('/api/rules').set('Authorization', `Bearer ${token}`).send({
-      rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup'
-    });
-    
-    const res = await request(app).put(`/api/rules/${createRes.body.id}`).set('Authorization', `Bearer ${token}`).send({});
+    const createRes = await request(app)
+      .post('/api/rules')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        rule_type: 'expansion',
+        trigger_attribute: 'role',
+        trigger_value: 'pet',
+        target_attribute: 'role',
+        target_value: 'pup',
+      });
+
+    const res = await request(app)
+      .put(`/api/rules/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
     expect(res.status).toBe(400);
   });
 
   it('allows admin to delete a rule', async () => {
     const token = await loginAsAdmin();
-    const createRes = await request(app).post('/api/rules').set('Authorization', `Bearer ${token}`).send({
-      rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup'
-    });
+    const createRes = await request(app)
+      .post('/api/rules')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        rule_type: 'expansion',
+        trigger_attribute: 'role',
+        trigger_value: 'pet',
+        target_attribute: 'role',
+        target_value: 'pup',
+      });
     const ruleId = createRes.body.id;
 
-    const deleteRes = await request(app).delete(`/api/rules/${ruleId}`).set('Authorization', `Bearer ${token}`);
+    const deleteRes = await request(app)
+      .delete(`/api/rules/${ruleId}`)
+      .set('Authorization', `Bearer ${token}`);
     expect(deleteRes.status).toBe(200);
 
     const getRes = await request(app).get('/api/rules').set('Authorization', `Bearer ${token}`);
@@ -144,7 +174,9 @@ describe('rules routes', () => {
 
   it('returns 404 when deleting non-existent rule', async () => {
     const token = await loginAsAdmin();
-    const res = await request(app).delete('/api/rules/missing-id').set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .delete('/api/rules/missing-id')
+      .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(404);
   });
 });

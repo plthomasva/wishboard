@@ -5,16 +5,23 @@ import EnterWishPage from './EnterWishPage';
 import * as AuthContext from '../AuthContext';
 
 vi.mock('../AuthContext', () => ({
-  useAuth: vi.fn(() => ({ token: null }))
+  useAuth: vi.fn(() => ({ token: null })),
 }));
 
 vi.mock('../components/WishScanner', () => ({
   default: ({ onCapture, onCancel }: { onCapture: any; onCancel: any }) => (
     <div data-testid="mock-wish-scanner">
-      <button data-testid="mock-capture" onClick={() => onCapture('Camera OCR text', new Blob(['cam'], { type: 'image/jpeg' }))}>Capture</button>
-      <button data-testid="mock-cancel" onClick={onCancel}>Cancel</button>
+      <button
+        data-testid="mock-capture"
+        onClick={() => onCapture('Camera OCR text', new Blob(['cam'], { type: 'image/jpeg' }))}
+      >
+        Capture
+      </button>
+      <button data-testid="mock-cancel" onClick={onCancel}>
+        Cancel
+      </button>
     </div>
-  )
+  ),
 }));
 
 let mockEngineReject = false;
@@ -26,9 +33,9 @@ vi.mock('../cardProcessor', () => ({
     }
     return {
       blob: new Blob(['mock data'], { type: 'image/jpeg' }),
-      text: 'Mocked OCR Text from Card'
+      text: 'Mocked OCR Text from Card',
     };
-  })
+  }),
 }));
 
 describe('EnterWishPage', () => {
@@ -54,10 +61,13 @@ describe('EnterWishPage', () => {
     } as any;
 
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 'wish-1', secret: 'secret-code' })
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'wish-1', secret: 'secret-code' }),
+      })
+    );
   });
 
   afterEach(() => {
@@ -69,45 +79,59 @@ describe('EnterWishPage', () => {
   it('submits a wish and shows the success message', async () => {
     render(<EnterWishPage />);
 
-    fireEvent.change(screen.getByPlaceholderText(/Type your wish here/i), { target: { value: 'I want a test.' } });
-    fireEvent.change(screen.getByPlaceholderText(/Leave blank for automatic code phrase/i), { target: { value: 'super-secret' } });
+    fireEvent.change(screen.getByPlaceholderText(/Type your wish here/i), {
+      target: { value: 'I want a test.' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Leave blank for automatic code phrase/i), {
+      target: { value: 'super-secret' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Submit Wish/i }));
 
     await waitFor(() => expect(screen.getByText(/Wish saved! ID:/i)).toBeInTheDocument());
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes', expect.objectContaining({ method: 'POST' }));
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/wishes',
+      expect.objectContaining({ method: 'POST' })
+    );
 
     // Flush any pending WishCard layout effects to prevent act() warnings
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
   });
 
-
-
   it('shows error if API request fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false,
-      json: async () => ({ error: 'Server error' })
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: 'Server error' }),
+      })
+    );
 
     render(<EnterWishPage />);
-    fireEvent.change(screen.getByPlaceholderText(/Type your wish here/i), { target: { value: 'test wish' } });
+    fireEvent.change(screen.getByPlaceholderText(/Type your wish here/i), {
+      target: { value: 'test wish' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Submit Wish/i }));
-    
+
     expect(await screen.findByText(/Server error/i)).toBeInTheDocument();
 
     // Flush any pending WishCard layout effects to prevent act() warnings
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
   });
 
   it('toggles Advanced Match Criteria', async () => {
     render(<EnterWishPage />);
-    
+
     // Initially hidden
     expect(screen.queryByText(/Desired genders/i)).not.toBeInTheDocument();
-    
+
     // Click toggle
     const toggle = screen.getByText(/Advanced Match Criteria/i);
     fireEvent.click(toggle);
-    
+
     // Now visible
     expect(screen.getByText(/Strictly required genders/i)).toBeInTheDocument();
   });
@@ -116,10 +140,10 @@ describe('EnterWishPage', () => {
     URL.createObjectURL = vi.fn().mockReturnValue('blob:mocked-url');
     URL.revokeObjectURL = vi.fn();
     render(<EnterWishPage />);
-    
+
     const fileInput = screen.getByLabelText(/Upload Image/i);
     const mockFile = new File(['mock content'], 'wish.jpg', { type: 'image/jpeg' });
-    
+
     fireEvent.change(fileInput, { target: { files: [mockFile] } });
 
     await waitFor(() => {
@@ -138,10 +162,10 @@ describe('EnterWishPage', () => {
   it('rejects non-image file uploads', async () => {
     URL.createObjectURL = vi.fn().mockReturnValue('blob:mocked-url');
     render(<EnterWishPage />);
-    
+
     const fileInput = screen.getByLabelText(/Upload Image/i);
     const mockFile = new File(['mock content'], 'test.txt', { type: 'text/plain' });
-    
+
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [mockFile] } });
     });
@@ -151,12 +175,14 @@ describe('EnterWishPage', () => {
   it('handles logged-in user UI appropriately', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' });
     render(<EnterWishPage />);
-    expect(screen.getByText(/Your account identity attributes are applied automatically to this wish./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Your account identity attributes are applied automatically to this wish./i)
+    ).toBeInTheDocument();
   });
 
   it('allows capturing an image with camera', async () => {
     render(<EnterWishPage />);
-    
+
     // Desktop view shows the Capture with Camera button
     const captureBtn = screen.getByRole('button', { name: /Capture with Camera/i });
     fireEvent.click(captureBtn);
@@ -167,11 +193,11 @@ describe('EnterWishPage', () => {
 
   it('allows capturing an image with camera, triggering capture and cancel callbacks', async () => {
     render(<EnterWishPage />);
-    
+
     // Open scanner
     const captureBtn = screen.getByRole('button', { name: /Capture with Camera/i });
     fireEvent.click(captureBtn);
-    
+
     // Trigger capture callback
     const triggerCaptureBtn = await screen.findByTestId('mock-capture');
     fireEvent.click(triggerCaptureBtn);
@@ -191,7 +217,7 @@ describe('EnterWishPage', () => {
     fireEvent.click(freshCaptureBtn);
     const triggerCancelBtn = await screen.findByTestId('mock-cancel');
     fireEvent.click(triggerCancelBtn);
-    
+
     await waitFor(() => {
       expect(screen.queryByTestId('mock-wish-scanner')).not.toBeInTheDocument();
     });
@@ -200,10 +226,10 @@ describe('EnterWishPage', () => {
   it('allows uploading a handwritten wish image and submitting it', async () => {
     URL.createObjectURL = vi.fn().mockReturnValue('blob:mocked-url');
     render(<EnterWishPage />);
-    
+
     const fileInput = screen.getByLabelText(/Upload Image/i);
     const mockFile = new File(['mock content'], 'wish.jpg', { type: 'image/jpeg' });
-    
+
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [mockFile] } });
     });
@@ -216,13 +242,18 @@ describe('EnterWishPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Submit Wish/i }));
 
     await waitFor(() => expect(screen.getByText(/Wish saved! ID:/i)).toBeInTheDocument());
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes', expect.objectContaining({
-      method: 'POST',
-      body: expect.any(FormData)
-    }));
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/wishes',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.any(FormData),
+      })
+    );
 
     // Flush any pending layout effects
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
   });
 
   it('handles image processing errors gracefully', async () => {
@@ -230,10 +261,10 @@ describe('EnterWishPage', () => {
     URL.createObjectURL = vi.fn().mockReturnValue('blob:mocked-url');
 
     render(<EnterWishPage />);
-    
+
     const fileInput = screen.getByLabelText(/Upload Image/i);
     const mockFile = new File(['mock content'], 'wish.jpg', { type: 'image/jpeg' });
-    
+
     await act(async () => {
       fireEvent.change(fileInput, { target: { files: [mockFile] } });
     });
@@ -244,4 +275,3 @@ describe('EnterWishPage', () => {
     });
   });
 });
-

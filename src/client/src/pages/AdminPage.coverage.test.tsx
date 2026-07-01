@@ -9,7 +9,7 @@ globalThis.fetch = mockFetch;
 
 vi.mock('../AuthContext', () => ({
   useAuth: vi.fn(),
-  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 describe('AdminPage Coverage', () => {
@@ -18,7 +18,7 @@ describe('AdminPage Coverage', () => {
     globalThis.location = { ...globalThis.location, hash: '' } as unknown as Location;
     mockFetch.mockResolvedValue({
       ok: true,
-      json: async () => ([])
+      json: async () => [],
     });
   });
 
@@ -30,12 +30,12 @@ describe('AdminPage Coverage', () => {
       logout: vi.fn(),
       setToken: vi.fn(),
       deleteAccount: vi.fn(),
-      updatePassword: vi.fn()
+      updatePassword: vi.fn(),
     });
 
     render(<AdminPage />);
     await screen.findByText('No matching rules found.');
-    
+
     // By default, sidebar is expanded, so it shows "◀ Collapse"
     const toggleBtn = screen.getByRole('button', { name: 'Toggle Sidebar' });
     expect(toggleBtn).toHaveTextContent('◀ Collapse');
@@ -57,12 +57,12 @@ describe('AdminPage Coverage', () => {
       logout: vi.fn(),
       setToken: vi.fn(),
       deleteAccount: vi.fn(),
-      updatePassword: vi.fn()
+      updatePassword: vi.fn(),
     });
 
     render(<AdminPage />);
     await screen.findByText('No matching rules found.');
-    
+
     const posterBtn = screen.getByTitle('Print Event Poster');
     fireEvent.click(posterBtn);
 

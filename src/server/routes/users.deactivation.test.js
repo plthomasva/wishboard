@@ -33,7 +33,8 @@ describe('User deactivation and cascade delete', () => {
     const wishId = wishRes.body.id;
 
     // 3. Create a wishmail for that wish
-    await db.prepare('INSERT INTO wishmails (id, wish_id, content, created_at) VALUES (?, ?, ?, ?)')
+    await db
+      .prepare('INSERT INTO wishmails (id, wish_id, content, created_at) VALUES (?, ?, ?, ?)')
       .run('mail1', wishId, 'A reply', new Date().toISOString());
 
     // 4. Preview delete
@@ -51,11 +52,17 @@ describe('User deactivation and cascade delete', () => {
     expect(del.status).toBe(200);
 
     // 6. Verify cascade
-    const wishCount = (await db.prepare('SELECT COUNT(*) as c FROM wishes WHERE id = ?').get(wishId)).c;
+    const wishCount = (
+      await db.prepare('SELECT COUNT(*) as c FROM wishes WHERE id = ?').get(wishId)
+    ).c;
     expect(wishCount).toBe(0);
-    const mailCount = (await db.prepare('SELECT COUNT(*) as c FROM wishmails WHERE id = ?').get('mail1')).c;
+    const mailCount = (
+      await db.prepare('SELECT COUNT(*) as c FROM wishmails WHERE id = ?').get('mail1')
+    ).c;
     expect(mailCount).toBe(0);
-    const userCount = (await db.prepare('SELECT COUNT(*) as c FROM users WHERE username = ?').get('delete_me_user')).c;
+    const userCount = (
+      await db.prepare('SELECT COUNT(*) as c FROM users WHERE username = ?').get('delete_me_user')
+    ).c;
     expect(userCount).toBe(0);
   });
 
@@ -71,9 +78,7 @@ describe('User deactivation and cascade delete', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(deact.status).toBe(200);
 
-    const me = await request(app)
-      .get('/api/users/me')
-      .set('Authorization', `Bearer ${token}`);
+    const me = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
     expect(me.body.is_active).toBe(false);
 
     const react = await request(app)
@@ -81,9 +86,7 @@ describe('User deactivation and cascade delete', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(react.status).toBe(200);
 
-    const me2 = await request(app)
-      .get('/api/users/me')
-      .set('Authorization', `Bearer ${token}`);
+    const me2 = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
     expect(me2.body.is_active).toBe(true);
   });
 
@@ -104,7 +107,7 @@ describe('User deactivation and cascade delete', () => {
     const del = await request(app)
       .post('/api/users/me/delete')
       .set('Authorization', `Bearer ${token}`);
-      
+
     expect(del.status).toBe(403);
     expect(del.body.error).toMatch(/last admin user/);
   });

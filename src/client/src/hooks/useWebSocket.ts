@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
+type Listener = (...args: unknown[]) => void;
+
 class RawWebSocketWrapper {
-  private listeners: Record<string, Function[]> = {};
+  private listeners: Record<string, Listener[]> = {};
   private ws: WebSocket | null = null;
   public connected: boolean = false;
 
@@ -13,8 +15,10 @@ class RawWebSocketWrapper {
   private connect() {
     const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
     // Fallback to routing over CloudFront /socket.io path or configured URL
-    const wsUrl = (import.meta.env.VITE_WS_URL as string) || `${protocol}//${globalThis.location.host}/socket.io`;
-    
+    const wsUrl =
+      (import.meta.env.VITE_WS_URL as string) ||
+      `${protocol}//${globalThis.location.host}/socket.io`;
+
     try {
       this.ws = new WebSocket(wsUrl);
 
@@ -49,12 +53,12 @@ class RawWebSocketWrapper {
     }
   }
 
-  public on(event: string, cb: Function) {
+  public on(event: string, cb: Listener) {
     this.listeners[event] ??= [];
     this.listeners[event].push(cb);
   }
 
-  public off(event: string, cb: Function) {
+  public off(event: string, cb: Listener) {
     if (!this.listeners[event]) return;
     this.listeners[event] = this.listeners[event].filter((l) => l !== cb);
   }
@@ -72,7 +76,7 @@ let rawInstance: RawWebSocketWrapper | null = null;
 export const getSocket = (): any => {
   const isRawMode =
     import.meta.env.VITE_USE_RAW_WEBSOCKETS === 'true' ||
-    ((globalThis as any).__WISHBOARD_CONFIG__?.realtimeProvider === 'apigateway');
+    (globalThis as any).__WISHBOARD_CONFIG__?.realtimeProvider === 'apigateway';
 
   if (isRawMode) {
     rawInstance ??= new RawWebSocketWrapper();

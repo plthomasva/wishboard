@@ -9,16 +9,16 @@ Parameters:
     Description: Name of the project, used for resource naming.
   DomainName:
     Type: String
-    Default: ""
-    Description: "(Optional) Custom domain name (e.g., wishboard.example.com)."
+    Default: ''
+    Description: '(Optional) Custom domain name (e.g., wishboard.example.com).'
   HostedZoneId:
     Type: String
-    Default: ""
-    Description: "(Optional) Route 53 Hosted Zone ID for custom domain aliases and SSL validation."
+    Default: ''
+    Description: '(Optional) Route 53 Hosted Zone ID for custom domain aliases and SSL validation.'
   AcmCertificateArn:
     Type: String
-    Default: ""
-    Description: "(Optional) Existing ACM Certificate ARN in us-east-1. If empty and DomainName is provided, a certificate will be created (requires deploying this stack in us-east-1)."
+    Default: ''
+    Description: '(Optional) Existing ACM Certificate ARN in us-east-1. If empty and DomainName is provided, a certificate will be created (requires deploying this stack in us-east-1).'
   NodeEnv:
     Type: String
     Default: production
@@ -28,11 +28,9 @@ Parameters:
     Description: Node environment for the Lambdas (production or development).
 
 Conditions:
-  UseCustomDomain: !Not [!Equals [!Ref DomainName, ""]]
-  CreateCertificate: !And [
-    !Not [!Equals [!Ref DomainName, ""]],
-    !Equals [!Ref AcmCertificateArn, ""]
-  ]
+  UseCustomDomain: !Not [!Equals [!Ref DomainName, '']]
+  CreateCertificate:
+    !And [!Not [!Equals [!Ref DomainName, '']], !Equals [!Ref AcmCertificateArn, '']]
 
 Resources:
   # =========================================================================
@@ -46,7 +44,7 @@ Resources:
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-vpc"
+          Value: !Sub '${ProjectName}-vpc'
         - Key: Project
           Value: wishboard
 
@@ -55,11 +53,11 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Select [0, !GetAZs ""]
+      AvailabilityZone: !Select [0, !GetAZs '']
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-subnet-1"
+          Value: !Sub '${ProjectName}-subnet-1'
         - Key: Project
           Value: wishboard
 
@@ -68,11 +66,11 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.2.0/24
-      AvailabilityZone: !Select [1, !GetAZs ""]
+      AvailabilityZone: !Select [1, !GetAZs '']
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-subnet-2"
+          Value: !Sub '${ProjectName}-subnet-2'
         - Key: Project
           Value: wishboard
 
@@ -81,7 +79,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-igw"
+          Value: !Sub '${ProjectName}-igw'
         - Key: Project
           Value: wishboard
 
@@ -97,7 +95,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-rt"
+          Value: !Sub '${ProjectName}-rt'
         - Key: Project
           Value: wishboard
 
@@ -125,7 +123,7 @@ Resources:
   S3Endpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
       VpcId: !Ref VPC
       VpcEndpointType: Gateway
       RouteTableIds:
@@ -137,7 +135,7 @@ Resources:
   CloudWatchEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.monitoring"
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.monitoring'
       VpcId: !Ref VPC
       VpcEndpointType: Interface
       SubnetIds:
@@ -153,7 +151,7 @@ Resources:
   CloudWatchLogsEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.logs"
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.logs'
       VpcId: !Ref VPC
       VpcEndpointType: Interface
       SubnetIds:
@@ -166,14 +164,13 @@ Resources:
         - Key: Project
           Value: wishboard
 
-
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group for Lambda functions and EFS
       VpcId: !Ref VPC
       SecurityGroupEgress:
-        - IpProtocol: "-1"
+        - IpProtocol: '-1'
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Project
@@ -197,7 +194,6 @@ Resources:
       ToPort: 443
       SourceSecurityGroupId: !Ref SecurityGroup
 
-
   # =========================================================================
   # Amazon EFS (Serverless SQLite Database Storage)
   # =========================================================================
@@ -209,7 +205,7 @@ Resources:
       ThroughputMode: elastic
       FileSystemTags:
         - Key: Name
-          Value: !Sub "${ProjectName}-db-fs"
+          Value: !Sub '${ProjectName}-db-fs'
         - Key: Project
           Value: wishboard
 
@@ -253,7 +249,7 @@ Resources:
   FrontendBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${ProjectName}-frontend-${AWS::AccountId}"
+      BucketName: !Sub '${ProjectName}-frontend-${AWS::AccountId}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -266,7 +262,7 @@ Resources:
   ImagesBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${ProjectName}-images-${AWS::AccountId}"
+      BucketName: !Sub '${ProjectName}-images-${AWS::AccountId}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -288,19 +284,19 @@ Resources:
             Principal:
               Service: cloudfront.amazonaws.com
             Action: s3:GetObject
-            Resource: !Sub "arn:aws:s3:::${FrontendBucket}/*"
+            Resource: !Sub 'arn:aws:s3:::${FrontendBucket}/*'
             Condition:
               StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
           - Effect: Deny
-            Principal: "*"
-            Action: "s3:*"
-            Resource: 
-              - !Sub "arn:aws:s3:::${FrontendBucket}"
-              - !Sub "arn:aws:s3:::${FrontendBucket}/*"
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !Sub 'arn:aws:s3:::${FrontendBucket}'
+              - !Sub 'arn:aws:s3:::${FrontendBucket}/*'
             Condition:
               Bool:
-                "aws:SecureTransport": "false"
+                'aws:SecureTransport': 'false'
 
   ImagesBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -313,19 +309,19 @@ Resources:
             Principal:
               Service: cloudfront.amazonaws.com
             Action: s3:GetObject
-            Resource: !Sub "arn:aws:s3:::${ImagesBucket}/images/*"
+            Resource: !Sub 'arn:aws:s3:::${ImagesBucket}/images/*'
             Condition:
               StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
           - Effect: Deny
-            Principal: "*"
-            Action: "s3:*"
-            Resource: 
-              - !Sub "arn:aws:s3:::${ImagesBucket}"
-              - !Sub "arn:aws:s3:::${ImagesBucket}/*"
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !Sub 'arn:aws:s3:::${ImagesBucket}'
+              - !Sub 'arn:aws:s3:::${ImagesBucket}/*'
             Condition:
               Bool:
-                "aws:SecureTransport": "false"
+                'aws:SecureTransport': 'false'
 
   # =========================================================================
   # API Gateways (HTTP API & WebSocket API)
@@ -344,9 +340,9 @@ Resources:
   WebSocketApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: !Sub "${ProjectName}-websocket-api"
+      Name: !Sub '${ProjectName}-websocket-api'
       ProtocolType: WEBSOCKET
-      RouteSelectionExpression: "$request.body.action"
+      RouteSelectionExpression: '$request.body.action'
       Tags:
         Project: wishboard
 
@@ -355,29 +351,29 @@ Resources:
     Properties:
       ApiId: !Ref WebSocketApi
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketFunction.Arn}/invocations"
+      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketFunction.Arn}/invocations'
 
   WebSocketIntegrationDisconnect:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref WebSocketApi
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketFunction.Arn}/invocations"
+      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketFunction.Arn}/invocations'
 
   WebSocketConnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref WebSocketApi
-      RouteKey: "$connect"
+      RouteKey: '$connect'
       AuthorizationType: NONE
-      Target: !Sub "integrations/${WebSocketIntegrationConnect}"
+      Target: !Sub 'integrations/${WebSocketIntegrationConnect}'
 
   WebSocketDisconnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref WebSocketApi
-      RouteKey: "$disconnect"
-      Target: !Sub "integrations/${WebSocketIntegrationDisconnect}"
+      RouteKey: '$disconnect'
+      Target: !Sub 'integrations/${WebSocketIntegrationDisconnect}'
 
   WebSocketDeployment:
     Type: AWS::ApiGatewayV2::Deployment
@@ -405,7 +401,7 @@ Resources:
       - MountTarget1
       - MountTarget2
     Properties:
-      FunctionName: !Sub "${ProjectName}-express-api"
+      FunctionName: !Sub '${ProjectName}-express-api'
       CodeUri: ../
       Handler: aws-serverless/lambda.handler
       Runtime: nodejs22.x
@@ -427,7 +423,7 @@ Resources:
           RULES_PATH: /mnt/efs/rules.yaml
           AWS_S3_BUCKET: !Ref ImagesBucket
           REALTIME_PROVIDER: apigateway
-          WEBSOCKET_API_ENDPOINT: !Sub "https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/production"
+          WEBSOCKET_API_ENDPOINT: !Sub 'https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/production'
       Tags:
         Project: wishboard
       Policies:
@@ -439,19 +435,19 @@ Resources:
             - Effect: Allow
               Action:
                 - execute-api:ManageConnections
-              Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/production/*"
+              Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/production/*'
         - Statement:
             - Effect: Allow
               Action:
                 - cloudwatch:GetMetricData
                 - cloudwatch:ListMetrics
-              Resource: "*"
+              Resource: '*'
         - Statement:
             - Effect: Allow
               Action:
                 - logs:FilterLogEvents
                 - logs:DescribeLogGroups
-              Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+              Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*'
       Events:
         ApiRoute:
           Type: HttpApi
@@ -463,7 +459,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "node22"
+        Target: 'node22'
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -477,7 +473,7 @@ Resources:
         # script (aws-serverless/post-build.js) copies the Linux binary into
         # the artifact so Lambda can load it at runtime.
         External:
-          - "@libsql/linux-x64-gnu"
+          - '@libsql/linux-x64-gnu'
         EntryPoints:
           - aws-serverless/lambda.mjs
 
@@ -487,7 +483,7 @@ Resources:
       - MountTarget1
       - MountTarget2
     Properties:
-      FunctionName: !Sub "${ProjectName}-websocket-mgr"
+      FunctionName: !Sub '${ProjectName}-websocket-mgr'
       CodeUri: ../
       Handler: aws-serverless/websocket.handler
       Runtime: nodejs22.x
@@ -515,7 +511,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: "node22"
+        Target: 'node22'
         Format: esm
         OutExtension:
           - .js=.mjs
@@ -525,7 +521,7 @@ Resources:
         # external and is copied into the artifact by aws-serverless/post-build.js
         # (same strategy as ApiFunction). See that script for details.
         External:
-          - "@libsql/linux-x64-gnu"
+          - '@libsql/linux-x64-gnu'
         EntryPoints:
           - aws-serverless/websocket.mjs
 
@@ -535,7 +531,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref WebSocketFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*"
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*'
 
   # =========================================================================
   # Route 53 & ACM Custom Domain Configuration (Conditional)
@@ -572,7 +568,7 @@ Resources:
     Properties:
       OriginAccessControlConfig:
         Description: OAC for Wishboard Buckets
-        Name: !Sub "${ProjectName}-oac"
+        Name: !Sub '${ProjectName}-oac'
         OriginAccessControlOriginType: s3
         SigningBehavior: always
         SigningProtocol: sigv4
@@ -596,30 +592,29 @@ Resources:
             ResponseCode: 200
             ResponsePagePath: /index.html
             ErrorCachingMinTTL: 0
-        Aliases: !If [UseCustomDomain, [!Ref DomainName], !Ref "AWS::NoValue"]
-        ViewerCertificate:
-          !If
-            - UseCustomDomain
-            - AcmCertificateArn: !If [CreateCertificate, !Ref AcmCertificate, !Ref AcmCertificateArn]
-              SslSupportMethod: sni-only
-              MinimumProtocolVersion: TLSv1.2_2021
-            - CloudFrontDefaultCertificate: true
+        Aliases: !If [UseCustomDomain, [!Ref DomainName], !Ref 'AWS::NoValue']
+        ViewerCertificate: !If
+          - UseCustomDomain
+          - AcmCertificateArn: !If [CreateCertificate, !Ref AcmCertificate, !Ref AcmCertificateArn]
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
         Origins:
           # Origin 1: Frontend S3 Bucket
           - Id: FrontendS3Origin
             DomainName: !GetAtt FrontendBucket.RegionalDomainName
             OriginAccessControlId: !Ref CloudFrontOAC
             S3OriginConfig:
-              OriginAccessIdentity: ""
+              OriginAccessIdentity: ''
           # Origin 2: Uploaded Images S3 Bucket
           - Id: ImagesS3Origin
             DomainName: !GetAtt ImagesBucket.RegionalDomainName
             OriginAccessControlId: !Ref CloudFrontOAC
             S3OriginConfig:
-              OriginAccessIdentity: ""
+              OriginAccessIdentity: ''
           # Origin 3: Express Backend HTTP API Gateway
           - Id: BackendApiOrigin
-            DomainName: !Sub "${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            DomainName: !Sub '${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
             # No OriginPath: the HTTP API uses the "$default" stage (no stage
             # segment in the URL). The WebSocket origin below still needs its
             # /production OriginPath because WebSocket APIs require a named stage.
@@ -628,7 +623,7 @@ Resources:
               OriginProtocolPolicy: https-only
           # Origin 4: WebSocket API Gateway
           - Id: WebSocketApiOrigin
-            DomainName: !Sub "${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com"
+            DomainName: !Sub '${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com'
             OriginPath: /production
             CustomOriginConfig:
               HTTPSPort: 443
@@ -700,14 +695,14 @@ Resources:
 
 Outputs:
   CloudFrontUrl:
-    Value: !Sub "https://${CloudFrontDistribution.DomainName}"
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
     Description: URL of the CloudFront Distribution
   CustomDomainUrl:
     Condition: UseCustomDomain
-    Value: !Sub "https://${DomainName}"
+    Value: !Sub 'https://${DomainName}'
     Description: Custom Domain URL
   HttpApiUrl:
-    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/'
     Description: Direct REST API URL
   FrontendBucketName:
     Value: !Ref FrontendBucket

@@ -11,7 +11,7 @@ vi.mock('./pages/DisplayPage', () => ({
       <div>Is Kiosk: {isKiosk ? 'Yes' : 'No'}</div>
       <button onClick={onEnterKiosk}>Enter Kiosk</button>
     </div>
-  )
+  ),
 }));
 vi.mock('./AccountPage', () => ({ default: () => <div>AccountPage Mock</div> }));
 vi.mock('./components/WiFiQrCode', () => ({ default: () => <div>WiFiQrCode Mock</div> }));
@@ -25,8 +25,8 @@ vi.mock('./AuthContext', () => ({
     user: { username: 'testuser' },
     login: mockLogin,
     logout: vi.fn(),
-    setTokenExternally: mockSetTokenExternally
-  })
+    setTokenExternally: mockSetTokenExternally,
+  }),
 }));
 
 describe('App Coverage', () => {
@@ -60,14 +60,16 @@ describe('App Coverage', () => {
 
   it('handles kiosk exit error', async () => {
     mockLogin.mockRejectedValueOnce(new Error('Network error'));
-    
+
     globalThis.window.location.hash = '#display?kiosk=true';
     render(<App />);
-    
+
     fireEvent.keyDown(globalThis.window, { key: 'Escape', code: 'Escape' });
     fireEvent.change(screen.getByPlaceholderText('e.g. admin'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), { target: { value: 'pass' } });
-    
+    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), {
+      target: { value: 'pass' },
+    });
+
     const form = screen.getByPlaceholderText('e.g. admin').closest('form') as HTMLFormElement;
     fireEvent.submit(form);
 
@@ -78,14 +80,16 @@ describe('App Coverage', () => {
 
   it('handles kiosk exit invalid credentials without explicit error string', async () => {
     mockLogin.mockResolvedValueOnce({ success: false });
-    
+
     globalThis.window.location.hash = '#display?kiosk=true';
     render(<App />);
-    
+
     fireEvent.keyDown(globalThis.window, { key: 'Escape', code: 'Escape' });
     fireEvent.change(screen.getByPlaceholderText('e.g. admin'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), { target: { value: 'pass' } });
-    
+    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), {
+      target: { value: 'pass' },
+    });
+
     const form = screen.getByPlaceholderText('e.g. admin').closest('form') as HTMLFormElement;
     fireEvent.submit(form);
 
@@ -96,15 +100,17 @@ describe('App Coverage', () => {
 
   it('cleans up kiosk params from url upon successful exit', async () => {
     mockLogin.mockResolvedValueOnce({ success: true, role: 'admin' });
-    
+
     globalThis.window.history.replaceState({}, '', '/?kiosk=true#display?kiosk=true');
     const replaceSpy = vi.spyOn(globalThis.window.history, 'replaceState');
     render(<App />);
-    
+
     fireEvent.keyDown(globalThis.window, { key: 'Escape', code: 'Escape' });
     fireEvent.change(screen.getByPlaceholderText('e.g. admin'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), { target: { value: 'pass' } });
-    
+    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), {
+      target: { value: 'pass' },
+    });
+
     const form = screen.getByPlaceholderText('e.g. admin').closest('form') as HTMLFormElement;
     fireEvent.submit(form);
 

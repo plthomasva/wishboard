@@ -30,9 +30,15 @@ describe('ConfirmDeleteAccountModal', () => {
         onConfirm={vi.fn()}
       />
     );
-    expect(screen.getByText((content, element) => element?.textContent === '1 wish')).toBeInTheDocument();
-    expect(screen.queryByText((content, element) => element?.textContent === '1 wishes')).not.toBeInTheDocument();
-    expect(screen.getByText((content, element) => element?.textContent === '1 wishmail message')).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) => element?.textContent === '1 wish')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText((content, element) => element?.textContent === '1 wishes')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) => element?.textContent === '1 wishmail message')
+    ).toBeInTheDocument();
     expect(screen.queryByText(/wishmail messages/)).not.toBeInTheDocument();
   });
 

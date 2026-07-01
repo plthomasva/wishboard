@@ -66,10 +66,10 @@ if (!fs.existsSync(srcPkgDir)) {
 
   try {
     // npm pack downloads the tarball into tmpDir and prints its filename
-    const tarball = execSync(
-      `npm pack ${pkgWithVersion} --pack-destination "${tmpDir}"`,
-      { cwd: repoRoot, encoding: 'utf8' }
-    ).trim();
+    const tarball = execSync(`npm pack ${pkgWithVersion} --pack-destination "${tmpDir}"`, {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    }).trim();
 
     const tarballPath = path.join(tmpDir, tarball);
     const extractDir = path.join(tmpDir, 'extracted');

@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { setupOidc, destroyOidc } from './commands/oidc.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8'));
+const packageJson = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8')
+);
 
 const program = new Command();
 
@@ -60,7 +62,9 @@ const serverless = program
 
 serverless
   .command('deploy')
-  .description('Build and deploy Wishboard to AWS Serverless (Legacy script: scripts/deploy-serverless.*)')
+  .description(
+    'Build and deploy Wishboard to AWS Serverless (Legacy script: scripts/deploy-serverless.*)'
+  )
   .action(() => {
     console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
     console.log('Please run the legacy script instead:');
@@ -70,7 +74,9 @@ serverless
 
 serverless
   .command('destroy')
-  .description('Teardown Wishboard AWS Serverless stack (Legacy script: scripts/destroy-serverless.*)')
+  .description(
+    'Teardown Wishboard AWS Serverless stack (Legacy script: scripts/destroy-serverless.*)'
+  )
   .action(() => {
     console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
     console.log('Please run the legacy script instead:');
@@ -94,7 +100,9 @@ kiosk
 
 kiosk
   .command('setup')
-  .description('Configure system properties on target Raspberry Pi (Legacy script: scripts/setup-kiosk.sh)')
+  .description(
+    'Configure system properties on target Raspberry Pi (Legacy script: scripts/setup-kiosk.sh)'
+  )
   .action(() => {
     console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
     console.log('Please run the legacy script instead:');
@@ -103,7 +111,9 @@ kiosk
 
 kiosk
   .command('run')
-  .description('Run docker-compose and display settings locally on target Pi (Legacy script: scripts/build-kiosk.sh)')
+  .description(
+    'Run docker-compose and display settings locally on target Pi (Legacy script: scripts/build-kiosk.sh)'
+  )
   .action(() => {
     console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
     console.log('Please run the legacy script instead:');
@@ -129,7 +139,9 @@ const buildGroup = program
 
 buildGroup
   .command('download-fonts')
-  .description('Download fallback fonts for offline execution (Legacy script: scripts/download-fonts.js)')
+  .description(
+    'Download fallback fonts for offline execution (Legacy script: scripts/download-fonts.js)'
+  )
   .action(() => {
     console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
     console.log('Please run the legacy script instead:');

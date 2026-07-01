@@ -11,14 +11,14 @@ const packageJson = JSON.parse(fs.readFileSync(resolve(projectRoot, 'package.jso
 
 export default defineConfig({
   define: {
-    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version)
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
   },
   // Vite should bundle the client app from src/client
   root: clientRoot,
   plugins: [react()],
   build: {
     outDir: resolve(projectRoot, 'dist'),
-    emptyOutDir: true
+    emptyOutDir: true,
   },
   server: {
     host: '0.0.0.0',
@@ -30,8 +30,8 @@ export default defineConfig({
         target: 'http://localhost:3000',
         ws: true,
         changeOrigin: true,
-      }
-    }
+      },
+    },
   },
   test: {
     // Use repo root for testing so both client and server files are visible.
@@ -44,7 +44,13 @@ export default defineConfig({
       ['**/scripts/**', 'node'],
       ['**/aws-serverless/**', 'node'],
     ],
-    include: ['src/client/src/**/*.{test,spec}.{ts,tsx}', 'src/server/**/*.{test,spec}.{js,ts}', 'src/cli/**/*.{test,spec}.{js,ts}', 'scripts/**/*.{test,spec}.{js,ts}', 'aws-serverless/**/*.{test,spec}.{js,mjs,ts}'],
+    include: [
+      'src/client/src/**/*.{test,spec}.{ts,tsx}',
+      'src/server/**/*.{test,spec}.{js,ts}',
+      'src/cli/**/*.{test,spec}.{js,ts}',
+      'scripts/**/*.{test,spec}.{js,ts}',
+      'aws-serverless/**/*.{test,spec}.{js,mjs,ts}',
+    ],
     setupFiles: 'src/client/src/setupTests.ts',
     globalSetup: 'vitest.global-setup.js',
     coverage: {
@@ -52,7 +58,13 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
       exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/*.d.ts'],
-      include: ['src/client/src/**/*.{js,ts,tsx}', 'src/server/**/*.{js,ts}', 'src/cli/**/*.{js,ts}', 'scripts/**/*.{js,ts}', 'aws-serverless/**/*.{js,mjs,ts}']
-    }
-  } as any
+      include: [
+        'src/client/src/**/*.{js,ts,tsx}',
+        'src/server/**/*.{js,ts}',
+        'src/cli/**/*.{js,ts}',
+        'scripts/**/*.{js,ts}',
+        'aws-serverless/**/*.{js,mjs,ts}',
+      ],
+    },
+  } as any,
 });

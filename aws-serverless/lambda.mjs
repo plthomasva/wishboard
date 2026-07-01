@@ -1,7 +1,6 @@
 import serverlessExpress from '@codegenie/serverless-express';
 import app from '../src/server/index.js';
 
-
 let serverlessExpressInstance;
 
 async function setup(event, context) {

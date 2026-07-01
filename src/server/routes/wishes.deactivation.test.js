@@ -54,7 +54,7 @@ describe('Wish deactivation', () => {
     search = await request(app).get('/api/wishes').query({ q: 'unique searchable' });
     expect(search.body.length).toBe(1);
   });
-  
+
   it('handles unauthorized deactivation/reactivation', async () => {
     const res = await request(app).post('/api/wishes/some-id/deactivate');
     expect(res.status).toBe(404); // Or 403, depending on the implementation. The current implementation returns 404 first if not found.

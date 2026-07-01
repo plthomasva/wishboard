@@ -84,19 +84,21 @@ describe('Server Auth Helper Functions', () => {
     it('creates a session and fetches user details successfully', async () => {
       // Create a test user in DB
       const userId = 'user-' + Math.random().toString(36).substring(2, 9);
-      await db.prepare(
-        'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(
-        userId,
-        `test-user-${userId}`,
-        'hash',
-        'salt',
-        'user',
-        JSON.stringify(['woman']),
-        JSON.stringify(['queer']),
-        JSON.stringify(['top']),
-        new Date().toISOString()
-      );
+      await db
+        .prepare(
+          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )
+        .run(
+          userId,
+          `test-user-${userId}`,
+          'hash',
+          'salt',
+          'user',
+          JSON.stringify(['woman']),
+          JSON.stringify(['queer']),
+          JSON.stringify(['top']),
+          new Date().toISOString()
+        );
 
       const token = await createSessionToken(userId);
       expect(token).toBeDefined();
@@ -117,7 +119,9 @@ describe('Server Auth Helper Functions', () => {
     });
 
     it('extracts token from Bearer header', async () => {
-      expect(getTokenFromRequestHeader({ headers: { authorization: 'Bearer mytoken' } })).toBe('mytoken');
+      expect(getTokenFromRequestHeader({ headers: { authorization: 'Bearer mytoken' } })).toBe(
+        'mytoken'
+      );
     });
   });
 
@@ -126,7 +130,7 @@ describe('Server Auth Helper Functions', () => {
       const req = { headers: {} };
       const res = {
         status: vi.fn().mockReturnThis(),
-        json: vi.fn()
+        json: vi.fn(),
       };
       const next = vi.fn();
 
@@ -139,25 +143,27 @@ describe('Server Auth Helper Functions', () => {
     it('await requireAuth sets req.user and calls next if authenticated', async () => {
       // Create a test user in DB
       const userId = 'user-' + Math.random().toString(36).substring(2, 9);
-      await db.prepare(
-        'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(
-        userId,
-        `auth-user-${userId}`,
-        'hash',
-        'salt',
-        'user',
-        '[]',
-        '[]',
-        '[]',
-        new Date().toISOString()
-      );
+      await db
+        .prepare(
+          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )
+        .run(
+          userId,
+          `auth-user-${userId}`,
+          'hash',
+          'salt',
+          'user',
+          '[]',
+          '[]',
+          '[]',
+          new Date().toISOString()
+        );
 
       const token = await createSessionToken(userId);
       const req = { headers: { authorization: `Bearer ${token}` } };
       const res = {
         status: vi.fn().mockReturnThis(),
-        json: vi.fn()
+        json: vi.fn(),
       };
       const next = vi.fn();
 
@@ -170,25 +176,27 @@ describe('Server Auth Helper Functions', () => {
     it('await requireAdmin returns 403 if user is not an admin', async () => {
       // Create a normal test user in DB
       const userId = 'user-' + Math.random().toString(36).substring(2, 9);
-      await db.prepare(
-        'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(
-        userId,
-        `normal-user-${userId}`,
-        'hash',
-        'salt',
-        'user',
-        '[]',
-        '[]',
-        '[]',
-        new Date().toISOString()
-      );
+      await db
+        .prepare(
+          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )
+        .run(
+          userId,
+          `normal-user-${userId}`,
+          'hash',
+          'salt',
+          'user',
+          '[]',
+          '[]',
+          '[]',
+          new Date().toISOString()
+        );
 
       const token = await createSessionToken(userId);
       const req = { headers: { authorization: `Bearer ${token}` } };
       const res = {
         status: vi.fn().mockReturnThis(),
-        json: vi.fn()
+        json: vi.fn(),
       };
       const next = vi.fn();
 
@@ -201,25 +209,27 @@ describe('Server Auth Helper Functions', () => {
     it('await requireAdmin sets req.user and calls next if user is an admin', async () => {
       // Create an admin test user in DB
       const userId = 'user-' + Math.random().toString(36).substring(2, 9);
-      await db.prepare(
-        'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(
-        userId,
-        `admin-user-${userId}`,
-        'hash',
-        'salt',
-        'admin',
-        '[]',
-        '[]',
-        '[]',
-        new Date().toISOString()
-      );
+      await db
+        .prepare(
+          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )
+        .run(
+          userId,
+          `admin-user-${userId}`,
+          'hash',
+          'salt',
+          'admin',
+          '[]',
+          '[]',
+          '[]',
+          new Date().toISOString()
+        );
 
       const token = await createSessionToken(userId);
       const req = { headers: { authorization: `Bearer ${token}` } };
       const res = {
         status: vi.fn().mockReturnThis(),
-        json: vi.fn()
+        json: vi.fn(),
       };
       const next = vi.fn();
 
@@ -229,5 +239,4 @@ describe('Server Auth Helper Functions', () => {
       expect(req.user.id).toBe(userId);
     });
   });
-
 });

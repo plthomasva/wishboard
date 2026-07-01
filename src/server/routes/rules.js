@@ -15,7 +15,15 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { rule_type, trigger_attribute, trigger_value, context_attribute, context_value, target_attribute, target_value } = req.body;
+  const {
+    rule_type,
+    trigger_attribute,
+    trigger_value,
+    context_attribute,
+    context_value,
+    target_attribute,
+    target_value,
+  } = req.body;
   if (!rule_type || !trigger_attribute || !trigger_value || !target_attribute || !target_value) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -29,7 +37,7 @@ router.post('/', async (req, res) => {
     context_attribute: context_attribute || null,
     context_value: context_value || null,
     target_attribute,
-    target_value
+    target_value,
   };
 
   addRule(rule);
@@ -39,7 +47,15 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { rule_type, trigger_attribute, trigger_value, context_attribute, context_value, target_attribute, target_value } = req.body;
+  const {
+    rule_type,
+    trigger_attribute,
+    trigger_value,
+    context_attribute,
+    context_value,
+    target_attribute,
+    target_value,
+  } = req.body;
   if (!rule_type || !trigger_attribute || !trigger_value || !target_attribute || !target_value) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -51,7 +67,7 @@ router.put('/:id', async (req, res) => {
     context_attribute: context_attribute || null,
     context_value: context_value || null,
     target_attribute,
-    target_value
+    target_value,
   });
 
   if (!updated) {

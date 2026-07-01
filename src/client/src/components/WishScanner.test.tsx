@@ -6,8 +6,8 @@ import WishScanner from './WishScanner';
 
 vi.mock('tesseract.js', () => ({
   default: {
-    recognize: vi.fn().mockResolvedValue({ data: { text: 'Mocked OCR Text' } })
-  }
+    recognize: vi.fn().mockResolvedValue({ data: { text: 'Mocked OCR Text' } }),
+  },
 }));
 
 const originalMediaDevices = globalThis.navigator.mediaDevices;
@@ -15,7 +15,7 @@ const originalMediaDevices = globalThis.navigator.mediaDevices;
 Object.defineProperty(globalThis.navigator, 'mediaDevices', {
   value: {
     getUserMedia: vi.fn().mockResolvedValue({
-      getTracks: () => [{ stop: vi.fn() }]
+      getTracks: () => [{ stop: vi.fn() }],
     }),
   },
   writable: true,
@@ -38,7 +38,11 @@ describe('WishScanner', () => {
 
   afterAll(() => {
     if (originalMediaDevices) {
-      Object.defineProperty(globalThis.navigator, 'mediaDevices', { value: originalMediaDevices, writable: true, configurable: true });
+      Object.defineProperty(globalThis.navigator, 'mediaDevices', {
+        value: originalMediaDevices,
+        writable: true,
+        configurable: true,
+      });
     } else {
       delete (globalThis.navigator as any).mediaDevices;
     }
@@ -47,7 +51,7 @@ describe('WishScanner', () => {
   it('renders correctly and handles cancel', async () => {
     const onCancel = vi.fn();
     render(<WishScanner onCapture={vi.fn()} onCancel={onCancel} />);
-    
+
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
@@ -55,5 +59,4 @@ describe('WishScanner', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onCancel).toHaveBeenCalled();
   });
-
 });

@@ -21,7 +21,11 @@ const checkResult = (result, res, entityName) => {
 };
 
 router.get('/flags', requireAdmin, async (req, res) => {
-  const rows = await db.prepare('SELECT id, content, flagged, created_at, user_id FROM wishes WHERE flagged > 0 ORDER BY flagged DESC').all();
+  const rows = await db
+    .prepare(
+      'SELECT id, content, flagged, created_at, user_id FROM wishes WHERE flagged > 0 ORDER BY flagged DESC'
+    )
+    .all();
   res.json(rows);
 });
 
@@ -36,7 +40,10 @@ router.post('/wishes/:id/remove', requireAdmin, async (req, res) => {
 
 router.post('/wishes/:id/clear-flag', requireAdmin, async (req, res) => {
   const result = await db.prepare('UPDATE wishes SET flagged = 0 WHERE id = ?').run(req.params.id);
-  logger.info('Admin cleared flag for wish', { admin_user_id: req.user.id, wish_id: req.params.id });
+  logger.info('Admin cleared flag for wish', {
+    admin_user_id: req.user.id,
+    wish_id: req.params.id,
+  });
   checkResult(result, res, 'Wish');
 });
 
@@ -47,7 +54,9 @@ router.post('/wishes/clear-all-flags', requireAdmin, async (req, res) => {
 });
 
 router.get('/users', requireAdmin, async (req, res) => {
-  const users = await db.prepare('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC').all();
+  const users = await db
+    .prepare('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC')
+    .all();
   res.json(users);
 });
 
@@ -59,20 +68,34 @@ router.post('/users/:id/role', requireAdmin, async (req, res) => {
   }
 
   const result = await db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id);
-  logger.info('Admin updated user role', { admin_user_id: req.user.id, target_user_id: id, new_role: role });
+  logger.info('Admin updated user role', {
+    admin_user_id: req.user.id,
+    target_user_id: id,
+    new_role: role,
+  });
   checkResult(result, res, 'User');
 });
 
 router.get('/users/:id/delete-preview', requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const wishesCount = (await db.prepare('SELECT COUNT(*) as count FROM wishes WHERE user_id = ?').get(id)).count;
-  const wishmailsCount = (await db.prepare('SELECT COUNT(*) as count FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').get(id)).count;
+  const wishesCount = (
+    await db.prepare('SELECT COUNT(*) as count FROM wishes WHERE user_id = ?').get(id)
+  ).count;
+  const wishmailsCount = (
+    await db
+      .prepare(
+        'SELECT COUNT(*) as count FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)'
+      )
+      .get(id)
+  ).count;
   res.json({ wishesCount, wishmailsCount });
 });
 
 router.post('/users/:id/delete', requireAdmin, async (req, res) => {
   const { id } = req.params;
-  await db.prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)').run(id);
+  await db
+    .prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)')
+    .run(id);
   await db.prepare('DELETE FROM wishes WHERE user_id = ?').run(id);
   await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
   const result = await db.prepare('DELETE FROM users WHERE id = ?').run(id);
@@ -100,7 +123,9 @@ router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) =>
     const salt = createSalt();
     const hash = hashPassphrase(passphrase, salt);
 
-    await db.prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?').run(hash, salt, id);
+    await db
+      .prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?')
+      .run(hash, salt, id);
     await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
 
     logger.info('Admin reset user passphrase', { admin_user_id: req.user.id, target_user_id: id });
@@ -113,15 +138,21 @@ router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) =>
 // POST /api/admin/reset-demo
 // Protected by await requireAdmin so only the 'admin' account can trigger it
 router.post('/reset-demo', requireAdmin, async (req, res) => {
-  if (process.env.NODE_ENV === 'production' && req.query.force !== 'true' && req.body?.force !== true) {
-    return res.status(403).json({ error: 'Demo reset is disabled in production unless force is explicitly requested.' });
+  if (
+    process.env.NODE_ENV === 'production' &&
+    req.query.force !== 'true' &&
+    req.body?.force !== true
+  ) {
+    return res.status(403).json({
+      error: 'Demo reset is disabled in production unless force is explicitly requested.',
+    });
   }
 
   try {
     const stats = await generateDemoData();
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Demo environment successfully seeded.',
-      stats
+      stats,
     });
   } catch (error) {
     console.error('Failed to seed demo data:', error);
@@ -139,11 +170,15 @@ router.get('/logs', requireAdmin, async (req, res) => {
   // In serverless mode, pull recent logs from CloudWatch Logs
   if (isLambda) {
     try {
-      const { CloudWatchLogsClient, FilterLogEventsCommand } = await import('@aws-sdk/client-cloudwatch-logs');
+      const { CloudWatchLogsClient, FilterLogEventsCommand } =
+        await import('@aws-sdk/client-cloudwatch-logs');
       const region = process.env.AWS_REGION || 'us-east-1';
       const client = new CloudWatchLogsClient({ region });
       const apiLogGroupName = `/aws/lambda/${process.env.AWS_LAMBDA_FUNCTION_NAME}`;
-      const wsFunctionName = process.env.AWS_LAMBDA_FUNCTION_NAME.replace(/-express-api$/, '-websocket-mgr');
+      const wsFunctionName = process.env.AWS_LAMBDA_FUNCTION_NAME.replace(
+        /-express-api$/,
+        '-websocket-mgr'
+      );
       const wsLogGroupName = `/aws/lambda/${wsFunctionName}`;
       const startTime = Date.now() - 60 * 60 * 1000; // last hour
 
@@ -160,11 +195,11 @@ router.get('/logs', requireAdmin, async (req, res) => {
 
       // Fetch both in parallel
       const [apiEvents, wsEvents] = await Promise.all([
-        fetchGroupLogs(apiLogGroupName).catch(err => {
+        fetchGroupLogs(apiLogGroupName).catch((err) => {
           logger.error(`Error querying log group ${apiLogGroupName}:`, { error: err.message });
           return [];
         }),
-        fetchGroupLogs(wsLogGroupName).catch(err => {
+        fetchGroupLogs(wsLogGroupName).catch((err) => {
           logger.error(`Error querying log group ${wsLogGroupName}:`, { error: err.message });
           return [];
         }),
@@ -172,8 +207,8 @@ router.get('/logs', requireAdmin, async (req, res) => {
 
       // Tag and combine events
       const taggedEvents = [
-        ...apiEvents.map(e => ({ ...e, group: 'api' })),
-        ...wsEvents.map(e => ({ ...e, group: 'ws' })),
+        ...apiEvents.map((e) => ({ ...e, group: 'api' })),
+        ...wsEvents.map((e) => ({ ...e, group: 'ws' })),
       ];
 
       // Sort chronologically
@@ -184,14 +219,20 @@ router.get('/logs', requireAdmin, async (req, res) => {
 
       // Strip Lambda START/END/REPORT lines; keep application log lines only
       const lines = finalEvents
-        .map(e => {
+        .map((e) => {
           const prefix = e.group === 'ws' ? '[WS] ' : '';
           return prefix + e.message?.trim();
         })
-        .filter(m => m && !m.startsWith('START ') && !m.startsWith('END ') && !m.startsWith('REPORT '))
+        .filter(
+          (m) => m && !m.startsWith('START ') && !m.startsWith('END ') && !m.startsWith('REPORT ')
+        )
         .join('\n');
 
-      return res.json({ logs: lines || 'No log entries found in the last hour.', source: 'cloudwatch', fetchedAt: new Date().toISOString() });
+      return res.json({
+        logs: lines || 'No log entries found in the last hour.',
+        source: 'cloudwatch',
+        fetchedAt: new Date().toISOString(),
+      });
     } catch (error) {
       logger.error('Failed to read CloudWatch logs:', { error: error.message });
       return res.status(500).json({ error: `Failed to read CloudWatch logs: ${error.message}` });
@@ -204,17 +245,20 @@ router.get('/logs', requireAdmin, async (req, res) => {
     if (!fs.existsSync(logsDir)) {
       return res.json({ logs: 'Logs directory not found.' });
     }
-    const files = fs.readdirSync(logsDir).filter(f => f.endsWith('.log'));
+    const files = fs.readdirSync(logsDir).filter((f) => f.endsWith('.log'));
     if (!files.length) {
       return res.json({ logs: 'No logs found.' });
     }
 
-    files.sort((a, b) => fs.statSync(path.join(logsDir, b)).mtimeMs - fs.statSync(path.join(logsDir, a)).mtimeMs);
+    files.sort(
+      (a, b) =>
+        fs.statSync(path.join(logsDir, b)).mtimeMs - fs.statSync(path.join(logsDir, a)).mtimeMs
+    );
     const newestFile = files[0];
 
     const content = fs.readFileSync(path.join(logsDir, newestFile), 'utf-8');
     const rawLines = content.split('\n').filter(Boolean);
-    const formattedLines = rawLines.map(line => {
+    const formattedLines = rawLines.map((line) => {
       try {
         const parsed = JSON.parse(line);
         const { timestamp, level, message, ...meta } = parsed;

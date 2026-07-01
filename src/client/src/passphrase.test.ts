@@ -10,7 +10,9 @@ describe('generatePassphrase', () => {
       expect(passphrase).toBeTypeOf('string');
       const parts = passphrase.split('-');
       expect(parts).toHaveLength(3);
-      expect(parts.every((segment: string) => segment.trim().length > 0 && segment !== 'undefined')).toBe(true);
+      expect(
+        parts.every((segment: string) => segment.trim().length > 0 && segment !== 'undefined')
+      ).toBe(true);
     }
   });
 
@@ -26,12 +28,12 @@ describe('generatePassphrase', () => {
     const originalCrypto = globalThis.crypto;
     // @ts-ignore
     delete (globalThis as any).crypto;
-    
+
     vi.resetModules();
     // @ts-ignore
     const { generatePassphrase } = await import('./passphrase.js?node-fallback');
     expect(generatePassphrase()).toBeTypeOf('string');
-    
+
     globalThis.crypto = originalCrypto;
   });
 
@@ -39,7 +41,7 @@ describe('generatePassphrase', () => {
     const originalCrypto = globalThis.crypto;
     // @ts-ignore
     delete (globalThis as any).crypto;
-    
+
     const originalNodeVersion = process.versions?.node;
     if (process.versions) {
       // @ts-ignore
@@ -48,8 +50,10 @@ describe('generatePassphrase', () => {
 
     vi.resetModules();
     // @ts-ignore
-    await expect(import('./passphrase.js?error-fallback')).rejects.toThrow('No secure crypto available in this environment.');
-    
+    await expect(import('./passphrase.js?error-fallback')).rejects.toThrow(
+      'No secure crypto available in this environment.'
+    );
+
     globalThis.crypto = originalCrypto;
     if (process.versions && originalNodeVersion) {
       process.versions.node = originalNodeVersion;
@@ -59,7 +63,7 @@ describe('generatePassphrase', () => {
 
 describe('randomIndex', () => {
   it('returns 0 if max is <= 1', async () => {
-    const { randomIndex } = await import('./passphrase.js') // @ts-ignore;
+    const { randomIndex } = await import('./passphrase.js'); // @ts-ignore;
     expect(randomIndex(1)).toBe(0);
     expect(randomIndex(0)).toBe(0);
     expect(randomIndex(-5)).toBe(0);
@@ -76,7 +80,7 @@ describe('randomIndex', () => {
         }
         callCount++;
         return array;
-      }
+      },
     });
 
     // @ts-ignore

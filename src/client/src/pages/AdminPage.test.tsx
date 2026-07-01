@@ -11,84 +11,120 @@ vi.mock('../AuthContext', () => ({
   useAuth: () => ({
     user: mockUser,
     token: mockToken,
-    login: loginMock
-  })
+    login: loginMock,
+  }),
 }));
 
 describe('AdminPage', () => {
   const fetchMatchers = [
     {
       test: (url: string) => url.endsWith('/api/admin/flags'),
-      handler: () => mockToken
-        ? { ok: true, json: async () => [{ id: 'flagged-1', content: 'Flagged wish', flagged: 1, user_id: 'user-2' }] }
-        : { ok: false, status: 401 }
+      handler: () =>
+        mockToken
+          ? {
+              ok: true,
+              json: async () => [
+                { id: 'flagged-1', content: 'Flagged wish', flagged: 1, user_id: 'user-2' },
+              ],
+            }
+          : { ok: false, status: 401 },
     },
     {
       test: (url: string) => url.endsWith('/api/admin/users'),
-      handler: () => mockToken
-        ? { ok: true, json: async () => [
-            { id: 'user-1', username: 'tester', role: 'user' },
-            { id: 'admin-2', username: 'other-admin', role: 'admin' }
-          ] }
-        : { ok: false, status: 401 }
+      handler: () =>
+        mockToken
+          ? {
+              ok: true,
+              json: async () => [
+                { id: 'user-1', username: 'tester', role: 'user' },
+                { id: 'admin-2', username: 'other-admin', role: 'admin' },
+              ],
+            }
+          : { ok: false, status: 401 },
     },
     {
       test: (url: string) => url.includes('/api/admin/logs'),
-      handler: () => mockToken
-        ? { ok: true, json: async () => ({ logs: 'Test logs output' }) }
-        : { ok: false, status: 401 }
+      handler: () =>
+        mockToken
+          ? { ok: true, json: async () => ({ logs: 'Test logs output' }) }
+          : { ok: false, status: 401 },
     },
     {
       test: (url: string) => url.endsWith('/api/admin/config'),
-      handler: () => ({ ok: true, json: async () => ({ isProduction: false }) })
+      handler: () => ({ ok: true, json: async () => ({ isProduction: false }) }),
     },
     {
       test: (url: string) => url.endsWith('/api/config'),
-      handler: () => ({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) })
+      handler: () => ({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) }),
     },
     {
       test: (url: string) => url.endsWith('/api/admin/local-metrics'),
-      handler: () => ({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) })
+      handler: () => ({
+        ok: true,
+        json: async () => ({
+          osSamples: [],
+          httpSamples: [],
+          intervalMs: 5000,
+          generatedAt: new Date().toISOString(),
+        }),
+      }),
     },
     {
       test: (url: string) => url.endsWith('/api/admin/reset-demo'),
-      handler: () => ({ ok: true, json: async () => ({ stats: { usersCreated: 50, wishesCreated: 100 } }) })
+      handler: () => ({
+        ok: true,
+        json: async () => ({ stats: { usersCreated: 50, wishesCreated: 100 } }),
+      }),
     },
     {
       test: (url: string) => url.includes('/api/rules'),
       handler: (options?: any) => {
-        if (options?.method === 'PUT' || options?.method === 'POST' || options?.method === 'DELETE') {
+        if (
+          options?.method === 'PUT' ||
+          options?.method === 'POST' ||
+          options?.method === 'DELETE'
+        ) {
           return { ok: true, json: async () => ({ success: true }) };
         }
-        return { ok: true, json: async () => [
-          { id: 'rule-1', rule_type: 'expansion', trigger_attribute: 'role', trigger_value: 'pet', target_attribute: 'role', target_value: 'pup' }
-        ] };
-      }
+        return {
+          ok: true,
+          json: async () => [
+            {
+              id: 'rule-1',
+              rule_type: 'expansion',
+              trigger_attribute: 'role',
+              trigger_value: 'pet',
+              target_attribute: 'role',
+              target_value: 'pup',
+            },
+          ],
+        };
+      },
     },
     {
       test: (url: string) => url.includes('/api/admin/wishes/') && url.endsWith('/remove'),
-      handler: () => ({ ok: true })
+      handler: () => ({ ok: true }),
     },
     {
       test: (url: string) => url.includes('/api/admin/wishes/') && url.endsWith('/clear-flag'),
-      handler: () => ({ ok: true })
+      handler: () => ({ ok: true }),
     },
     {
       test: (url: string) => url.endsWith('/api/admin/wishes/clear-all-flags'),
-      handler: () => ({ ok: true })
+      handler: () => ({ ok: true }),
     },
     {
       test: (url: string) => url.includes('/api/admin/users/') && url.endsWith('/role'),
-      handler: () => ({ ok: true })
+      handler: () => ({ ok: true }),
     },
     {
       test: (url: string) => url.includes('/api/admin/users/') && url.endsWith('/delete-preview'),
-      handler: () => ({ ok: true, json: async () => ({ wishesCount: 5, wishmailsCount: 2 }) })
+      handler: () => ({ ok: true, json: async () => ({ wishesCount: 5, wishmailsCount: 2 }) }),
     },
     {
       test: (url: string) => url.includes('/api/admin/users/') && url.endsWith('/delete'),
-      handler: () => ({ ok: true })
-    }
+      handler: () => ({ ok: true }),
+    },
   ];
 
   beforeEach(() => {
@@ -96,10 +132,10 @@ describe('AdminPage', () => {
     mockUser = null;
     mockToken = null;
     loginMock.mockReset();
-    
+
     globalThis.fetch = vi.fn().mockImplementation((input, options) => {
       const url = typeof input === 'string' ? input : '';
-      const matcher = fetchMatchers.find(m => m.test(url));
+      const matcher = fetchMatchers.find((m) => m.test(url));
       if (matcher) {
         return Promise.resolve(matcher.handler(options));
       }
@@ -125,7 +161,7 @@ describe('AdminPage', () => {
 
     fireEvent.change(screen.getByLabelText(/Admin username/i), { target: { value: 'admin' } });
     fireEvent.change(screen.getByLabelText(/Admin passphrase/i), { target: { value: 'pass' } });
-    
+
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Login as Admin/i }));
     });
@@ -148,7 +184,9 @@ describe('AdminPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Logged in successfully, but this account is not an admin.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Logged in successfully, but this account is not an admin.')
+      ).toBeInTheDocument();
     });
   });
 
@@ -173,13 +211,17 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
 
     render(<AdminPage />);
-    
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Flags/i }));
+    });
     await waitFor(() => {
       expect(screen.getByText('Flagged wish')).toBeInTheDocument();
     });
 
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Users/i }));
+    });
     await waitFor(() => {
       expect(screen.getByText('tester')).toBeInTheDocument();
       expect(screen.getByText('other-admin')).toBeInTheDocument();
@@ -191,10 +233,12 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
 
     render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Flags/i }));
+    });
 
     await waitFor(() => expect(screen.getByText('Flagged wish')).toBeInTheDocument());
-    
+
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Remove/i }));
     });
@@ -202,17 +246,20 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Removed wish flagged-1')).toBeInTheDocument();
     });
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/wishes/flagged-1/remove', expect.any(Object));
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/admin/wishes/flagged-1/remove',
+      expect.any(Object)
+    );
   });
-
-
 
   it('can run demo seeder', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
 
     render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Users/i }));
+    });
 
     await waitFor(() => expect(screen.getByText('Demo Seeder (Dev Only)')).toBeInTheDocument());
 
@@ -221,7 +268,9 @@ describe('AdminPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Seeder completed: 50 users and 100 wishes created.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Seeder completed: 50 users and 100 wishes created.')
+      ).toBeInTheDocument();
     });
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/reset-demo', expect.any(Object));
   });
@@ -233,7 +282,9 @@ describe('AdminPage', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: false });
 
     render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Flags/i }));
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Unable to load flagged wishes.')).toBeInTheDocument();
@@ -250,7 +301,10 @@ describe('AdminPage', () => {
         return Promise.resolve({ ok: true, json: async () => [] });
       }
       if (url.endsWith('/api/admin/users')) {
-        return Promise.resolve({ ok: true, json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }] });
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }],
+        });
       }
       if (url.includes('/api/admin/logs')) {
         return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
@@ -265,13 +319,23 @@ describe('AdminPage', () => {
         return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) });
       }
       if (url.includes('/api/admin/local-metrics')) {
-        return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            osSamples: [],
+            httpSamples: [],
+            intervalMs: 5000,
+            generatedAt: new Date().toISOString(),
+          }),
+        });
       }
       return Promise.resolve({ ok: false });
     });
 
     render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Users/i })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Users/i }));
+    });
 
     await waitFor(() => expect(screen.getByText('tester')).toBeInTheDocument());
 
@@ -287,7 +351,9 @@ describe('AdminPage', () => {
     mockToken = 'admin-token';
 
     render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Flags/i }));
+    });
 
     await waitFor(() => expect(screen.getByText('Flagged wish')).toBeInTheDocument());
 
@@ -298,7 +364,10 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Cleared flag for wish flagged-1')).toBeInTheDocument();
     });
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/wishes/flagged-1/clear-flag', expect.any(Object));
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/admin/wishes/flagged-1/clear-flag',
+      expect.any(Object)
+    );
   });
 
   it('can clear all flags in bulk', async () => {
@@ -307,7 +376,9 @@ describe('AdminPage', () => {
     vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
 
     render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Flags/i })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Flags/i }));
+    });
 
     await waitFor(() => expect(screen.getByText('Flagged wish')).toBeInTheDocument());
 
@@ -318,14 +389,19 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Cleared all flags successfully.')).toBeInTheDocument();
     });
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/admin/wishes/clear-all-flags', expect.any(Object));
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/admin/wishes/clear-all-flags',
+      expect.any(Object)
+    );
   });
 
   it('can view logs and toggle tailing', async () => {
     mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
     mockToken = 'admin-token';
     render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /System/i })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /System/i }));
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Test logs output')).toBeInTheDocument();
@@ -352,13 +428,23 @@ describe('AdminPage', () => {
         return Promise.resolve({ ok: true, json: async () => ({ logs: 'Test logs output' }) });
       }
       if (url.includes('/api/admin/local-metrics')) {
-        return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            osSamples: [],
+            httpSamples: [],
+            intervalMs: 5000,
+            generatedAt: new Date().toISOString(),
+          }),
+        });
       }
       return Promise.resolve({ ok: true, json: async () => [] });
     });
 
     render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /System/i })); });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /System/i }));
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/live in-process metrics/i)).toBeInTheDocument();
@@ -377,14 +463,24 @@ describe('AdminPage', () => {
         return { ok: true, json: async () => ({ realtimeProvider: 'socketio' }) };
       }
       if (url.includes('/api/admin/local-metrics')) {
-        return { ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) };
+        return {
+          ok: true,
+          json: async () => ({
+            osSamples: [],
+            httpSamples: [],
+            intervalMs: 5000,
+            generatedAt: new Date().toISOString(),
+          }),
+        };
       }
       return { ok: true, json: async () => [] };
     });
-    
+
     render(<AdminPage />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /System/i })); });
-    
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /System/i }));
+    });
+
     await waitFor(() => {
       expect(screen.getByText('Failed to load logs.')).toBeInTheDocument();
     });

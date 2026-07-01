@@ -20,22 +20,16 @@ async function cleanModule(flag, modulePath, cleanFn) {
 
 export async function teardown() {
   // ── HTTP server ────────────────────────────────────────────────────────────
-  await cleanModule(
-    globalThis.__wishboardServerLoaded,
-    './src/server/index.js',
-    async (mod) => {
-      const server = mod.server ?? null;
-      if (server) {
-        await new Promise((resolve) => server.close(resolve));
-      }
+  await cleanModule(globalThis.__wishboardServerLoaded, './src/server/index.js', async (mod) => {
+    const server = mod.server ?? null;
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
     }
-  );
+  });
 
   // ── WebSocket server (Socket.io) ───────────────────────────────────────────
-  await cleanModule(
-    globalThis.__wishboardSocketLoaded,
-    './src/server/socket.js',
-    (mod) => mod.closeSocket()
+  await cleanModule(globalThis.__wishboardSocketLoaded, './src/server/socket.js', (mod) =>
+    mod.closeSocket()
   );
 
   // ── Metrics collector timer ────────────────────────────────────────────────
@@ -46,16 +40,10 @@ export async function teardown() {
   );
 
   // ── libsql database client ─────────────────────────────────────────────────
-  await cleanModule(
-    globalThis.__wishboardDbLoaded,
-    './src/server/db.js',
-    (mod) => mod.closeDb()
-  );
+  await cleanModule(globalThis.__wishboardDbLoaded, './src/server/db.js', (mod) => mod.closeDb());
 
   // ── Winston logger ─────────────────────────────────────────────────────────
-  await cleanModule(
-    globalThis.__wishboardLoggerLoaded,
-    './src/server/logger.js',
-    (mod) => mod.default.close()
+  await cleanModule(globalThis.__wishboardLoggerLoaded, './src/server/logger.js', (mod) =>
+    mod.default.close()
   );
 }

@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { io } from 'socket.io-client';
-
-// setupTests.ts mocks socket.io-client; retrieve the mock socket it returns
-const getMockSocket = () => (io as ReturnType<typeof vi.fn>).mock.results[0]?.value ?? (io as ReturnType<typeof vi.fn>)();
 
 describe('useWebSocket', () => {
   beforeEach(() => {
@@ -26,7 +22,9 @@ describe('useWebSocket', () => {
 
     const socket = result.current.socket!;
     // Find the 'connect' handler registered on the mock
-    const connectCall = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(([e]) => e === 'connect');
+    const connectCall = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([e]) => e === 'connect'
+    );
     expect(connectCall).toBeDefined();
 
     act(() => {
@@ -41,13 +39,21 @@ describe('useWebSocket', () => {
     const { result } = renderHook(() => useWebSocket());
 
     const socket = result.current.socket!;
-    const connectCall = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(([e]) => e === 'connect');
-    const disconnectCall = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(([e]) => e === 'disconnect');
+    const connectCall = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([e]) => e === 'connect'
+    );
+    const disconnectCall = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([e]) => e === 'disconnect'
+    );
 
-    act(() => { connectCall![1](); });
+    act(() => {
+      connectCall![1]();
+    });
     expect(result.current.isConnected).toBe(true);
 
-    act(() => { disconnectCall![1](); });
+    act(() => {
+      disconnectCall![1]();
+    });
     expect(result.current.isConnected).toBe(false);
   });
 
@@ -71,24 +77,29 @@ describe('useWebSocket', () => {
 
   describe('RawWebSocketWrapper (isRawMode === true)', () => {
     let mockWebSocketInstance;
-    
+
     class MockWebSocket {
       public onopen;
       public onclose;
       public onmessage;
       public onerror;
-      
+
       constructor(public url) {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias -- capture mock instance for assertions
         mockWebSocketInstance = this;
       }
-      
+
       close() {
         if (this.onclose) this.onclose();
       }
     }
 
     beforeEach(() => {
-      vi.stubGlobal('location', { protocol: 'http:', host: 'localhost:3000', origin: 'http://localhost:3000' });
+      vi.stubGlobal('location', {
+        protocol: 'http:',
+        host: 'localhost:3000',
+        origin: 'http://localhost:3000',
+      });
       vi.stubGlobal('WebSocket', MockWebSocket);
       import.meta.env.VITE_USE_RAW_WEBSOCKETS = 'true';
       import.meta.env.VITE_WS_URL = 'ws://localhost:3000/raw';
@@ -119,10 +130,10 @@ describe('useWebSocket', () => {
       // Trigger message
       const wishCreatedSpy = vi.fn();
       result.current.socket.on('wish:created', wishCreatedSpy);
-      
+
       act(() => {
         mockWebSocketInstance.onmessage({
-          data: JSON.stringify({ event: 'wish:created', data: { id: 'w1' } })
+          data: JSON.stringify({ event: 'wish:created', data: { id: 'w1' } }),
         });
       });
       expect(wishCreatedSpy).toHaveBeenCalledWith({ id: 'w1' });
@@ -157,7 +168,7 @@ describe('useWebSocket', () => {
 
       // Test off method
       result.current.socket.off('wish:created', wishCreatedSpy);
-      
+
       // Test off edge case
       result.current.socket.off('nonexistent-event', () => {});
     });
@@ -165,11 +176,14 @@ describe('useWebSocket', () => {
     it('handles connection error and reconnects', async () => {
       // Mock error during constructor
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.stubGlobal('WebSocket', class FailingMockWebSocket {
-        constructor() {
-          throw new Error('Connect error');
+      vi.stubGlobal(
+        'WebSocket',
+        class FailingMockWebSocket {
+          constructor() {
+            throw new Error('Connect error');
+          }
         }
-      });
+      );
 
       const { useWebSocket } = await import('./useWebSocket');
       renderHook(() => useWebSocket());

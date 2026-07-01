@@ -19,7 +19,9 @@ afterEach(async () => await clearTestData());
 
 describe('Wishmail routes coverage', () => {
   it('handles missing content in POST /', async () => {
-    const wishRes = await request(app).post('/api/wishes').send({ content: 'Wishmail test', wishmail_enabled: true });
+    const wishRes = await request(app)
+      .post('/api/wishes')
+      .send({ content: 'Wishmail test', wishmail_enabled: true });
     const wishId = wishRes.body.id;
 
     const noContent = await request(app).post(`/api/wishes/${wishId}/mail`).send({});
@@ -42,11 +44,18 @@ describe('Wishmail routes coverage', () => {
 
   it('handles authorization and nonexistent mail in POST /read and DELETE', async () => {
     // Create wish with auth
-    await request(app).post('/api/users/register').send({ username: 'mailowner', passphrase: 'pwd' });
-    const login = await request(app).post('/api/users/login').send({ username: 'mailowner', passphrase: 'pwd' });
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: 'mailowner', passphrase: 'pwd' });
+    const login = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'mailowner', passphrase: 'pwd' });
     const token = login.body.token;
 
-    const wishRes = await request(app).post('/api/wishes').set('Authorization', `Bearer ${token}`).send({ content: 'auth wish', wishmail_enabled: true });
+    const wishRes = await request(app)
+      .post('/api/wishes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'auth wish', wishmail_enabled: true });
     const wishId = wishRes.body.id;
 
     // Send mail
@@ -54,7 +63,9 @@ describe('Wishmail routes coverage', () => {
     const mailId = mailRes.body.id;
 
     // Try unauthorized read
-    const unauthorizedRead = await request(app).post(`/api/wishes/${wishId}/mail/${mailId}/read`).send({});
+    const unauthorizedRead = await request(app)
+      .post(`/api/wishes/${wishId}/mail/${mailId}/read`)
+      .send({});
     expect(unauthorizedRead.status).toBe(403);
 
     // Try unauthorized delete
@@ -62,24 +73,36 @@ describe('Wishmail routes coverage', () => {
     expect(unauthorizedDelete.status).toBe(403);
 
     // Authorized read by user
-    const authorizedRead = await request(app).post(`/api/wishes/${wishId}/mail/${mailId}/read`).set('Authorization', `Bearer ${token}`).send({});
+    const authorizedRead = await request(app)
+      .post(`/api/wishes/${wishId}/mail/${mailId}/read`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
     expect(authorizedRead.status).toBe(200);
 
     // Nonexistent mail id read (authorized but mailId doesn't exist for this wish)
-    const notFoundRead = await request(app).post(`/api/wishes/${wishId}/mail/badId/read`).set('Authorization', `Bearer ${token}`).send({});
+    const notFoundRead = await request(app)
+      .post(`/api/wishes/${wishId}/mail/badId/read`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
     expect(notFoundRead.status).toBe(404);
 
     // Authorized delete by user
-    const authorizedDelete = await request(app).delete(`/api/wishes/${wishId}/mail/${mailId}`).set('Authorization', `Bearer ${token}`);
+    const authorizedDelete = await request(app)
+      .delete(`/api/wishes/${wishId}/mail/${mailId}`)
+      .set('Authorization', `Bearer ${token}`);
     expect(authorizedDelete.status).toBe(200);
 
     // Nonexistent mail id delete
-    const notFoundDelete = await request(app).delete(`/api/wishes/${wishId}/mail/badId`).set('Authorization', `Bearer ${token}`);
+    const notFoundDelete = await request(app)
+      .delete(`/api/wishes/${wishId}/mail/badId`)
+      .set('Authorization', `Bearer ${token}`);
     expect(notFoundDelete.status).toBe(404);
   });
 
   it('handles passphrase authorization for DELETE', async () => {
-    const wishRes = await request(app).post('/api/wishes').send({ content: 'Anon wish', wishmail_enabled: true });
+    const wishRes = await request(app)
+      .post('/api/wishes')
+      .send({ content: 'Anon wish', wishmail_enabled: true });
     const wishId = wishRes.body.id;
     const secret = wishRes.body.secret;
 
@@ -87,12 +110,15 @@ describe('Wishmail routes coverage', () => {
     const mailId = mailRes.body.id;
 
     // Unauthorized delete (wrong secret)
-    const badSecretDelete = await request(app).delete(`/api/wishes/${wishId}/mail/${mailId}`).set('x-wish-secret', 'wrong');
+    const badSecretDelete = await request(app)
+      .delete(`/api/wishes/${wishId}/mail/${mailId}`)
+      .set('x-wish-secret', 'wrong');
     expect(badSecretDelete.status).toBe(403);
 
     // Authorized delete
-    const authDelete = await request(app).delete(`/api/wishes/${wishId}/mail/${mailId}`).set('x-wish-secret', secret);
+    const authDelete = await request(app)
+      .delete(`/api/wishes/${wishId}/mail/${mailId}`)
+      .set('x-wish-secret', secret);
     expect(authDelete.status).toBe(200);
   });
 });
-

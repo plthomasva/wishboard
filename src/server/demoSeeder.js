@@ -10,44 +10,52 @@ const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 const primaryGenders = ['Woman', 'Man'];
 const secondaryGenders = ['Non-binary', 'Genderqueer', 'Agender', 'Transgender', 'Cisgender'];
 const mockGenders = [...primaryGenders, ...secondaryGenders];
-const mockOrientations = ['Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Queer'];
+const mockOrientations = [
+  'Straight',
+  'Gay',
+  'Lesbian',
+  'Bisexual',
+  'Pansexual',
+  'Asexual',
+  'Queer',
+];
 const mockRoles = ['Dominant', 'Submissive', 'Switch', 'Top', 'Bottom', 'Versatile'];
 const mockContactTypes = ['FetLife', 'Phone', 'Email'];
 
 // Mad Libs text generation fragments
 const textFragments = {
   actions: [
-    "I wish to find someone to explore",
-    "I wish to connect with people who share my love for",
-    "I wish for a deep, meaningful conversation about",
-    "I wish to find a partner for",
+    'I wish to find someone to explore',
+    'I wish to connect with people who share my love for',
+    'I wish for a deep, meaningful conversation about',
+    'I wish to find a partner for',
     "I'm looking for a community interested in",
-    "I wish someone would teach me more about",
-    "I wish to meet people who enjoy",
-    "I wish for a dedicated buddy for"
+    'I wish someone would teach me more about',
+    'I wish to meet people who enjoy',
+    'I wish for a dedicated buddy for',
   ],
   subjects: [
-    "local hiking trails",
-    "indie tabletop games",
-    "classic science fiction and fantasy novels",
-    "swing dancing",
-    "sustainable energy and electric vehicles",
-    "cryptography and logic puzzles",
-    "perfecting the art of brewing coffee",
-    "spontaneous weekend road trips",
-    "authentic cooking and culinary experiments",
-    "navigating recent life transitions"
+    'local hiking trails',
+    'indie tabletop games',
+    'classic science fiction and fantasy novels',
+    'swing dancing',
+    'sustainable energy and electric vehicles',
+    'cryptography and logic puzzles',
+    'perfecting the art of brewing coffee',
+    'spontaneous weekend road trips',
+    'authentic cooking and culinary experiments',
+    'navigating recent life transitions',
   ],
   contexts: [
-    "over the weekend.",
-    "in a safe, communicative environment.",
-    "over a cup of perfectly brewed coffee.",
-    "while hanging out with our cats.",
-    "during a quiet evening at home.",
-    "with good company and a relaxed vibe.",
-    "and see where the adventure takes us.",
-    "without any pressure or expectations."
-  ]
+    'over the weekend.',
+    'in a safe, communicative environment.',
+    'over a cup of perfectly brewed coffee.',
+    'while hanging out with our cats.',
+    'during a quiet evening at home.',
+    'with good company and a relaxed vibe.',
+    'and see where the adventure takes us.',
+    'without any pressure or expectations.',
+  ],
 };
 
 // Helper to grab 1-2 random items from an array
@@ -63,10 +71,12 @@ function getRandom(arr, maxCount = 2) {
 
 function getRandomGenders() {
   const selected = [];
-  if (crypto.randomInt(0, 100) > 30) { // 70% chance to have a primary gender
+  if (crypto.randomInt(0, 100) > 30) {
+    // 70% chance to have a primary gender
     selected.push(primaryGenders[crypto.randomInt(0, primaryGenders.length)]);
   }
-  if (crypto.randomInt(0, 100) > 50) { // 50% chance to have a secondary gender
+  if (crypto.randomInt(0, 100) > 50) {
+    // 50% chance to have a secondary gender
     selected.push(secondaryGenders[crypto.randomInt(0, secondaryGenders.length)]);
   }
   return selected;
@@ -75,10 +85,13 @@ function getRandomGenders() {
 function generateRandomContacts() {
   const count = crypto.randomInt(0, 3); // 0 to 2 contacts
   if (count === 0) return [];
-  
-  return getRandom(mockContactTypes, count).map(type => ({
+
+  return getRandom(mockContactTypes, count).map((type) => ({
     type,
-    value: type === 'Phone' ? '555-010' + crypto.randomInt(0, 10) : `demo_${type.toLowerCase()}_${crypto.randomInt(0, 1000)}`
+    value:
+      type === 'Phone'
+        ? '555-010' + crypto.randomInt(0, 10)
+        : `demo_${type.toLowerCase()}_${crypto.randomInt(0, 1000)}`,
   }));
 }
 
@@ -98,7 +111,11 @@ async function clearDemoData() {
   // 1. Clear existing demo/user data (Keep the default admin's session)
   // Remove wishes and demo users first, then prune sessions that no
   // longer belong to any remaining user (this preserves the admin's session)
-  await db.prepare("DELETE FROM wishes WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'demo_user_%')").run();
+  await db
+    .prepare(
+      "DELETE FROM wishes WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'demo_user_%')"
+    )
+    .run();
   await db.prepare("DELETE FROM users WHERE username LIKE 'demo_user_%'").run();
 
   // Remove sessions for user_ids that no longer exist (keeps admin session)
@@ -117,8 +134,8 @@ async function generateDemoUsers() {
     const id = idGenerator();
     const username = `demo_user_${i}`;
     const salt = createSalt();
-    const hash = hashPassphrase('demo-password', salt); 
-    
+    const hash = hashPassphrase('demo-password', salt);
+
     // Generate random identities
     const genders = JSON.stringify(getRandomGenders());
     const orientations = JSON.stringify(getRandom(mockOrientations));
@@ -127,10 +144,29 @@ async function generateDemoUsers() {
     const wishmailEnabledInt = crypto.randomInt(0, 100) > 50 ? 1 : 0;
     const createdAt = new Date().toISOString();
 
-    insertUser.run(id, username, hash, salt, 'user', genders, orientations, roles, JSON.stringify(contacts), wishmailEnabledInt, createdAt); // NOSONAR
-    
+    insertUser.run(
+      id,
+      username,
+      hash,
+      salt,
+      'user',
+      genders,
+      orientations,
+      roles,
+      JSON.stringify(contacts),
+      wishmailEnabledInt,
+      createdAt
+    ); // NOSONAR
+
     // Keep in memory to assign wishes later
-    users.push({ id, genders, orientations, roles, contacts, wishmailEnabled: wishmailEnabledInt === 1 }); 
+    users.push({
+      id,
+      genders,
+      orientations,
+      roles,
+      contacts,
+      wishmailEnabled: wishmailEnabledInt === 1,
+    });
   }
   return users;
 }
@@ -138,19 +174,19 @@ async function generateDemoUsers() {
 function createSingleWish(insertWish, randomUser) {
   const id = idGenerator();
   const content = generateMadLibsWish();
-  
+
   const desiredGenders = randomListStr(mockGenders, 40);
   const desiredOrientations = randomListStr(mockOrientations, 60);
   const desiredRoles = randomListStr(mockRoles, 70);
-  
+
   const timeOffset = crypto.randomInt(0, 30 * 24 * 60 * 60 * 1000);
   const date = new Date(Date.now() - timeOffset).toISOString();
 
   let wishContacts = [...randomUser.contacts];
   let wishWishmail = randomUser.wishmailEnabled;
-  
+
   if (crypto.randomInt(0, 100) > 80) wishWishmail = !wishWishmail;
-  
+
   if (crypto.randomInt(0, 100) > 70 && wishContacts.length > 0) {
     wishContacts.pop();
   } else if (crypto.randomInt(0, 100) > 70) {
@@ -158,11 +194,20 @@ function createSingleWish(insertWish, randomUser) {
   }
 
   insertWish.run(
-    id, randomUser.id, content,
-    randomUser.genders, randomUser.orientations, randomUser.roles,
-    desiredGenders, desiredOrientations, desiredRoles,
-    JSON.stringify(wishContacts), wishWishmail ? 1 : 0,
-    date, date, 0
+    id,
+    randomUser.id,
+    content,
+    randomUser.genders,
+    randomUser.orientations,
+    randomUser.roles,
+    desiredGenders,
+    desiredOrientations,
+    desiredRoles,
+    JSON.stringify(wishContacts),
+    wishWishmail ? 1 : 0,
+    date,
+    date,
+    0
   ); // NOSONAR
 }
 

@@ -23,7 +23,7 @@ const clearTestData = async () => {
   await db.exec('DELETE FROM sessions');
   await db.exec('DELETE FROM wishes');
   await db.exec("DELETE FROM users WHERE role != 'admin'");
-  
+
   const srcRules = path.resolve(__dirname, '../../../data/rules.yaml');
   if (fs.existsSync(srcRules)) {
     fs.copyFileSync(srcRules, testRules);
@@ -42,37 +42,77 @@ afterEach(async () => {
 describe('wishes.js coverage', () => {
   it('covers various matchmaking branches', async () => {
     // pan/queer
-    await request(app).post('/api/wishes').send({ content: 'Queer wish', creator_genders: 'man', creator_orientations: 'queer', desired_genders: 'trans-man' });
-    const resQueer = await request(app).get('/api/wishes').query({ sg: 'trans-man', so: 'gay', q: 'Queer wish' });
+    await request(app).post('/api/wishes').send({
+      content: 'Queer wish',
+      creator_genders: 'man',
+      creator_orientations: 'queer',
+      desired_genders: 'trans-man',
+    });
+    const resQueer = await request(app)
+      .get('/api/wishes')
+      .query({ sg: 'trans-man', so: 'gay', q: 'Queer wish' });
     expect(resQueer.body.length).toBe(1);
 
     // bi/bisexual
-    await request(app).post('/api/wishes').send({ content: 'Bi wish', creator_genders: 'man', creator_orientations: 'bisexual', desired_genders: 'woman' });
-    const resBi = await request(app).get('/api/wishes').query({ sg: 'woman', so: 'straight', q: 'Bi wish' });
+    await request(app).post('/api/wishes').send({
+      content: 'Bi wish',
+      creator_genders: 'man',
+      creator_orientations: 'bisexual',
+      desired_genders: 'woman',
+    });
+    const resBi = await request(app)
+      .get('/api/wishes')
+      .query({ sg: 'woman', so: 'straight', q: 'Bi wish' });
     expect(resBi.body.length).toBe(1);
 
     // gay/homosexual with woman
-    await request(app).post('/api/wishes').send({ content: 'Gay woman wish', creator_genders: 'woman', creator_orientations: 'homosexual', desired_genders: 'woman' });
-    const resGayW = await request(app).get('/api/wishes').query({ sg: 'woman', so: 'lesbian', q: 'Gay woman wish' });
+    await request(app).post('/api/wishes').send({
+      content: 'Gay woman wish',
+      creator_genders: 'woman',
+      creator_orientations: 'homosexual',
+      desired_genders: 'woman',
+    });
+    const resGayW = await request(app)
+      .get('/api/wishes')
+      .query({ sg: 'woman', so: 'lesbian', q: 'Gay woman wish' });
     expect(resGayW.body.length).toBe(1);
 
     // gay/homosexual with man
-    await request(app).post('/api/wishes').send({ content: 'Gay man wish', creator_genders: 'man', creator_orientations: 'homosexual', desired_genders: 'man' });
-    const resGayM = await request(app).get('/api/wishes').query({ sg: 'man', so: 'gay', q: 'Gay man wish' });
+    await request(app).post('/api/wishes').send({
+      content: 'Gay man wish',
+      creator_genders: 'man',
+      creator_orientations: 'homosexual',
+      desired_genders: 'man',
+    });
+    const resGayM = await request(app)
+      .get('/api/wishes')
+      .query({ sg: 'man', so: 'gay', q: 'Gay man wish' });
     expect(resGayM.body.length).toBe(1);
 
     // empty accepted gender set
-    const resEmptySet = await request(app).get('/api/wishes').query({ sg: 'alien', so: 'alien', q: 'Gay man wish' });
+    const resEmptySet = await request(app)
+      .get('/api/wishes')
+      .query({ sg: 'alien', so: 'alien', q: 'Gay man wish' });
     expect(resEmptySet.body.length).toBe(0);
-    
+
     // empty searcher roles
-    await request(app).post('/api/wishes').send({ content: 'Role wish', creator_roles: 'top', desired_roles: 'bottom' });
-    const resNoRole = await request(app).get('/api/wishes').query({ so: 'straight', sr: '', q: 'Role wish' });
+    await request(app)
+      .post('/api/wishes')
+      .send({ content: 'Role wish', creator_roles: 'top', desired_roles: 'bottom' });
+    const resNoRole = await request(app)
+      .get('/api/wishes')
+      .query({ so: 'straight', sr: '', q: 'Role wish' });
     expect(resNoRole.body.length).toBe(0);
 
     // empty searcher orientation in matchesPreference
-    await request(app).post('/api/wishes').send({ content: 'Orient wish', creator_orientations: 'gay', desired_orientations: 'straight' });
-    const resNoOrient = await request(app).get('/api/wishes').query({ so: '', sg: 'woman', q: 'Orient wish' });
+    await request(app).post('/api/wishes').send({
+      content: 'Orient wish',
+      creator_orientations: 'gay',
+      desired_orientations: 'straight',
+    });
+    const resNoOrient = await request(app)
+      .get('/api/wishes')
+      .query({ so: '', sg: 'woman', q: 'Orient wish' });
     expect(resNoOrient.body.length).toBe(0);
   });
 
@@ -87,23 +127,31 @@ describe('wishes.js coverage', () => {
   });
 
   it('covers POST /:id/manage errors', async () => {
-    const res404 = await request(app).post('/api/wishes/nonexistent/manage').send({ action: 'delete' });
+    const res404 = await request(app)
+      .post('/api/wishes/nonexistent/manage')
+      .send({ action: 'delete' });
     expect(res404.status).toBe(404);
 
     const wishRes = await request(app).post('/api/wishes').send({ content: 'test' });
     const wishId = wishRes.body.id;
 
-    const noSecret = await request(app).post(`/api/wishes/${wishId}/manage`).send({ action: 'delete' });
+    const noSecret = await request(app)
+      .post(`/api/wishes/${wishId}/manage`)
+      .send({ action: 'delete' });
     expect(noSecret.status).toBe(401);
 
     // Remove secret hash to test "Invalid secret token." 403
     await db.prepare('UPDATE wishes SET secret_hash = NULL WHERE id = ?').run(wishId);
-    const invalidSecret = await request(app).post(`/api/wishes/${wishId}/manage`).send({ action: 'delete', secret: 'test' });
+    const invalidSecret = await request(app)
+      .post(`/api/wishes/${wishId}/manage`)
+      .send({ action: 'delete', secret: 'test' });
     expect(invalidSecret.status).toBe(403);
 
     // Bad payload on a fresh wish
     const wishRes2 = await request(app).post('/api/wishes').send({ content: 'test2' });
-    const badPayload = await request(app).post(`/api/wishes/${wishRes2.body.id}/manage`).send({ secret: wishRes2.body.secret, action: 'unknown' });
+    const badPayload = await request(app)
+      .post(`/api/wishes/${wishRes2.body.id}/manage`)
+      .send({ secret: wishRes2.body.secret, action: 'unknown' });
     expect(badPayload.status).toBe(400);
   });
 
@@ -112,29 +160,50 @@ describe('wishes.js coverage', () => {
     const wishId = wishRes.body.id;
 
     await request(app).post('/api/users/register').send({ username: 'u1', passphrase: 'p1' });
-    const login = await request(app).post('/api/users/login').send({ username: 'u1', passphrase: 'p1' });
+    const login = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'u1', passphrase: 'p1' });
     const token = login.body.token;
 
-    const noSecret = await request(app).post(`/api/wishes/${wishId}/claim`).set('Authorization', `Bearer ${token}`).send({});
+    const noSecret = await request(app)
+      .post(`/api/wishes/${wishId}/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
     expect(noSecret.status).toBe(400);
 
-    const notFound = await request(app).post(`/api/wishes/nonexistent/claim`).set('Authorization', `Bearer ${token}`).send({ secret: 'a' });
+    const notFound = await request(app)
+      .post(`/api/wishes/nonexistent/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret: 'a' });
     expect(notFound.status).toBe(404);
 
-    await request(app).post(`/api/wishes/${wishId}/claim`).set('Authorization', `Bearer ${token}`).send({ secret: wishRes.body.secret });
-    
+    await request(app)
+      .post(`/api/wishes/${wishId}/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret: wishRes.body.secret });
+
     // already claimed
-    const already = await request(app).post(`/api/wishes/${wishId}/claim`).set('Authorization', `Bearer ${token}`).send({ secret: 'a' });
+    const already = await request(app)
+      .post(`/api/wishes/${wishId}/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret: 'a' });
     expect(already.status).toBe(403);
-    
+
     // cannot be claimed
     await request(app).post('/api/users/register').send({ username: 'u2', passphrase: 'p2' });
-    const login2 = await request(app).post('/api/users/login').send({ username: 'u2', passphrase: 'p2' });
+    const login2 = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'u2', passphrase: 'p2' });
     const token2 = login2.body.token;
-    
-    const unclaimableWish = await request(app).post('/api/wishes').set('Authorization', `Bearer ${token}`).send({ content: 'auth wish' });
-    const unclaimable = await request(app).post(`/api/wishes/${unclaimableWish.body.id}/claim`).set('Authorization', `Bearer ${token2}`).send({ secret: 'a' });
+
+    const unclaimableWish = await request(app)
+      .post('/api/wishes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'auth wish' });
+    const unclaimable = await request(app)
+      .post(`/api/wishes/${unclaimableWish.body.id}/claim`)
+      .set('Authorization', `Bearer ${token2}`)
+      .send({ secret: 'a' });
     expect(unclaimable.status).toBe(403);
   });
 });
-

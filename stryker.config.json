@@ -4,12 +4,7 @@
   "vitest": {
     "configFile": "stryker.vite.config.ts"
   },
-  "reporters": [
-    "progress",
-    "clear-text",
-    "html",
-    "json"
-  ],
+  "reporters": ["progress", "clear-text", "html", "json"],
   "htmlReporter": {
     "fileName": "reports/mutation/index.html"
   },
@@ -27,7 +22,5 @@
     "!src/server/**/*.test.ts",
     "!src/client/src/components/WishScanner.tsx"
   ],
-  "ignorePatterns": [
-    "!dist/**/*"
-  ]
+  "ignorePatterns": ["!dist/**/*"]
 }

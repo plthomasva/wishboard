@@ -12,11 +12,11 @@ Parameters:
     Description: GitHub Repository Name.
   OidcProviderArn:
     Type: String
-    Default: ""
+    Default: ''
     Description: (Optional) Existing OIDC Provider ARN. If empty, a new OIDC Provider will be created.
 
 Conditions:
-  CreateOIDCProvider: !Equals [!Ref OidcProviderArn, ""]
+  CreateOIDCProvider: !Equals [!Ref OidcProviderArn, '']
 
 Resources:
   GithubOidcProvider:
@@ -34,7 +34,7 @@ Resources:
   GithubDeployerRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${GitHubRepo}-github-deployer-role"
+      RoleName: !Sub '${GitHubRepo}-github-deployer-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -46,7 +46,7 @@ Resources:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOrg}/${GitHubRepo}:*"
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrg}/${GitHubRepo}:*'
       Policies:
         - PolicyName: WishboardDeployerPolicy
           PolicyDocument:
@@ -70,9 +70,9 @@ Resources:
                   - cloudformation:DeleteStack
                   - cloudformation:DescribeStackResource
                 Resource:
-                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/wishboard-serverless*/*"
-                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/aws-sam-cli-managed-default/*"
-                  - !Sub "arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31"
+                  - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/wishboard-serverless*/*'
+                  - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/aws-sam-cli-managed-default/*'
+                  - !Sub 'arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31'
 
               # 2. S3 Bucket Management (SAM source artifacts, frontend assets, images)
               - Effect: Allow
@@ -95,8 +95,8 @@ Resources:
                   - s3:GetBucketTagging
                   - s3:PutBucketTagging
                 Resource:
-                  - "arn:aws:s3:::wishboard-*"
-                  - "arn:aws:s3:::aws-sam-cli-managed-default-*"
+                  - 'arn:aws:s3:::wishboard-*'
+                  - 'arn:aws:s3:::aws-sam-cli-managed-default-*'
 
               # 3. IAM Role Management (Lambda execution roles created by SAM)
               - Effect: Allow
@@ -114,7 +114,7 @@ Resources:
                   - iam:UntagRole
                   - iam:ListRoleTags
                 Resource:
-                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/wishboard-*"
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/wishboard-*'
 
               # 4. Lambda Function Management
               - Effect: Allow
@@ -131,7 +131,7 @@ Resources:
                   - lambda:TagResource
                   - lambda:UntagResource
                 Resource:
-                  - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:wishboard-*"
+                  - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:wishboard-*'
 
               # 5a. API Gateway Creation
               - Effect: Allow
@@ -139,7 +139,7 @@ Resources:
                   - apigateway:POST
                   - apigateway:PUT
                 Resource:
-                  - !Sub "arn:aws:apigateway:${AWS::Region}::/apis"
+                  - !Sub 'arn:aws:apigateway:${AWS::Region}::/apis'
 
               # 5b. API Gateway Management
               - Effect: Allow
@@ -152,8 +152,8 @@ Resources:
                   - apigateway:TagResource
                   - apigateway:UntagResource
                 Resource:
-                  - !Sub "arn:aws:apigateway:${AWS::Region}::/apis/*"
-                  - !Sub "arn:aws:apigateway:${AWS::Region}::/tags/*"
+                  - !Sub 'arn:aws:apigateway:${AWS::Region}::/apis/*'
+                  - !Sub 'arn:aws:apigateway:${AWS::Region}::/tags/*'
 
               # 6a. EFS File System & Access Point Creation
               - Effect: Allow
@@ -161,11 +161,11 @@ Resources:
                   - elasticfilesystem:CreateFileSystem
                   - elasticfilesystem:CreateAccessPoint
                 Resource:
-                  - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*"
-                  - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*"
+                  - !Sub 'arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*'
+                  - !Sub 'arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*'
                 Condition:
                   StringEquals:
-                    "aws:RequestTag/Project": !Ref GitHubRepo
+                    'aws:RequestTag/Project': !Ref GitHubRepo
 
               # 6b. EFS File System & Access Point Management
               - Effect: Allow
@@ -177,11 +177,11 @@ Resources:
                   - elasticfilesystem:TagResource
                   - elasticfilesystem:UntagResource
                 Resource:
-                  - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*"
-                  - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*"
+                  - !Sub 'arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*'
+                  - !Sub 'arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*'
                 Condition:
                   StringEquals:
-                    "aws:ResourceTag/Project": !Ref GitHubRepo
+                    'aws:ResourceTag/Project': !Ref GitHubRepo
 
               # 6c. EFS Describing (Read-only, no resource-level permissions)
               - Effect: Allow
@@ -190,16 +190,16 @@ Resources:
                   - elasticfilesystem:DescribeMountTargets
                   - elasticfilesystem:DescribeAccessPoints
                   - elasticfilesystem:DescribeReplicationConfigurations
-                Resource: "*"
+                Resource: '*'
 
               # 7a. CloudFront Distribution Creation
               - Effect: Allow
                 Action:
                   - cloudfront:CreateDistribution
-                Resource: "*"
+                Resource: '*'
                 Condition:
                   StringEquals:
-                    "aws:RequestTag/Project": !Ref GitHubRepo
+                    'aws:RequestTag/Project': !Ref GitHubRepo
 
               # 7b. CloudFront Distribution Management
               - Effect: Allow
@@ -212,10 +212,10 @@ Resources:
                   - cloudfront:TagResource
                   - cloudfront:UntagResource
                 Resource:
-                  - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/*"
+                  - !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/*'
                 Condition:
                   StringEquals:
-                    "aws:ResourceTag/Project": !Ref GitHubRepo
+                    'aws:ResourceTag/Project': !Ref GitHubRepo
 
               # 7c. CloudFront Origin Access Control Management
               - Effect: Allow
@@ -225,7 +225,7 @@ Resources:
                   - cloudfront:DeleteOriginAccessControl
                   - cloudfront:UpdateOriginAccessControl
                 Resource:
-                  - !Sub "arn:aws:cloudfront::${AWS::AccountId}:origin-access-control/*"
+                  - !Sub 'arn:aws:cloudfront::${AWS::AccountId}:origin-access-control/*'
 
               # 8a. Taggable EC2 Resource Creation
               - Effect: Allow
@@ -238,13 +238,13 @@ Resources:
                   - ec2:CreateVpcEndpoint
                   - ec2:CreateNetworkInterface
                 Resource:
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*"
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*'
 
               # 8b. Taggable EC2 Resource Deletion / Modification
               - Effect: Allow
@@ -259,16 +259,16 @@ Resources:
                   - ec2:DeleteVpcEndpoints
                   - ec2:DeleteNetworkInterface
                 Resource:
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*"
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*'
                 Condition:
                   StringEquals:
-                    "aws:ResourceTag/Project": !Ref GitHubRepo
+                    'aws:ResourceTag/Project': !Ref GitHubRepo
 
               # 8c. EC2 Operations on existing resources (rules, routes, attachments)
               - Effect: Allow
@@ -285,14 +285,14 @@ Resources:
                   - ec2:AuthorizeSecurityGroupEgress
                   - ec2:RevokeSecurityGroupEgress
                 Resource:
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'
                 Condition:
                   StringEquals:
-                    "aws:ResourceTag/Project": !Ref GitHubRepo
+                    'aws:ResourceTag/Project': !Ref GitHubRepo
 
               # 8d. EC2 Tag Management
               - Effect: Allow
@@ -300,16 +300,16 @@ Resources:
                   - ec2:CreateTags
                   - ec2:DeleteTags
                 Resource:
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*"
-                  - !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*"
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc-endpoint/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*'
                 Condition:
                   StringEquals:
-                    "aws:RequestTag/Project": !Ref GitHubRepo
+                    'aws:RequestTag/Project': !Ref GitHubRepo
 
               # 8e. EC2 Describe (Read-only, no resource-level permissions)
               - Effect: Allow
@@ -323,7 +323,7 @@ Resources:
                   - ec2:DescribeAvailabilityZones
                   - ec2:DescribeNetworkInterfaces
                   - ec2:DescribeRouteTableAssociations
-                Resource: "*"
+                Resource: '*'
 
               # 9. CloudWatch Logs (LogGroups creation for Lambda)
               - Effect: Allow
@@ -335,7 +335,7 @@ Resources:
                   - logs:TagResource
                   - logs:UntagResource
                 Resource:
-                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/wishboard-*"
+                  - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/wishboard-*'
 
               # 10a. Route 53 Custom Domain Configuration
               - Effect: Allow
@@ -345,8 +345,8 @@ Resources:
                   - route53:ListResourceRecordSets
                   - route53:GetChange
                 Resource:
-                  - !Sub "arn:aws:route53:::hostedzone/*"
-                  - !Sub "arn:aws:route53:::change/*"
+                  - !Sub 'arn:aws:route53:::hostedzone/*'
+                  - !Sub 'arn:aws:route53:::change/*'
 
               # 10b. ACM Certificate Configuration
               - Effect: Allow
@@ -357,13 +357,13 @@ Resources:
                   - acm:AddTagsToCertificate
                   - acm:RemoveTagsFromCertificate
                 Resource:
-                  - !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/*"
+                  - !Sub 'arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/*'
 
               # 11. STS Get Caller Identity
               - Effect: Allow
                 Action:
                   - sts:GetCallerIdentity
-                Resource: "*"
+                Resource: '*'
 
 Outputs:
   RoleArn:

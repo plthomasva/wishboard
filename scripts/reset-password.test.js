@@ -45,41 +45,61 @@ describe('reset-password script', () => {
 
   it('resets the password when providing a username and a new passphrase', async () => {
     let output = '';
-    const success = await resetPassword(['testuser', 'new-secure-pass'], (msg) => output += msg + '\n', () => {});
-    
+    const success = await resetPassword(
+      ['testuser', 'new-secure-pass'],
+      (msg) => (output += msg + '\n'),
+      () => {}
+    );
+
     expect(success).toBe(true);
     expect(output).toContain("Success! Passphrase for 'testuser' has been reset.");
-    expect(output).toContain("New Passphrase: new-secure-pass");
+    expect(output).toContain('New Passphrase: new-secure-pass');
 
-    const user = await db.prepare('SELECT passphrase_hash, passphrase_salt FROM users WHERE username = ?').get('testuser');
+    const user = await db
+      .prepare('SELECT passphrase_hash, passphrase_salt FROM users WHERE username = ?')
+      .get('testuser');
     expect(user.passphrase_hash).not.toBe('oldhash');
     expect(user.passphrase_salt).not.toBe('oldsalt');
 
-    const sessions = (await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get('user-1')).count;
+    const sessions = (
+      await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get('user-1')
+    ).count;
     expect(sessions).toBe(0);
   }, 15000);
 
   it('generates a new passphrase if omitted', async () => {
     let output = '';
-    const success = await resetPassword(['testuser'], (msg) => output += msg + '\n', () => {});
+    const success = await resetPassword(
+      ['testuser'],
+      (msg) => (output += msg + '\n'),
+      () => {}
+    );
 
     expect(success).toBe(true);
     expect(output).toContain("Success! Passphrase for 'testuser' has been reset.");
-    expect(output).toContain("New Passphrase: ");
+    expect(output).toContain('New Passphrase: ');
 
     const match = /New Passphrase: (\S+-\S+-\S+)/.exec(output);
     expect(match).toBeTruthy();
 
-    const user = await db.prepare('SELECT passphrase_hash, passphrase_salt FROM users WHERE username = ?').get('testuser');
+    const user = await db
+      .prepare('SELECT passphrase_hash, passphrase_salt FROM users WHERE username = ?')
+      .get('testuser');
     expect(user.passphrase_hash).not.toBe('oldhash');
 
-    const sessions = (await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get('user-1')).count;
+    const sessions = (
+      await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get('user-1')
+    ).count;
     expect(sessions).toBe(0);
   });
 
   it('fails and returns false if user does not exist', async () => {
     let errorOutput = '';
-    const success = await resetPassword(['non-existent-user'], () => {}, (msg) => errorOutput += msg + '\n');
+    const success = await resetPassword(
+      ['non-existent-user'],
+      () => {},
+      (msg) => (errorOutput += msg + '\n')
+    );
 
     expect(success).toBe(false);
     expect(errorOutput).toContain("Error: User 'non-existent-user' not found in the database.");
@@ -87,9 +107,13 @@ describe('reset-password script', () => {
 
   it('fails and prints usage if no arguments are provided', async () => {
     let errorOutput = '';
-    const success = await resetPassword([], () => {}, (msg) => errorOutput += msg + '\n');
+    const success = await resetPassword(
+      [],
+      () => {},
+      (msg) => (errorOutput += msg + '\n')
+    );
 
     expect(success).toBe(false);
-    expect(errorOutput).toContain("Usage: node reset-password.js <username> [new_passphrase]");
+    expect(errorOutput).toContain('Usage: node reset-password.js <username> [new_passphrase]');
   });
 });

@@ -24,9 +24,8 @@ export default function WishFormFields({
   setContacts,
   wishmailEnabled,
   setWishmailEnabled,
-  isOverflowing
+  isOverflowing,
 }: Readonly<WishFormFieldsProps>) {
-
   return (
     <>
       <label>
@@ -39,27 +38,40 @@ export default function WishFormFields({
           className={isOverflowing ? 'overflowing-textarea' : ''}
         />
       </label>
-      
+
       {isOverflowing && (
         <div className="label-with-info" style={{ marginTop: '-4px', marginBottom: '8px' }}>
-          <strong style={{ color: '#b91717', fontSize: '0.9rem', margin: 0 }}>Text Overflowing</strong>
+          <strong style={{ color: '#b91717', fontSize: '0.9rem', margin: 0 }}>
+            Text Overflowing
+          </strong>
           <InfoToggle>
-            Your wish is getting quite long! The text won't fit beautifully on the physical display board at this size. Consider making it more concise.
+            Your wish is getting quite long! The text won't fit beautifully on the physical display
+            board at this size. Consider making it more concise.
           </InfoToggle>
         </div>
       )}
 
-      <fieldset style={{ border: '1px solid #d7dee5', borderRadius: '12px', padding: '16px', background: '#f8fafc', marginTop: '4px' }}>
+      <fieldset
+        style={{
+          border: '1px solid #d7dee5',
+          borderRadius: '12px',
+          padding: '16px',
+          background: '#f8fafc',
+          marginTop: '4px',
+        }}
+      >
         <legend style={{ fontWeight: 600, padding: '0 8px' }}>Contacts & Wishmail</legend>
         <div style={{ display: 'grid', gap: '12px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'normal' }}>
-            <input 
-              type="checkbox" 
-              checked={wishmailEnabled} 
-              onChange={(e) => setWishmailEnabled(e.target.checked)} 
+          <label
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'normal' }}
+          >
+            <input
+              type="checkbox"
+              checked={wishmailEnabled}
+              onChange={(e) => setWishmailEnabled(e.target.checked)}
               style={{ width: 'auto', minHeight: 'auto' }}
-            />
-            {' '}Enable Wishmail (allow others to message you about this wish)
+            />{' '}
+            Enable Wishmail (allow others to message you about this wish)
           </label>
 
           <div>

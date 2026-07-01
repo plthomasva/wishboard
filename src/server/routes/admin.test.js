@@ -70,24 +70,26 @@ describe('Admin routes', () => {
   it('lists flagged wishes and allows removal by admin', async () => {
     const wishId = 'flagged-wish-1';
     const now = new Date().toISOString();
-    await db.prepare(
-      `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
+    await db
+      .prepare(
+        `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      wishId,
-      null,
-      'Please remove me',
-      null,
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      now,
-      now,
-      1
-    );
+      )
+      .run(
+        wishId,
+        null,
+        'Please remove me',
+        null,
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify([]),
+        now,
+        now,
+        1
+      );
 
     const token = await loginAsAdmin();
 
@@ -97,7 +99,7 @@ describe('Admin routes', () => {
 
     expect(flagsResponse.status).toBe(200);
     expect(flagsResponse.body).toEqual([
-      expect.objectContaining({ id: wishId, content: 'Please remove me', flagged: 1 })
+      expect.objectContaining({ id: wishId, content: 'Please remove me', flagged: 1 }),
     ]);
 
     const removeResponse = await request(app)
@@ -120,15 +122,26 @@ describe('Admin routes', () => {
     const wishId2 = 'flagged-wish-2';
     const now = new Date().toISOString();
     const insertWish = async (id) => {
-      await db.prepare(
-        `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
+      await db
+        .prepare(
+          `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).run(
-        id, null, 'Content ' + id, null,
-        JSON.stringify([]), JSON.stringify([]), JSON.stringify([]),
-        JSON.stringify([]), JSON.stringify([]), JSON.stringify([]),
-        now, now, 1
-      );
+        )
+        .run(
+          id,
+          null,
+          'Content ' + id,
+          null,
+          JSON.stringify([]),
+          JSON.stringify([]),
+          JSON.stringify([]),
+          JSON.stringify([]),
+          JSON.stringify([]),
+          JSON.stringify([]),
+          now,
+          now,
+          1
+        );
     };
 
     await insertWish(wishId1);
@@ -217,7 +230,8 @@ describe('Admin routes', () => {
   }, 15000);
 
   it('resets the demo environment and returns the correct stats', async () => {
-    await db.prepare('INSERT INTO wishes (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)')
+    await db
+      .prepare('INSERT INTO wishes (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)')
       .run('preseed-wish', 'Leave me behind', new Date().toISOString(), new Date().toISOString());
 
     const token = await loginAsAdmin();
@@ -227,10 +241,17 @@ describe('Admin routes', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(resetResponse.status).toBe(200);
-    expect(resetResponse.body).toEqual({ message: 'Demo environment successfully seeded.', stats: { usersCreated: 50, wishesCreated: 100 } });
+    expect(resetResponse.body).toEqual({
+      message: 'Demo environment successfully seeded.',
+      stats: { usersCreated: 50, wishesCreated: 100 },
+    });
 
-    const usersCount = (await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role != 'admin'").get()).count;
-    const adminCount = (await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").get()).count;
+    const usersCount = (
+      await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role != 'admin'").get()
+    ).count;
+    const adminCount = (
+      await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").get()
+    ).count;
     const wishesCount = (await db.prepare('SELECT COUNT(*) AS count FROM wishes').get()).count;
 
     expect(usersCount).toBe(50);
@@ -240,28 +261,38 @@ describe('Admin routes', () => {
 
   it('handles not found errors for removing wishes', async () => {
     const token = await loginAsAdmin();
-    const response = await request(app).post('/api/admin/wishes/non-existent/remove').set('Authorization', `Bearer ${token}`);
+    const response = await request(app)
+      .post('/api/admin/wishes/non-existent/remove')
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(404);
     expect(response.body.error).toBe('Wish not found.');
   });
 
   it('handles invalid roles when updating user role', async () => {
     const token = await loginAsAdmin();
-    const response = await request(app).post('/api/admin/users/123/role').send({ role: 'invalid' }).set('Authorization', `Bearer ${token}`);
+    const response = await request(app)
+      .post('/api/admin/users/123/role')
+      .send({ role: 'invalid' })
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(400);
     expect(response.body.error).toBe('Role must be user or admin.');
   });
 
   it('handles not found errors for updating user role', async () => {
     const token = await loginAsAdmin();
-    const response = await request(app).post('/api/admin/users/non-existent/role').send({ role: 'admin' }).set('Authorization', `Bearer ${token}`);
+    const response = await request(app)
+      .post('/api/admin/users/non-existent/role')
+      .send({ role: 'admin' })
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(404);
     expect(response.body.error).toBe('User not found.');
   });
 
   it('handles not found errors for deleting users', async () => {
     const token = await loginAsAdmin();
-    const response = await request(app).post('/api/admin/users/non-existent/delete').set('Authorization', `Bearer ${token}`);
+    const response = await request(app)
+      .post('/api/admin/users/non-existent/delete')
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(404);
     expect(response.body.error).toBe('User not found.');
   });
@@ -275,11 +306,13 @@ describe('Admin routes', () => {
       }
       return originalPrepare(sql);
     });
-    
-    const response = await request(app).post('/api/admin/reset-demo').set('Authorization', `Bearer ${token}`);
+
+    const response = await request(app)
+      .post('/api/admin/reset-demo')
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(500);
     expect(response.body.error).toBe('Internal Server Error during seeding');
-    
+
     spy.mockRestore();
   });
 
@@ -303,7 +336,9 @@ describe('Admin routes', () => {
       .set('Accept', 'application/json');
     expect(loginResponse.status).toBe(200);
 
-    const activeSessionsBefore = (await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId)).count;
+    const activeSessionsBefore = (
+      await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId)
+    ).count;
     expect(activeSessionsBefore).toBe(2);
 
     // 4. Reset password as admin
@@ -317,7 +352,9 @@ describe('Admin routes', () => {
     expect(resetResponse.body.newPassphrase.length).toBeGreaterThan(0);
 
     // 5. Verify sessions were deleted
-    const activeSessionsAfter = (await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId)).count;
+    const activeSessionsAfter = (
+      await db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE user_id = ?').get(testUserId)
+    ).count;
     expect(activeSessionsAfter).toBe(0);
 
     // 6. Verify old password doesn't work
@@ -347,7 +384,9 @@ describe('Admin routes', () => {
 
   it('reads the logs successfully and sets no-cache headers', async () => {
     const token = await loginAsAdmin();
-    const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
+    const response = await request(app)
+      .get('/api/admin/logs')
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.logs).toBeDefined();
     expect(response.headers['cache-control']).toBe('no-store, no-cache, must-revalidate');
@@ -375,15 +414,15 @@ describe('Admin routes', () => {
         events: [
           { message: 'START RequestId: 1', timestamp: 1000 },
           { message: 'info: API Log 1', timestamp: 2000 },
-          { message: 'REPORT RequestId: 1', timestamp: 4000 }
-        ]
+          { message: 'REPORT RequestId: 1', timestamp: 4000 },
+        ],
       });
       // Second call (WS group)
       mockCloudWatchLogsSend.mockResolvedValueOnce({
         events: [
           { message: 'info: WS Log 1', timestamp: 1500 },
-          { message: 'info: WS Log 2', timestamp: 3000 }
-        ]
+          { message: 'info: WS Log 2', timestamp: 3000 },
+        ],
       });
 
       const response = await request(app)
@@ -410,7 +449,7 @@ describe('Admin routes', () => {
       const token = await loginAsAdmin();
       // First call succeeds
       mockCloudWatchLogsSend.mockResolvedValueOnce({
-        events: [{ message: 'info: API Log only', timestamp: 1000 }]
+        events: [{ message: 'info: API Log only', timestamp: 1000 }],
       });
       // Second call fails
       mockCloudWatchLogsSend.mockRejectedValueOnce(new Error('AccessDenied'));
@@ -441,33 +480,48 @@ describe('Admin routes', () => {
 
   it('handles missing logs directory', async () => {
     const token = await loginAsAdmin();
-    
-    const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation(
-      (pathStr) => !(typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`)))
-    );
 
-    const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
+    const spyExists = vi
+      .spyOn(fs, 'existsSync')
+      .mockImplementation(
+        (pathStr) =>
+          !(
+            typeof pathStr === 'string' &&
+            (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`))
+          )
+      );
+
+    const response = await request(app)
+      .get('/api/admin/logs')
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.logs).toBe('Logs directory not found.');
-    
+
     spyExists.mockRestore();
   });
 
   it('handles empty logs directory', async () => {
     const token = await loginAsAdmin();
-    
+
     const spyExists = vi.spyOn(fs, 'existsSync').mockImplementation((pathStr) => {
-      return typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`));
+      return (
+        typeof pathStr === 'string' &&
+        (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`))
+      );
     });
     const spyReadDir = vi.spyOn(fs, 'readdirSync').mockImplementation((pathStr) => {
-      const isLogs = typeof pathStr === 'string' && (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`));
+      const isLogs =
+        typeof pathStr === 'string' &&
+        (pathStr.includes('data/logs') || pathStr.includes(String.raw`data\logs`));
       return isLogs ? [] : ['not_logs.log'];
     });
 
-    const response = await request(app).get('/api/admin/logs').set('Authorization', `Bearer ${token}`);
+    const response = await request(app)
+      .get('/api/admin/logs')
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.logs).toBe('No logs found.');
-    
+
     spyExists.mockRestore();
     spyReadDir.mockRestore();
   });

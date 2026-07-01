@@ -8,18 +8,27 @@ interface AttributeInputProps {
   suggestions: string[];
 }
 
-export default function AttributeInput({ id, value, onChange, placeholder, suggestions }: Readonly<AttributeInputProps>) {
-  const currentItems = value.split(',').map(s => s.trim().toLowerCase()).filter(s => s !== '');
+export default function AttributeInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+  suggestions,
+}: Readonly<AttributeInputProps>) {
+  const currentItems = value
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s !== '');
 
   const handleToggle = (option: string) => {
     const optionLower = option.toLowerCase();
     const isSelected = currentItems.includes(optionLower);
-    
+
     // We want to preserve the exact casing of what they manually typed if possible,
     // but for simplicity we'll just reconstruct the string.
     let newItems;
     if (isSelected) {
-      newItems = currentItems.filter(i => i !== optionLower);
+      newItems = currentItems.filter((i) => i !== optionLower);
     } else {
       newItems = [...currentItems, optionLower];
     }
@@ -45,7 +54,8 @@ export default function AttributeInput({ id, value, onChange, placeholder, sugge
               className={`pill-btn ${isSelected ? 'selected' : ''}`}
               onClick={() => handleToggle(opt)}
             >
-              {isSelected ? '✓ ' : '+ '}{opt}
+              {isSelected ? '✓ ' : '+ '}
+              {opt}
             </button>
           );
         })}

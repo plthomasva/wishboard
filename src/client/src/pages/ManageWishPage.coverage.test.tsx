@@ -1,11 +1,11 @@
-import { render, screen, fireEvent, waitFor} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ManageWishPage from './ManageWishPage';
 import React from 'react';
 import * as AuthContext from '../AuthContext';
 
 vi.mock('../AuthContext', () => ({
-  useAuth: vi.fn()
+  useAuth: vi.fn(),
 }));
 
 const mockFetch = vi.fn();
@@ -34,31 +34,43 @@ describe('ManageWishPage Coverage', () => {
   it('handles update failure and token inclusion', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
     globalThis.window.location.hash = '#manage-wish?id=w1';
-    
+
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'w1', content: 'Wish content', contacts: [{ type: 'Phone', value: '123' }, { type: 'Email', value: '' }] })
+      json: async () => ({
+        id: 'w1',
+        content: 'Wish content',
+        contacts: [
+          { type: 'Phone', value: '123' },
+          { type: 'Email', value: '' },
+        ],
+      }),
     });
 
     render(<ManageWishPage />);
     await waitFor(() => expect(screen.getByText('Manage Your Wish')).toBeInTheDocument());
 
     // Enter secret
-    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), { target: { value: 'mysecret' } });
+    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), {
+      target: { value: 'mysecret' },
+    });
 
     // Mock failure for update
     mockFetch.mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ error: 'Update failed from server' })
+      json: async () => ({ error: 'Update failed from server' }),
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/wishes/w1/manage', expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer mock-token' }),
-        body: expect.stringContaining('mysecret')
-      }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/wishes/w1/manage',
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer mock-token' }),
+          body: expect.stringContaining('mysecret'),
+        })
+      );
       expect(screen.getByText('Update failed from server')).toBeInTheDocument();
     });
   });
@@ -66,10 +78,10 @@ describe('ManageWishPage Coverage', () => {
   it('handles delete failure and token inclusion', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
     globalThis.window.location.hash = '#manage-wish?id=w2';
-    
+
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'w2', content: 'Wish content', contacts: [] })
+      json: async () => ({ id: 'w2', content: 'Wish content', contacts: [] }),
     });
 
     render(<ManageWishPage />);
@@ -81,15 +93,18 @@ describe('ManageWishPage Coverage', () => {
     // Mock failure for delete
     mockFetch.mockResolvedValueOnce({
       ok: false,
-      json: async () => ({})
+      json: async () => ({}),
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete Wish' }));
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/wishes/w2/manage', expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer mock-token' })
-      }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/wishes/w2/manage',
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer mock-token' }),
+        })
+      );
       expect(screen.getByText('Failed to delete wish.')).toBeInTheDocument();
     });
   });
@@ -97,10 +112,10 @@ describe('ManageWishPage Coverage', () => {
   it('handles deactivate wish and token inclusion', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
     globalThis.window.location.hash = '#manage-wish?id=w3';
-    
+
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'w3', content: 'Wish content', contacts: [], is_active: true })
+      json: async () => ({ id: 'w3', content: 'Wish content', contacts: [], is_active: true }),
     });
 
     render(<ManageWishPage />);
@@ -108,15 +123,18 @@ describe('ManageWishPage Coverage', () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({})
+      json: async () => ({}),
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Deactivate Wish' }));
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/wishes/w3/deactivate', expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer mock-token' })
-      }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/wishes/w3/deactivate',
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer mock-token' }),
+        })
+      );
       expect(screen.getByText('Reactivate Wish')).toBeInTheDocument();
     });
   });
@@ -124,10 +142,10 @@ describe('ManageWishPage Coverage', () => {
   it('handles reactivate wish', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
     globalThis.window.location.hash = '#manage-wish?id=w4';
-    
+
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'w4', content: 'Wish content', contacts: [], is_active: false })
+      json: async () => ({ id: 'w4', content: 'Wish content', contacts: [], is_active: false }),
     });
 
     render(<ManageWishPage />);
@@ -135,7 +153,7 @@ describe('ManageWishPage Coverage', () => {
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({})
+      json: async () => ({}),
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reactivate Wish' }));
@@ -146,4 +164,3 @@ describe('ManageWishPage Coverage', () => {
     });
   });
 });
-

@@ -4,7 +4,14 @@ import { io } from 'socket.io-client';
 import SearchPage from './SearchPage';
 
 vi.mock('../AuthContext', () => ({
-  useAuth: () => ({ user: null, token: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn() })
+  useAuth: () => ({
+    user: null,
+    token: null,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+    refreshUser: vi.fn(),
+  }),
 }));
 
 const getMockSocket = () => (io as ReturnType<typeof vi.fn>)();
@@ -23,8 +30,13 @@ describe('SearchPage WebSocket', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
-        { id: 'w1', content: 'Existing search result', creator_genders: [], creator_orientations: [] }
-      ]
+        {
+          id: 'w1',
+          content: 'Existing search result',
+          creator_genders: [],
+          creator_orientations: [],
+        },
+      ],
     }) as any;
   });
 
@@ -36,7 +48,9 @@ describe('SearchPage WebSocket', () => {
     render(<SearchPage />);
 
     // Perform a search to set lastSearchParams
-    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'test' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'test' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
     await waitFor(() => expect(screen.getByText('Existing search result')).toBeInTheDocument());
 
@@ -44,9 +58,19 @@ describe('SearchPage WebSocket', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
-        { id: 'w2', content: 'Brand new matching wish', creator_genders: [], creator_orientations: [] },
-        { id: 'w1', content: 'Existing search result', creator_genders: [], creator_orientations: [] }
-      ]
+        {
+          id: 'w2',
+          content: 'Brand new matching wish',
+          creator_genders: [],
+          creator_orientations: [],
+        },
+        {
+          id: 'w1',
+          content: 'Existing search result',
+          creator_genders: [],
+          creator_orientations: [],
+        },
+      ],
     }) as any;
 
     const socket = getMockSocket();
@@ -54,7 +78,12 @@ describe('SearchPage WebSocket', () => {
     expect(wishCreatedHandler).toBeDefined();
 
     await act(async () => {
-      await wishCreatedHandler({ id: 'w2', content: 'Brand new matching wish', creator_genders: [], creator_orientations: [] });
+      await wishCreatedHandler({
+        id: 'w2',
+        content: 'Brand new matching wish',
+        creator_genders: [],
+        creator_orientations: [],
+      });
     });
 
     await waitFor(() => expect(screen.getByText('Brand new matching wish')).toBeInTheDocument());
@@ -63,7 +92,9 @@ describe('SearchPage WebSocket', () => {
   it('does not prepend a wish that does not match the current search', async () => {
     render(<SearchPage />);
 
-    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'test' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'test' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
     await waitFor(() => expect(screen.getByText('Existing search result')).toBeInTheDocument());
 
@@ -71,15 +102,25 @@ describe('SearchPage WebSocket', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
-        { id: 'w1', content: 'Existing search result', creator_genders: [], creator_orientations: [] }
-      ]
+        {
+          id: 'w1',
+          content: 'Existing search result',
+          creator_genders: [],
+          creator_orientations: [],
+        },
+      ],
     }) as any;
 
     const socket = getMockSocket();
     const wishCreatedHandler = getLastHandler(socket, 'wish:created');
 
     await act(async () => {
-      await wishCreatedHandler({ id: 'w-no-match', content: 'Non matching wish', creator_genders: [], creator_orientations: [] });
+      await wishCreatedHandler({
+        id: 'w-no-match',
+        content: 'Non matching wish',
+        creator_genders: [],
+        creator_orientations: [],
+      });
     });
 
     expect(screen.queryByText('Non matching wish')).not.toBeInTheDocument();
@@ -88,22 +129,34 @@ describe('SearchPage WebSocket', () => {
   it('does not prepend a duplicate if wish is already in results', async () => {
     render(<SearchPage />);
 
-    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'test' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'test' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
     await waitFor(() => expect(screen.getByText('Existing search result')).toBeInTheDocument());
 
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
-        { id: 'w1', content: 'Existing search result', creator_genders: [], creator_orientations: [] }
-      ]
+        {
+          id: 'w1',
+          content: 'Existing search result',
+          creator_genders: [],
+          creator_orientations: [],
+        },
+      ],
     }) as any;
 
     const socket = getMockSocket();
     const wishCreatedHandler = getLastHandler(socket, 'wish:created');
 
     await act(async () => {
-      await wishCreatedHandler({ id: 'w1', content: 'Existing search result', creator_genders: [], creator_orientations: [] });
+      await wishCreatedHandler({
+        id: 'w1',
+        content: 'Existing search result',
+        creator_genders: [],
+        creator_orientations: [],
+      });
     });
 
     expect(screen.getAllByText('Existing search result')).toHaveLength(1);
@@ -114,11 +167,17 @@ describe('SearchPage WebSocket', () => {
 
     const socket = getMockSocket();
     // Use the first (early-return) handler deliberately — tests the early-exit branch
-    const wishCreatedHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([e]) => e === 'wish:created')?.[1];
+    const wishCreatedHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([e]) => e === 'wish:created'
+    )?.[1];
 
     await act(async () => {
-      await wishCreatedHandler?.({ id: 'w-early', content: 'Too early wish', creator_genders: [], creator_orientations: [] });
+      await wishCreatedHandler?.({
+        id: 'w-early',
+        content: 'Too early wish',
+        creator_genders: [],
+        creator_orientations: [],
+      });
     });
 
     expect(screen.queryByText('Too early wish')).not.toBeInTheDocument();
@@ -127,7 +186,9 @@ describe('SearchPage WebSocket', () => {
   it('handles a failed re-fetch gracefully and does not crash', async () => {
     render(<SearchPage />);
 
-    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'test' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'test' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
     await waitFor(() => expect(screen.getByText('Existing search result')).toBeInTheDocument());
 
@@ -137,9 +198,16 @@ describe('SearchPage WebSocket', () => {
     const wishCreatedHandler = getLastHandler(socket, 'wish:created');
 
     // Should not throw — error is caught and logged via console.debug
-    await expect(act(async () => {
-      await wishCreatedHandler({ id: 'w-err', content: 'Error wish', creator_genders: [], creator_orientations: [] });
-    })).resolves.not.toThrow();
+    await expect(
+      act(async () => {
+        await wishCreatedHandler({
+          id: 'w-err',
+          content: 'Error wish',
+          creator_genders: [],
+          creator_orientations: [],
+        });
+      })
+    ).resolves.not.toThrow();
 
     // The error wish should NOT have been added to the UI
     expect(screen.queryByText('Error wish')).not.toBeInTheDocument();

@@ -1,8 +1,7 @@
 /** @vitest-environment node */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs';
 import https from 'https';
-import path from 'path';
 import { EventEmitter } from 'events';
 
 // Mock fs and https before importing the module
@@ -83,7 +82,7 @@ describe('download-fonts', () => {
       https.get.mockReturnValue(mockRequest);
 
       const promise = downloadFile('https://example.com/font.ttf', 'test.ttf');
-      
+
       // Simulate request error
       mockRequest.emit('error', new Error('Network Error'));
 
@@ -114,7 +113,7 @@ describe('download-fonts', () => {
 
     it('logs warning and uses cached files when download fails but they exist', async () => {
       // Simulate download failure
-      https.get.mockImplementation((url, cb) => {
+      https.get.mockImplementation((_url, _cb) => {
         const req = new EventEmitter();
         setTimeout(() => {
           req.emit('error', new Error('Connection failed'));
@@ -137,7 +136,7 @@ describe('download-fonts', () => {
 
     it('exits with code 1 when download fails and cache does not exist', async () => {
       // Simulate download failure
-      https.get.mockImplementation((url, cb) => {
+      https.get.mockImplementation((_url, _cb) => {
         const req = new EventEmitter();
         setTimeout(() => {
           req.emit('error', new Error('Connection failed'));
@@ -149,7 +148,7 @@ describe('download-fonts', () => {
       fs.existsSync.mockReturnValue(false);
 
       const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {});
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'error').mockImplementation(() => {});
 
       await main();
 

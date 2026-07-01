@@ -6,45 +6,56 @@ This document outlines the core coding conventions, architectural patterns, envi
 
 ## 1. Project Context & Stack
 
-* **Description:** A private, disconnected wish board for conventions running on local hardware (e.g., Raspberry Pi 4) or deployed via an AWS serverless stack (Lambda + API Gateway + SQLite on EFS + CloudFront + S3).
-* **Backend:** Node.js (ES modules), Express, SQLite (`libsql` or native sqlite3), WebSockets (using `socket.io` for standard and AWS API Gateway for serverless).
-* **Frontend:** React, TypeScript, Vite.
-* **Database:** SQLite. Remote database migrations are handled via custom local-to-remote migration scripts.
+- **Description:** A private, disconnected wish board for conventions running on local hardware (e.g., Raspberry Pi 4) or deployed via an AWS serverless stack (Lambda + API Gateway + SQLite on EFS + CloudFront + S3).
+- **Backend:** Node.js (ES modules), Express, SQLite (`libsql` or native sqlite3), WebSockets (using `socket.io` for standard and AWS API Gateway for serverless).
+- **Frontend:** React, TypeScript, Vite.
+- **Database:** SQLite. Remote database migrations are handled via custom local-to-remote migration scripts.
 
 ---
 
 ## 2. Coding & Syntax Conventions
 
-* **Global Accessors:** In TypeScript files, always prefer `globalThis` over `window`, `self`, or `global` to align with SonarQube quality gate conventions and maintain environment-agnostic execution.
-* **Conventional Commits:** Always use conventional commit structures (e.g., `feat:`, `fix:`, `refactor:`, `test:`, `docs:`) for git commits and Pull Request titles. These are used to generate release change logs automatically.
+- **Global Accessors:** In TypeScript files, always prefer `globalThis` over `window`, `self`, or `global` to align with SonarQube quality gate conventions and maintain environment-agnostic execution.
+- **Conventional Commits:** Always use conventional commit structures (e.g., `feat:`, `fix:`, `refactor:`, `test:`, `docs:`) for git commits and Pull Request titles. These are used to generate release change logs automatically.
 
 ---
 
 ## 3. Architecture & Matching Engine Rules
 
-* **Configuration-Driven Rules:** Do not hardcode gender, orientation, or role matching logic inside the backend code. The matchmaking system utilizes a dynamic rule system defined in `data/rules.yaml`.
-* **Rule Types:**
+- **Configuration-Driven Rules:** Do not hardcode gender, orientation, or role matching logic inside the backend code. The matchmaking system utilizes a dynamic rule system defined in `data/rules.yaml`.
+- **Rule Types:**
   1. `enrichment`: Implicitly adds a target attribute if the trigger matches (e.g., adding `woman` if orientation is `lesbian`).
   2. `acceptance`: Overrides matching to automatically accept a broad set of targets (e.g., pan/queer orientations matching all genders).
   3. `expansion`: Synonyms and variants mapping (e.g., expanding `enby`, `non-binary` to `nonbinary`).
   4. `cross_match`: Bidirectional matches between complementary roles.
-* **Extending Matching Logic:** To add support for new identities or matching terms, modify the rules in `data/rules.yaml` rather than introducing custom parsing helpers in `src/server/routes/wishes.js`.
+- **Extending Matching Logic:** To add support for new identities or matching terms, modify the rules in `data/rules.yaml` rather than introducing custom parsing helpers in `src/server/routes/wishes.js`.
 
 ---
 
 ## 4. Testing & Quality Gates
 
-* **Coverage Threshold:** SonarQube applies an **80% test coverage threshold** specifically to **new code** introduced on branches. Ensure any code changes are accompanied by robust unit test coverage.
-* **PR Verification:** When checking Pull Request status, use the SonarQube MCP or SonarCloud dashboard to check for test failures, duplicate code blocks, or security hotspots rather than relying solely on local test suite runs.
-* **Testing Command:**
-  * To run the test suite:
+- **Coverage Threshold:** SonarQube applies an **80% test coverage threshold** specifically to **new code** introduced on branches. Ensure any code changes are accompanied by robust unit test coverage.
+- **PR Verification:** When checking Pull Request status, use the SonarQube MCP or SonarCloud dashboard to check for test failures, duplicate code blocks, or security hotspots rather than relying solely on local test suite runs.
+- **Testing Command:**
+  - To run the test suite:
 
     ```powershell
     npm test
     ```
 
-  * To run tests in watch mode:
+  - To run tests in watch mode:
 
     ```powershell
     npm run test:watch
     ```
+
+- **Lint / Type-check / Format:** The project uses ESLint (flat config in `eslint.config.js`) and Prettier. Run these before committing:
+
+  ```powershell
+  npm run lint         # ESLint (use lint:fix to auto-fix)
+  npm run type-check   # tsc against tsconfig.build.json (app source, excludes tests)
+  npm run format:check # Prettier verification (use format to write)
+  ```
+
+- **CI Quality Gates:** The `Node.js CI` workflow runs lint, type-check, format-check, build, tests, gitleaks secret scanning, and the SonarQube scan on every push and PR. Git hooks (Husky) also run lint-staged on pre-commit and build + tests on pre-push.
+- **Rule Baseline:** `@typescript-eslint/no-explicit-any` and `ban-ts-comment` are set to **warn** (non-blocking); `eslint .` fails CI only on errors. Prefer fixing warnings in code you touch rather than adding new ones.

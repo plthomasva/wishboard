@@ -1,11 +1,11 @@
-import { render, screen, fireEvent, waitFor} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import WishmailDashboard from './WishmailDashboard';
 import React from 'react';
 import * as AuthContext from '../AuthContext';
 
 vi.mock('../AuthContext', () => ({
-  useAuth: vi.fn()
+  useAuth: vi.fn(),
 }));
 
 const mockFetch = vi.fn();
@@ -34,12 +34,14 @@ describe('WishmailDashboard Coverage', () => {
   it('handles delete failure', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
     globalThis.window.location.hash = '#wishmail-dashboard?id=w1';
-    
+
     mockFetch.mockImplementation(async (url, options) => {
       if (url.endsWith('/mail') && (!options?.method || options.method === 'GET')) {
         return {
           ok: true,
-          json: async () => ([{ id: 1, content: 'mail', created_at: '2023-01-01', return_contacts: [] }])
+          json: async () => [
+            { id: 1, content: 'mail', created_at: '2023-01-01', return_contacts: [] },
+          ],
         };
       }
       if (options && options.method === 'DELETE') {
@@ -49,7 +51,9 @@ describe('WishmailDashboard Coverage', () => {
     });
 
     render(<WishmailDashboard />);
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Wishmail' })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Wishmail' })).toBeInTheDocument()
+    );
 
     // Confirm prompt and alert
     globalThis.window.confirm = vi.fn().mockReturnValue(true);
@@ -58,11 +62,13 @@ describe('WishmailDashboard Coverage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/wishes/w1/mail/1', expect.objectContaining({
-        method: 'DELETE'
-      }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/wishes/w1/mail/1',
+        expect.objectContaining({
+          method: 'DELETE',
+        })
+      );
       expect(globalThis.window.alert).toHaveBeenCalledWith('Failed to delete message.');
     });
   });
 });
-

@@ -5,7 +5,7 @@ import React from 'react';
 import * as AuthContext from '../AuthContext';
 
 vi.mock('../AuthContext', () => ({
-  useAuth: vi.fn()
+  useAuth: vi.fn(),
 }));
 
 const mockFetch = vi.fn();
@@ -20,8 +20,20 @@ describe('WishmailDashboard', () => {
 
   it('fetches and displays wishmails successfully', async () => {
     const mockMails = [
-      { id: 'm1', content: 'Message 1', return_contacts: [{ type: 'Phone', value: '123' }], read: false, created_at: '2026-01-01T00:00:00Z' },
-      { id: 'm2', content: 'Message 2', return_contacts: [], read: true, created_at: '2026-01-02T00:00:00Z' }
+      {
+        id: 'm1',
+        content: 'Message 1',
+        return_contacts: [{ type: 'Phone', value: '123' }],
+        read: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 'm2',
+        content: 'Message 2',
+        return_contacts: [],
+        read: true,
+        created_at: '2026-01-02T00:00:00Z',
+      },
     ];
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => mockMails });
 
@@ -38,11 +50,13 @@ describe('WishmailDashboard', () => {
 
   it('displays error if fetch fails', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false });
-    
+
     render(<WishmailDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Not authorized to view wishmail for this wish, or wish not found.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Not authorized to view wishmail for this wish, or wish not found.')
+      ).toBeInTheDocument();
     });
   });
 
@@ -54,10 +68,16 @@ describe('WishmailDashboard', () => {
 
   it('marks wishmail as read', async () => {
     const mockMails = [
-      { id: 'm1', content: 'Message 1', return_contacts: [], read: false, created_at: '2026-01-01T00:00:00Z' }
+      {
+        id: 'm1',
+        content: 'Message 1',
+        return_contacts: [],
+        read: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
     ];
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => mockMails });
-    
+
     render(<WishmailDashboard />);
 
     await waitFor(() => {
@@ -65,7 +85,7 @@ describe('WishmailDashboard', () => {
     });
 
     mockFetch.mockResolvedValueOnce({ ok: true });
-    
+
     fireEvent.click(screen.getByRole('button', { name: 'Mark as Read' }));
 
     await waitFor(() => {
@@ -73,9 +93,9 @@ describe('WishmailDashboard', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer mock-token'
+          Authorization: 'Bearer mock-token',
         },
-        body: JSON.stringify({ secret: 'sec123' })
+        body: JSON.stringify({ secret: 'sec123' }),
       });
       expect(screen.queryByRole('button', { name: 'Mark as Read' })).not.toBeInTheDocument();
     });

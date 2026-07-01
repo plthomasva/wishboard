@@ -2,16 +2,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 let mockClient = {
   execute: vi.fn().mockResolvedValue({ rows: [], rowsAffected: 0 }),
-  executeMultiple: vi.fn().mockResolvedValue({})
+  executeMultiple: vi.fn().mockResolvedValue({}),
 };
 
 let mockLocalClient = {
   execute: vi.fn().mockResolvedValue({
     rows: [
-      { id: '1', username: 'test-user', passphrase_hash: 'h', passphrase_salt: 's', role: 'user', created_at: 'now' }
+      {
+        id: '1',
+        username: 'test-user',
+        passphrase_hash: 'h',
+        passphrase_salt: 's',
+        role: 'user',
+        created_at: 'now',
+      },
     ],
-    rowsAffected: 0
-  })
+    rowsAffected: 0,
+  }),
 };
 
 vi.mock('@libsql/client', async (importOriginal) => {
@@ -26,7 +33,7 @@ vi.mock('@libsql/client', async (importOriginal) => {
         return mockClient;
       }
       return original.createClient(options);
-    }
+    },
   };
 });
 
@@ -41,7 +48,7 @@ describe('db initialization', () => {
 
   it('creates tables', async () => {
     const tables = await db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
-    const tableNames = tables.map(t => t.name);
+    const tableNames = tables.map((t) => t.name);
     expect(tableNames).toContain('users');
     expect(tableNames).toContain('sessions');
     expect(tableNames).toContain('wishes');
@@ -49,9 +56,9 @@ describe('db initialization', () => {
   });
 
   it('ensures all expected columns are added to users table', async () => {
-    const columns = await db.prepare("PRAGMA table_info(users)").all();
-    const columnNames = columns.map(c => c.name);
-    
+    const columns = await db.prepare('PRAGMA table_info(users)').all();
+    const columnNames = columns.map((c) => c.name);
+
     // Base columns
     expect(columnNames).toContain('id');
     expect(columnNames).toContain('username');
@@ -59,7 +66,7 @@ describe('db initialization', () => {
     expect(columnNames).toContain('passphrase_salt');
     expect(columnNames).toContain('role');
     expect(columnNames).toContain('created_at');
-    
+
     // Ensured columns
     expect(columnNames).toContain('identity_genders');
     expect(columnNames).toContain('identity_orientations');
@@ -70,9 +77,9 @@ describe('db initialization', () => {
   });
 
   it('ensures all expected columns are added to wishes table', async () => {
-    const columns = await db.prepare("PRAGMA table_info(wishes)").all();
-    const columnNames = columns.map(c => c.name);
-    
+    const columns = await db.prepare('PRAGMA table_info(wishes)').all();
+    const columnNames = columns.map((c) => c.name);
+
     // Ensured columns
     expect(columnNames).toContain('creator_genders');
     expect(columnNames).toContain('creator_orientations');
@@ -94,11 +101,11 @@ describe('db initialization', () => {
   it('does not duplicate admin account if it already exists', async () => {
     // Import normally
     const existingDb = (await import('./db.js')).default;
-    
+
     // There should only be one admin account
     const admins = await existingDb.prepare("SELECT * FROM users WHERE role = 'admin'").all();
     expect(admins.length).toBe(1);
-    
+
     // If we call ensureDefaultAdmin again by re-importing, it should still be 1
     vi.resetModules();
     const nextDb = (await import('./db.js')).default;
@@ -112,7 +119,7 @@ describe('db initialization', () => {
 
     const rs2 = await db.prepare('SELECT ? as val').get(undefined);
     expect(rs2.val).toBeNull(); // undefined maps to null
-    
+
     const rs3 = await db.prepare('SELECT 1 as val').all();
     expect(rs3[0].val).toBe(1);
 
@@ -126,20 +133,27 @@ describe('db initialization', () => {
   it('migrates legacy local database to remote database', async () => {
     const originalUrl = process.env.DATABASE_URL;
     const originalNodeEnv = process.env.NODE_ENV;
-    
+
     process.env.DATABASE_URL = 'http://localhost:8080';
     process.env.NODE_ENV = 'production';
 
     const mockExecute = vi.fn().mockResolvedValue({
       rows: [],
-      rowsAffected: 1
+      rowsAffected: 1,
     });
     mockClient.execute = mockExecute;
 
     const mockLocalExecute = vi.fn().mockResolvedValue({
       rows: [
-        { id: '1', username: 'test-user', passphrase_hash: 'h', passphrase_salt: 's', role: 'user', created_at: 'now' }
-      ]
+        {
+          id: '1',
+          username: 'test-user',
+          passphrase_hash: 'h',
+          passphrase_salt: 's',
+          role: 'user',
+          created_at: 'now',
+        },
+      ],
     });
     mockLocalClient.execute = mockLocalExecute;
 
@@ -154,15 +168,18 @@ describe('db initialization', () => {
     vi.resetModules();
     await import('./db.js');
 
-
     expect(mockLocalExecute).toHaveBeenCalled();
     expect(mockExecute).toHaveBeenCalled();
 
-    const localCalls = mockLocalExecute.mock.calls.map(([arg]) => typeof arg === 'string' ? arg : arg.sql);
-    const remoteCalls = mockExecute.mock.calls.map(([arg]) => typeof arg === 'string' ? arg : arg.sql);
+    const localCalls = mockLocalExecute.mock.calls.map(([arg]) =>
+      typeof arg === 'string' ? arg : arg.sql
+    );
+    const remoteCalls = mockExecute.mock.calls.map(([arg]) =>
+      typeof arg === 'string' ? arg : arg.sql
+    );
 
-    expect(localCalls.some(c => c.includes('SELECT * FROM'))).toBe(true);
-    expect(remoteCalls.some(c => c.includes('INSERT OR IGNORE INTO'))).toBe(true);
+    expect(localCalls.some((c) => c.includes('SELECT * FROM'))).toBe(true);
+    expect(remoteCalls.some((c) => c.includes('INSERT OR IGNORE INTO'))).toBe(true);
     expect(writeSpy).toHaveBeenCalled();
 
     process.env.DATABASE_URL = originalUrl;
@@ -171,4 +188,3 @@ describe('db initialization', () => {
     writeSpy.mockRestore();
   });
 });
-

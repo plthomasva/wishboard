@@ -9,8 +9,8 @@ vi.mock('../hooks/useTextFit', () => ({
   useTextFit: vi.fn(() => ({
     containerRef: { current: null },
     contentRef: { current: null },
-    isOverflowing: false
-  }))
+    isOverflowing: false,
+  })),
 }));
 
 describe('WishCard', () => {
@@ -24,7 +24,10 @@ describe('WishCard', () => {
     const wish = {
       id: 'w2',
       content: 'Hello',
-      contacts: [{ type: 'Phone', value: '123' }, { type: 'Email', value: 'a@b.com' }]
+      contacts: [
+        { type: 'Phone', value: '123' },
+        { type: 'Email', value: 'a@b.com' },
+      ],
     };
     render(<WishCard wish={wish} />);
     expect(screen.getByText('Phone:')).toBeInTheDocument();
@@ -37,11 +40,11 @@ describe('WishCard', () => {
     const wish = {
       id: 'w3',
       content: 'Mail me',
-      wishmail_enabled: true
+      wishmail_enabled: true,
     };
     const onSendMail = vi.fn();
     render(<WishCard wish={wish} onSendMail={onSendMail} />);
-    
+
     const btn = screen.getByRole('button', { name: 'Send Wishmail' });
     expect(btn).toBeInTheDocument();
     fireEvent.click(btn);
@@ -52,10 +55,10 @@ describe('WishCard', () => {
     const wish = {
       id: 'w4',
       content: 'Mail me',
-      wishmail_enabled: true
+      wishmail_enabled: true,
     };
     render(<WishCard wish={wish} />);
-    
+
     const btn = screen.getByRole('button', { name: 'Send Wishmail' });
     fireEvent.click(btn);
     // No crash means it handled missing onSendMail correctly
@@ -65,12 +68,12 @@ describe('WishCard', () => {
     vi.mocked(useTextFit).mockReturnValueOnce({
       containerRef: { current: null },
       contentRef: { current: null },
-      isOverflowing: true
+      isOverflowing: true,
     } as unknown as ReturnType<typeof useTextFit>);
-    
+
     const wish = { id: 'w5', content: 'Overflowing' };
     render(<WishCard wish={wish} isEditorPreview={true} />);
-    
+
     const article = screen.getByRole('article');
     expect(article).toHaveClass('text-overflow-hint');
   });
@@ -79,7 +82,7 @@ describe('WishCard', () => {
     const wish = { id: 'w6', content: 'Flag me' };
     const onFlag = vi.fn();
     render(<WishCard wish={wish} showFlag={true} onFlag={onFlag} />);
-    
+
     const flagBtn = screen.getByTitle('Flag as inappropriate');
     expect(flagBtn).toBeInTheDocument();
     fireEvent.click(flagBtn);
@@ -90,13 +93,13 @@ describe('WishCard', () => {
     vi.mocked(useTextFit).mockReturnValueOnce({
       containerRef: { current: null },
       contentRef: { current: null },
-      isOverflowing: true
+      isOverflowing: true,
     } as unknown as ReturnType<typeof useTextFit>);
-    
+
     const wish = { id: 'w7', content: 'Overflowing' };
     const onOverflowChange = vi.fn();
     render(<WishCard wish={wish} onOverflowChange={onOverflowChange} />);
-    
+
     expect(onOverflowChange).toHaveBeenCalledWith(true);
   });
 
@@ -104,17 +107,17 @@ describe('WishCard', () => {
     const wish = {
       id: 'w8',
       content: 'This text should be hidden',
-      image_id: 'test-image.png'
+      image_id: 'test-image.png',
     };
     render(<WishCard wish={wish} />);
-    
+
     const article = screen.getByRole('article');
     expect(article).toHaveClass('card-has-image');
-    
+
     const img = screen.getByRole('img', { name: 'This text should be hidden' });
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', '/images/test-image.png');
-    
+
     const textNode = screen.getByText('This text should be hidden');
     expect(textNode).toHaveClass('sr-only');
   });
@@ -123,7 +126,7 @@ describe('WishCard', () => {
     const wish = {
       id: 'w9',
       content: 'Should not have image',
-      image_url: 'javascript:alert(1)' // Unsafe!
+      image_url: 'javascript:alert(1)', // Unsafe!
     };
     render(<WishCard wish={wish} />);
     const img = screen.queryByRole('img', { name: 'Should not have image' });
@@ -135,7 +138,7 @@ describe('WishCard', () => {
     const wish = {
       id: 'w10',
       content: 'Blob image',
-      image_url: 'blob:http://localhost:3000/xyz'
+      image_url: 'blob:http://localhost:3000/xyz',
     };
     render(<WishCard wish={wish} />);
     const img = screen.getByRole('img', { name: 'Blob image' });
@@ -146,7 +149,7 @@ describe('WishCard', () => {
     const wish = {
       id: 'w11',
       content: 'Data image',
-      image_url: 'data:image/png;base64,iVBORw0KGgo'
+      image_url: 'data:image/png;base64,iVBORw0KGgo',
     };
     render(<WishCard wish={wish} />);
     const img = screen.getByRole('img', { name: 'Data image' });
@@ -157,11 +160,10 @@ describe('WishCard', () => {
     const wish = { id: 'w8', content: 'Admin delete me' };
     const onAdminDelete = vi.fn();
     render(<WishCard wish={wish} onAdminDelete={onAdminDelete} />);
-    
+
     const deleteBtn = screen.getByTitle('Admin Delete Wish');
     expect(deleteBtn).toBeInTheDocument();
     fireEvent.click(deleteBtn);
     expect(onAdminDelete).toHaveBeenCalledWith('w8');
   });
 });
-

@@ -5,18 +5,18 @@ import React from 'react';
 import * as AuthContext from '../AuthContext';
 
 vi.mock('../AuthContext', () => ({
-  useAuth: vi.fn()
+  useAuth: vi.fn(),
 }));
 
 describe('EnterWishPage Coverage', () => {
   it('handles fallback logic in previewWish for anonymous users', () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null, user: null } as any);
-    
+
     render(<EnterWishPage />);
-    
+
     const genderInput = screen.getByLabelText('Creator genders (anonymous only)');
     fireEvent.change(genderInput, { target: { value: 'man, non-binary ' } });
-    
+
     const orientationInput = screen.getByLabelText('Creator orientations (anonymous only)');
     fireEvent.change(orientationInput, { target: { value: ' gay, queer ' } });
 
@@ -28,4 +28,3 @@ describe('EnterWishPage Coverage', () => {
     expect(screen.getByTitle('queer')).toBeInTheDocument();
   });
 });
-

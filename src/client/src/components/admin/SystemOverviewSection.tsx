@@ -18,8 +18,8 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
   // Detect deployment mode from /api/config
   useEffect(() => {
     fetch('/api/config')
-      .then(r => r.json())
-      .then(cfg => setIsServerlessMode(cfg.realtimeProvider === 'apigateway'))
+      .then((r) => r.json())
+      .then((cfg) => setIsServerlessMode(cfg.realtimeProvider === 'apigateway'))
       .catch(() => setIsServerlessMode(false));
   }, []);
 
@@ -28,33 +28,48 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
       const response = await fetch(`/api/admin/logs?_t=${Date.now()}`, {
         headers: { ...authHeader, 'Cache-Control': 'no-cache' },
       });
-      if (!response.ok) { setRawLogs('Failed to load logs.'); return; }
+      if (!response.ok) {
+        setRawLogs('Failed to load logs.');
+        return;
+      }
       const data = await response.json();
       setRawLogs(data.logs || '');
       setLogsSource(data.source || 'local');
-    } catch (e) { console.error(e); setRawLogs('Failed to load logs.'); }
+    } catch (e) {
+      console.error(e);
+      setRawLogs('Failed to load logs.');
+    }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadLogs(); }, [refreshCounter]);
+  useEffect(() => {
+    loadLogs();
+  }, [refreshCounter]);
 
   const parsedLogs = useMemo(() => {
     const logsString = rawLogs || '';
     if (logsString === 'Failed to load logs.') {
-      return [{
-        id: 'error-load',
-        prefix: '',
-        timestamp: '',
-        level: 'error' as const,
-        message: 'Failed to load logs.',
-        raw: 'Failed to load logs.'
-      }];
+      return [
+        {
+          id: 'error-load',
+          prefix: '',
+          timestamp: '',
+          level: 'error' as const,
+          message: 'Failed to load logs.',
+          raw: 'Failed to load logs.',
+        },
+      ];
     }
     const lines = logsString.split('\n');
     const filteredLines = filterRepeating
-      ? lines.filter(line => !line.includes('/api/admin/logs') && !line.includes('/api/wishes/random') && !line.includes('/api/admin/local-metrics'))
+      ? lines.filter(
+          (line) =>
+            !line.includes('/api/admin/logs') &&
+            !line.includes('/api/wishes/random') &&
+            !line.includes('/api/admin/local-metrics')
+        )
       : lines;
 
+    // eslint-disable-next-line no-control-regex -- intentionally matches ANSI escape sequences
     const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
     const logRegex = /^(\[WS\]\s*)?(?:\[([\d\s:-]+)\]\s*)?(\w+):\s*(.*)$/;
 
@@ -67,7 +82,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
           timestamp: '',
           level: 'other' as const,
           message: '',
-          raw: ''
+          raw: '',
         };
       }
 
@@ -90,7 +105,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
           timestamp,
           level,
           message,
-          raw: cleanLine
+          raw: cleanLine,
         };
       }
 
@@ -107,13 +122,14 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
         timestamp: '',
         level,
         message: cleanLine.startsWith('[WS]') ? cleanLine.replace(/^\[WS\]\s*/, '') : cleanLine,
-        raw: cleanLine
+        raw: cleanLine,
       };
     });
   }, [rawLogs, filterRepeating]);
 
   useEffect(() => {
-    if (isTailing && logsEndRef.current) logsEndRef.current.scrollTop = logsEndRef.current.scrollHeight;
+    if (isTailing && logsEndRef.current)
+      logsEndRef.current.scrollTop = logsEndRef.current.scrollHeight;
   }, [parsedLogs, isTailing]);
 
   useEffect(() => {
@@ -128,7 +144,9 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
     };
 
     socket.on('sys:log', handleNewLog);
-    return () => { socket.off('sys:log', handleNewLog); };
+    return () => {
+      socket.off('sys:log', handleNewLog);
+    };
   }, [socket]);
 
   return (
@@ -143,7 +161,8 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
         {isServerlessMode === true && (
           <>
             <p style={{ marginBottom: '16px', color: '#9ca3af', fontSize: '13px' }}>
-              Live CloudWatch metrics from your AWS serverless deployment — Lambda, API Gateway, and CloudFront.
+              Live CloudWatch metrics from your AWS serverless deployment — Lambda, API Gateway, and
+              CloudFront.
             </p>
             <AwsMetricsDashboard authHeader={authHeader} />
           </>
@@ -166,32 +185,50 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
             ? 'Recent server logs from AWS CloudWatch Logs — last hour of Lambda activity.'
             : 'Recent server logs including rate limit warnings and failed logins.'}
         </p>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
-          <button type="button" className="secondary-button" onClick={() => setIsTailing(!isTailing)}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            marginTop: '12px',
+            marginBottom: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setIsTailing(!isTailing)}
+          >
             {isTailing ? 'Pause Tailing' : 'Resume Tailing'}
           </button>
-          <button type="button" className="secondary-button" onClick={loadLogs}>Refresh Now</button>
+          <button type="button" className="secondary-button" onClick={loadLogs}>
+            Refresh Now
+          </button>
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
-            <input type="checkbox" checked={filterRepeating} onChange={(e) => setFilterRepeating(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={filterRepeating}
+              onChange={(e) => setFilterRepeating(e.target.checked)}
+            />
             <span>Filter repeating logs</span>
           </label>
         </div>
-        <div 
-          ref={logsEndRef} 
-          style={{ 
-            background: '#121214', 
+        <div
+          ref={logsEndRef}
+          style={{
+            background: '#121214',
             border: '1px solid #2a2a2e',
             borderRadius: '6px',
-            padding: '12px', 
-            overflowY: 'auto', 
-            height: '400px', 
+            padding: '12px',
+            overflowY: 'auto',
+            height: '400px',
             fontFamily: 'JetBrains Mono, Fira Code, Monaco, Consolas, monospace',
             fontSize: '12px',
             lineHeight: '1.5',
             color: '#e4e4e7',
           }}
         >
-          {parsedLogs.some(line => line.raw) ? (
+          {parsedLogs.some((line) => line.raw) ? (
             parsedLogs.map((line, idx) => {
               if (!line.raw) return null;
 
@@ -209,10 +246,10 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
               }
 
               return (
-                <div 
-                  key={line.id || idx} 
-                  style={{ 
-                    display: 'flex', 
+                <div
+                  key={line.id || idx}
+                  style={{
+                    display: 'flex',
                     padding: '2px 4px',
                     borderRadius: '3px',
                     backgroundColor: levelBg,
@@ -220,7 +257,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
                     wordBreak: 'break-all',
                     alignItems: 'flex-start',
                     gap: '8px',
-                    borderBottom: '1px solid #1a1a1c'
+                    borderBottom: '1px solid #1a1a1c',
                   }}
                 >
                   {line.timestamp && (
@@ -228,7 +265,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
                       [{line.timestamp}]
                     </span>
                   )}
-                  
+
                   {line.prefix && (
                     <span style={{ color: '#c084fc', fontWeight: 'bold', flexShrink: 0 }}>
                       [{line.prefix}]
@@ -236,12 +273,22 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
                   )}
 
                   {line.level !== 'other' && (
-                    <span style={{ color: levelColor, fontWeight: 'bold', minWidth: '45px', display: 'inline-block', flexShrink: 0 }}>
+                    <span
+                      style={{
+                        color: levelColor,
+                        fontWeight: 'bold',
+                        minWidth: '45px',
+                        display: 'inline-block',
+                        flexShrink: 0,
+                      }}
+                    >
                       {line.level.toUpperCase()}
                     </span>
                   )}
 
-                  <span style={{ color: line.level === 'other' ? '#a1a1aa' : '#e4e4e7', flexGrow: 1 }}>
+                  <span
+                    style={{ color: line.level === 'other' ? '#a1a1aa' : '#e4e4e7', flexGrow: 1 }}
+                  >
                     {line.message}
                   </span>
                 </div>

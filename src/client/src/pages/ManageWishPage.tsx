@@ -6,7 +6,16 @@ import { useAuth } from '../AuthContext';
 
 export default function ManageWishPage() {
   const { token } = useAuth();
-  const [wish, setWish] = useState<{ id: string; content: string; contacts: any[]; wishmail_enabled: boolean; created_at: string; creator_genders?: string[]; creator_orientations?: string[]; is_active: boolean } | null>(null);
+  const [wish, setWish] = useState<{
+    id: string;
+    content: string;
+    contacts: any[];
+    wishmail_enabled: boolean;
+    created_at: string;
+    creator_genders?: string[];
+    creator_orientations?: string[];
+    is_active: boolean;
+  } | null>(null);
   const [content, setContent] = useState('');
   const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
@@ -74,7 +83,13 @@ export default function ManageWishPage() {
     const response = await fetch(`/api/wishes/${encodeURIComponent(wish.id)}/manage`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ secret, content, contacts, wishmail_enabled: wishmailEnabled, action: 'update' })
+      body: JSON.stringify({
+        secret,
+        content,
+        contacts,
+        wishmail_enabled: wishmailEnabled,
+        action: 'update',
+      }),
     });
 
     if (response.ok) {
@@ -100,7 +115,7 @@ export default function ManageWishPage() {
     const response = await fetch(`/api/wishes/${encodeURIComponent(wish.id)}/manage`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ secret, action: 'delete' })
+      body: JSON.stringify({ secret, action: 'delete' }),
     });
 
     if (response.ok) {
@@ -122,12 +137,14 @@ export default function ManageWishPage() {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const endpoint = wish.is_active ? `/api/wishes/${encodeURIComponent(wish.id)}/deactivate` : `/api/wishes/${encodeURIComponent(wish.id)}/reactivate`;
+    const endpoint = wish.is_active
+      ? `/api/wishes/${encodeURIComponent(wish.id)}/deactivate`
+      : `/api/wishes/${encodeURIComponent(wish.id)}/reactivate`;
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ secret })
+      body: JSON.stringify({ secret }),
     });
 
     if (response.ok) {
@@ -165,8 +182,8 @@ export default function ManageWishPage() {
     content: content,
     creator_genders: wish.creator_genders,
     creator_orientations: wish.creator_orientations,
-    contacts: contacts.filter(c => c.value.trim()),
-    wishmail_enabled: wishmailEnabled
+    contacts: contacts.filter((c) => c.value.trim()),
+    wishmail_enabled: wishmailEnabled,
   };
 
   return (
@@ -175,17 +192,38 @@ export default function ManageWishPage() {
         <div>
           <h1 style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             Manage Your Wish
-            {!wish.is_active && <span style={{ fontSize: '0.9rem', color: '#e53e3e', background: '#ffe5e5', padding: '4px 8px', borderRadius: '4px', fontWeight: 'normal' }}>Inactive</span>}
+            {!wish.is_active && (
+              <span
+                style={{
+                  fontSize: '0.9rem',
+                  color: '#e53e3e',
+                  background: '#ffe5e5',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontWeight: 'normal',
+                }}
+              >
+                Inactive
+              </span>
+            )}
           </h1>
           <p style={{ marginTop: 0 }}>Edit the content of your wish or delete it permanently.</p>
         </div>
         {wish.wishmail_enabled && (
-          <a href={'#wishmail-dashboard?id=' + wish.id + (secret ? '&secret=' + encodeURIComponent(secret) : '')} className="compact-btn" style={{ background: '#1a73e8', textDecoration: 'none' }}>
+          <a
+            href={
+              '#wishmail-dashboard?id=' +
+              wish.id +
+              (secret ? '&secret=' + encodeURIComponent(secret) : '')
+            }
+            className="compact-btn"
+            style={{ background: '#1a73e8', textDecoration: 'none' }}
+          >
             View Wishmail
           </a>
         )}
       </div>
-      
+
       <div className="wish-editor-layout">
         <form className="form-card" onSubmit={handleUpdate} style={{ marginTop: 0 }}>
           <WishFormFields
@@ -197,12 +235,13 @@ export default function ManageWishPage() {
             setWishmailEnabled={setWishmailEnabled}
             isOverflowing={isOverflowing}
           />
-          
+
           <div style={{ display: 'grid', gap: '8px' }}>
             <div className="label-with-info">
               <label htmlFor="passphrase-input">Passphrase (if anonymous)</label>
               <InfoToggle>
-                If you created this wish anonymously, the passphrase is required to save changes. If you are logged into your account, this isn't needed.
+                If you created this wish anonymously, the passphrase is required to save changes. If
+                you are logged into your account, this isn't needed.
               </InfoToggle>
             </div>
             <input
@@ -216,10 +255,23 @@ export default function ManageWishPage() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap' }}>
             <button type="submit">Save Changes</button>
-            <button type="button" className="secondary-button" style={{ color: wish.is_active ? '#e53e3e' : '#2b6cb0', borderColor: wish.is_active ? '#e53e3e' : '#2b6cb0' }} onClick={toggleWishStatus}>
+            <button
+              type="button"
+              className="secondary-button"
+              style={{
+                color: wish.is_active ? '#e53e3e' : '#2b6cb0',
+                borderColor: wish.is_active ? '#e53e3e' : '#2b6cb0',
+              }}
+              onClick={toggleWishStatus}
+            >
               {wish.is_active ? 'Deactivate Wish' : 'Reactivate Wish'}
             </button>
-            <button type="button" className="secondary-button" onClick={handleDelete} style={{ background: '#fee2e2', color: '#b91c1c' }}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleDelete}
+              style={{ background: '#fee2e2', color: '#b91c1c' }}
+            >
               Delete Wish
             </button>
           </div>
@@ -228,8 +280,16 @@ export default function ManageWishPage() {
         <WishPreview wish={previewWish} onOverflowChange={setIsOverflowing} />
       </div>
 
-      {message && <div className="message success" style={{ marginTop: '24px' }}>{message}</div>}
-      {error && <div className="message error" style={{ marginTop: '24px' }}>{error}</div>}
+      {message && (
+        <div className="message success" style={{ marginTop: '24px' }}>
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="message error" style={{ marginTop: '24px' }}>
+          {error}
+        </div>
+      )}
     </section>
   );
 }

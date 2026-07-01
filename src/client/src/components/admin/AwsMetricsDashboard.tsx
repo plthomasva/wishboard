@@ -50,7 +50,11 @@ interface AwsMetricsResponse {
 /** Format an ISO timestamp to HH:MM for axis labels */
 const formatTime = (isoString: string): string => {
   try {
-    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    return new Date(isoString).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
   } catch {
     return '';
   }
@@ -81,8 +85,7 @@ const currentValue = (dataPoints: DataPoint[]): number => {
 };
 
 /** Sum of all values — used for invocation/error counts */
-const sumValues = (dataPoints: DataPoint[]): number =>
-  dataPoints.reduce((acc, p) => acc + p.v, 0);
+const sumValues = (dataPoints: DataPoint[]): number => dataPoints.reduce((acc, p) => acc + p.v, 0);
 
 /** Determine if a metric is a counter (Sum stat) vs a gauge (Average/p99/Maximum) */
 const isCounter = (label: string): boolean =>
@@ -97,14 +100,14 @@ const isCounter = (label: string): boolean =>
 // ── Colour palette ─────────────────────────────────────────────────────────────
 
 const COLORS: Record<string, { stroke: string; fill: string }> = {
-  default:    { stroke: '#60a5fa', fill: '#1d4ed8' },   // blue
-  error:      { stroke: '#f87171', fill: '#991b1b' },   // red
-  throttle:   { stroke: '#fb923c', fill: '#92400e' },   // orange
-  duration:   { stroke: '#a78bfa', fill: '#4c1d95' },   // purple
-  latency:    { stroke: '#a78bfa', fill: '#4c1d95' },   // purple
-  concurrent: { stroke: '#34d399', fill: '#065f46' },   // green
-  cache:      { stroke: '#34d399', fill: '#065f46' },   // green
-  bytes:      { stroke: '#e879f9', fill: '#701a75' },   // pink
+  default: { stroke: '#60a5fa', fill: '#1d4ed8' }, // blue
+  error: { stroke: '#f87171', fill: '#991b1b' }, // red
+  throttle: { stroke: '#fb923c', fill: '#92400e' }, // orange
+  duration: { stroke: '#a78bfa', fill: '#4c1d95' }, // purple
+  latency: { stroke: '#a78bfa', fill: '#4c1d95' }, // purple
+  concurrent: { stroke: '#34d399', fill: '#065f46' }, // green
+  cache: { stroke: '#34d399', fill: '#065f46' }, // green
+  bytes: { stroke: '#e879f9', fill: '#701a75' }, // pink
 };
 
 const colorForMetric = (id: string) => {
@@ -130,16 +133,20 @@ const CustomTooltip = ({ active, payload, label: rawLabel, metricLabel }: Custom
   if (!active || !payload?.length) return null;
   const value = payload[0]?.value ?? 0;
   return (
-    <div style={{
-      background: '#1e1e2e',
-      border: '1px solid #374151',
-      borderRadius: '6px',
-      padding: '8px 12px',
-      fontSize: '12px',
-      color: '#e5e7eb',
-    }}>
+    <div
+      style={{
+        background: '#1e1e2e',
+        border: '1px solid #374151',
+        borderRadius: '6px',
+        padding: '8px 12px',
+        fontSize: '12px',
+        color: '#e5e7eb',
+      }}
+    >
       <div style={{ color: '#9ca3af', marginBottom: '4px' }}>{formatTime(rawLabel ?? '')}</div>
-      <div><strong>{formatValue(value, metricLabel)}</strong></div>
+      <div>
+        <strong>{formatValue(value, metricLabel)}</strong>
+      </div>
     </div>
   );
 };
@@ -153,7 +160,7 @@ interface SparklineCardProps {
 const SparklineCard: React.FC<SparklineCardProps> = ({ metric }) => {
   const { id, label, dataPoints } = metric;
   const color = colorForMetric(id);
-  const hasData = dataPoints.some(p => p.v > 0);
+  const hasData = dataPoints.some((p) => p.v > 0);
 
   // For counters show the total over the period; for gauges show the latest
   const headline = isCounter(label)
@@ -163,21 +170,39 @@ const SparklineCard: React.FC<SparklineCardProps> = ({ metric }) => {
   const headlineNote = isCounter(label) ? 'last hour total' : 'latest';
 
   return (
-    <div style={{
-      background: '#111827',
-      border: '1px solid #1f2937',
-      borderRadius: '8px',
-      padding: '12px 14px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-      minWidth: 0,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '4px' }}>
-        <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500, lineHeight: 1.3 }}>{label}</span>
+    <div
+      style={{
+        background: '#111827',
+        border: '1px solid #1f2937',
+        borderRadius: '8px',
+        padding: '12px 14px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          flexWrap: 'wrap',
+          gap: '4px',
+        }}
+      >
+        <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500, lineHeight: 1.3 }}>
+          {label}
+        </span>
         <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: '20px', fontWeight: 700, color: '#f9fafb', letterSpacing: '-0.5px' }}>{headline}</span>
-          <span style={{ fontSize: '10px', color: '#6b7280', marginLeft: '4px' }}>{headlineNote}</span>
+          <span
+            style={{ fontSize: '20px', fontWeight: 700, color: '#f9fafb', letterSpacing: '-0.5px' }}
+          >
+            {headline}
+          </span>
+          <span style={{ fontSize: '10px', color: '#6b7280', marginLeft: '4px' }}>
+            {headlineNote}
+          </span>
         </div>
       </div>
 
@@ -215,7 +240,16 @@ const SparklineCard: React.FC<SparklineCardProps> = ({ metric }) => {
           </AreaChart>
         </ResponsiveContainer>
       ) : (
-        <div style={{ height: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#374151', fontSize: '12px' }}>
+        <div
+          style={{
+            height: 70,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#374151',
+            fontSize: '12px',
+          }}
+        >
           No data in this period
         </div>
       )}
@@ -227,15 +261,26 @@ const SparklineCard: React.FC<SparklineCardProps> = ({ metric }) => {
 
 const MetricGroupSection: React.FC<{ group: MetricGroup }> = ({ group }) => (
   <div style={{ marginBottom: '28px' }}>
-    <h3 style={{ margin: '0 0 12px', fontSize: '14px', color: '#d1d5db', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+    <h3
+      style={{
+        margin: '0 0 12px',
+        fontSize: '14px',
+        color: '#d1d5db',
+        fontWeight: 600,
+        letterSpacing: '0.5px',
+        textTransform: 'uppercase',
+      }}
+    >
       {group.title}
     </h3>
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-      gap: '12px',
-    }}>
-      {group.metrics.map(metric => (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '12px',
+      }}
+    >
+      {group.metrics.map((metric) => (
         <SparklineCard key={metric.id} metric={metric} />
       ))}
     </div>
@@ -294,7 +339,15 @@ export default function AwsMetricsDashboard({ authHeader }: Readonly<AwsMetricsD
   return (
     <div style={{ color: '#e5e7eb' }}>
       {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          marginBottom: '20px',
+          flexWrap: 'wrap',
+        }}
+      >
         <button
           type="button"
           className="secondary-button"
@@ -304,37 +357,57 @@ export default function AwsMetricsDashboard({ authHeader }: Readonly<AwsMetricsD
           {loading ? '⟳ Refreshing…' : '⟳ Refresh Now'}
         </button>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#9ca3af', cursor: 'pointer' }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '13px',
+            color: '#9ca3af',
+            cursor: 'pointer',
+          }}
+        >
           <input
             type="checkbox"
             checked={autoRefresh}
-            onChange={e => setAutoRefresh(e.target.checked)}
+            onChange={(e) => setAutoRefresh(e.target.checked)}
           />
           <span>Auto-refresh every 30s</span>
         </label>
 
         {data?.generatedAt && (
           <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#6b7280' }}>
-            Last updated: {new Date(data.generatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+            Last updated:{' '}
+            {new Date(data.generatedAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false,
+            })}
           </span>
         )}
       </div>
 
       {/* Error state */}
       {error && (
-        <div style={{
-          background: '#1c0a0a',
-          border: '1px solid #7f1d1d',
-          borderRadius: '6px',
-          padding: '12px 16px',
-          color: '#fca5a5',
-          fontSize: '13px',
-          marginBottom: '16px',
-        }}>
+        <div
+          style={{
+            background: '#1c0a0a',
+            border: '1px solid #7f1d1d',
+            borderRadius: '6px',
+            padding: '12px 16px',
+            color: '#fca5a5',
+            fontSize: '13px',
+            marginBottom: '16px',
+          }}
+        >
           <strong>Error:</strong> {error}
-          {error.toLowerCase().includes('iam') || error.toLowerCase().includes('access denied') || error.toLowerCase().includes('not authorized') ? (
+          {error.toLowerCase().includes('iam') ||
+          error.toLowerCase().includes('access denied') ||
+          error.toLowerCase().includes('not authorized') ? (
             <p style={{ margin: '8px 0 0', color: '#9ca3af', fontSize: '12px' }}>
-              The Lambda execution role needs <code>cloudwatch:GetMetricData</code> permission. See <code>aws-serverless/template.yaml</code> → <code>ApiFunction.Policies</code>.
+              The Lambda execution role needs <code>cloudwatch:GetMetricData</code> permission. See{' '}
+              <code>aws-serverless/template.yaml</code> → <code>ApiFunction.Policies</code>.
             </p>
           ) : null}
         </div>
@@ -342,23 +415,27 @@ export default function AwsMetricsDashboard({ authHeader }: Readonly<AwsMetricsD
 
       {/* Skeleton / loading on first load */}
       {loading && !data && (
-        <div style={{ color: '#6b7280', fontSize: '13px', padding: '24px 0' }}>Loading CloudWatch metrics…</div>
+        <div style={{ color: '#6b7280', fontSize: '13px', padding: '24px 0' }}>
+          Loading CloudWatch metrics…
+        </div>
       )}
 
       {/* Metric groups */}
-      {data?.groups?.map(group => (
+      {data?.groups?.map((group) => (
         <MetricGroupSection key={group.title} group={group} />
       ))}
 
       {/* Empty state after successful fetch */}
       {!loading && !error && data?.groups?.length === 0 && (
         <p style={{ color: '#6b7280', fontSize: '13px' }}>
-          No metrics returned. The Lambda may not have received traffic yet, or CloudWatch metrics may still be propagating (can take 1–3 minutes after first invocation).
+          No metrics returned. The Lambda may not have received traffic yet, or CloudWatch metrics
+          may still be propagating (can take 1–3 minutes after first invocation).
         </p>
       )}
 
       <p style={{ fontSize: '11px', color: '#374151', marginTop: '12px' }}>
-        Showing 1-minute resolution over the last 60 minutes. CloudFront metrics require additional configuration in the SAM template (<code>CLOUDFRONT_DISTRIBUTION_ID</code> env var).
+        Showing 1-minute resolution over the last 60 minutes. CloudFront metrics require additional
+        configuration in the SAM template (<code>CLOUDFRONT_DISTRIBUTION_ID</code> env var).
       </p>
     </div>
   );

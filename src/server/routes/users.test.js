@@ -36,7 +36,9 @@ describe('User registration and login', () => {
     expect(existsResponse.status).toBe(200);
     expect(existsResponse.body.exists).toBe(true);
 
-    const missingResponse = await request(app).get('/api/users/exists').query({ username: 'unknown' });
+    const missingResponse = await request(app)
+      .get('/api/users/exists')
+      .query({ username: 'unknown' });
     expect(missingResponse.status).toBe(200);
     expect(missingResponse.body.exists).toBe(false);
   });
@@ -78,7 +80,11 @@ describe('User registration and login', () => {
     const update = await request(app)
       .put('/api/users/me')
       .set('Authorization', `Bearer ${token}`)
-      .send({ identity_genders: 'non-binary', identity_orientations: 'pansexual', identity_roles: 'mentor' })
+      .send({
+        identity_genders: 'non-binary',
+        identity_orientations: 'pansexual',
+        identity_roles: 'mentor',
+      })
       .set('Accept', 'application/json');
 
     expect(update.status).toBe(200);
@@ -86,9 +92,7 @@ describe('User registration and login', () => {
     expect(update.body.identity_orientations).toEqual(['pansexual']);
     expect(update.body.identity_roles).toEqual(['mentor']);
 
-    const me = await request(app)
-      .get('/api/users/me')
-      .set('Authorization', `Bearer ${token}`);
+    const me = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
     expect(me.status).toBe(200);
     expect(me.body.identity_genders).toEqual(['non-binary']);
     expect(me.body.identity_orientations).toEqual(['pansexual']);
@@ -118,7 +122,7 @@ describe('User registration and login', () => {
         passphrase: 'testpass',
         identity_genders: 'woman',
         identity_orientations: 'bisexual',
-        identity_roles: 'switch'
+        identity_roles: 'switch',
       })
       .set('Accept', 'application/json');
 
@@ -139,7 +143,11 @@ describe('User registration and login', () => {
     expect(login.body.identity_roles).toEqual(['switch']);
 
     // Also verify via direct DB query for belt-and-suspenders
-    const row = await db.prepare('SELECT identity_genders, identity_orientations, identity_roles FROM users WHERE username = ?').get('identity_user');
+    const row = await db
+      .prepare(
+        'SELECT identity_genders, identity_orientations, identity_roles FROM users WHERE username = ?'
+      )
+      .get('identity_user');
     expect(JSON.parse(row.identity_genders)).toEqual(['woman']);
     expect(JSON.parse(row.identity_orientations)).toEqual(['bisexual']);
     expect(JSON.parse(row.identity_roles)).toEqual(['switch']);
@@ -154,7 +162,9 @@ describe('User registration and login', () => {
 
   it('handles registering an already existing username', async () => {
     await request(app).post('/api/users/register').send({ username: 'duplicate' });
-    const duplicate = await request(app).post('/api/users/register').send({ username: 'duplicate' });
+    const duplicate = await request(app)
+      .post('/api/users/register')
+      .send({ username: 'duplicate' });
     expect(duplicate.status).toBe(409);
   });
 
@@ -178,14 +188,17 @@ describe('User registration and login', () => {
   });
 
   it('handles logout by deleting the session', async () => {
-    const register = await request(app).post('/api/users/register').send({ username: 'logoutuser' });
+    const register = await request(app)
+      .post('/api/users/register')
+      .send({ username: 'logoutuser' });
     const token = register.body.token;
 
-    const logout = await request(app).post('/api/users/logout').set('Authorization', `Bearer ${token}`);
+    const logout = await request(app)
+      .post('/api/users/logout')
+      .set('Authorization', `Bearer ${token}`);
     expect(logout.status).toBe(200);
 
     const getMe = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
     expect(getMe.status).toBe(401);
   });
 });
-

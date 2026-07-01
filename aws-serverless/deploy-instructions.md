@@ -8,17 +8,17 @@ This guide details how to build, deploy, maintain, and estimate the monthly cost
 
 Here is a monthly cost breakdown for a moderate-use environment (e.g., 5,000 active monthly users, 10,000 API requests, and 1 GB of image uploads):
 
-| Service | Estimated Monthly Usage | Free Tier Covered? | Estimated Monthly Cost |
-| :--- | :--- | :--- | :--- |
-| **Amazon CloudFront** | 10,000 HTTP requests, <10 GB egress data | Yes (covered by permanent 1 TB egress / 10M requests) | **$0.00** |
-| **Amazon S3** | 1 GB storage, 10,000 GETs, 1,000 PUTs | Yes (covered by 5 GB / 20k GET / 2k PUT Free Tier) | **$0.00** (or **$0.03** post-Free Tier) |
-| **AWS Lambda** | 10,000 invocations (avg. 500ms execution, 512MB RAM) | Yes (covered by permanent 1M requests / 400k GB-sec) | **$0.00** |
-| **Amazon API Gateway** | 10,000 HTTP API requests, 1,000 WebSocket connections | HTTP API: $0.01. WebSockets: $0.01. | **$0.02** |
-| **Amazon EFS** | 1 GB database storage, low throughput | Yes (covered by 5 GB EFS Standard Free Tier) | **$0.00** (or **$0.30** post-Free Tier) |
-| **VPC Networking** | Private subnet traffic (EFS + S3 Gateway Endpoint) | **Zero-NAT Optimization**: Routed via S3 Gateway VPC Endpoint. No NAT Gateway needed. | **$0.00** |
-| **Route 53 & ACM** | 1 Hosted Zone, 1 ACM certificate, low DNS queries | ACM: Free. Route 53 Hosted Zone: $0.50. | **$0.50** |
-| **Total (Free Tier)** | | | **$0.52 / month** |
-| **Total (Post-Free Tier)** | | | **$0.85 / month** |
+| Service                    | Estimated Monthly Usage                               | Free Tier Covered?                                                                    | Estimated Monthly Cost                  |
+| :------------------------- | :---------------------------------------------------- | :------------------------------------------------------------------------------------ | :-------------------------------------- |
+| **Amazon CloudFront**      | 10,000 HTTP requests, <10 GB egress data              | Yes (covered by permanent 1 TB egress / 10M requests)                                 | **$0.00**                               |
+| **Amazon S3**              | 1 GB storage, 10,000 GETs, 1,000 PUTs                 | Yes (covered by 5 GB / 20k GET / 2k PUT Free Tier)                                    | **$0.00** (or **$0.03** post-Free Tier) |
+| **AWS Lambda**             | 10,000 invocations (avg. 500ms execution, 512MB RAM)  | Yes (covered by permanent 1M requests / 400k GB-sec)                                  | **$0.00**                               |
+| **Amazon API Gateway**     | 10,000 HTTP API requests, 1,000 WebSocket connections | HTTP API: $0.01. WebSockets: $0.01.                                                   | **$0.02**                               |
+| **Amazon EFS**             | 1 GB database storage, low throughput                 | Yes (covered by 5 GB EFS Standard Free Tier)                                          | **$0.00** (or **$0.30** post-Free Tier) |
+| **VPC Networking**         | Private subnet traffic (EFS + S3 Gateway Endpoint)    | **Zero-NAT Optimization**: Routed via S3 Gateway VPC Endpoint. No NAT Gateway needed. | **$0.00**                               |
+| **Route 53 & ACM**         | 1 Hosted Zone, 1 ACM certificate, low DNS queries     | ACM: Free. Route 53 Hosted Zone: $0.50.                                               | **$0.50**                               |
+| **Total (Free Tier)**      |                                                       |                                                                                       | **$0.52 / month**                       |
+| **Total (Post-Free Tier)** |                                                       |                                                                                       | **$0.85 / month**                       |
 
 > [!TIP]
 > **Zero-NAT Cost Optimization:**
@@ -50,10 +50,12 @@ Wishboard includes a GitHub Actions workflow that automatically builds and deplo
 To enable this, you must first configure AWS OIDC (OpenID Connect) authentication to allow GitHub to deploy without long-lived credentials.
 
 1. **Run the OIDC Setup Script:**
+
    ```bash
    ./scripts/setup-oidc.sh --org <your-github-org> --repo <your-repo-name>
    ```
-   *This creates an IAM Role in your AWS account and automatically configures the necessary Repository Secrets and Variables in your GitHub repository using the `gh` CLI.*
+
+   _This creates an IAM Role in your AWS account and automatically configures the necessary Repository Secrets and Variables in your GitHub repository using the `gh` CLI._
 
 2. **Trigger a Deployment:**
    Push a commit to the `main` branch, or manually trigger the `Deploy Serverless` workflow from the GitHub Actions tab.
@@ -81,14 +83,19 @@ To run the steps manually instead, follow the sections below.
 ## Deployment Steps
 
 ### 1. Build the Frontend
+
 Compile the React frontend static assets:
+
 ```bash
 npm run build
 ```
+
 This output is saved to the `./dist` directory.
 
 ### 2. Build the Serverless Backend
+
 We use AWS SAM's native `esbuild` support to bundle the backend Express code and the WebSocket manager:
+
 ```bash
 cd aws-serverless
 sam build
@@ -99,16 +106,21 @@ JavaScript layer of `@libsql/client`, but the native `.node` binding cannot be
 bundled, so it must be added to the artifact after `sam build`. Skipping this
 step makes every API call fail with HTTP 500 (`Cannot find module
 '@libsql/linux-x64-gnu'`):
+
 ```bash
 node post-build.js
 ```
 
 ### 3. Deploy the Stack
+
 Deploy the resources to your AWS account. If deploying a custom domain, we recommend deploying this stack in the **us-east-1** (N. Virginia) region so ACM can automatically provision the SSL/TLS certificate:
+
 ```bash
 sam deploy --guided
 ```
+
 SAM will prompt you for the following parameters:
+
 - **Stack Name**: `wishboard-serverless`
 - **AWS Region**: `us-east-1` (highly recommended for custom domains)
 - **DomainName**: Your custom domain (e.g. `wishboard.yourdomain.com`). Leave empty to use the default CloudFront URL.
@@ -135,18 +147,23 @@ aws cloudfront create-monitoring-subscription \
 This is a global setting (~$1/distribution/month) and only needs to be run once — it persists across stack updates.
 
 ### 4. Upload Frontend Assets to S3
+
 Upload the built React frontend files to the S3 bucket:
+
 ```bash
 aws s3 sync ../dist s3://<Your-Frontend-Bucket-Name> --delete
 ```
-*(Replace `<Your-Frontend-Bucket-Name>` with the value printed in the CloudFormation output).*
+
+_(Replace `<Your-Frontend-Bucket-Name>` with the value printed in the CloudFormation output)._
 
 ---
 
 ## Maintenance & Updates
 
 ### Updating the Backend (Express API / WebSockets)
+
 If you modify any files in `src/server/*`:
+
 1. Re-build the stack:
    ```bash
    sam build
@@ -157,7 +174,9 @@ If you modify any files in `src/server/*`:
    ```
 
 ### Updating the Frontend (React UI)
+
 If you modify any frontend files:
+
 1. Re-build the static assets:
    ```bash
    npm run build
@@ -174,6 +193,7 @@ If you modify any frontend files:
 ---
 
 ## Accessing the Application
+
 - Access your board at the custom domain URL (if configured) or the default CloudFront URL (e.g. `https://dxxxxxxxxxxxxx.cloudfront.net`).
 - File uploads are securely and automatically uploaded to S3 and served directly via CloudFront at `/images/*`.
 - WebSockets operate seamlessly at `/socket.io/*` using API Gateway WebSockets, with connection states persisted automatically inside the SQLite database on EFS.
@@ -188,6 +208,7 @@ If you want to completely remove Wishboard from your AWS account to stop incurri
 > This action is permanent. All uploaded images and database records will be permanently deleted. **A `-Force` flag is required when deleting a production stack.**
 
 1. **Destroy the Application Stack:**
+
    ```bash
    ./scripts/destroy-serverless.sh --force
    ```

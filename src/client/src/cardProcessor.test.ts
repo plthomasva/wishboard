@@ -8,7 +8,7 @@ import {
   applyDampening,
   applyTemporalSmoothing,
   fallbackTextContour,
-  processCardImage
+  processCardImage,
 } from './cardProcessor';
 
 vi.mock('@techstark/opencv-js', () => {
@@ -46,23 +46,34 @@ vi.mock('@techstark/opencv-js', () => {
     getPerspectiveTransform: vi.fn().mockReturnValue(new MockMat()),
     warpPerspective: vi.fn(),
     matFromArray: vi.fn().mockReturnValue(new MockMat()),
-    Size: class MockSize { constructor(public width?: number, public height?: number) {} },
-    Point: class MockPoint { constructor(public x?: number, public y?: number) {} },
+    Size: class MockSize {
+      constructor(
+        public width?: number,
+        public height?: number
+      ) {}
+    },
+    Point: class MockPoint {
+      constructor(
+        public x?: number,
+        public y?: number
+      ) {}
+    },
     GaussianBlur: vi.fn(),
     Canny: vi.fn(),
     BORDER_DEFAULT: 'BORDER_DEFAULT',
     RETR_LIST: 'RETR_LIST',
-    Scalar: class MockScalar { value = 0; }
+    Scalar: class MockScalar {
+      value = 0;
+    },
   };
 
   const promise = Promise.resolve(mockCv);
   Object.assign(promise, mockCv);
 
   return {
-    default: promise
+    default: promise,
   };
 });
-
 
 describe('cardProcessor utility functions', () => {
   describe('getElementDimensions', () => {
@@ -108,13 +119,13 @@ describe('cardProcessor utility functions', () => {
         { x: 10, y: 10 },
         { x: 20, y: 10 },
         { x: 20, y: 20 },
-        { x: 10, y: 20 }
+        { x: 10, y: 20 },
       ];
       const previousPoly = [
         { x: 20, y: 10 },
         { x: 20, y: 20 },
         { x: 10, y: 20 },
-        { x: 10, y: 10 }
+        { x: 10, y: 10 },
       ];
       const aligned = alignPolygons(bestPoly, previousPoly);
       expect(aligned[0]).toEqual({ x: 20, y: 10 });
@@ -128,13 +139,13 @@ describe('cardProcessor utility functions', () => {
         { x: 11, y: 11 },
         { x: 21, y: 11 },
         { x: 21, y: 21 },
-        { x: 11, y: 21 }
+        { x: 11, y: 21 },
       ];
       const previousPoly = [
         { x: 10, y: 10 },
         { x: 20, y: 10 },
         { x: 20, y: 20 },
-        { x: 10, y: 20 }
+        { x: 10, y: 20 },
       ];
       const debugLines: string[] = [];
       const dampened = applyDampening(bestPoly, previousPoly, debugLines);
@@ -147,13 +158,13 @@ describe('cardProcessor utility functions', () => {
         { x: 200, y: 200 },
         { x: 210, y: 200 },
         { x: 210, y: 210 },
-        { x: 200, y: 210 }
+        { x: 200, y: 210 },
       ];
       const previousPoly = [
         { x: 10, y: 10 },
         { x: 20, y: 10 },
         { x: 20, y: 20 },
-        { x: 10, y: 20 }
+        { x: 10, y: 20 },
       ];
       const debugLines: string[] = [];
       const dampened = applyDampening(bestPoly, previousPoly, debugLines);
@@ -168,7 +179,7 @@ describe('cardProcessor utility functions', () => {
         { x: 10, y: 10 },
         { x: 20, y: 10 },
         { x: 20, y: 20 },
-        { x: 10, y: 20 }
+        { x: 10, y: 20 },
       ];
       const result = applyTemporalSmoothing(bestPoly, null, []);
       expect(result).toHaveLength(4);
@@ -206,22 +217,36 @@ describe('cardProcessor utility functions', () => {
     it('returns null if contours size is 0', () => {
       const mockContours = {
         size: () => 0,
-        get: vi.fn()
+        get: vi.fn(),
       } as any;
-      const result = fallbackTextContour(cv, { videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
+      const result = fallbackTextContour(
+        cv,
+        { videoWidth: 1000, videoHeight: 600 } as any,
+        mockContours,
+        1,
+        400,
+        300
+      );
       expect(result).toBeNull();
     });
 
     it('processes contours and returns points if text contours are found', () => {
       const mockContours = {
         size: () => 1,
-        get: () => ({})
+        get: () => ({}),
       } as any;
-      
+
       vi.mocked(cv.contourArea).mockReturnValueOnce(200);
       vi.mocked(cv.boundingRect).mockReturnValueOnce({ x: 50, y: 50, width: 200, height: 50 });
 
-      const result = fallbackTextContour(cv, { videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
+      const result = fallbackTextContour(
+        cv,
+        { videoWidth: 1000, videoHeight: 600 } as any,
+        mockContours,
+        1,
+        400,
+        300
+      );
       expect(result).toHaveLength(4);
       expect(result?.[0].x).toBeDefined();
     });
@@ -229,13 +254,20 @@ describe('cardProcessor utility functions', () => {
     it('returns null if contours are too small or too large', () => {
       const mockContours = {
         size: () => 1,
-        get: () => ({})
+        get: () => ({}),
       } as any;
-      
+
       // Too small area (area <= 50)
       vi.mocked(cv.contourArea).mockReturnValueOnce(20);
 
-      const result = fallbackTextContour(cv, { videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
+      const result = fallbackTextContour(
+        cv,
+        { videoWidth: 1000, videoHeight: 600 } as any,
+        mockContours,
+        1,
+        400,
+        300
+      );
       expect(result).toBeNull();
     });
   });
@@ -246,13 +278,13 @@ describe('cardProcessor utility functions', () => {
         { x: 11, y: 11 },
         { x: 21, y: 11 },
         { x: 21, y: 21 },
-        { x: 11, y: 21 }
+        { x: 11, y: 21 },
       ];
       const previousPoly = [
         { x: 10, y: 10 },
         { x: 20, y: 10 },
         { x: 20, y: 20 },
-        { x: 10, y: 20 }
+        { x: 10, y: 20 },
       ];
       const debugLines: string[] = [];
       const result = applyTemporalSmoothing(bestPoly, previousPoly, debugLines);
@@ -264,13 +296,13 @@ describe('cardProcessor utility functions', () => {
         { x: 10, y: 10 },
         { x: 20, y: 10 },
         { x: 20, y: 20 },
-        { x: 10, y: 20 }
+        { x: 10, y: 20 },
       ];
       const previousPoly = [
         { x: Number.NaN, y: 10 },
         { x: 20, y: 10 },
         { x: 20, y: 20 },
-        { x: 10, y: 20 }
+        { x: 10, y: 20 },
       ];
       const result = applyTemporalSmoothing(bestPoly, previousPoly, []);
       expect(result).toHaveLength(4);
@@ -285,9 +317,9 @@ describe('cardProcessor utility functions', () => {
 
     it('throws error if canvas toBlob fails', async () => {
       const mockImg = { naturalWidth: 1000, naturalHeight: 600 } as any;
-      
+
       const originalToBlob = HTMLCanvasElement.prototype.toBlob;
-      HTMLCanvasElement.prototype.toBlob = function(cb: any) {
+      HTMLCanvasElement.prototype.toBlob = function (cb: any) {
         cb(null); // Simulate failure
       };
 
@@ -308,4 +340,3 @@ describe('cardProcessor utility functions', () => {
     });
   });
 });
-

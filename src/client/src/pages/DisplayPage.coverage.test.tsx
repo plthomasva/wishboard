@@ -1,11 +1,11 @@
-import { render, screen, fireEvent, waitFor} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import DisplayPage from './DisplayPage';
 import React from 'react';
 import * as AuthContext from '../AuthContext';
 
 vi.mock('../AuthContext', () => ({
-  useAuth: vi.fn()
+  useAuth: vi.fn(),
 }));
 
 const mockFetch = vi.fn();
@@ -20,11 +20,11 @@ describe('DisplayPage Coverage', () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ([{ id: 'w1', content: 'Wish content', wishmail_enabled: true }])
+      json: async () => [{ id: 'w1', content: 'Wish content', wishmail_enabled: true }],
     });
 
     render(<DisplayPage />);
-    
+
     await waitFor(() => expect(screen.getByText('Wish content')).toBeInTheDocument());
 
     const sendMailBtn = screen.getByRole('button', { name: 'Send Wishmail' });
@@ -38,4 +38,3 @@ describe('DisplayPage Coverage', () => {
     await waitFor(() => expect(screen.queryByText('Send Wishmail')).not.toBeInTheDocument());
   });
 });
-

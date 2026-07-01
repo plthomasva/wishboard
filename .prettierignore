@@ -1,0 +1,11 @@
+dist
+coverage
+reports
+.stryker-tmp
+.aws-sam
+node_modules
+src/client/node_modules
+src/client/public
+package-lock.json
+*.ttf
+*.log

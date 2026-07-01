@@ -73,13 +73,25 @@ interface WishCardProps {
   onAdminDelete?: (id: string) => void;
 }
 
-export default function WishCard({ wish, cardClass = 'wish-card', showFlag = true, onFlag, onSendMail, onOverflowChange, isEditorPreview = false, onAdminDelete }: Readonly<WishCardProps>) {
+export default function WishCard({
+  wish,
+  cardClass = 'wish-card',
+  showFlag = true,
+  onFlag,
+  onSendMail,
+  onOverflowChange,
+  isEditorPreview = false,
+  onAdminDelete,
+}: Readonly<WishCardProps>) {
   // Use lower max font size for the card, and minimum 10px so we have enough room to scale down
-  const { containerRef, contentRef, isOverflowing } = useTextFit({
-    minFontSize: 10,
-    maxFontSize: cardClass === 'display-card' ? 36 : 18,
-    step: 1
-  }, [wish]);
+  const { containerRef, contentRef, isOverflowing } = useTextFit(
+    {
+      minFontSize: 10,
+      maxFontSize: cardClass === 'display-card' ? 36 : 18,
+      step: 1,
+    },
+    [wish]
+  );
 
   React.useEffect(() => {
     if (onOverflowChange) {
@@ -94,46 +106,83 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
       key={wish.id}
       ref={containerRef}
     >
-      <div className={`wish-card-inner-scale ${hasImage ? 'has-image' : ''}`} ref={contentRef} style={hasImage ? { position: 'relative', height: '100%', padding: 0 } : {}}>
+      <div
+        className={`wish-card-inner-scale ${hasImage ? 'has-image' : ''}`}
+        ref={contentRef}
+        style={hasImage ? { position: 'relative', height: '100%', padding: 0 } : {}}
+      >
         {!hasImage && (
-          <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
+          <IdentityStickers
+            genders={wish.creator_genders}
+            orientations={wish.creator_orientations}
+          />
         )}
-        
-        {showFlag && onFlag && (
-          <FlagButton onFlag={() => onFlag(wish.id)} />
-        )}
-        
+
+        {showFlag && onFlag && <FlagButton onFlag={() => onFlag(wish.id)} />}
+
         {onAdminDelete && (
-          <button 
+          <button
             type="button"
             className="secondary-button"
             onClick={() => onAdminDelete(wish.id)}
-            style={{ position: 'absolute', top: '12px', right: (showFlag && onFlag) ? '50px' : '12px', padding: '4px 8px', fontSize: '0.8rem', background: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', zIndex: 10 }}
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: showFlag && onFlag ? '50px' : '12px',
+              padding: '4px 8px',
+              fontSize: '0.8rem',
+              background: '#fee2e2',
+              color: '#b91c1c',
+              border: '1px solid #fecaca',
+              zIndex: 10,
+            }}
             title="Admin Delete Wish"
           >
             Delete
           </button>
         )}
-        
+
         {hasImage ? (
           <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-            <img 
-              src={getSafeImageSrc(wish)} 
-              alt={wish.content || "Handwritten wish"} 
+            <img
+              src={getSafeImageSrc(wish)}
+              alt={wish.content || 'Handwritten wish'}
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
-            <div style={{ position: 'absolute', top: '0', right: '6px', zIndex: 5, fontSize: '10px' }}>
-              <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
+            <div
+              style={{ position: 'absolute', top: '0', right: '6px', zIndex: 5, fontSize: '10px' }}
+            >
+              <IdentityStickers
+                genders={wish.creator_genders}
+                orientations={wish.creator_orientations}
+              />
             </div>
             {/* Hidden text for accessibility/search */}
-            <p className="sr-only" style={{ display: 'none' }}>{wish.content}</p>
+            <p className="sr-only" style={{ display: 'none' }}>
+              {wish.content}
+            </p>
           </div>
         ) : (
           <p className="wish-text">{wish.content}</p>
         )}
 
         {wish.contacts && wish.contacts.length > 0 && (
-          <div className="wish-contacts-list" style={wish.image_url || wish.image_id ? { position: 'absolute', bottom: '48px', right: '16px', zIndex: 5, background: 'rgba(255,255,255,0.9)', padding: '4px', borderRadius: '4px' } : {}}>
+          <div
+            className="wish-contacts-list"
+            style={
+              wish.image_url || wish.image_id
+                ? {
+                    position: 'absolute',
+                    bottom: '48px',
+                    right: '16px',
+                    zIndex: 5,
+                    background: 'rgba(255,255,255,0.9)',
+                    padding: '4px',
+                    borderRadius: '4px',
+                  }
+                : {}
+            }
+          >
             {wish.contacts.map((c, i) => (
               <span key={`${c.type}-${i}`} className="wish-contact-item">
                 <strong>{c.type}:</strong> {c.value}
@@ -143,21 +192,45 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
         )}
 
         {wish.wishmail_enabled && (
-          <div style={{ clear: 'both', textAlign: 'right', marginTop: '12px', position: wish.image_url || wish.image_id ? 'absolute' : 'static', bottom: wish.image_url || wish.image_id ? '16px' : 'auto', left: wish.image_url || wish.image_id ? '16px' : 'auto', zIndex: 5 }}>
-            <button 
+          <div
+            style={{
+              clear: 'both',
+              textAlign: 'right',
+              marginTop: '12px',
+              position: wish.image_url || wish.image_id ? 'absolute' : 'static',
+              bottom: wish.image_url || wish.image_id ? '16px' : 'auto',
+              left: wish.image_url || wish.image_id ? '16px' : 'auto',
+              zIndex: 5,
+            }}
+          >
+            <button
               type="button"
-              className="send-mail-icon-btn" 
+              className="send-mail-icon-btn"
               onClick={(e) => {
                 e.preventDefault();
                 if (onSendMail) onSendMail(wish.id);
               }}
               title="Send Wishmail"
               aria-label="Send Wishmail"
-              style={wish.image_url || wish.image_id ? { background: 'rgba(255,255,255,0.9)', borderRadius: '50%', padding: '8px' } : {}}
+              style={
+                wish.image_url || wish.image_id
+                  ? { background: 'rgba(255,255,255,0.9)', borderRadius: '50%', padding: '8px' }
+                  : {}
+              }
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="20" height="16" x="2" y="4" rx="2"/>
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
             </button>
           </div>
