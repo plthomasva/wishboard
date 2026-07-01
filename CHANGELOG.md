@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.9.2...wishboard-v1.10.0) (2026-07-01)
+
+
+### Features
+
+* introduce unified deployment cli and migrate oidc scripts ([#97](https://github.com/plthomasva/wishboard/issues/97)) ([8276d1b](https://github.com/plthomasva/wishboard/commit/8276d1b193abb44694d4c2cea8eeb95fe0a48a23))
+
 ## [1.9.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.9.1...wishboard-v1.9.2) (2026-07-01)
 
 
