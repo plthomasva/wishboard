@@ -28,7 +28,7 @@ export default function WiFiQrCode() {
         { bottom: '2rem', right: '2rem' },
         // Add a few centered variants for fun
         { top: '50%', left: '2rem', transform: 'translateY(-50%)' },
-        { top: '50%', right: '2rem', transform: 'translateY(-50%)' }
+        { top: '50%', right: '2rem', transform: 'translateY(-50%)' },
       ];
       setPosition(corners[Math.floor(Math.random() * corners.length)]); // NOSONAR
       setIsVisible(true);
@@ -51,8 +51,13 @@ export default function WiFiQrCode() {
   const wifiPass = import.meta.env.VITE_WIFI_PASSWORD || ['wishboard', '2026'].join('');
   const wifiString = `WIFI:T:WPA;S:Wishboard_WiFi;P:${wifiPass};;`;
 
-  const domain = import.meta.env.VITE_WISHBOARD_DOMAIN || import.meta.env.VITE_WISHBOARD_AP_IP || '10.42.0.1:3000';
-  const normalizedInput = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(domain) ? domain : `http://${domain}`;
+  const domain =
+    import.meta.env.VITE_WISHBOARD_DOMAIN ||
+    import.meta.env.VITE_WISHBOARD_AP_IP ||
+    '10.42.0.1:3000';
+  const normalizedInput = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(domain)
+    ? domain
+    : `http://${domain}`;
   let url: string;
   try {
     const parsed = new URL(normalizedInput);
@@ -86,7 +91,9 @@ export default function WiFiQrCode() {
         // Add a nice glassmorphism look
       }}
     >
-      <h3 style={{ margin: 0, fontSize: '1.2rem', textAlign: 'center', fontWeight: 600 }}>Connect to Wishboard</h3>
+      <h3 style={{ margin: 0, fontSize: '1.2rem', textAlign: 'center', fontWeight: 600 }}>
+        Connect to Wishboard
+      </h3>
       <div style={{ background: 'white', padding: '0.75rem', borderRadius: '12px' }}>
         <QRCodeSVG value={wifiString} size={160} level="H" />
       </div>
@@ -97,7 +104,8 @@ export default function WiFiQrCode() {
           <strong>Password:</strong> {wifiPass}
         </p>
         <p style={{ margin: 0, fontSize: '0.9rem', color: '#94a3b8' }}>
-          Then visit:<br />
+          Then visit:
+          <br />
           <strong style={{ color: '#38bdf8', fontSize: '1.1rem' }}>{url}</strong>
         </p>
       </div>

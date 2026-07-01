@@ -14,15 +14,15 @@ const mockLocalMetrics = {
   osSamples: [
     { ts: Date.now() - 10000, cpu: 12.5, heapUsed: 45.2, heapTotal: 512, rss: 110.5, load: 1.2 },
     { ts: Date.now() - 5000, cpu: 15, heapUsed: 46.8, heapTotal: 512, rss: 112.1, load: 1.4 },
-    { ts: Date.now(), cpu: 18.2, heapUsed: 48.1, heapTotal: 512, rss: 115, load: 1.5 }
+    { ts: Date.now(), cpu: 18.2, heapUsed: 48.1, heapTotal: 512, rss: 115, load: 1.5 },
   ],
   httpSamples: [
     { ts: Date.now() - 10000, r2xx: 12, r3xx: 1, r4xx: 0, r5xx: 0, count: 13, mean: 42.5 },
     { ts: Date.now() - 5000, r2xx: 15, r3xx: 0, r4xx: 1, r5xx: 0, count: 16, mean: 45 },
-    { ts: Date.now(), r2xx: 20, r3xx: 2, r4xx: 0, r5xx: 1, count: 23, mean: 50.2 }
+    { ts: Date.now(), r2xx: 20, r3xx: 2, r4xx: 0, r5xx: 1, count: 23, mean: 50.2 },
   ],
   intervalMs: 5000,
-  generatedAt: new Date().toISOString()
+  generatedAt: new Date().toISOString(),
 };
 
 const mockAwsMetrics = {
@@ -36,8 +36,8 @@ const mockAwsMetrics = {
           dataPoints: [
             { t: new Date(Date.now() - 120000).toISOString(), v: 5 },
             { t: new Date(Date.now() - 60000).toISOString(), v: 10 },
-            { t: new Date(Date.now()).toISOString(), v: 15 }
-          ]
+            { t: new Date(Date.now()).toISOString(), v: 15 },
+          ],
         },
         {
           id: 'lambda_errors',
@@ -45,10 +45,10 @@ const mockAwsMetrics = {
           dataPoints: [
             { t: new Date(Date.now() - 120000).toISOString(), v: 0 },
             { t: new Date(Date.now() - 60000).toISOString(), v: 1 },
-            { t: new Date(Date.now()).toISOString(), v: 0 }
-          ]
-        }
-      ]
+            { t: new Date(Date.now()).toISOString(), v: 0 },
+          ],
+        },
+      ],
     },
     {
       title: 'API Gateway (HTTP)',
@@ -59,13 +59,13 @@ const mockAwsMetrics = {
           dataPoints: [
             { t: new Date(Date.now() - 120000).toISOString(), v: 25 },
             { t: new Date(Date.now() - 60000).toISOString(), v: 30 },
-            { t: new Date(Date.now()).toISOString(), v: 35 }
-          ]
-        }
-      ]
-    }
+            { t: new Date(Date.now()).toISOString(), v: 35 },
+          ],
+        },
+      ],
+    },
   ],
-  generatedAt: new Date().toISOString()
+  generatedAt: new Date().toISOString(),
 };
 
 /** Helper: mock fetch with configurable per-URL responses */
@@ -105,17 +105,19 @@ describe('SystemOverviewSection WebSocket', () => {
 
   it('fetches /api/config on mount to detect deployment mode', async () => {
     render(<SystemOverviewSection {...defaultProps} />);
-    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/config'),
-    ));
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/config'))
+    );
   });
 
   it('loads initial logs via fetch on mount', async () => {
     render(<SystemOverviewSection {...defaultProps} />);
-    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/admin/logs'),
-      expect.anything(),
-    ));
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/admin/logs'),
+        expect.anything()
+      )
+    );
   });
 
   it('renders LocalMetricsDashboard in local (socketio) mode', async () => {
@@ -128,7 +130,9 @@ describe('SystemOverviewSection WebSocket', () => {
     mockFetch({ '/api/config': { realtimeProvider: 'apigateway' } });
     render(<SystemOverviewSection {...defaultProps} />);
     await waitFor(() => expect(screen.getByText(/CloudWatch metrics/i)).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByText('Lambda — wishboard-express-api')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText('Lambda — wishboard-express-api')).toBeInTheDocument()
+    );
   });
 
   it('appends incoming sys:log events to the log display', async () => {
@@ -136,8 +140,9 @@ describe('SystemOverviewSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText(/initial log line/i)).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const sysLogHandler = (socket.on as any).mock.calls
-      .find((call: any) => call[0] === 'sys:log')?.[1];
+    const sysLogHandler = (socket.on as any).mock.calls.find(
+      (call: any) => call[0] === 'sys:log'
+    )?.[1];
     expect(sysLogHandler).toBeDefined();
 
     act(() => {
@@ -152,8 +157,9 @@ describe('SystemOverviewSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText(/initial log line/i)).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const sysLogHandler = (socket.on as any).mock.calls
-      .find((call: any) => call[0] === 'sys:log')?.[1];
+    const sysLogHandler = (socket.on as any).mock.calls.find(
+      (call: any) => call[0] === 'sys:log'
+    )?.[1];
 
     act(() => {
       sysLogHandler('Line alpha');
@@ -183,7 +189,15 @@ describe('SystemOverviewSection WebSocket', () => {
         return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) });
       }
       if (url.includes('/api/admin/local-metrics')) {
-        return Promise.resolve({ ok: true, json: async () => ({ osSamples: [], httpSamples: [], intervalMs: 5000, generatedAt: new Date().toISOString() }) });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            osSamples: [],
+            httpSamples: [],
+            intervalMs: 5000,
+            generatedAt: new Date().toISOString(),
+          }),
+        });
       }
       // logs endpoint fails
       return Promise.resolve({ ok: false });
@@ -197,13 +211,20 @@ describe('SystemOverviewSection WebSocket', () => {
   it('handles AwsMetricsDashboard fetch error gracefully', async () => {
     globalThis.fetch = vi.fn().mockImplementation((url: string) => {
       if (url.includes('/api/config')) {
-        return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'apigateway' }) });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ realtimeProvider: 'apigateway' }),
+        });
       }
       if (url.includes('/api/admin/logs')) {
         return Promise.resolve({ ok: true, json: async () => ({ logs: '' }) });
       }
       if (url.includes('/api/admin/aws-metrics')) {
-        return Promise.resolve({ ok: false, status: 403, json: async () => ({ error: 'Access Denied to CloudWatch' }) });
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          json: async () => ({ error: 'Access Denied to CloudWatch' }),
+        });
       }
       return Promise.resolve({ ok: false });
     }) as any;
@@ -230,7 +251,9 @@ describe('SystemOverviewSection WebSocket', () => {
     // 2. Serverless mode toggle
     mockFetch({ '/api/config': { realtimeProvider: 'apigateway' } });
     render(<SystemOverviewSection {...defaultProps} />);
-    await waitFor(() => expect(screen.getByText('Lambda — wishboard-express-api')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText('Lambda — wishboard-express-api')).toBeInTheDocument()
+    );
 
     const awsCheckbox = screen.getByLabelText(/Auto-refresh every 30s/i) as HTMLInputElement;
     expect(awsCheckbox.checked).toBe(true);
@@ -259,9 +282,9 @@ describe('SystemOverviewSection WebSocket', () => {
           'Fallback info: message',
           'Fallback debug: message',
           'Fallback other message',
-          '[WS] Fallback ws message'
-        ].join('\n')
-      }
+          '[WS] Fallback ws message',
+        ].join('\n'),
+      },
     });
 
     render(<SystemOverviewSection {...defaultProps} />);
@@ -289,14 +312,14 @@ describe('SystemOverviewSection WebSocket', () => {
           'Line 1',
           'GET /api/admin/logs 200',
           'GET /api/wishes/random 200',
-          'GET /api/admin/local-metrics 200'
-        ].join('\n')
-      }
+          'GET /api/admin/local-metrics 200',
+        ].join('\n'),
+      },
     });
 
     render(<SystemOverviewSection {...defaultProps} />);
     await waitFor(() => expect(screen.getByText('Line 1')).toBeInTheDocument());
-    
+
     // By default, repeating logs are filtered out
     expect(screen.queryByText(/GET \/api\/admin\/logs/)).not.toBeInTheDocument();
 
@@ -319,15 +342,16 @@ describe('SystemOverviewSection WebSocket', () => {
     // Generate 2005 log lines
     const initialLogs = Array.from({ length: 2005 }, (_, i) => `log line ${i}`).join('\n');
     mockFetch({
-      '/api/admin/logs': { logs: initialLogs }
+      '/api/admin/logs': { logs: initialLogs },
     });
 
     render(<SystemOverviewSection {...defaultProps} />);
     await waitFor(() => expect(screen.getByText('log line 2004')).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const sysLogHandler = (socket.on as any).mock.calls
-      .find((call: any) => call[0] === 'sys:log')?.[1];
+    const sysLogHandler = (socket.on as any).mock.calls.find(
+      (call: any) => call[0] === 'sys:log'
+    )?.[1];
 
     act(() => {
       sysLogHandler('new live log line');
@@ -338,4 +362,3 @@ describe('SystemOverviewSection WebSocket', () => {
     expect(screen.queryByText('log line 0')).not.toBeInTheDocument();
   });
 });
-

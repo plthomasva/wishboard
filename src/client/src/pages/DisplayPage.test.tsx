@@ -4,9 +4,15 @@ import DisplayPage from './DisplayPage';
 
 // Mock ResizeObserver for jsdom
 class ResizeObserverMock {
-  observe() { /* noop */ }
-  unobserve() { /* noop */ }
-  disconnect() { /* noop */ }
+  observe() {
+    /* noop */
+  }
+  unobserve() {
+    /* noop */
+  }
+  disconnect() {
+    /* noop */
+  }
 }
 
 const realSetInterval = globalThis.setInterval;
@@ -17,8 +23,13 @@ describe('DisplayPage', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
-        { id: 'wish-1', content: 'Big screen wish', creator_genders: ['man'], creator_orientations: ['straight'] }
-      ]
+        {
+          id: 'wish-1',
+          content: 'Big screen wish',
+          creator_genders: ['man'],
+          creator_orientations: ['straight'],
+        },
+      ],
     }) as any;
     globalThis.setInterval = vi.fn(() => 1) as any;
     globalThis.clearInterval = vi.fn() as any;
@@ -40,19 +51,19 @@ describe('DisplayPage', () => {
 
   it('displays an error message when the API fetch fails', async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network failure')) as any;
-    
+
     render(<DisplayPage />);
-    
+
     await waitFor(() => expect(screen.getByText('Network failure')).toBeInTheDocument());
   });
 
   it('displays a generic error if the response is not ok', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: false
+      ok: false,
     }) as any;
-    
+
     render(<DisplayPage />);
-    
+
     await waitFor(() => expect(screen.getByText('Unable to load wishes.')).toBeInTheDocument());
   });
 
@@ -62,7 +73,7 @@ describe('DisplayPage', () => {
     // width: 800 -> cols: floor(824/264) = 3
     // height: 600 -> rows: floor((600+24-10)/168) = 3
     // capacity = 9
-    
+
     const originalClientWidth = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
     const originalClientHeight = Object.getOwnPropertyDescriptor(Element.prototype, 'clientHeight');
     const originalInnerWidth = Object.getOwnPropertyDescriptor(globalThis.window, 'innerWidth');
@@ -72,11 +83,20 @@ describe('DisplayPage', () => {
     Object.defineProperty(globalThis.window, 'innerWidth', { configurable: true, value: 1200 });
 
     let observerCallback: ResizeObserverCallback | null = null;
-    vi.stubGlobal('ResizeObserver', class {
-      constructor(callback: ResizeObserverCallback) { observerCallback = callback; }
-      observe() { /* noop */ }
-      disconnect() { /* noop */ }
-    });
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          observerCallback = callback;
+        }
+        observe() {
+          /* noop */
+        }
+        disconnect() {
+          /* noop */
+        }
+      }
+    );
 
     render(<DisplayPage isKiosk={true} />);
 
@@ -91,9 +111,12 @@ describe('DisplayPage', () => {
     });
 
     // Cleanup prototype overrides
-    if (originalClientWidth) Object.defineProperty(Element.prototype, 'clientWidth', originalClientWidth);
-    if (originalClientHeight) Object.defineProperty(Element.prototype, 'clientHeight', originalClientHeight);
-    if (originalInnerWidth) Object.defineProperty(globalThis.window, 'innerWidth', originalInnerWidth);
+    if (originalClientWidth)
+      Object.defineProperty(Element.prototype, 'clientWidth', originalClientWidth);
+    if (originalClientHeight)
+      Object.defineProperty(Element.prototype, 'clientHeight', originalClientHeight);
+    if (originalInnerWidth)
+      Object.defineProperty(globalThis.window, 'innerWidth', originalInnerWidth);
   });
 
   it('flags a wish and removes it from the display list when confirmed', async () => {
@@ -103,8 +126,8 @@ describe('DisplayPage', () => {
         return Promise.resolve({
           ok: true,
           json: async () => [
-            { id: 'wish-1', content: 'Flag me', creator_genders: [], creator_orientations: [] }
-          ]
+            { id: 'wish-1', content: 'Flag me', creator_genders: [], creator_orientations: [] },
+          ],
         });
       }
       if (url === '/api/wishes/wish-1/flag' && init?.method === 'POST') {
@@ -123,7 +146,9 @@ describe('DisplayPage', () => {
     fireEvent.click(flagBtn);
 
     // Verify confirm was called
-    expect(globalThis.window.confirm).toHaveBeenCalledWith('Are you sure you want to flag this wish as inappropriate?');
+    expect(globalThis.window.confirm).toHaveBeenCalledWith(
+      'Are you sure you want to flag this wish as inappropriate?'
+    );
 
     // Verify fetch flag endpoint was called
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes/wish-1/flag', { method: 'POST' });
@@ -137,8 +162,13 @@ describe('DisplayPage', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
-        { id: 'wish-1', content: 'Cancel flag wish', creator_genders: [], creator_orientations: [] }
-      ]
+        {
+          id: 'wish-1',
+          content: 'Cancel flag wish',
+          creator_genders: [],
+          creator_orientations: [],
+        },
+      ],
     }) as any;
 
     render(<DisplayPage isKiosk={false} />);
@@ -165,8 +195,13 @@ describe('DisplayPage', () => {
         return Promise.resolve({
           ok: true,
           json: async () => [
-            { id: 'wish-1', content: 'Fail flag wish', creator_genders: [], creator_orientations: [] }
-          ]
+            {
+              id: 'wish-1',
+              content: 'Fail flag wish',
+              creator_genders: [],
+              creator_orientations: [],
+            },
+          ],
         });
       }
       return Promise.resolve({ ok: false }); // fails flag POST

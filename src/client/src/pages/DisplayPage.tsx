@@ -20,7 +20,7 @@ interface DisplayPageProps {
 
 export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps = {}) {
   const [wishes, setWishes] = useState<Wish[]>([]);
-  const [pinnedWishes, setPinnedWishes] = useState<{wish: Wish, pinnedAt: number}[]>([]);
+  const [pinnedWishes, setPinnedWishes] = useState<{ wish: Wish; pinnedAt: number }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [capacity, setCapacity] = useState<number>(12);
   const [mailWishId, setMailWishId] = useState<string | null>(null);
@@ -56,18 +56,21 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
     };
   }, [loadWishes, resetTimer]);
 
-  const handleNewWish = useCallback((newWish: Wish) => {
-    setPinnedWishes(prev => {
-      const filtered = prev.filter(p => p.wish.id !== newWish.id);
-      return [{ wish: newWish, pinnedAt: Date.now() }, ...filtered];
-    });
-    // Give people time to read the newly arrived wish
-    resetTimer();
-  }, [resetTimer]);
+  const handleNewWish = useCallback(
+    (newWish: Wish) => {
+      setPinnedWishes((prev) => {
+        const filtered = prev.filter((p) => p.wish.id !== newWish.id);
+        return [{ wish: newWish, pinnedAt: Date.now() }, ...filtered];
+      });
+      // Give people time to read the newly arrived wish
+      resetTimer();
+    },
+    [resetTimer]
+  );
 
   const handleDeletedWish = useCallback((deletedWishId: string) => {
-    setWishes(prev => prev.filter(w => w.id !== deletedWishId));
-    setPinnedWishes(prev => prev.filter(p => p.wish.id !== deletedWishId));
+    setWishes((prev) => prev.filter((w) => w.id !== deletedWishId));
+    setPinnedWishes((prev) => prev.filter((p) => p.wish.id !== deletedWishId));
   }, []);
 
   useEffect(() => {
@@ -82,44 +85,48 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
 
   useEffect(() => {
     if (!isKiosk) return;
-    
+
     const calculateCapacity = () => {
       if (!gridRef.current) return;
       const width = gridRef.current.clientWidth;
       const height = gridRef.current.clientHeight;
-      
+
       // Determine card min-width and gap based on screen size (matches styles.css media queries)
       const isLargeScreen = globalThis.innerWidth >= 1600;
       const gap = isLargeScreen ? 40 : 24;
       const cardWidth = isLargeScreen ? 500 : 240;
-      
+
       // Cards have aspect-ratio: 5 / 3
       const cardHeight = cardWidth * (3 / 5);
-      
+
       const cols = Math.max(1, Math.floor((width + gap) / (cardWidth + gap)));
       // Subtract a little buffer from height to ensure we don't clip the bottom row
       const rows = Math.max(1, Math.floor((height + gap - 10) / (cardHeight + gap)));
-      
+
       setCapacity(cols * rows);
     };
 
     const observer = new ResizeObserver(calculateCapacity);
     if (gridRef.current) observer.observe(gridRef.current);
-    
+
     calculateCapacity();
     return () => observer.disconnect();
   }, [isKiosk, wishes]);
 
-  const handleFlag = useFlagWish((id) => setWishes((prev) => prev.filter((wish) => wish.id !== id)));
+  const handleFlag = useFlagWish((id) =>
+    setWishes((prev) => prev.filter((wish) => wish.id !== id))
+  );
 
   const displayWishes = useMemo(() => {
     const currentLimit = isKiosk ? capacity : 12;
     const now = Date.now();
     const PIN_DURATION = 120000; // 2 minutes
-    const activePins = pinnedWishes.filter(p => now - p.pinnedAt < PIN_DURATION).map(p => p.wish);
-    
-    const randomWishes = wishes.filter(w => !activePins.some(p => p.id === w.id));
-    
+    const activePins = pinnedWishes
+      .filter((p) => now - p.pinnedAt < PIN_DURATION)
+      .map((p) => p.wish);
+
+    const randomWishes = wishes.filter((w) => !activePins.some((p) => p.id === w.id));
+
     return [...activePins, ...randomWishes].slice(0, currentLimit);
   }, [wishes, pinnedWishes, capacity, isKiosk]);
 
@@ -148,9 +155,7 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
         ))}
       </div>
 
-      {mailWishId && (
-        <SendWishmailModal wishId={mailWishId} onClose={() => setMailWishId(null)} />
-      )}
+      {mailWishId && <SendWishmailModal wishId={mailWishId} onClose={() => setMailWishId(null)} />}
     </section>
   );
 }

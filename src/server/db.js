@@ -116,15 +116,13 @@ const defaultAdminSecret = process.env.WISHBOARD_ADMIN_SECRET || 'admin-board';
 const ensureDefaultAdmin = async () => {
   const rs = await db.execute({
     sql: 'SELECT id FROM users WHERE role = ? LIMIT 1',
-    args: ['admin']
+    args: ['admin'],
   });
   if (rs.rows.length > 0) {
     return;
   }
 
-  const scryptOptions = process.env.NODE_ENV === 'test' 
-    ? { N: 16, r: 1, p: 1 } 
-    : undefined;
+  const scryptOptions = process.env.NODE_ENV === 'test' ? { N: 16, r: 1, p: 1 } : undefined;
 
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(defaultAdminSecret, salt, 64, scryptOptions).toString('hex');
@@ -133,7 +131,7 @@ const ensureDefaultAdmin = async () => {
 
   await db.execute({
     sql: 'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-    args: [adminId, defaultAdminUsername, hash, salt, 'admin', now]
+    args: [adminId, defaultAdminUsername, hash, salt, 'admin', now],
   });
 
   console.log(`Created default admin account: ${defaultAdminUsername}`);
@@ -149,7 +147,7 @@ const migrationFlag = path.join(dataDir, '.migrated_to_libsql');
 if (url.startsWith('http') && fs.existsSync(localDbPath) && !fs.existsSync(migrationFlag)) {
   console.log('Found legacy SQLite database. Migrating data to libSQL server...');
   const localDb = createClient({ url: `file:${localDbPath}` });
-  
+
   const tablesToMigrate = ['users', 'sessions', 'wishes', 'wishmails'];
   for (const table of tablesToMigrate) {
     try {
@@ -158,12 +156,14 @@ if (url.startsWith('http') && fs.existsSync(localDbPath) && !fs.existsSync(migra
         console.log(`Migrating ${rs.rows.length} rows for table ${table}...`);
         for (const row of rs.rows) {
           const columns = Object.keys(row).join(', ');
-          const placeholders = Object.keys(row).map(() => '?').join(', ');
+          const placeholders = Object.keys(row)
+            .map(() => '?')
+            .join(', ');
           const values = Object.values(row);
-          
+
           await db.execute({
             sql: `INSERT OR IGNORE INTO ${table} (${columns}) VALUES (${placeholders})`,
-            args: values
+            args: values,
           });
         }
       }
@@ -171,7 +171,7 @@ if (url.startsWith('http') && fs.existsSync(localDbPath) && !fs.existsSync(migra
       console.warn(`Could not migrate table ${table} (might not exist in old db):`, err.message);
     }
   }
-  
+
   fs.writeFileSync(migrationFlag, new Date().toISOString());
   console.log('Migration complete!');
 }
@@ -195,7 +195,7 @@ const dbWrapper = {
     run: async (...args) => {
       const rs = await db.execute({ sql, args: args.map(mapArg) });
       return { changes: rs.rowsAffected, lastInsertRowid: rs.lastInsertRowid };
-    }
+    },
   }),
   exec: async (sql) => {
     return await db.executeMultiple(sql);
@@ -205,7 +205,7 @@ const dbWrapper = {
   },
   executeMultiple: async (...args) => {
     return await db.executeMultiple(...args);
-  }
+  },
 };
 
 export default dbWrapper;

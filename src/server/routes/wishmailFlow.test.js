@@ -22,7 +22,7 @@ describe('Wishmail Flow E2E', () => {
     // 1. Register User A
     const resA = await request(app).post('/api/users/register').send({
       username: 'usera',
-      passphrase: 'passwordA'
+      passphrase: 'passwordA',
     });
     expect(resA.status).toBe(200);
     const tokenA = resA.body.token;
@@ -33,7 +33,7 @@ describe('Wishmail Flow E2E', () => {
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
         content: 'This is User A wish',
-        wishmail_enabled: true
+        wishmail_enabled: true,
       });
     expect(wishRes.status).toBe(201);
     const wishId = wishRes.body.id;
@@ -41,7 +41,7 @@ describe('Wishmail Flow E2E', () => {
     // 3. Register User B
     const resB = await request(app).post('/api/users/register').send({
       username: 'userb',
-      passphrase: 'passwordB'
+      passphrase: 'passwordB',
     });
     expect(resB.status).toBe(200);
     const tokenB = resB.body.token;
@@ -52,7 +52,7 @@ describe('Wishmail Flow E2E', () => {
       .set('Authorization', `Bearer ${tokenB}`)
       .send({
         content: 'Hello User A from User B',
-        return_contacts: [{ type: 'Phone', value: '555-0000' }]
+        return_contacts: [{ type: 'Phone', value: '555-0000' }],
       });
     expect(mailRes.status).toBe(200);
     const mailId = mailRes.body.id;

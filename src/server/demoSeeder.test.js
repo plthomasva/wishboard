@@ -11,8 +11,12 @@ describe('generateDemoData', () => {
     const stats = await generateDemoData();
 
     expect(stats).toEqual({ usersCreated: 50, wishesCreated: 100 });
-    expect((await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role != 'admin'").get()).count).toBe(50);
-    expect((await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").get()).count).toBe(1);
+    expect(
+      (await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role != 'admin'").get()).count
+    ).toBe(50);
+    expect(
+      (await db.prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").get()).count
+    ).toBe(1);
     expect((await db.prepare('SELECT COUNT(*) AS count FROM wishes').get()).count).toBe(100);
   }, 15000);
 });

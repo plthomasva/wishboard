@@ -11,7 +11,7 @@ vi.mock('@aws-sdk/client-apigatewaymanagementapi', () => {
         this.send = mockSend;
       }
     },
-    PostToConnectionCommand: mockPostToConnectionCommand
+    PostToConnectionCommand: mockPostToConnectionCommand,
   };
 });
 
@@ -20,9 +20,9 @@ vi.mock('./db.js', () => {
     default: {
       prepare: vi.fn(() => ({
         all: vi.fn().mockResolvedValue([{ connection_id: 'conn1' }, { connection_id: 'conn2' }]),
-        run: vi.fn()
-      }))
-    }
+        run: vi.fn(),
+      })),
+    },
   };
 });
 
@@ -61,18 +61,20 @@ describe('Server socket.js - API Gateway Mode', () => {
 
     socketModule.emitNewWish({ id: 1 });
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(mockPostToConnectionCommand).toHaveBeenCalledTimes(2);
     expect(mockSend).toHaveBeenCalledTimes(2);
-    expect(db.prepare).toHaveBeenCalledWith('DELETE FROM websocket_connections WHERE connection_id = ?');
+    expect(db.prepare).toHaveBeenCalledWith(
+      'DELETE FROM websocket_connections WHERE connection_id = ?'
+    );
   });
 
   it('handles missing WEBSOCKET_API_ENDPOINT gracefully', async () => {
     delete process.env.WEBSOCKET_API_ENDPOINT;
 
     socketModule.emitWishFlagged({ id: 1 });
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(mockSend).not.toHaveBeenCalled();
   });
@@ -82,7 +84,7 @@ describe('Server socket.js - API Gateway Mode', () => {
     socketModule.emitWishDeleted(1);
     socketModule.emitWishReactivated({ id: 1 });
     socketModule.emitSystemLog({ message: 'test' });
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // Each calls broadcastToApiGateway which sends to 2 connections, total 6 sends
     expect(mockSend).toHaveBeenCalledTimes(6);

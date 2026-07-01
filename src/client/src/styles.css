@@ -227,7 +227,9 @@ button {
   border-radius: 14px;
   cursor: pointer;
   font-weight: 700;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
   min-height: 48px;
 }
 
@@ -268,10 +270,13 @@ button:hover {
   gap: 24px;
   margin-top: 24px;
   background-color: #d7ccc8; /* Warm corkboard base */
-  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 15%, transparent 16%),
-                    radial-gradient(rgba(0, 0, 0, 0.08) 15%, transparent 16%);
+  background-image:
+    radial-gradient(rgba(0, 0, 0, 0.08) 15%, transparent 16%),
+    radial-gradient(rgba(0, 0, 0, 0.08) 15%, transparent 16%);
   background-size: 30px 30px;
-  background-position: 0 0, 15px 15px;
+  background-position:
+    0 0,
+    15px 15px;
   border-radius: 12px;
   padding: 16px;
   box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -295,13 +300,30 @@ button:hover {
   padding: 24px 18px 18px 18px;
   background: 
     /* Red line at top margin */
-    linear-gradient(to bottom, transparent 38px, rgba(239, 83, 80, 0.3) 38px, rgba(239, 83, 80, 0.3) 39px, transparent 39px),
+    linear-gradient(
+      to bottom,
+      transparent 38px,
+      rgba(239, 83, 80, 0.3) 38px,
+      rgba(239, 83, 80, 0.3) 39px,
+      transparent 39px
+    ),
     /* Blue ruled lines */
-    linear-gradient(to bottom, transparent 23px, rgba(33, 150, 243, 0.08) 23px, rgba(33, 150, 243, 0.08) 24px),
+    linear-gradient(
+        to bottom,
+        transparent 23px,
+        rgba(33, 150, 243, 0.08) 23px,
+        rgba(33, 150, 243, 0.08) 24px
+      ),
     #fffdf3;
-  background-size: 100% 100%, 100% 24px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background-size:
+    100% 100%,
+    100% 24px;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.05),
+    0 10px 20px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   overflow: hidden;
   container-type: inline-size;
 }
@@ -316,7 +338,7 @@ button:hover {
 /* Thumbtack / Pushpin */
 .wish-card::before,
 .display-card::before {
-  content: "";
+  content: '';
   position: absolute;
   top: -8px;
   left: 50%;
@@ -325,13 +347,15 @@ button:hover {
   height: 14px;
   background: radial-gradient(circle at 4px 4px, #ff5252 20%, #c62828 80%);
   border-radius: 50%;
-  box-shadow: 0 10px 8px rgba(0, 0, 0, 0.3), inset -2px -2px 4px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 10px 8px rgba(0, 0, 0, 0.3),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.4);
   z-index: 5;
 }
 
 .wish-card::after,
 .display-card::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 4px;
   left: calc(50% + 2px);
@@ -393,7 +417,10 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
   z-index: 10;
 }
 
@@ -529,15 +556,17 @@ button:hover {
 }
 
 .sticker-heart-shadow {
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
   display: inline-flex;
 }
 
 .sticker-heart {
   width: 1.35em;
   height: 1.35em;
-  mask: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 37.5C20 37.5 5 26 5 14C5 8.5 9 5 14 5C17.5 5 20 7.5 20 10C20 7.5 22.5 5 26 5C31 5 35 8.5 35 14C35 26 20 37.5 20 37.5Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;
-  -webkit-mask: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 37.5C20 37.5 5 26 5 14C5 8.5 9 5 14 5C17.5 5 20 7.5 20 10C20 7.5 22.5 5 26 5C31 5 35 8.5 35 14C35 26 20 37.5 20 37.5Z' fill='black'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 37.5C20 37.5 5 26 5 14C5 8.5 9 5 14 5C17.5 5 20 7.5 20 10C20 7.5 22.5 5 26 5C31 5 35 8.5 35 14C35 26 20 37.5 20 37.5Z' fill='black'/%3E%3C/svg%3E")
+    center/contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 37.5C20 37.5 5 26 5 14C5 8.5 9 5 14 5C17.5 5 20 7.5 20 10C20 7.5 22.5 5 26 5C31 5 35 8.5 35 14C35 26 20 37.5 20 37.5Z' fill='black'/%3E%3C/svg%3E")
+    center/contain no-repeat;
 }
 
 .sticker-flag {
@@ -579,35 +608,77 @@ button:hover {
 
 /* Flag Gradients */
 .flag-straight {
-  background: linear-gradient(to bottom, #000 16.6%, #333 16.6% 33.3%, #666 33.3% 50%, #999 50% 66.6%, #ccc 66.6% 83.3%, #fff 83.3%);
+  background: linear-gradient(
+    to bottom,
+    #000 16.6%,
+    #333 16.6% 33.3%,
+    #666 33.3% 50%,
+    #999 50% 66.6%,
+    #ccc 66.6% 83.3%,
+    #fff 83.3%
+  );
 }
 
 .flag-rainbow {
-  background: linear-gradient(to bottom, #E40303 16.6%, #FF8C00 16.6% 33.3%, #FFED00 33.3% 50%, #008026 50% 66.6%, #24408E 66.6% 83.3%, #732982 83.3%);
+  background: linear-gradient(
+    to bottom,
+    #e40303 16.6%,
+    #ff8c00 16.6% 33.3%,
+    #ffed00 33.3% 50%,
+    #008026 50% 66.6%,
+    #24408e 66.6% 83.3%,
+    #732982 83.3%
+  );
 }
 
 .flag-lesbian {
-  background: linear-gradient(to bottom, #D52D00 20%, #EF7627 20% 40%, #FFFFFF 40% 60%, #D162A4 60% 80%, #B55690 80%);
+  background: linear-gradient(
+    to bottom,
+    #d52d00 20%,
+    #ef7627 20% 40%,
+    #ffffff 40% 60%,
+    #d162a4 60% 80%,
+    #b55690 80%
+  );
 }
 
 .flag-bisexual {
-  background: linear-gradient(to bottom, #D60270 40%, #9B4F96 40% 60%, #0038A8 60%);
+  background: linear-gradient(to bottom, #d60270 40%, #9b4f96 40% 60%, #0038a8 60%);
 }
 
 .flag-pansexual {
-  background: linear-gradient(to bottom, #FF218C 33.3%, #FFD800 33.3% 66.6%, #21B1FF 66.6%);
+  background: linear-gradient(to bottom, #ff218c 33.3%, #ffd800 33.3% 66.6%, #21b1ff 66.6%);
 }
 
 .flag-asexual {
-  background: linear-gradient(to bottom, #000000 25%, #A3A3A3 25% 50%, #FFFFFF 50% 75%, #800080 75%);
+  background: linear-gradient(
+    to bottom,
+    #000000 25%,
+    #a3a3a3 25% 50%,
+    #ffffff 50% 75%,
+    #800080 75%
+  );
 }
 
 .flag-trans {
-  background: linear-gradient(to bottom, #5BCEFA 20%, #F5A9B8 20% 40%, #FFFFFF 40% 60%, #F5A9B8 60% 80%, #5BCEFA 80%);
+  background: linear-gradient(
+    to bottom,
+    #5bcefa 20%,
+    #f5a9b8 20% 40%,
+    #ffffff 40% 60%,
+    #f5a9b8 60% 80%,
+    #5bcefa 80%
+  );
 }
 
 .flag-nonbinary {
-  background: linear-gradient(to bottom, #FCF434 25%, #FFFFFF 25% 50%, #9C59D1 50% 75%, #2C2C2C 75%);
+  background: linear-gradient(
+    to bottom,
+    #fcf434 25%,
+    #ffffff 25% 50%,
+    #9c59d1 50% 75%,
+    #2c2c2c 75%
+  );
 }
 
 /* Big Screen Display scaling */
@@ -722,8 +793,14 @@ button:hover {
 }
 
 @keyframes kioskModalScale {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .kiosk-modal h2 {
@@ -791,7 +868,9 @@ button:hover {
   justify-content: center;
   min-height: 44px;
   min-width: 44px;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
 .info-toggle-btn svg {
@@ -800,7 +879,7 @@ button:hover {
 }
 
 .info-toggle-btn:hover,
-.info-toggle-btn[aria-expanded="true"] {
+.info-toggle-btn[aria-expanded='true'] {
   color: #155bb5;
   background: #e8f0fe;
   transform: none; /* Override default button hover */
@@ -820,8 +899,14 @@ button:hover {
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Wish Contacts & Mail Styles */
@@ -850,7 +935,10 @@ button:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
   z-index: 10;
 }
 
@@ -868,7 +956,7 @@ button:hover {
   font-family: Inter, sans-serif;
   font-size: 0.8em; /* Relative to scaled root */
   color: #556275;
-  border-top: 1px dashed rgba(0,0,0,0.1);
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
   padding-top: 8px;
 }
 
@@ -876,10 +964,8 @@ button:hover {
   background: rgba(255, 255, 255, 0.5);
   padding: 4px 8px;
   border-radius: 4px;
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
-
-
 
 /* Wish Editor Layout */
 .wish-editor-layout {
@@ -927,7 +1013,7 @@ textarea.overflowing-textarea {
   .desktop-only {
     display: none !important;
   }
-  
+
   .app-shell {
     padding-bottom: 70px; /* Space for bottom bar */
   }
@@ -940,7 +1026,7 @@ textarea.overflowing-textarea {
     right: 0;
     height: 64px;
     background: #ffffff;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     justify-content: space-around;
     padding: 0 4px;
@@ -992,7 +1078,7 @@ textarea.overflowing-textarea {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 2000;
     display: flex;
     align-items: flex-end;
@@ -1009,8 +1095,12 @@ textarea.overflowing-textarea {
   }
 
   @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
   }
 
   .hamburger-close {
@@ -1054,7 +1144,9 @@ textarea.overflowing-textarea {
   table.responsive-table thead {
     display: none;
   }
-  table.responsive-table tbody, table.responsive-table tr, table.responsive-table td {
+  table.responsive-table tbody,
+  table.responsive-table tr,
+  table.responsive-table td {
     display: block;
     width: 100%;
   }
@@ -1101,5 +1193,3 @@ textarea.overflowing-textarea {
     transform: rotate(360deg);
   }
 }
-
-

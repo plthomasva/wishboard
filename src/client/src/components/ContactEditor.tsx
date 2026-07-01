@@ -11,15 +11,19 @@ interface ContactEditorProps {
   addButtonLabel?: string;
 }
 
-export default function ContactEditor({ contacts, setContacts, addButtonLabel = "+ Add Contact Method" }: Readonly<ContactEditorProps>) {
+export default function ContactEditor({
+  contacts,
+  setContacts,
+  addButtonLabel = '+ Add Contact Method',
+}: Readonly<ContactEditorProps>) {
   const addContact = () => setContacts([...contacts, { type: 'FetLife', value: '' }]);
-  
+
   const updateContact = (index: number, field: 'type' | 'value', val: string) => {
     const newContacts = [...contacts];
     newContacts[index] = { ...newContacts[index], [field]: val };
     setContacts(newContacts);
   };
-  
+
   const removeContact = (index: number) => {
     setContacts(contacts.filter((_, i) => i !== index));
   };
@@ -27,27 +31,54 @@ export default function ContactEditor({ contacts, setContacts, addButtonLabel = 
   return (
     <>
       {contacts.map((contact, index) => (
-        <div key={`${contact.type}-${index}`} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-          <select 
-            value={contact.type} 
+        <div
+          key={`${contact.type}-${index}`}
+          style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}
+        >
+          <select
+            value={contact.type}
             onChange={(e) => updateContact(index, 'type', e.target.value)}
-            style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d7dee5', background: 'white' }}
+            style={{
+              padding: '8px',
+              borderRadius: '8px',
+              border: '1px solid #d7dee5',
+              background: 'white',
+            }}
           >
             <option value="FetLife">FetLife</option>
             <option value="Phone">Phone</option>
             <option value="Email">Email</option>
           </select>
-          <input 
-            type="text" 
-            value={contact.value} 
-            onChange={(e) => updateContact(index, 'value', e.target.value)} 
+          <input
+            type="text"
+            value={contact.value}
+            onChange={(e) => updateContact(index, 'value', e.target.value)}
             placeholder="Username, number, etc."
             style={{ minHeight: '36px', padding: '8px' }}
           />
-          <button type="button" onClick={() => removeContact(index)} style={{ minHeight: '36px', padding: '0 12px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>X</button>
+          <button
+            type="button"
+            onClick={() => removeContact(index)}
+            style={{
+              minHeight: '36px',
+              padding: '0 12px',
+              background: '#e53e3e',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+            }}
+          >
+            X
+          </button>
         </div>
       ))}
-      <button type="button" onClick={addContact} className="secondary-button" style={{ minHeight: '36px', padding: '6px 12px', fontSize: '0.9rem' }}>
+      <button
+        type="button"
+        onClick={addContact}
+        className="secondary-button"
+        style={{ minHeight: '36px', padding: '6px 12px', fontSize: '0.9rem' }}
+      >
         {addButtonLabel}
       </button>
     </>

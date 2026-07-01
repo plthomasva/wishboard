@@ -53,7 +53,11 @@ function preflightChecks(dryRun) {
     return 'MOCK_ACCOUNT_ID';
   }
 
-  const identityResult = execCommand('aws', ['sts', 'get-caller-identity', '--query', 'Account', '--output', 'text'], { stdio: 'pipe' });
+  const identityResult = execCommand(
+    'aws',
+    ['sts', 'get-caller-identity', '--query', 'Account', '--output', 'text'],
+    { stdio: 'pipe' }
+  );
   if (identityResult.status !== 0) {
     logError('Unable to authenticate to AWS. Please run "aws configure" or log in first.');
     throw new Error('AWS authentication failed');
@@ -73,14 +77,23 @@ function resolveOidcProviderArn(stackName, dryRun) {
 
   let managedByStack = false;
   // Check if managed by CloudFormation stack
-  const resDetail = execCommand('aws', [
-    'cloudformation', 'describe-stack-resource',
-    '--stack-name', stackName,
-    '--logical-resource-id', 'GithubOidcProvider',
-    '--query', 'StackResourceDetail.PhysicalResourceId',
-    '--output', 'text'
-  ], { stdio: 'pipe' });
-  
+  const resDetail = execCommand(
+    'aws',
+    [
+      'cloudformation',
+      'describe-stack-resource',
+      '--stack-name',
+      stackName,
+      '--logical-resource-id',
+      'GithubOidcProvider',
+      '--query',
+      'StackResourceDetail.PhysicalResourceId',
+      '--output',
+      'text',
+    ],
+    { stdio: 'pipe' }
+  );
+
   if (resDetail.status === 0 && resDetail.stdout && resDetail.stdout.trim() !== 'None') {
     managedByStack = true;
   }
@@ -91,12 +104,19 @@ function resolveOidcProviderArn(stackName, dryRun) {
   }
 
   // Check for external OIDC provider in IAM
-  const oidcCheck = execCommand('aws', [
-    'iam', 'list-open-id-connect-providers',
-    '--query', "OpenIDConnectProviderList[?contains(Arn, 'token.actions.githubusercontent.com')].Arn | [0]",
-    '--output', 'text'
-  ], { stdio: 'pipe' });
-  
+  const oidcCheck = execCommand(
+    'aws',
+    [
+      'iam',
+      'list-open-id-connect-providers',
+      '--query',
+      "OpenIDConnectProviderList[?contains(Arn, 'token.actions.githubusercontent.com')].Arn | [0]",
+      '--output',
+      'text',
+    ],
+    { stdio: 'pipe' }
+  );
+
   const foundArn = oidcCheck.stdout.trim();
   if (foundArn && foundArn !== 'None') {
     logInfo(`Found existing external GitHub OIDC provider: ${foundArn}`);
@@ -112,19 +132,21 @@ function resolveOidcProviderArn(stackName, dryRun) {
  */
 function deployStack(stackName, org, repo, oidcArn, region, dryRun) {
   logStep(`Deploying CloudFormation stack: ${stackName}...`);
-  const parameters = [
-    `GitHubOrg=${org}`,
-    `GitHubRepo=${repo}`,
-    `OidcProviderArn=${oidcArn}`
-  ];
+  const parameters = [`GitHubOrg=${org}`, `GitHubRepo=${repo}`, `OidcProviderArn=${oidcArn}`];
 
   const deployArgs = [
-    'cloudformation', 'deploy',
-    '--template-file', 'aws-serverless/github-oidc-role.yaml',
-    '--stack-name', stackName,
-    '--parameter-overrides', ...parameters,
-    '--capabilities', 'CAPABILITY_NAMED_IAM',
-    '--region', region
+    'cloudformation',
+    'deploy',
+    '--template-file',
+    'aws-serverless/github-oidc-role.yaml',
+    '--stack-name',
+    stackName,
+    '--parameter-overrides',
+    ...parameters,
+    '--capabilities',
+    'CAPABILITY_NAMED_IAM',
+    '--region',
+    region,
   ];
 
   const deployResult = execCommand('aws', deployArgs, { dryRun });
@@ -143,15 +165,28 @@ function getDeployRoleArn(stackName, region, accountId, repo, dryRun) {
     return `arn:aws:iam::${accountId}:role/${repo}-github-oidc-setup-Role`;
   }
 
-  const describeResult = execCommand('aws', [
-    'cloudformation', 'describe-stacks',
-    '--stack-name', stackName,
-    '--query', "Stacks[0].Outputs[?OutputKey=='RoleArn'].OutputValue",
-    '--output', 'text',
-    '--region', region
-  ], { stdio: 'pipe' });
-  
-  if (describeResult.status === 0 && describeResult.stdout && describeResult.stdout.trim() !== 'None') {
+  const describeResult = execCommand(
+    'aws',
+    [
+      'cloudformation',
+      'describe-stacks',
+      '--stack-name',
+      stackName,
+      '--query',
+      "Stacks[0].Outputs[?OutputKey=='RoleArn'].OutputValue",
+      '--output',
+      'text',
+      '--region',
+      region,
+    ],
+    { stdio: 'pipe' }
+  );
+
+  if (
+    describeResult.status === 0 &&
+    describeResult.stdout &&
+    describeResult.stdout.trim() !== 'None'
+  ) {
     return describeResult.stdout.trim();
   }
   logError('Failed to retrieve RoleArn output from CloudFormation stack.');
@@ -162,7 +197,9 @@ function getDeployRoleArn(stackName, region, accountId, repo, dryRun) {
  * Prints instructions to configure repository settings manually on GitHub.
  */
 function printManualInstructions(roleArn, region, repo) {
-  console.log('\x1b[33mPlease manually set the following in your GitHub Repository settings (Settings -> Secrets and variables -> Actions):\x1b[0m\n');
+  console.log(
+    '\x1b[33mPlease manually set the following in your GitHub Repository settings (Settings -> Secrets and variables -> Actions):\x1b[0m\n'
+  );
   console.log('  \x1b[32mRepository Secrets:\x1b[0m');
   console.log(`    Name:  \x1b[36mAWS_ROLE_TO_ASSUME\x1b[0m`);
   console.log(`    Value: ${roleArn}\n`);
@@ -210,7 +247,9 @@ function configureGitHubSecrets(roleArn, region, repo, dryRun) {
   }
 
   if (!checkGitHubAuth(dryRun)) {
-    logWarn("GitHub CLI (gh) is installed but not authenticated. Run 'gh auth login' to authenticate.");
+    logWarn(
+      "GitHub CLI (gh) is installed but not authenticated. Run 'gh auth login' to authenticate."
+    );
     printManualInstructions(roleArn, region, repo);
     return;
   }
@@ -261,10 +300,22 @@ export function destroyOidc(options) {
   const stackName = `${repo}-github-oidc-setup`;
 
   logStep(`Deleting CloudFormation stack: ${stackName}...`);
-  execCommand('aws', ['cloudformation', 'delete-stack', '--stack-name', stackName, '--region', region], { dryRun });
-  
+  execCommand(
+    'aws',
+    ['cloudformation', 'delete-stack', '--stack-name', stackName, '--region', region],
+    { dryRun }
+  );
+
   if (!dryRun) {
-    execCommand('aws', ['cloudformation', 'wait', 'stack-delete-complete', '--stack-name', stackName, '--region', region]);
+    execCommand('aws', [
+      'cloudformation',
+      'wait',
+      'stack-delete-complete',
+      '--stack-name',
+      stackName,
+      '--region',
+      region,
+    ]);
   }
   logInfo('Stack deleted successfully.');
 
@@ -292,7 +343,9 @@ export function destroyOidc(options) {
       logWarn('GitHub CLI (gh) is installed but not authenticated. Skipping secrets cleanup.');
     }
   } else {
-    logInfo('GitHub CLI (gh) not detected. Please manually remove secrets/variables from repository settings.');
+    logInfo(
+      'GitHub CLI (gh) not detected. Please manually remove secrets/variables from repository settings.'
+    );
   }
 
   console.log('\x1b[32mOIDC Teardown Complete!\x1b[0m');

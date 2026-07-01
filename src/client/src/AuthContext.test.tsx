@@ -10,10 +10,21 @@ const TestComponent = () => {
       <div data-testid="user">{user ? user.username : 'no-user'}</div>
       <div data-testid="role">{user ? user.role : 'no-role'}</div>
       <div data-testid="token">{token || 'no-token'}</div>
-      <button onClick={() => login('testuser', 'pass')} data-testid="login-btn">Login</button>
-      <button onClick={() => register('testuser', 'pass', { genders: 'female' })} data-testid="register-btn">Register</button>
-      <button onClick={logout} data-testid="logout-btn">Logout</button>
-      <button onClick={refreshUser} data-testid="refresh-btn">Refresh</button>
+      <button onClick={() => login('testuser', 'pass')} data-testid="login-btn">
+        Login
+      </button>
+      <button
+        onClick={() => register('testuser', 'pass', { genders: 'female' })}
+        data-testid="register-btn"
+      >
+        Register
+      </button>
+      <button onClick={logout} data-testid="logout-btn">
+        Logout
+      </button>
+      <button onClick={refreshUser} data-testid="refresh-btn">
+        Refresh
+      </button>
     </div>
   );
 };
@@ -27,7 +38,7 @@ describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    
+
     // Dynamic fetch mock router to handle background calls and login/register cleanly
     globalThis.fetch = vi.fn().mockImplementation(async (url, options) => {
       if (url === '/api/users/me') {
@@ -59,7 +70,7 @@ describe('AuthContext', () => {
         }
         return { ok: false };
       }
-      
+
       if (url === '/api/users/login') {
         const body = JSON.parse(options.body);
         if (body.username === 'testuser' && body.passphrase === 'pass') {
@@ -79,7 +90,7 @@ describe('AuthContext', () => {
           json: async () => ({ error: 'Invalid credentials' }),
         };
       }
-      
+
       if (url === '/api/users/register') {
         const body = JSON.parse(options.body);
         if (body.username === 'testuser') {
@@ -100,7 +111,7 @@ describe('AuthContext', () => {
           json: async () => ({ error: 'Username taken' }),
         };
       }
-      
+
       return { ok: false };
     });
   });
@@ -124,7 +135,7 @@ describe('AuthContext', () => {
 
   it('restores token and fetches user info from localStorage on mount', async () => {
     localStorage.setItem('wishboard-auth-token', 'mock-token-123');
-    
+
     render(
       <AuthProvider>
         <TestComponent />
@@ -180,7 +191,11 @@ describe('AuthContext', () => {
       const trigger = async () => {
         res = await login('baduser', 'badpass');
       };
-      return <button onClick={trigger} data-testid="trigger">Trigger</button>;
+      return (
+        <button onClick={trigger} data-testid="trigger">
+          Trigger
+        </button>
+      );
     };
 
     render(
@@ -222,7 +237,11 @@ describe('AuthContext', () => {
       const trigger = async () => {
         res = await register('baduser', 'pass');
       };
-      return <button onClick={trigger} data-testid="trigger">Trigger</button>;
+      return (
+        <button onClick={trigger} data-testid="trigger">
+          Trigger
+        </button>
+      );
     };
 
     render(
@@ -283,4 +302,3 @@ describe('AuthContext', () => {
     expect(localStorage.getItem('wishboard-auth-token')).toBe('external-token');
   });
 });
-

@@ -25,13 +25,13 @@ on:
 
 permissions:
   id-token: write # Required for requesting the AWS JWT
-  contents: read  # Required for checking out the repository
+  contents: read # Required for checking out the repository
 
 jobs:
   deploy:
     name: Deploy Stack
     runs-on: ubuntu-latest
-    
+
     env:
       # Inject parameter overrides from GitHub Variables if configured
       PROJECT_NAME: ${{ vars.PROJECT_NAME }}

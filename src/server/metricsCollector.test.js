@@ -9,11 +9,10 @@ vi.hoisted(() => {
     count++;
     return {
       user: real.user + count * 1_000_000,
-      system: real.system + count * 500_000
+      system: real.system + count * 500_000,
     };
   };
 });
-
 
 import os from 'node:os';
 import v8 from 'node:v8';
@@ -23,7 +22,7 @@ import {
   startCollector,
   stopCollector,
   getSnapshot,
-  resetCollector
+  resetCollector,
 } from './metricsCollector.js';
 
 describe('metricsCollector', () => {
@@ -32,7 +31,6 @@ describe('metricsCollector', () => {
     resetCollector();
     stopCollector();
   });
-
 
   afterEach(() => {
     vi.useRealTimers();
@@ -43,10 +41,10 @@ describe('metricsCollector', () => {
   describe('recordRequest', () => {
     it('records status code counts and latency mean using Welford algorithm', () => {
       recordRequest(200, 50);
-      
+
       startCollector();
       vi.advanceTimersByTime(5000);
-      
+
       let snapshot = getSnapshot(1);
       expect(snapshot.httpSamples).toHaveLength(1);
 
@@ -79,7 +77,7 @@ describe('metricsCollector', () => {
           if (event === 'finish') {
             callback();
           }
-        })
+        }),
       };
       const next = vi.fn();
 
@@ -114,7 +112,7 @@ describe('metricsCollector', () => {
       vi.advanceTimersByTime(5000);
       let snapshot = getSnapshot(1);
       expect(snapshot.osSamples).toHaveLength(1);
-      
+
       const sample1 = snapshot.osSamples[0];
       expect(sample1.cpu).toBe(30);
       expect(sample1.heapUsed).toBe(50);

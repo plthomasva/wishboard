@@ -50,7 +50,10 @@ function useUsernameExistence(username: string) {
   return { existingUsername, mode, setMode };
 }
 
-function ClaimWishForm({ token, loadWishes }: Readonly<{ token: string | null; loadWishes: () => void }>) {
+function ClaimWishForm({
+  token,
+  loadWishes,
+}: Readonly<{ token: string | null; loadWishes: () => void }>) {
   const [claimId, setClaimId] = useState('');
   const [claimSecret, setClaimSecret] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -69,9 +72,9 @@ function ClaimWishForm({ token, loadWishes }: Readonly<{ token: string | null; l
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ secret: claimSecret.trim() })
+      body: JSON.stringify({ secret: claimSecret.trim() }),
     });
 
     if (!response.ok) {
@@ -113,36 +116,69 @@ function ClaimWishForm({ token, loadWishes }: Readonly<{ token: string | null; l
             placeholder="e.g. CorrectHorseBatteryStaple"
           />
         </label>
-        <button type="submit" className="secondary-button">Claim Wish</button>
+        <button type="submit" className="secondary-button">
+          Claim Wish
+        </button>
       </form>
-      {message && <div className="message success" style={{ marginTop: '12px' }}>{message}</div>}
-      {error && <div className="message error" style={{ marginTop: '12px' }}>{error}</div>}
+      {message && (
+        <div className="message success" style={{ marginTop: '12px' }}>
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="message error" style={{ marginTop: '12px' }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 }
 
 function UnauthenticatedAccountView({
-  mode, setMode, effectiveMode, onLogin, onRegister,
-  username, setUsername, passphrase, setPassphrase,
-  identityGenders, setIdentityGenders, identityOrientations, setIdentityOrientations, identityRoles, setIdentityRoles,
-  message, error
+  mode,
+  setMode,
+  effectiveMode,
+  onLogin,
+  onRegister,
+  username,
+  setUsername,
+  passphrase,
+  setPassphrase,
+  identityGenders,
+  setIdentityGenders,
+  identityOrientations,
+  setIdentityOrientations,
+  identityRoles,
+  setIdentityRoles,
+  message,
+  error,
 }: Readonly<any>) {
   return (
     <section>
       <h1>My Account</h1>
       <p>Create an account to manage multiple wishes, or log in if you already have one.</p>
       <div className="tab-buttons">
-        <button className={mode === 'login' ? 'nav-button active' : 'nav-button'} onClick={() => setMode('login')}>
+        <button
+          className={mode === 'login' ? 'nav-button active' : 'nav-button'}
+          onClick={() => setMode('login')}
+        >
           Login
         </button>
-        <button className={mode === 'register' ? 'nav-button active' : 'nav-button'} onClick={() => setMode('register')}>
+        <button
+          className={mode === 'register' ? 'nav-button active' : 'nav-button'}
+          onClick={() => setMode('register')}
+        >
           Register
         </button>
       </div>
       <form className="form-card" onSubmit={effectiveMode === 'login' ? onLogin : onRegister}>
         <label>
           Username{' '}
-          <input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Choose a username" />
+          <input
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            placeholder="Choose a username"
+          />
         </label>
         <label>
           Passphrase{' '}
@@ -150,7 +186,11 @@ function UnauthenticatedAccountView({
             type="text"
             value={passphrase}
             onChange={(event) => setPassphrase(event.target.value)}
-            placeholder={effectiveMode === 'register' ? 'Leave blank to auto-generate when registering' : 'Enter your passphrase'}
+            placeholder={
+              effectiveMode === 'register'
+                ? 'Leave blank to auto-generate when registering'
+                : 'Enter your passphrase'
+            }
           />
         </label>
         {effectiveMode === 'register' && (
@@ -158,7 +198,8 @@ function UnauthenticatedAccountView({
             <div className="label-with-info" style={{ marginTop: '12px', marginBottom: '8px' }}>
               <strong style={{ display: 'block' }}>Identity Attributes</strong>
               <InfoToggle>
-                These attributes are automatically applied to any wishes you create, and are used by default when you search.
+                These attributes are automatically applied to any wishes you create, and are used by
+                default when you search.
               </InfoToggle>
             </div>
             <label>
@@ -196,7 +237,9 @@ function UnauthenticatedAccountView({
       {error && <div className="message error">{error}</div>}
       {effectiveMode === 'register' && (
         <div className="note-box">
-          <p>Tip: Use a memorable passphrase like <strong>{generatePassphrase()}</strong>.</p>
+          <p>
+            Tip: Use a memorable passphrase like <strong>{generatePassphrase()}</strong>.
+          </p>
         </div>
       )}
     </section>
@@ -217,9 +260,25 @@ export default function AccountPage() {
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[]; is_active: boolean; image_id?: string; image_url?: string }>>([]);
+  const [wishes, setWishes] = useState<
+    Array<{
+      id: string;
+      content: string;
+      flagged: number;
+      contacts: any[];
+      wishmail_enabled: boolean;
+      creator_genders: string[];
+      creator_orientations: string[];
+      is_active: boolean;
+      image_id?: string;
+      image_url?: string;
+    }>
+  >([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletePreview, setDeletePreview] = useState<{ wishesCount: number; wishmailsCount: number } | null>(null);
+  const [deletePreview, setDeletePreview] = useState<{
+    wishesCount: number;
+    wishmailsCount: number;
+  } | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { existingUsername, mode, setMode } = useUsernameExistence(username);
@@ -232,7 +291,7 @@ export default function AccountPage() {
       return;
     }
     const response = await fetch('/api/users/me/wishes', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!response.ok) {
       setError('Unable to load your wishes.');
@@ -264,15 +323,15 @@ export default function AccountPage() {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
         identity_genders: editIdentityGenders,
         identity_orientations: editIdentityOrientations,
         identity_roles: editIdentityRoles,
         contacts,
-        wishmail_enabled: wishmailEnabled
-      })
+        wishmail_enabled: wishmailEnabled,
+      }),
     });
 
     if (!response.ok) {
@@ -316,7 +375,7 @@ export default function AccountPage() {
     const response = await register(username.trim(), passphrase.trim() || undefined, {
       genders: identityGenders,
       orientations: identityOrientations,
-      roles: identityRoles
+      roles: identityRoles,
     });
     if (!response.success) {
       setError(response.error || 'Registration failed.');
@@ -330,7 +389,6 @@ export default function AccountPage() {
     setIdentityRoles('');
   };
 
-
   const deleteWish = async (id: string) => {
     setError(null);
     setMessage(null);
@@ -338,9 +396,9 @@ export default function AccountPage() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ action: 'delete' })
+      body: JSON.stringify({ action: 'delete' }),
     });
     if (!response.ok) {
       const data = await response.json();
@@ -354,7 +412,7 @@ export default function AccountPage() {
   const handleDeletePreview = async () => {
     setError(null);
     const response = await fetch('/api/users/me/delete-preview', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!response.ok) {
       setError('Unable to fetch delete preview.');
@@ -369,7 +427,7 @@ export default function AccountPage() {
     setDeleteError(null);
     const response = await fetch('/api/users/me/delete', {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!response.ok) {
       setDeleteError('Unable to delete account.');
@@ -384,7 +442,7 @@ export default function AccountPage() {
     const endpoint = user?.is_active ? '/api/users/me/deactivate' : '/api/users/me/reactivate';
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!response.ok) {
       setError(`Unable to ${user?.is_active ? 'deactivate' : 'reactivate'} profile.`);
@@ -395,17 +453,26 @@ export default function AccountPage() {
     loadWishes();
   };
 
-
-
   if (!user) {
     return (
       <UnauthenticatedAccountView
-        mode={mode} setMode={setMode} effectiveMode={effectiveMode} onLogin={onLogin} onRegister={onRegister}
-        username={username} setUsername={setUsername} passphrase={passphrase} setPassphrase={setPassphrase}
-        identityGenders={identityGenders} setIdentityGenders={setIdentityGenders}
-        identityOrientations={identityOrientations} setIdentityOrientations={setIdentityOrientations}
-        identityRoles={identityRoles} setIdentityRoles={setIdentityRoles}
-        message={message} error={error}
+        mode={mode}
+        setMode={setMode}
+        effectiveMode={effectiveMode}
+        onLogin={onLogin}
+        onRegister={onRegister}
+        username={username}
+        setUsername={setUsername}
+        passphrase={passphrase}
+        setPassphrase={setPassphrase}
+        identityGenders={identityGenders}
+        setIdentityGenders={setIdentityGenders}
+        identityOrientations={identityOrientations}
+        setIdentityOrientations={setIdentityOrientations}
+        identityRoles={identityRoles}
+        setIdentityRoles={setIdentityRoles}
+        message={message}
+        error={error}
       />
     );
   }
@@ -416,7 +483,19 @@ export default function AccountPage() {
         <div>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             Welcome back, {user.username}
-            {!user.is_active && <span style={{ fontSize: '0.9rem', color: '#e53e3e', background: '#ffe5e5', padding: '4px 8px', borderRadius: '4px' }}>Inactive</span>}
+            {!user.is_active && (
+              <span
+                style={{
+                  fontSize: '0.9rem',
+                  color: '#e53e3e',
+                  background: '#ffe5e5',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                }}
+              >
+                Inactive
+              </span>
+            )}
           </h1>
           <p>You can manage your saved wishes here.</p>
         </div>
@@ -429,13 +508,16 @@ export default function AccountPage() {
         <h2>Your profile attributes</h2>
         <ul>
           <li>
-            <strong>Genders:</strong> {user.identity_genders.length ? user.identity_genders.join(', ') : 'None set'}
+            <strong>Genders:</strong>{' '}
+            {user.identity_genders.length ? user.identity_genders.join(', ') : 'None set'}
           </li>
           <li>
-            <strong>Orientations:</strong> {user.identity_orientations.length ? user.identity_orientations.join(', ') : 'None set'}
+            <strong>Orientations:</strong>{' '}
+            {user.identity_orientations.length ? user.identity_orientations.join(', ') : 'None set'}
           </li>
           <li>
-            <strong>Roles:</strong> {user.identity_roles.length ? user.identity_roles.join(', ') : 'None set'}
+            <strong>Roles:</strong>{' '}
+            {user.identity_roles.length ? user.identity_roles.join(', ') : 'None set'}
           </li>
         </ul>
       </div>
@@ -444,7 +526,8 @@ export default function AccountPage() {
         <div className="label-with-info" style={{ marginBottom: '16px' }}>
           <h2 style={{ margin: 0 }}>Edit profile attributes</h2>
           <InfoToggle>
-            Updating these attributes will change how you are matched with other users across all your wishes.
+            Updating these attributes will change how you are matched with other users across all
+            your wishes.
           </InfoToggle>
         </div>
         <label>
@@ -474,54 +557,90 @@ export default function AccountPage() {
             suggestions={SUGGESTED_ROLES}
           />
         </label>
-        
+
         <div style={{ marginTop: '24px', marginBottom: '16px' }}>
           <h2 style={{ margin: 0 }}>Default Contact Methods</h2>
-          <p style={{ marginTop: '8px', fontSize: '0.9rem', color: '#556275' }}>These will be automatically added to any new wishes you create.</p>
+          <p style={{ marginTop: '8px', fontSize: '0.9rem', color: '#556275' }}>
+            These will be automatically added to any new wishes you create.
+          </p>
         </div>
-        
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'normal', marginBottom: '16px' }}>
-          <input 
-            type="checkbox" 
-            checked={wishmailEnabled} 
-            onChange={(e) => setWishmailEnabled(e.target.checked)} 
+
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontWeight: 'normal',
+            marginBottom: '16px',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={wishmailEnabled}
+            onChange={(e) => setWishmailEnabled(e.target.checked)}
             style={{ width: 'auto', minHeight: 'auto' }}
-          />
-          {' '}Enable Wishmail by default
+          />{' '}
+          Enable Wishmail by default
         </label>
 
         <div style={{ marginBottom: '24px' }}>
           {contacts.map((contact, index) => (
-            /* eslint-disable-next-line react/no-array-index-key */
-            <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-              <select 
-                value={contact.type} 
+            <div
+              key={index}
+              style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}
+            >
+              <select
+                value={contact.type}
                 onChange={(e) => {
                   const newContacts = [...contacts];
                   newContacts[index] = { ...newContacts[index], type: e.target.value };
                   setContacts(newContacts);
                 }}
-                style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d7dee5', background: 'white' }}
+                style={{
+                  padding: '8px',
+                  borderRadius: '8px',
+                  border: '1px solid #d7dee5',
+                  background: 'white',
+                }}
               >
                 <option value="FetLife">FetLife</option>
                 <option value="Phone">Phone</option>
                 <option value="Email">Email</option>
               </select>
-              <input 
-                type="text" 
-                value={contact.value} 
+              <input
+                type="text"
+                value={contact.value}
                 onChange={(e) => {
                   const newContacts = [...contacts];
                   newContacts[index] = { ...newContacts[index], value: e.target.value };
                   setContacts(newContacts);
-                }} 
+                }}
                 placeholder="Username, number, etc."
                 style={{ minHeight: '36px', padding: '8px' }}
               />
-              <button type="button" onClick={() => setContacts(contacts.filter((_, i) => i !== index))} style={{ minHeight: '36px', padding: '0 12px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>X</button>
+              <button
+                type="button"
+                onClick={() => setContacts(contacts.filter((_, i) => i !== index))}
+                style={{
+                  minHeight: '36px',
+                  padding: '0 12px',
+                  background: '#e53e3e',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                X
+              </button>
             </div>
           ))}
-          <button type="button" onClick={() => setContacts([...contacts, { type: 'FetLife', value: '' }])} className="secondary-button" style={{ minHeight: '36px', padding: '6px 12px', fontSize: '0.9rem' }}>
+          <button
+            type="button"
+            onClick={() => setContacts([...contacts, { type: 'FetLife', value: '' }])}
+            className="secondary-button"
+            style={{ minHeight: '36px', padding: '6px 12px', fontSize: '0.9rem' }}
+          >
             + Add Contact Method
           </button>
         </div>
@@ -534,16 +653,29 @@ export default function AccountPage() {
       <div className="profile-edit" style={{ border: '1px solid #e53e3e', marginBottom: '32px' }}>
         <h2 style={{ color: '#e53e3e', margin: '0 0 16px 0' }}>Danger Zone</h2>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          <button className="secondary-button" style={{ color: user.is_active ? '#e53e3e' : '#2b6cb0', borderColor: user.is_active ? '#e53e3e' : '#2b6cb0' }} onClick={toggleProfileStatus} type="button">
+          <button
+            className="secondary-button"
+            style={{
+              color: user.is_active ? '#e53e3e' : '#2b6cb0',
+              borderColor: user.is_active ? '#e53e3e' : '#2b6cb0',
+            }}
+            onClick={toggleProfileStatus}
+            type="button"
+          >
             {user.is_active ? 'Deactivate Profile' : 'Reactivate Profile'}
           </button>
-          <button className="secondary-button" style={{ background: '#e53e3e', color: 'white', borderColor: '#e53e3e' }} onClick={handleDeletePreview} type="button">
+          <button
+            className="secondary-button"
+            style={{ background: '#e53e3e', color: 'white', borderColor: '#e53e3e' }}
+            onClick={handleDeletePreview}
+            type="button"
+          >
             Delete Account
           </button>
         </div>
         <p style={{ marginTop: '12px', fontSize: '0.9rem', color: '#556275' }}>
-          {user.is_active 
-            ? 'Deactivating your profile will temporarily hide all your wishes. Deleting your account is permanent.' 
+          {user.is_active
+            ? 'Deactivating your profile will temporarily hide all your wishes. Deleting your account is permanent.'
             : 'Your profile is currently deactivated. Your wishes are hidden from the public.'}
         </p>
       </div>
@@ -559,13 +691,49 @@ export default function AccountPage() {
             <div key={wish.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ opacity: wish.is_active ? 1 : 0.6 }}>
                 <WishCard wish={wish} showFlag={false} />
-                {!wish.is_active && <div style={{ textAlign: 'center', color: '#e53e3e', fontWeight: 'bold', marginTop: '4px' }}>Inactive</div>}
+                {!wish.is_active && (
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      color: '#e53e3e',
+                      fontWeight: 'bold',
+                      marginTop: '4px',
+                    }}
+                  >
+                    Inactive
+                  </div>
+                )}
               </div>
-              <div className="wish-actions" style={{ marginTop: 0, justifyContent: 'flex-start', gap: '12px' }}>
-                <a href={`#wishmail-dashboard?id=${wish.id}`} className="button" style={{ textDecoration: 'none', background: '#3b82f6', color: 'white', padding: '10px 16px', borderRadius: '14px', fontWeight: 'bold' }}>
+              <div
+                className="wish-actions"
+                style={{ marginTop: 0, justifyContent: 'flex-start', gap: '12px' }}
+              >
+                <a
+                  href={`#wishmail-dashboard?id=${wish.id}`}
+                  className="button"
+                  style={{
+                    textDecoration: 'none',
+                    background: '#3b82f6',
+                    color: 'white',
+                    padding: '10px 16px',
+                    borderRadius: '14px',
+                    fontWeight: 'bold',
+                  }}
+                >
                   View Wishmail
                 </a>
-                <a href={`#manage-wish?id=${wish.id}`} className="button" style={{ textDecoration: 'none', background: '#1a73e8', color: 'white', padding: '10px 16px', borderRadius: '14px', fontWeight: 'bold' }}>
+                <a
+                  href={`#manage-wish?id=${wish.id}`}
+                  className="button"
+                  style={{
+                    textDecoration: 'none',
+                    background: '#1a73e8',
+                    color: 'white',
+                    padding: '10px 16px',
+                    borderRadius: '14px',
+                    fontWeight: 'bold',
+                  }}
+                >
                   Edit Wish
                 </a>
                 <button className="secondary-button" onClick={() => deleteWish(wish.id)}>
@@ -577,27 +745,43 @@ export default function AccountPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '32px' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '24px',
+          marginTop: '32px',
+        }}
+      >
         <ClaimWishForm token={token} loadWishes={loadWishes} />
 
         {token && (
           <div className="profile-edit" style={{ textAlign: 'center' }}>
-            <div className="label-with-info" style={{ marginBottom: '16px', justifyContent: 'center' }}>
+            <div
+              className="label-with-info"
+              style={{ marginBottom: '16px', justifyContent: 'center' }}
+            >
               <h2 style={{ margin: 0 }}>Easy Mobile Login</h2>
               <InfoToggle>
-                Scan this QR code with your phone or save the link to instantly log back into your account without a passphrase.
+                Scan this QR code with your phone or save the link to instantly log back into your
+                account without a passphrase.
               </InfoToggle>
             </div>
-            <div style={{ background: 'white', padding: '16px', display: 'inline-block', borderRadius: '12px' }}>
-              <QRCodeSVG 
-                value={`${globalThis.location.origin}${globalThis.location.pathname}#account?token=${token}`} 
-                size={160} 
+            <div
+              style={{
+                background: 'white',
+                padding: '16px',
+                display: 'inline-block',
+                borderRadius: '12px',
+              }}
+            >
+              <QRCodeSVG
+                value={`${globalThis.location.origin}${globalThis.location.pathname}#account?token=${token}`}
+                size={160}
               />
             </div>
             <p style={{ marginTop: '16px' }}>
-              <a href={`#account?token=${token}`}>
-                Bookmark this auto-login link
-              </a>
+              <a href={`#account?token=${token}`}>Bookmark this auto-login link</a>
             </p>
           </div>
         )}
@@ -611,7 +795,6 @@ export default function AccountPage() {
           onConfirm={confirmDelete}
         />
       )}
-
     </section>
   );
 }

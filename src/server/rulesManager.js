@@ -8,9 +8,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataDir = path.resolve(__dirname, '../../data');
 const defaultRulesPath = path.join(dataDir, 'rules.yaml');
-const rulesPath = process.env.RULES_PATH || (process.env.NODE_ENV === 'test' 
-  ? path.join(dataDir, 'rules.test.yaml') 
-  : defaultRulesPath);
+const rulesPath =
+  process.env.RULES_PATH ||
+  (process.env.NODE_ENV === 'test' ? path.join(dataDir, 'rules.test.yaml') : defaultRulesPath);
 
 const ensureRulesSeeded = () => {
   if (!process.env.RULES_PATH || process.env.NODE_ENV === 'test') {
@@ -31,12 +31,16 @@ const ensureRulesSeeded = () => {
       } else {
         const parsed = YAML.parse(content);
         if (!parsed || !Array.isArray(parsed.rules) || parsed.rules.length === 0) {
-          logger.info(`Rules file at ${rulesPath} has zero or missing rules array. Seeding default rules.`);
+          logger.info(
+            `Rules file at ${rulesPath} has zero or missing rules array. Seeding default rules.`
+          );
           shouldSeed = true;
         }
       }
     } catch (err) {
-      logger.warn(`Rules file at ${rulesPath} is corrupt or unparseable: ${err.message}. Seeding default rules.`);
+      logger.warn(
+        `Rules file at ${rulesPath} is corrupt or unparseable: ${err.message}. Seeding default rules.`
+      );
       shouldSeed = true;
     }
   }
@@ -54,7 +58,6 @@ const ensureRulesSeeded = () => {
 
 ensureRulesSeeded();
 
-
 let rulesCache = [];
 let yamlDoc = null;
 
@@ -69,7 +72,7 @@ const loadRules = () => {
     const content = fs.readFileSync(rulesPath, 'utf8');
     const newYamlDoc = YAML.parseDocument(content);
     if (newYamlDoc.errors && newYamlDoc.errors.length > 0) {
-      throw new Error(`YAML syntax errors: ${newYamlDoc.errors.map(e => e.message).join(', ')}`);
+      throw new Error(`YAML syntax errors: ${newYamlDoc.errors.map((e) => e.message).join(', ')}`);
     }
     const parsed = newYamlDoc.toJSON();
     if (Array.isArray(parsed?.rules)) {
@@ -77,10 +80,14 @@ const loadRules = () => {
       yamlDoc = newYamlDoc;
       logger.info(`Loaded ${rulesCache.length} rules from ${rulesPath}`);
     } else {
-      logger.warn('Rules file parsed but "rules" array is missing or invalid. Keeping previous state.');
+      logger.warn(
+        'Rules file parsed but "rules" array is missing or invalid. Keeping previous state.'
+      );
     }
   } catch (error) {
-    logger.error('Failed to load or parse rules.yaml. Retaining previous valid rules state.', { error: error.message });
+    logger.error('Failed to load or parse rules.yaml. Retaining previous valid rules state.', {
+      error: error.message,
+    });
   }
 };
 
@@ -116,25 +123,27 @@ export const reloadRules = loadRules;
 
 export const addRule = (rule) => {
   rulesCache.push(rule);
-  
+
   if (!yamlDoc.has('rules')) {
     yamlDoc.set('rules', []);
   }
   yamlDoc.get('rules').add(rule);
-  
+
   saveRules();
   return rule;
 };
 
 export const updateRule = (id, updatedRule) => {
-  const index = rulesCache.findIndex(r => r.id === id);
+  const index = rulesCache.findIndex((r) => r.id === id);
   if (index === -1) return false;
-  
+
   rulesCache[index] = { ...rulesCache[index], ...updatedRule };
-  
+
   const rulesSeq = yamlDoc.get('rules');
   if (rulesSeq?.items) {
-    const itemIndex = rulesSeq.items.findIndex(item => (item.get ? item.get('id') : item.id) === id);
+    const itemIndex = rulesSeq.items.findIndex(
+      (item) => (item.get ? item.get('id') : item.id) === id
+    );
     if (itemIndex !== -1) {
       const newMap = new YAML.YAMLMap();
       for (const [k, v] of Object.entries(rulesCache[index])) {
@@ -146,25 +155,27 @@ export const updateRule = (id, updatedRule) => {
       rulesSeq.items[itemIndex] = newMap;
     }
   }
-  
+
   saveRules();
   return true;
 };
 
 export const deleteRule = (id) => {
-  const index = rulesCache.findIndex(r => r.id === id);
+  const index = rulesCache.findIndex((r) => r.id === id);
   if (index === -1) return false;
-  
+
   rulesCache.splice(index, 1);
-  
+
   const rulesSeq = yamlDoc.get('rules');
   if (rulesSeq?.items) {
-    const itemIndex = rulesSeq.items.findIndex(item => (item.get ? item.get('id') : item.id) === id);
+    const itemIndex = rulesSeq.items.findIndex(
+      (item) => (item.get ? item.get('id') : item.id) === id
+    );
     if (itemIndex !== -1) {
       rulesSeq.items.splice(itemIndex, 1);
     }
   }
-  
+
   saveRules();
   return true;
 };

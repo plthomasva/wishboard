@@ -14,7 +14,7 @@ export const initSocket = (httpServer, corsOptions) => {
   }
 
   io = new Server(httpServer, {
-    cors: corsOptions
+    cors: corsOptions,
   });
 
   io.on('connection', (socket) => {
@@ -48,7 +48,8 @@ export const closeSocket = () => {
 // AWS API Gateway WebSocket broadcasting helper
 const getApigwClient = async () => {
   if (!apigwClient) {
-    const { ApiGatewayManagementApiClient } = await import('@aws-sdk/client-apigatewaymanagementapi');
+    const { ApiGatewayManagementApiClient } =
+      await import('@aws-sdk/client-apigatewaymanagementapi');
     const endpoint = process.env.WEBSOCKET_API_ENDPOINT;
     if (!endpoint) {
       throw new Error('WEBSOCKET_API_ENDPOINT environment variable is missing!');
@@ -90,17 +91,24 @@ const broadcastToApiGateway = async (event, data) => {
   const promises = rows.map(async (row) => {
     const connectionId = typeof row.connection_id === 'string' ? row.connection_id : '';
     try {
-      await client.send(new PostToConnectionCommand({
-        ConnectionId: connectionId,
-        Data: payload
-      }));
+      await client.send(
+        new PostToConnectionCommand({
+          ConnectionId: connectionId,
+          Data: payload,
+        })
+      );
     } catch (err) {
       if (err.name === 'GoneException' || err.$metadata?.httpStatusCode === 410) {
         logger.info(`Connection ${connectionId} is gone, removing from DB.`);
         try {
-          await db.prepare('DELETE FROM websocket_connections WHERE connection_id = ?').run(connectionId);
+          await db
+            .prepare('DELETE FROM websocket_connections WHERE connection_id = ?')
+            .run(connectionId);
         } catch (deleteErr) {
-          logger.error(`Failed to delete gone connection ${connectionId} from DB:`, deleteErr.message);
+          logger.error(
+            `Failed to delete gone connection ${connectionId} from DB:`,
+            deleteErr.message
+          );
         }
       } else {
         logger.error(`Failed to post to connection ${connectionId}:`, err.message);

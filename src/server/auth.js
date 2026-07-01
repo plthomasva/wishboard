@@ -13,9 +13,7 @@ const getTokenFromRequest = (req) => {
 
 export const createSalt = () => crypto.randomBytes(16).toString('hex');
 
-const scryptOptions = process.env.NODE_ENV === 'test' 
-  ? { N: 16, r: 1, p: 1 } 
-  : undefined;
+const scryptOptions = process.env.NODE_ENV === 'test' ? { N: 16, r: 1, p: 1 } : undefined;
 
 export const hashPassphrase = (passphrase, salt) =>
   crypto.scryptSync(passphrase, salt, 64, scryptOptions).toString('hex');
@@ -26,7 +24,9 @@ export const verifyPassphrase = (passphrase, salt, hash) =>
 export const createSessionToken = async (userId) => {
   const token = crypto.randomBytes(24).toString('hex');
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_MS).toISOString();
-  await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, userId, expiresAt);
+  await db
+    .prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
+    .run(token, userId, expiresAt);
   return token;
 };
 
@@ -74,7 +74,7 @@ export const getUserFromToken = async (token) => {
     identity_orientations: parseJsonArray(row.identity_orientations),
     identity_roles: parseJsonArray(row.identity_roles),
     contacts: parseJsonArray(row.contacts),
-    wishmail_enabled: Boolean(row.wishmail_enabled)
+    wishmail_enabled: Boolean(row.wishmail_enabled),
   };
 };
 

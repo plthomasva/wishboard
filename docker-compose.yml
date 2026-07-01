@@ -2,7 +2,7 @@ services:
   db:
     image: ghcr.io/tursodatabase/libsql-server:latest
     container_name: wishboard-db
-    user: "0:0"
+    user: '0:0'
     volumes:
       - db_data:/var/lib/sqld
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
     depends_on:
       - db
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - ./data:/app/data
     restart: unless-stopped

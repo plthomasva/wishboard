@@ -16,13 +16,17 @@ class SocketTransport extends winston.Transport {
     });
 
     // Dynamically import to avoid circular dependency at module load time
-    import('./socket.js').then((socketModule) => {
-      const metaEntries = Object.entries(info).filter(([k]) => !META_KEYS.has(k));
-      const formattedLog = `[${info.timestamp}] ${info.level}: ${info.message} ${
-        metaEntries.some(() => true) ? JSON.stringify(Object.fromEntries(metaEntries)) : ''
-      }`;
-      socketModule.emitSystemLog(formattedLog);
-    }).catch((err) => { console.error("SOCKET TRANSPORT IMPORT ERROR:", err); });
+    import('./socket.js')
+      .then((socketModule) => {
+        const metaEntries = Object.entries(info).filter(([k]) => !META_KEYS.has(k));
+        const formattedLog = `[${info.timestamp}] ${info.level}: ${info.message} ${
+          metaEntries.some(() => true) ? JSON.stringify(Object.fromEntries(metaEntries)) : ''
+        }`;
+        socketModule.emitSystemLog(formattedLog);
+      })
+      .catch((err) => {
+        console.error('SOCKET TRANSPORT IMPORT ERROR:', err);
+      });
 
     callback();
   }
@@ -44,7 +48,7 @@ if (process.env.NODE_ENV !== 'test') {
         datePattern: 'YYYY-MM-DD',
         zippedArchive: false,
         maxSize: '20m',
-        maxFiles: '14d'
+        maxFiles: '14d',
       })
     );
   }
@@ -56,7 +60,12 @@ const transports = [
   new winston.transports.Console({
     silent: process.env.NODE_ENV === 'test',
     format: winston.format.combine(
-      ...(process.env.NODE_ENV !== 'production' && !process.env.AWS_LAMBDA_FUNCTION_NAME && process.stdout && process.stdout.isTTY ? [winston.format.colorize()] : []),
+      ...(process.env.NODE_ENV !== 'production' &&
+      !process.env.AWS_LAMBDA_FUNCTION_NAME &&
+      process.stdout &&
+      process.stdout.isTTY
+        ? [winston.format.colorize()]
+        : []),
       winston.format.printf(
         /**
          * @param {Object} info
@@ -71,14 +80,14 @@ const transports = [
           }`;
         }
       )
-    )
+    ),
   }),
 ];
 
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: logFormat,
-  transports
+  transports,
 });
 globalThis.__wishboardLoggerLoaded = true;
 

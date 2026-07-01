@@ -35,7 +35,7 @@ export default function EnterWishPage() {
   const [desiredGenders, setDesiredGenders] = useState('');
   const [desiredOrientations, setDesiredOrientations] = useState('');
   const [desiredRoles, setDesiredRoles] = useState('');
-  
+
   const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -92,14 +92,14 @@ export default function EnterWishPage() {
         desired_orientations: desiredOrientations,
         desired_roles: desiredRoles,
         contacts,
-        wishmail_enabled: wishmailEnabled
+        wishmail_enabled: wishmailEnabled,
       });
     }
 
     const response = await fetch('/api/wishes', {
       method: 'POST',
       headers,
-      body
+      body,
     });
 
     const data = await response.json();
@@ -123,24 +123,43 @@ export default function EnterWishPage() {
     setImageBlob(null);
   };
 
-  const parsedCreatorGenders = creatorGenders ? creatorGenders.split(',').map(s => s.trim()) : undefined;
-  const parsedCreatorOrientations = creatorOrientations ? creatorOrientations.split(',').map(s => s.trim()) : undefined;
+  const parsedCreatorGenders = creatorGenders
+    ? creatorGenders.split(',').map((s) => s.trim())
+    : undefined;
+  const parsedCreatorOrientations = creatorOrientations
+    ? creatorOrientations.split(',').map((s) => s.trim())
+    : undefined;
 
   const previewWish = {
     id: 'preview',
     content: content || 'Your wish text will appear here',
     creator_genders: user ? user.identity_genders : parsedCreatorGenders,
     creator_orientations: user ? user.identity_orientations : parsedCreatorOrientations,
-    contacts: contacts.filter(c => c.value.trim()),
+    contacts: contacts.filter((c) => c.value.trim()),
     wishmail_enabled: wishmailEnabled,
-    image_url: imageBlob ? URL.createObjectURL(imageBlob) : undefined
+    image_url: imageBlob ? URL.createObjectURL(imageBlob) : undefined,
   };
 
   const renderUploadSection = () => {
     if (isProcessing) {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '12px' }}>
-          <div className="spinner" style={{ borderTopColor: '#166534', borderColor: 'rgba(22, 101, 52, 0.2)', marginBottom: '12px' }}></div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '12px',
+          }}
+        >
+          <div
+            className="spinner"
+            style={{
+              borderTopColor: '#166534',
+              borderColor: 'rgba(22, 101, 52, 0.2)',
+              marginBottom: '12px',
+            }}
+          ></div>
           <p style={{ margin: 0, color: '#166534', fontWeight: 'bold' }}>{processingStatus}</p>
         </div>
       );
@@ -150,7 +169,9 @@ export default function EnterWishPage() {
       return (
         <div>
           <p style={{ color: '#166534', fontWeight: 'bold' }}>✓ Handwritten wish attached</p>
-          <button type="button" className="secondary-button" onClick={() => setImageBlob(null)}>Remove Image</button>
+          <button type="button" className="secondary-button" onClick={() => setImageBlob(null)}>
+            Remove Image
+          </button>
         </div>
       );
     }
@@ -159,13 +180,25 @@ export default function EnterWishPage() {
       <div>
         <p style={{ margin: '0 0 12px 0' }}>Have a physical 3x5 wish card?</p>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button type="button" onClick={() => setShowScanner(true)}>Capture with Camera</button>
-          <label className="secondary-button" style={{ cursor: 'pointer', display: 'inline-block', margin: 0, padding: '12px 24px', borderRadius: '24px', fontWeight: 'bold' }}>
+          <button type="button" onClick={() => setShowScanner(true)}>
+            Capture with Camera
+          </button>
+          <label
+            className="secondary-button"
+            style={{
+              cursor: 'pointer',
+              display: 'inline-block',
+              margin: 0,
+              padding: '12px 24px',
+              borderRadius: '24px',
+              fontWeight: 'bold',
+            }}
+          >
             Upload Image{' '}
-            <input 
-              type="file" 
-              accept="image/*" 
-              style={{ display: 'none' }} 
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file?.type.startsWith('image/')) return;
@@ -201,7 +234,7 @@ export default function EnterWishPage() {
   return (
     <section>
       <h1>Enter a Wish</h1>
-      
+
       <div className="wish-editor-layout">
         <form className="form-card" onSubmit={submitWish}>
           <WishFormFields
@@ -214,16 +247,28 @@ export default function EnterWishPage() {
             isOverflowing={isOverflowing}
           />
 
-          <div style={{ margin: '16px 0', padding: '16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+          <div
+            style={{
+              margin: '16px 0',
+              padding: '16px',
+              background: '#f0fdf4',
+              borderRadius: '8px',
+              border: '1px solid #bbf7d0',
+              textAlign: 'center',
+            }}
+          >
             {renderUploadSection()}
           </div>
 
           {token ? (
             <div className="note-box">
               <div className="label-with-info">
-                <p style={{ margin: 0 }}>Your account identity attributes are applied automatically to this wish.</p>
+                <p style={{ margin: 0 }}>
+                  Your account identity attributes are applied automatically to this wish.
+                </p>
                 <InfoToggle>
-                  Any genders, orientations, or roles you set on your Account page are implicitly used to match you with compatible fulfillers.
+                  Any genders, orientations, or roles you set on your Account page are implicitly
+                  used to match you with compatible fulfillers.
                 </InfoToggle>
               </div>
             </div>
@@ -233,7 +278,8 @@ export default function EnterWishPage() {
                 <div className="label-with-info">
                   <label htmlFor="passphrase">Optional passphrase</label>
                   <InfoToggle>
-                    This allows you to edit or delete your wish later. Leave it blank and we'll automatically generate a secure, memorable code phrase for you!
+                    This allows you to edit or delete your wish later. Leave it blank and we'll
+                    automatically generate a secure, memorable code phrase for you!
                   </InfoToggle>
                 </div>
                 <input
@@ -274,30 +320,52 @@ export default function EnterWishPage() {
             </>
           )}
           <div className="advanced-criteria-toggle" style={{ margin: '24px 0 16px 0' }}>
-            <button 
-              type="button" 
-              className="secondary-button" 
+            <button
+              type="button"
+              className="secondary-button"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              style={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
             >
               <span>{showAdvanced ? 'Hide' : 'Show'} Advanced Match Criteria</span>
               <span>{showAdvanced ? '▲' : '▼'}</span>
             </button>
             {!showAdvanced && (
-              <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '8px', textAlign: 'center' }}>
-                By default, we smartly guess who you want to match with based on your own identity. Open this to set strict requirements for who can view this wish.
+              <p
+                style={{
+                  fontSize: '0.85rem',
+                  color: '#64748b',
+                  marginTop: '8px',
+                  textAlign: 'center',
+                }}
+              >
+                By default, we smartly guess who you want to match with based on your own identity.
+                Open this to set strict requirements for who can view this wish.
               </p>
             )}
           </div>
 
           {showAdvanced && (
-            <fieldset style={{ border: '1px solid #d7dee5', borderRadius: '12px', padding: '16px', background: '#f8fafc', marginBottom: '16px' }}>
+            <fieldset
+              style={{
+                border: '1px solid #d7dee5',
+                borderRadius: '12px',
+                padding: '16px',
+                background: '#f8fafc',
+                marginBottom: '16px',
+              }}
+            >
               <legend style={{ fontWeight: 600, padding: '0 8px' }}>Advanced Match Criteria</legend>
               <div style={{ display: 'grid', gap: '8px' }}>
                 <div className="label-with-info">
                   <label htmlFor="desiredGenders">Strictly required genders</label>
                   <InfoToggle>
-                    Only users with these genders will be able to see this wish. If you leave this blank, we'll smartly fall back to guessing based on your own orientation!
+                    Only users with these genders will be able to see this wish. If you leave this
+                    blank, we'll smartly fall back to guessing based on your own orientation!
                   </InfoToggle>
                 </div>
                 <AttributeInput
@@ -348,21 +416,27 @@ export default function EnterWishPage() {
 
       {result && (
         <div className="message success" style={{ textAlign: 'center', marginTop: '24px' }}>
-          <p><strong>Wish saved! ID: {result.id}</strong></p>
+          <p>
+            <strong>Wish saved! ID: {result.id}</strong>
+          </p>
           {result.secret && (
             <>
-              <p>Your passphrase is: <strong>{result.secret}</strong></p>
+              <p>
+                Your passphrase is: <strong>{result.secret}</strong>
+              </p>
               <div style={{ margin: '16px 0' }}>
-                <QRCodeSVG 
-                  value={`${globalThis.location.origin}${globalThis.location.pathname}#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`} 
-                  size={150} 
+                <QRCodeSVG
+                  value={`${globalThis.location.origin}${globalThis.location.pathname}#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`}
+                  size={150}
 
                   bgColor="#ffffff"
                   fgColor="#0f172a"
                 />
               </div>
               <p>
-                <a href={`#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`}>
+                <a
+                  href={`#manage-wish?id=${result.id}&secret=${encodeURIComponent(result.secret)}`}
+                >
                   Click here or bookmark this link to manage your wish later
                 </a>
               </p>
@@ -376,15 +450,25 @@ export default function EnterWishPage() {
       {error && <div className="message error">{error}</div>}
 
       {showScanner && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(0,0,0,0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <React.Suspense fallback={<div style={{ color: 'white' }}>Loading scanner...</div>}>
-            <WishScanner 
+            <WishScanner
               onCapture={(ocrContent, blob) => {
                 if (ocrContent) setContent(ocrContent);
                 setImageBlob(blob);
                 setShowScanner(false);
-              }} 
-              onCancel={() => setShowScanner(false)} 
+              }}
+              onCancel={() => setShowScanner(false)}
             />
           </React.Suspense>
         </div>

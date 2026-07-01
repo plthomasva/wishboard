@@ -8,31 +8,31 @@ First off, thank you for considering contributing to Wishboard! It's people like
 
 This section guides you through submitting a bug report for Wishboard. Following these guidelines helps maintainers and the community understand your report, reproduce the behavior, and find related reports.
 
-* **Check if the bug has already been reported.**
-* **Use a clear and descriptive title** for the issue to identify the problem.
-* **Describe the exact steps which reproduce the problem** in as many details as possible.
-* **Provide specific examples to demonstrate the steps**. Include links to files or copy/pasteable snippets, which you use in those examples.
-* **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior.
-* **Explain which behavior you expected to see instead and why.**
+- **Check if the bug has already been reported.**
+- **Use a clear and descriptive title** for the issue to identify the problem.
+- **Describe the exact steps which reproduce the problem** in as many details as possible.
+- **Provide specific examples to demonstrate the steps**. Include links to files or copy/pasteable snippets, which you use in those examples.
+- **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior.
+- **Explain which behavior you expected to see instead and why.**
 
 ### Suggesting Enhancements
 
 This section guides you through submitting an enhancement suggestion for Wishboard, including completely new features and minor improvements to existing functionality.
 
-* **Use a clear and descriptive title** for the issue to identify the suggestion.
-* **Provide a step-by-step description of the suggested enhancement** in as many details as possible.
-* **Provide specific examples to demonstrate the steps** or mockups of the desired interface.
-* **Describe the current behavior** and **explain which behavior you expected to see instead** and why.
-* **Explain why this enhancement would be useful** to most Wishboard users.
+- **Use a clear and descriptive title** for the issue to identify the suggestion.
+- **Provide a step-by-step description of the suggested enhancement** in as many details as possible.
+- **Provide specific examples to demonstrate the steps** or mockups of the desired interface.
+- **Describe the current behavior** and **explain which behavior you expected to see instead** and why.
+- **Explain why this enhancement would be useful** to most Wishboard users.
 
 ### Pull Requests
 
-* Fill in the required template
-* Do not include issue numbers in the PR title
-* Follow the TypeScript and React coding style currently implemented in the project.
-* Include screenshots and animated GIFs in your pull request whenever possible.
-* End files with a newline.
-* Add or update unit tests to maintain test coverage for new or modified code.
+- Fill in the required template
+- Do not include issue numbers in the PR title
+- Follow the TypeScript and React coding style currently implemented in the project.
+- Include screenshots and animated GIFs in your pull request whenever possible.
+- End files with a newline.
+- Add or update unit tests to maintain test coverage for new or modified code.
 
 ## Development Setup
 

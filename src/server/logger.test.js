@@ -17,22 +17,22 @@ describe('Logger', () => {
   it('initializes logger with file transport and formatter in production', async () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
-    
+
     // We mock path so we don't actually create files in weird places during the test
     const path = await import('node:path');
     vi.spyOn(path.default, 'join').mockReturnValue('dummy-path.log');
 
     const mockEmitSystemLog = vi.fn();
     vi.doMock('./socket.js', () => ({
-      emitSystemLog: mockEmitSystemLog
+      emitSystemLog: mockEmitSystemLog,
     }));
 
     const logger = (await import('./logger.js')).default;
     expect(logger).toBeDefined();
-    
+
     // production has DailyRotateFile, SocketTransport, and Console
     expect(logger.transports.length).toBe(3);
-    
+
     logger.info('test message', { extraField: 'metaData' });
     logger.info('test empty meta');
 
@@ -40,7 +40,7 @@ describe('Logger', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(mockEmitSystemLog).toHaveBeenCalled();
-    
+
     process.env.NODE_ENV = originalEnv;
   });
 

@@ -26,10 +26,11 @@ export function useTextFit<T extends HTMLElement = any, U extends HTMLElement = 
       content.style.fontSize = `${currentFontSize}px`;
 
       // Synchronously scale down until it fits
-      while ( // NOSONAR
+      while (
+        // NOSONAR
         currentFontSize > minFontSize &&
         (container.scrollHeight > container.clientHeight ||
-         container.scrollWidth > container.clientWidth)
+          container.scrollWidth > container.clientWidth)
       ) {
         currentFontSize -= step;
         content.style.fontSize = `${currentFontSize}px`;
@@ -48,7 +49,7 @@ export function useTextFit<T extends HTMLElement = any, U extends HTMLElement = 
 
     // Use ResizeObserver to respond only to container layout changes
     const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         if (entry.target === container) {
           performFit();
           break;

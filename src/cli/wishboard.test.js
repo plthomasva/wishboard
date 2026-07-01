@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Mock commands to avoid side effects
 vi.mock('./commands/oidc.js', () => ({
   setupOidc: vi.fn(),
-  destroyOidc: vi.fn()
+  destroyOidc: vi.fn(),
 }));
 
 describe('wishboard CLI entrypoint', () => {
@@ -38,11 +38,13 @@ describe('wishboard CLI entrypoint', () => {
   it('routes to oidc setup command with options', async () => {
     const oidcModule = await import('./commands/oidc.js');
     await runCLI(['oidc', 'setup', '--org', 'my-org', '--repo', 'my-repo', '--dry-run']);
-    expect(oidcModule.setupOidc).toHaveBeenCalledWith(expect.objectContaining({
-      org: 'my-org',
-      repo: 'my-repo',
-      dryRun: true
-    }));
+    expect(oidcModule.setupOidc).toHaveBeenCalledWith(
+      expect.objectContaining({
+        org: 'my-org',
+        repo: 'my-repo',
+        dryRun: true,
+      })
+    );
   });
 
   it('handles errors in oidc setup action', async () => {
@@ -51,18 +53,22 @@ describe('wishboard CLI entrypoint', () => {
       throw new Error('Setup Failed');
     });
     await runCLI(['oidc', 'setup']);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Error during setup: Setup Failed'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error during setup: Setup Failed')
+    );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   it('routes to oidc destroy command with options', async () => {
     const oidcModule = await import('./commands/oidc.js');
     await runCLI(['oidc', 'destroy', '--org', 'my-org', '--repo', 'my-repo', '--dry-run']);
-    expect(oidcModule.destroyOidc).toHaveBeenCalledWith(expect.objectContaining({
-      org: 'my-org',
-      repo: 'my-repo',
-      dryRun: true
-    }));
+    expect(oidcModule.destroyOidc).toHaveBeenCalledWith(
+      expect.objectContaining({
+        org: 'my-org',
+        repo: 'my-repo',
+        dryRun: true,
+      })
+    );
   });
 
   it('handles errors in oidc destroy action', async () => {
@@ -71,42 +77,58 @@ describe('wishboard CLI entrypoint', () => {
       throw new Error('Destroy Failed');
     });
     await runCLI(['oidc', 'destroy']);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Error during destroy: Destroy Failed'));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error during destroy: Destroy Failed')
+    );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   it('handles serverless deploy placeholder', async () => {
     await runCLI(['serverless', 'deploy']);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('This command is not yet migrated'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('This command is not yet migrated')
+    );
   });
 
   it('handles serverless destroy placeholder', async () => {
     await runCLI(['serverless', 'destroy']);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('This command is not yet migrated'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('This command is not yet migrated')
+    );
   });
 
   it('handles kiosk deploy placeholder', async () => {
     await runCLI(['kiosk', 'deploy']);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('This command is not yet migrated'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('This command is not yet migrated')
+    );
   });
 
   it('handles kiosk setup placeholder', async () => {
     await runCLI(['kiosk', 'setup']);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('This command is not yet migrated'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('This command is not yet migrated')
+    );
   });
 
   it('handles kiosk run placeholder', async () => {
     await runCLI(['kiosk', 'run']);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('This command is not yet migrated'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('This command is not yet migrated')
+    );
   });
 
   it('handles db reset-password placeholder', async () => {
     await runCLI(['db', 'reset-password']);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('This command is not yet migrated'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('This command is not yet migrated')
+    );
   });
 
   it('handles build download-fonts placeholder', async () => {
     await runCLI(['build', 'download-fonts']);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('This command is not yet migrated'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('This command is not yet migrated')
+    );
   });
 });

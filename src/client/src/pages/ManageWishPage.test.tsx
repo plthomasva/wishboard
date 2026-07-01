@@ -7,7 +7,7 @@ import React from 'react';
 globalThis.fetch = vi.fn();
 
 vi.mock('../AuthContext', () => ({
-  useAuth: () => ({ token: null })
+  useAuth: () => ({ token: null }),
 }));
 
 describe('ManageWishPage', () => {
@@ -25,7 +25,7 @@ describe('ManageWishPage', () => {
     globalThis.window.location.hash = '#manage-wish?id=w1&secret=mysec';
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'w1', content: 'Wish content' })
+      json: async () => ({ id: 'w1', content: 'Wish content' }),
     } as any);
 
     render(<ManageWishPage />);
@@ -44,7 +44,7 @@ describe('ManageWishPage', () => {
     globalThis.window.location.hash = '#manage-wish?id=w2';
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ error: 'Not found' })
+      json: async () => ({ error: 'Not found' }),
     } as any);
 
     render(<ManageWishPage />);
@@ -58,7 +58,7 @@ describe('ManageWishPage', () => {
     globalThis.window.location.hash = '#manage-wish?id=w3&secret=sec';
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'w3', content: 'Old content' })
+      json: async () => ({ id: 'w3', content: 'Old content' }),
     } as any);
 
     render(<ManageWishPage />);
@@ -68,7 +68,7 @@ describe('ManageWishPage', () => {
 
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ success: true })
+      json: async () => ({ success: true }),
     } as any);
 
     const textarea = screen.getByRole('textbox', { name: /What is your wish\?/i });
@@ -77,10 +77,19 @@ describe('ManageWishPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
 
     await waitFor(() => {
-      expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes/w3/manage', expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ secret: 'sec', content: 'New content', contacts: [], wishmail_enabled: false, action: 'update' })
-      }));
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        '/api/wishes/w3/manage',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            secret: 'sec',
+            content: 'New content',
+            contacts: [],
+            wishmail_enabled: false,
+            action: 'update',
+          }),
+        })
+      );
       expect(screen.getByText('Wish updated successfully!')).toBeInTheDocument();
     });
   });
@@ -89,7 +98,7 @@ describe('ManageWishPage', () => {
     globalThis.window.location.hash = '#manage-wish?id=w4&secret=sec';
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'w4', content: 'Old content' })
+      json: async () => ({ id: 'w4', content: 'Old content' }),
     } as any);
 
     render(<ManageWishPage />);
@@ -100,16 +109,19 @@ describe('ManageWishPage', () => {
     globalThis.window.confirm = vi.fn().mockReturnValueOnce(true);
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ success: true })
+      json: async () => ({ success: true }),
     } as any);
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete Wish' }));
 
     await waitFor(() => {
-      expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes/w4/manage', expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ secret: 'sec', action: 'delete' })
-      }));
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        '/api/wishes/w4/manage',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ secret: 'sec', action: 'delete' }),
+        })
+      );
       expect(screen.getByText('Wish deleted successfully.')).toBeInTheDocument();
     });
   });

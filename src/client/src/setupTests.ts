@@ -3,8 +3,16 @@ import { vi } from 'vitest';
 
 vi.mock('@techstark/opencv-js', () => ({
   default: {
-    Mat: vi.fn().mockImplementation(() => ({ delete: vi.fn(), rows: 4, data32S: [0,0, 800,0, 800,600, 0,600] })),
-    MatVector: vi.fn().mockImplementation(() => ({ delete: vi.fn(), size: () => 1, get: () => ({ delete: vi.fn() }) })),
+    Mat: vi.fn().mockImplementation(() => ({
+      delete: vi.fn(),
+      rows: 4,
+      data32S: [0, 0, 800, 0, 800, 600, 0, 600],
+    })),
+    MatVector: vi.fn().mockImplementation(() => ({
+      delete: vi.fn(),
+      size: () => 1,
+      get: () => ({ delete: vi.fn() }),
+    })),
     imread: vi.fn().mockReturnValue({ delete: vi.fn() }),
     cvtColor: vi.fn(),
     COLOR_RGBA2GRAY: 'COLOR_RGBA2GRAY',
@@ -30,14 +38,14 @@ vi.mock('@techstark/opencv-js', () => ({
     GaussianBlur: vi.fn(),
     Canny: vi.fn(),
     BORDER_DEFAULT: 'BORDER_DEFAULT',
-    RETR_LIST: 'RETR_LIST'
-  }
+    RETR_LIST: 'RETR_LIST',
+  },
 }));
 
 vi.mock('tesseract.js', () => ({
   default: {
-    recognize: vi.fn().mockResolvedValue({ data: { text: 'Mocked OCR Text' } })
-  }
+    recognize: vi.fn().mockResolvedValue({ data: { text: 'Mocked OCR Text' } }),
+  },
 }));
 import ResizeObserver from 'resize-observer-polyfill';
 
@@ -58,7 +66,10 @@ vi.mock('socket.io-client', () => {
 
 if (typeof HTMLCanvasElement !== 'undefined') {
   HTMLCanvasElement.prototype.getContext = vi.fn() as any;
-  HTMLCanvasElement.prototype.toBlob = vi.fn(function(this: HTMLCanvasElement, callback: BlobCallback) {
+  HTMLCanvasElement.prototype.toBlob = vi.fn(function (
+    this: HTMLCanvasElement,
+    callback: BlobCallback
+  ) {
     callback(new Blob(['mock data'], { type: 'image/jpeg' }));
   }) as any;
 }
@@ -67,7 +78,7 @@ globalThis.ResizeObserver = ResizeObserver;
 if (globalThis.window !== undefined) {
   Object.defineProperty(globalThis.window, 'matchMedia', {
     writable: true,
-    value: vi.fn().mockImplementation(query => ({
+    value: vi.fn().mockImplementation((query) => ({
       matches: false,
       media: query,
       onchange: null,

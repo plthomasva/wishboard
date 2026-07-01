@@ -18,9 +18,7 @@ describe('FlaggedWishesSection WebSocket', () => {
     vi.clearAllMocks();
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => [
-        { id: 'f1', content: 'Flagged wish A', user_id: 'user1', flagged: 1 }
-      ]
+      json: async () => [{ id: 'f1', content: 'Flagged wish A', user_id: 'user1', flagged: 1 }],
     }) as any;
   });
 
@@ -33,8 +31,9 @@ describe('FlaggedWishesSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText('Flagged wish A')).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const flaggedHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]) => event === 'wish:flagged')?.[1];
+    const flaggedHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([event]) => event === 'wish:flagged'
+    )?.[1];
     expect(flaggedHandler).toBeDefined();
 
     act(() => {
@@ -49,8 +48,9 @@ describe('FlaggedWishesSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText('Flagged wish A')).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const flaggedHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]) => event === 'wish:flagged')?.[1];
+    const flaggedHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([event]) => event === 'wish:flagged'
+    )?.[1];
 
     act(() => {
       flaggedHandler({ id: 'f1', content: 'Flagged wish A', user_id: 'user1', flagged: 1 });
@@ -65,8 +65,9 @@ describe('FlaggedWishesSection WebSocket', () => {
     await waitFor(() => expect(screen.getByText('Flagged wish A')).toBeInTheDocument());
 
     const socket = getMockSocket();
-    const deletedHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls
-      .find(([event]) => event === 'wish:deleted')?.[1];
+    const deletedHandler = (socket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([event]) => event === 'wish:deleted'
+    )?.[1];
     expect(deletedHandler).toBeDefined();
 
     act(() => {

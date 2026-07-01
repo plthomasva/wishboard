@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 const useAuthMock = vi.fn();
 
 vi.mock('./AuthContext', () => ({
-  useAuth: () => useAuthMock()
+  useAuth: () => useAuthMock(),
 }));
 
 import AccountPage from './AccountPage';
@@ -13,13 +13,16 @@ import AccountPage from './AccountPage';
 describe('AccountPage', () => {
   beforeEach(() => {
     useAuthMock.mockReset();
-    vi.stubGlobal('fetch', vi.fn((input) => {
-      const url = typeof input === 'string' ? input : input.url;
-      if (url.includes('/api/users/exists')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ exists: false }) });
-      }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input) => {
+        const url = typeof input === 'string' ? input : input.url;
+        if (url.includes('/api/users/exists')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve({ exists: false }) });
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+      })
+    );
   });
 
   afterEach(() => {
@@ -35,18 +38,19 @@ describe('AccountPage', () => {
         role: 'user',
         identity_genders: ['woman'],
         identity_orientations: ['queer'],
-        identity_roles: ['speaker']
+        identity_roles: ['speaker'],
       },
       token: 'fake-token',
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
-      refreshUser
+      refreshUser,
     });
 
-    vi.stubGlobal('fetch', vi.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve([]) })
-    ));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve([]) }))
+    );
 
     render(<AccountPage />);
 
@@ -69,14 +73,18 @@ describe('AccountPage', () => {
       login: vi.fn(),
       register,
       logout: vi.fn(),
-      refreshUser: vi.fn()
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
 
     const registerButtons = screen.getAllByText('Register');
-    const registerTabButton = registerButtons.find((button) => button.getAttribute('type') !== 'submit');
-    const registerSubmitButton = registerButtons.find((button) => button.getAttribute('type') === 'submit');
+    const registerTabButton = registerButtons.find(
+      (button) => button.getAttribute('type') !== 'submit'
+    );
+    const registerSubmitButton = registerButtons.find(
+      (button) => button.getAttribute('type') === 'submit'
+    );
     if (!registerTabButton || !registerSubmitButton) {
       throw new Error('Could not find register tab or submit button');
     }
@@ -86,7 +94,9 @@ describe('AccountPage', () => {
     fireEvent.click(registerSubmitButton);
 
     expect(register).toHaveBeenCalledWith('newuser', undefined, {
-      genders: '', orientations: '', roles: ''
+      genders: '',
+      orientations: '',
+      roles: '',
     });
     await screen.findByText(/Account created. Remember your passphrase:/);
   });
@@ -98,11 +108,13 @@ describe('AccountPage', () => {
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
-      refreshUser: vi.fn()
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
-    const registerTabButton = screen.getAllByText('Register').find((button) => button.getAttribute('type') !== 'submit');
+    const registerTabButton = screen
+      .getAllByText('Register')
+      .find((button) => button.getAttribute('type') !== 'submit');
     if (!registerTabButton) {
       throw new Error('Could not find register tab button');
     }
@@ -112,7 +124,9 @@ describe('AccountPage', () => {
   });
 
   it('auto-switches to login once the username already exists', async () => {
-    const login = vi.fn().mockResolvedValue({ success: false, error: 'Invalid username or passphrase.' });
+    const login = vi
+      .fn()
+      .mockResolvedValue({ success: false, error: 'Invalid username or passphrase.' });
     const fetchMock = vi.fn((input) => {
       const url = typeof input === 'string' ? input : input.url;
       if (url.includes('/api/users/exists')) {
@@ -128,30 +142,37 @@ describe('AccountPage', () => {
       login,
       register: vi.fn(),
       logout: vi.fn(),
-      refreshUser: vi.fn()
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
 
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'existinguser' } });
 
-    await waitFor(() => {
-      const submitButtons = screen.getAllByRole('button');
-      const submitButton = submitButtons.find((button) => button.getAttribute('type') === 'submit');
-      expect(submitButton).toBeDefined();
-      expect(submitButton).toHaveTextContent('Login');
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const submitButtons = screen.getAllByRole('button');
+        const submitButton = submitButtons.find(
+          (button) => button.getAttribute('type') === 'submit'
+        );
+        expect(submitButton).toBeDefined();
+        expect(submitButton).toHaveTextContent('Login');
+      },
+      { timeout: 3000 }
+    );
   });
 
   it('submits login when in login mode with provided passphrase', async () => {
-    const login = vi.fn().mockResolvedValue({ success: false, error: 'Invalid username or passphrase.' });
+    const login = vi
+      .fn()
+      .mockResolvedValue({ success: false, error: 'Invalid username or passphrase.' });
     useAuthMock.mockReturnValue({
       user: null,
       token: null,
       login,
       register: vi.fn(),
       logout: vi.fn(),
-      refreshUser: vi.fn()
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
@@ -159,7 +180,9 @@ describe('AccountPage', () => {
     const loginTabButton = screen.getByRole('button', { name: 'Login' });
     fireEvent.click(loginTabButton);
 
-    const loginSubmitButton = screen.getAllByRole('button').find((button) => button.getAttribute('type') === 'submit');
+    const loginSubmitButton = screen
+      .getAllByRole('button')
+      .find((button) => button.getAttribute('type') === 'submit');
     if (!loginSubmitButton) {
       throw new Error('Could not find login submit button');
     }
@@ -177,7 +200,15 @@ describe('AccountPage', () => {
     const fetchMock = vi.fn((input, init) => {
       const url = typeof input === 'string' ? input : input.url;
       if (url === '/api/users/me' && init?.method === 'PUT') {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ identity_genders: ['woman'], identity_orientations: ['queer'], identity_roles: ['speaker'] }) });
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              identity_genders: ['woman'],
+              identity_orientations: ['queer'],
+              identity_roles: ['speaker'],
+            }),
+        });
       }
       if (url.includes('/api/users/me/wishes')) {
         return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
@@ -196,13 +227,13 @@ describe('AccountPage', () => {
         role: 'user',
         identity_genders: ['woman'],
         identity_orientations: ['queer'],
-        identity_roles: ['speaker']
+        identity_roles: ['speaker'],
       },
       token: 'fake-token',
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
-      refreshUser
+      refreshUser,
     });
 
     render(<AccountPage />);
@@ -213,15 +244,23 @@ describe('AccountPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Save attributes' }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/users/me', expect.objectContaining({ method: 'PUT' })));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/users/me',
+        expect.objectContaining({ method: 'PUT' })
+      )
+    );
     expect(refreshUser).toHaveBeenCalled();
   });
 
   it('renders Edit Wish link and allows user to delete a wish', async () => {
-    const fetchMock = vi.fn((input, init) => {
+    const fetchMock = vi.fn((input, _init) => {
       const url = typeof input === 'string' ? input : input.url;
       if (url.includes('/api/users/me/wishes')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 'wish-1', content: 'test wish', flagged: 0 }]) });
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{ id: 'wish-1', content: 'test wish', flagged: 0 }]),
+        });
       }
       if (url.includes('/api/wishes/wish-1/manage')) {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
@@ -231,18 +270,24 @@ describe('AccountPage', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     useAuthMock.mockReturnValue({
-      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      user: {
+        id: 'user-test',
+        username: 'tester',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
       token: 'fake-token',
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
-      refreshUser: vi.fn()
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
 
     expect(await screen.findByText('test wish')).toBeInTheDocument();
-    
+
     // Check Edit link
     const editLink = screen.getByRole('link', { name: 'Edit Wish' });
     expect(editLink).toHaveAttribute('href', '#manage-wish?id=wish-1');
@@ -251,53 +296,85 @@ describe('AccountPage', () => {
     fireEvent.click(deleteButton);
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/wishes/wish-1/manage', expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ action: 'delete' })
-      }));
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/wishes/wish-1/manage',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ action: 'delete' }),
+        })
+      );
     });
   });
 
   it('shows error if registration fields are missing', async () => {
     useAuthMock.mockReturnValue({
-      user: null, token: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+      user: null,
+      token: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
     });
     render(<AccountPage />);
-    const submit = screen.getAllByRole('button').find((button) => button.getAttribute('type') === 'submit');
+    const submit = screen
+      .getAllByRole('button')
+      .find((button) => button.getAttribute('type') === 'submit');
     fireEvent.click(submit!);
     expect(await screen.findByText('Username is required to register.')).toBeInTheDocument();
   });
-  
+
   it('shows error if login fields are missing', async () => {
     useAuthMock.mockReturnValue({
-      user: null, token: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+      user: null,
+      token: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
     });
     render(<AccountPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Login' }));
-    const submit = screen.getAllByRole('button').find((button) => button.getAttribute('type') === 'submit');
+    const submit = screen
+      .getAllByRole('button')
+      .find((button) => button.getAttribute('type') === 'submit');
     fireEvent.click(submit!);
-    expect(await screen.findByText('Username and passphrase are required to log in.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Username and passphrase are required to log in.')
+    ).toBeInTheDocument();
   });
 
-
-
   it('shows error if deleting a wish fails', async () => {
-    const fetchMock = vi.fn((input, init) => {
+    const fetchMock = vi.fn((input, _init) => {
       const url = typeof input === 'string' ? input : input.url;
       if (url.includes('/api/users/me/wishes')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve([{ id: 'wish-3', content: 'test', flagged: 0 }]) });
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{ id: 'wish-3', content: 'test', flagged: 0 }]),
+        });
       }
       if (url.includes('/api/wishes/wish-3/manage')) {
-        return Promise.resolve({ ok: false, json: () => Promise.resolve({ error: 'Delete failed' }) });
+        return Promise.resolve({
+          ok: false,
+          json: () => Promise.resolve({ error: 'Delete failed' }),
+        });
       }
       return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
     });
     vi.stubGlobal('fetch', fetchMock);
 
     useAuthMock.mockReturnValue({
-      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      user: {
+        id: 'user-test',
+        username: 'tester',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
       token: 'fake-token',
-      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
@@ -309,20 +386,31 @@ describe('AccountPage', () => {
   it('allows user to type into identity fields during registration', async () => {
     const register = vi.fn().mockResolvedValue({ success: true, secret: 'secret' });
     useAuthMock.mockReturnValue({
-      user: null, token: null, login: vi.fn(), register, logout: vi.fn(), refreshUser: vi.fn()
+      user: null,
+      token: null,
+      login: vi.fn(),
+      register,
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
     });
     render(<AccountPage />);
-    
+
     // In register mode by default
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'testuser' } });
     fireEvent.change(screen.getByLabelText('Identity genders'), { target: { value: 'agender' } });
     fireEvent.change(screen.getByLabelText('Identity orientations'), { target: { value: 'ace' } });
     fireEvent.change(screen.getByLabelText('Identity roles'), { target: { value: 'attendee' } });
 
-    const submit = screen.getAllByRole('button').find((button) => button.getAttribute('type') === 'submit');
+    const submit = screen
+      .getAllByRole('button')
+      .find((button) => button.getAttribute('type') === 'submit');
     fireEvent.click(submit!);
-    
-    expect(register).toHaveBeenCalledWith('testuser', undefined, { genders: 'agender', orientations: 'ace', roles: 'attendee' });
+
+    expect(register).toHaveBeenCalledWith('testuser', undefined, {
+      genders: 'agender',
+      orientations: 'ace',
+      roles: 'attendee',
+    });
     await screen.findByText(/Account created. Remember your passphrase: secret/);
   });
 
@@ -331,7 +419,10 @@ describe('AccountPage', () => {
     const fetchMock = vi.fn((input, init) => {
       const url = typeof input === 'string' ? input : input.url;
       if (url.includes('/api/users/me/delete-preview')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ wishesCount: 2, wishmailsCount: 1 }) });
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ wishesCount: 2, wishmailsCount: 1 }),
+        });
       }
       if (url.includes('/api/users/me/delete') && init?.method === 'POST') {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
@@ -344,31 +435,53 @@ describe('AccountPage', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     useAuthMock.mockReturnValue({
-      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      user: {
+        id: 'user-test',
+        username: 'tester',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
       token: 'fake-token',
-      login: vi.fn(), register: vi.fn(), logout, refreshUser: vi.fn()
+      login: vi.fn(),
+      register: vi.fn(),
+      logout,
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
-    
+
     // Click delete account
     const deleteBtn = screen.getByRole('button', { name: 'Delete Account' });
     fireEvent.click(deleteBtn);
 
     // Modal appears
-    await waitFor(() => expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument()
+    );
 
     // Cancel modal
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByText(/This action is permanent and cannot be undone/)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/This action is permanent and cannot be undone/)
+      ).not.toBeInTheDocument()
+    );
 
     // Click delete account again
     fireEvent.click(deleteBtn);
-    await waitFor(() => expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument()
+    );
 
     // Confirm deletion
     fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete Account' }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/users/me/delete'), expect.objectContaining({ method: 'POST' })));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/users/me/delete'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
     expect(logout).toHaveBeenCalled();
   });
 
@@ -386,15 +499,26 @@ describe('AccountPage', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     useAuthMock.mockReturnValue({
-      user: { id: 'user-test', username: 'tester', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      user: {
+        id: 'user-test',
+        username: 'tester',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
       token: 'fake-token',
-      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
-    
+
     fireEvent.click(screen.getByRole('button', { name: 'Delete Account' }));
-    await waitFor(() => expect(screen.getByText('Unable to fetch delete preview.')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText('Unable to fetch delete preview.')).toBeInTheDocument()
+    );
   });
 
   it('handles network errors gracefully when checking username existence', async () => {
@@ -408,7 +532,12 @@ describe('AccountPage', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     useAuthMock.mockReturnValue({
-      user: null, token: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+      user: null,
+      token: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
@@ -431,26 +560,41 @@ describe('AccountPage', () => {
     const fetchMock = vi.fn((input) => {
       const url = typeof input === 'string' ? input : input.url;
       if (url.includes('/api/wishes/invalid-wish/claim')) {
-        return Promise.resolve({ ok: false, json: () => Promise.resolve({ error: 'Invalid passphrase' }) });
+        return Promise.resolve({
+          ok: false,
+          json: () => Promise.resolve({ error: 'Invalid passphrase' }),
+        });
       }
       return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
     });
     vi.stubGlobal('fetch', fetchMock);
 
     useAuthMock.mockReturnValue({
-      user: { id: 'u1', username: 'user1', role: 'user', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      user: {
+        id: 'u1',
+        username: 'user1',
+        role: 'user',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
       token: 'fake-token',
-      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
 
     const claimIdInput = screen.getByLabelText(/Wish ID/i);
     const claimSecretInput = screen.getByLabelText(/Passphrase/i);
-    
+
     // Test missing fields
     fireEvent.click(screen.getByRole('button', { name: 'Claim Wish' }));
-    expect(await screen.findByText('Wish ID and Passphrase are required to claim a wish.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Wish ID and Passphrase are required to claim a wish.')
+    ).toBeInTheDocument();
 
     // Test error
     fireEvent.change(claimIdInput, { target: { value: 'invalid-wish' } });
@@ -470,9 +614,19 @@ describe('AccountPage', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     useAuthMock.mockReturnValue({
-      user: { id: 'u1', username: 'user1', role: 'user', identity_genders: [], identity_orientations: [], identity_roles: [] },
+      user: {
+        id: 'u1',
+        username: 'user1',
+        role: 'user',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
       token: 'fake-token',
-      login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn()
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
     });
 
     render(<AccountPage />);
@@ -483,9 +637,7 @@ describe('AccountPage', () => {
     fireEvent.change(claimIdInput, { target: { value: 'valid-wish' } });
     fireEvent.change(claimSecretInput, { target: { value: 'correct' } });
     fireEvent.click(screen.getByRole('button', { name: 'Claim Wish' }));
-    
+
     expect(await screen.findByText('Wish claimed successfully!')).toBeInTheDocument();
   });
-
-
 });

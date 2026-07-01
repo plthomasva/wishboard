@@ -1,6 +1,6 @@
 # Wishboard Deployment Guide
 
-This guide is designed for system owners and event managers who want to deploy a fresh instance of Wishboard on a Raspberry Pi using a custom domain. 
+This guide is designed for system owners and event managers who want to deploy a fresh instance of Wishboard on a Raspberry Pi using a custom domain.
 
 > [!NOTE]
 > If you prefer to deploy Wishboard to the cloud rather than hosting it on local Raspberry Pi hardware, see the [**AWS Deployment Guide**](../aws-serverless/deploy-instructions.md) for deploying to AWS Serverless.
@@ -10,7 +10,7 @@ Wishboard is designed to be an offline-first kiosk application. However, to prov
 ## Prerequisites
 
 1. **Hardware**: A Raspberry Pi (Pi 4 or Pi 5 recommended).
-2. **OS**: A fresh installation of **Raspberry Pi OS (Trixie/Debian 13 or newer)**. 
+2. **OS**: A fresh installation of **Raspberry Pi OS (Trixie/Debian 13 or newer)**.
 3. **Domain Name**: You must own a domain name (e.g., `wishboard.example.com`).
 4. **Network**: The Pi must be temporarily connected to the internet to download dependencies during the initial deployment.
 
@@ -21,17 +21,20 @@ Wishboard is designed to be an offline-first kiosk application. However, to prov
 Because the Pi will eventually run offline (without a public IP), you cannot use standard HTTP validation to get an SSL certificate. You must use a **DNS Challenge** via Let's Encrypt.
 
 SSH into your fresh Raspberry Pi and install Certbot:
+
 ```bash
 sudo apt-get update
 sudo apt-get install -y certbot
 ```
 
 Run Certbot to request a certificate manually via DNS:
+
 ```bash
 sudo certbot certonly --manual --preferred-challenges dns -d wishboard.example.com
 ```
 
-Certbot will ask you to create a specific `TXT` record in your domain's DNS settings. 
+Certbot will ask you to create a specific `TXT` record in your domain's DNS settings.
+
 1. Log into your domain registrar (e.g., Namecheap, Cloudflare, Google Domains).
 2. Add the `TXT` record provided by Certbot.
 3. Wait a few minutes for DNS to propagate, then press `Enter` in the Certbot terminal.
@@ -48,16 +51,19 @@ If successful, your certificates will be securely saved to:
 From your **local developer machine** (not the Pi), run the automated deployment script. This script will configure the Pi, install Docker Rootless, set up Nginx with your new SSL certificates, and launch the kiosk.
 
 ### Windows (PowerShell)
+
 ```powershell
 .\scripts\deploy-kiosk.ps1 -AdminUsername pi -HostName raspberrypi.local -Mode prod -DomainName wishboard.example.com
 ```
 
 ### macOS / Linux (Bash)
+
 ```bash
 ./scripts/deploy-kiosk.sh pi raspberrypi.local prod wishboard.example.com
 ```
 
 ### Networking Modes
+
 - `prod`: The Pi creates an isolated `Wishboard_WiFi` hotspot and hijacks DNS for your custom domain.
 - `dual`: The Pi stays connected to your home Wi-Fi but broadcasts a virtual hotspot for testing.
 - `dev`: Standard mode without Wi-Fi AP manipulation.
@@ -89,7 +95,7 @@ If you need to inject special environment variables (like changing the default a
    VITE_WISHBOARD_DOMAIN=wishboard.example.com
    VITE_WISHBOARD_AP_IP=10.42.0.1
    CORS_ALLOWED_ORIGINS=https://wishboard.example.com
-   
+
    # Add your custom overrides here:
    WISHBOARD_ADMIN_USERNAME=event_admin
    WISHBOARD_ADMIN_SECRET=SuperSecretPassword123
@@ -103,7 +109,7 @@ If you need to inject special environment variables (like changing the default a
 
 ## Updating the Application
 
-When a new version of Wishboard is published, you can effortlessly upgrade your deployment by re-running the deployment script from your developer machine. 
+When a new version of Wishboard is published, you can effortlessly upgrade your deployment by re-running the deployment script from your developer machine.
 
 The script uses Docker to pull the new image and cleanly restart the service without destroying your underlying SQLite database (which is safely persisted in the `wishboard_data` volume).
 

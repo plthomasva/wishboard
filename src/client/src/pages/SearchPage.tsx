@@ -31,25 +31,28 @@ export default function SearchPage() {
   const { socket } = useWebSocket();
 
   const prependIfNotPresent = React.useCallback((newWish: Wish) => {
-    setResults(prev => prev.some(w => w.id === newWish.id) ? prev : [newWish, ...prev]);
+    setResults((prev) => (prev.some((w) => w.id === newWish.id) ? prev : [newWish, ...prev]));
   }, []);
 
-  const handleNewWish = React.useCallback(async (newWish: Wish) => {
-    if (lastSearchParams === null) return;
-    try {
-      const response = await fetch(`/api/wishes?${lastSearchParams}`);
-      if (!response.ok) return;
-      const data = await response.json();
-      if (data.some((w: Wish) => w.id === newWish.id)) {
-        prependIfNotPresent(newWish);
+  const handleNewWish = React.useCallback(
+    async (newWish: Wish) => {
+      if (lastSearchParams === null) return;
+      try {
+        const response = await fetch(`/api/wishes?${lastSearchParams}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.some((w: Wish) => w.id === newWish.id)) {
+          prependIfNotPresent(newWish);
+        }
+      } catch (err) {
+        console.debug('WebSocket wish:created check failed:', err);
       }
-    } catch (err) {
-      console.debug('WebSocket wish:created check failed:', err);
-    }
-  }, [lastSearchParams, prependIfNotPresent]);
+    },
+    [lastSearchParams, prependIfNotPresent]
+  );
 
   const handleDeletedWish = React.useCallback((deletedWishId: string) => {
-    setResults(prev => prev.filter(w => w.id !== deletedWishId));
+    setResults((prev) => prev.filter((w) => w.id !== deletedWishId));
   }, []);
 
   useEffect(() => {
@@ -109,31 +112,40 @@ export default function SearchPage() {
     setResults(data);
   };
 
-  const handleFlag = useFlagWish((id) => setResults((prev) => prev.filter((wish) => wish.id !== id)));
+  const handleFlag = useFlagWish((id) =>
+    setResults((prev) => prev.filter((wish) => wish.id !== id))
+  );
 
-  const handleAdminDelete = React.useCallback(async (id: string) => {
-    if (!token) return;
-    if (!globalThis.confirm('Are you sure you want to delete this wish as an admin?')) return;
-    try {
-      const response = await fetch(`/api/admin/wishes/${id}/remove`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        setResults(prev => prev.filter(w => w.id !== id));
-      } else {
-        globalThis.alert('Failed to delete wish.');
+  const handleAdminDelete = React.useCallback(
+    async (id: string) => {
+      if (!token) return;
+      if (!globalThis.confirm('Are you sure you want to delete this wish as an admin?')) return;
+      try {
+        const response = await fetch(`/api/admin/wishes/${id}/remove`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          setResults((prev) => prev.filter((w) => w.id !== id));
+        } else {
+          globalThis.alert('Failed to delete wish.');
+        }
+      } catch (err) {
+        console.error('Error deleting wish:', err);
+        globalThis.alert('Error deleting wish.');
       }
-    } catch (err) {
-      console.error('Error deleting wish:', err);
-      globalThis.alert('Error deleting wish.');
-    }
-  }, [token]);
+    },
+    [token]
+  );
 
   return (
     <section>
       <h1 style={{ maxWidth: '800px', margin: '0 auto' }}>Search Wishes</h1>
-      <form className="form-card" onSubmit={search} style={{ maxWidth: '800px', margin: '18px auto 24px' }}>
+      <form
+        className="form-card"
+        onSubmit={search}
+        style={{ maxWidth: '800px', margin: '18px auto 24px' }}
+      >
         <label>
           Search phrase{' '}
           <input
@@ -146,16 +158,27 @@ export default function SearchPage() {
 
         {user ? (
           <div className="label-with-info" style={{ marginTop: '8px' }}>
-            <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0 }}>
+            <label
+              className="checkbox-label"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                margin: 0,
+              }}
+            >
               <input
                 type="checkbox"
                 checked={useProfileAttributes}
                 onChange={(event) => setUseProfileAttributes(event.target.checked)}
-              />
-              {' '}Filter results by my profile attributes
+              />{' '}
+              Filter results by my profile attributes
             </label>
             <InfoToggle>
-              When checked, we use your identity attributes to show only wishes from compatible creators. Uncheck this if you just want to do a broad keyword search across all wishes!
+              When checked, we use your identity attributes to show only wishes from compatible
+              creators. Uncheck this if you just want to do a broad keyword search across all
+              wishes!
             </InfoToggle>
           </div>
         ) : (
@@ -163,8 +186,8 @@ export default function SearchPage() {
             <div className="label-with-info" style={{ marginBottom: '12px' }}>
               <legend style={{ fontWeight: 'bold' }}>Temporary search attributes</legend>
               <InfoToggle>
-                These let you perform a one-off compatibility search as a specific identity. 
-                Leaving these blank will do a broad keyword-only search across all wishes!
+                These let you perform a one-off compatibility search as a specific identity. Leaving
+                these blank will do a broad keyword-only search across all wishes!
               </InfoToggle>
             </div>
             <label>
@@ -215,9 +238,7 @@ export default function SearchPage() {
         ))}
       </div>
 
-      {mailWishId && (
-        <SendWishmailModal wishId={mailWishId} onClose={() => setMailWishId(null)} />
-      )}
+      {mailWishId && <SendWishmailModal wishId={mailWishId} onClose={() => setMailWishId(null)} />}
     </section>
   );
 }

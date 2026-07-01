@@ -62,7 +62,7 @@ describe('Admin routes coverage', () => {
     const response = await request(app)
       .post(`/api/admin/users/${userId}/reset-password`)
       .set('Authorization', `Bearer ${token}`);
-    
+
     // next(error) in Express will usually render a 500 HTML page or error JSON depending on the handler
     expect(response.status).toBe(500);
 
@@ -76,13 +76,16 @@ describe('Admin routes coverage', () => {
       .send({ username: 'delete-preview-user', passphrase: 'pwd' });
     const userId = registerRes.body.id;
 
-    await db.prepare('INSERT INTO wishes (id, user_id, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
+    await db
+      .prepare(
+        'INSERT INTO wishes (id, user_id, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+      )
       .run('preview-wish', userId, 'test', new Date().toISOString(), new Date().toISOString());
 
     const response = await request(app)
       .get(`/api/admin/users/${userId}/delete-preview`)
       .set('Authorization', `Bearer ${token}`);
-    
+
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ wishesCount: 1, wishmailsCount: 0 });
   });
@@ -98,7 +101,9 @@ describe('Admin routes coverage', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(403);
-    expect(response.body.error).toBe('Demo reset is disabled in production unless force is explicitly requested.');
+    expect(response.body.error).toBe(
+      'Demo reset is disabled in production unless force is explicitly requested.'
+    );
 
     process.env.NODE_ENV = originalEnv;
   });
@@ -131,27 +136,32 @@ describe('Admin routes coverage', () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const logsDir = path.join(process.cwd(), 'data/logs');
-    
+
     // Ensure logs directory exists
     fs.mkdirSync(logsDir, { recursive: true });
-    
+
     // Create a temporary log file
     const testLogFile = path.join(logsDir, 'test-formatting.log');
     const logsContent = [
-      JSON.stringify({ timestamp: '2026-01-01', level: 'info', message: 'Hello world', userId: 123 }),
+      JSON.stringify({
+        timestamp: '2026-01-01',
+        level: 'info',
+        message: 'Hello world',
+        userId: 123,
+      }),
       JSON.stringify({ timestamp: '2026-01-01', level: 'warn', message: 'Warning msg' }),
       JSON.stringify({ message: 'Only message' }),
-      'Raw non-JSON log line'
+      'Raw non-JSON log line',
     ].join('\n');
-    
+
     fs.writeFileSync(testLogFile, logsContent, 'utf-8');
-    
+
     try {
       const token = await loginAsAdmin();
       const response = await request(app)
         .get('/api/admin/logs')
         .set('Authorization', `Bearer ${token}`);
-      
+
       expect(response.status).toBe(200);
       expect(response.body.logs).toContain('[2026-01-01] info: Hello world {"userId":123}');
       expect(response.body.logs).toContain('[2026-01-01] warn: Warning msg');
@@ -173,5 +183,4 @@ describe('Admin routes coverage', () => {
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('isProduction');
   });
-
 });

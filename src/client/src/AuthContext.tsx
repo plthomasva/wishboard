@@ -15,7 +15,10 @@ type AuthUser = {
 type AuthContextValue = {
   user: AuthUser | null;
   token: string | null;
-  login: (username: string, passphrase: string) => Promise<{ success: boolean; error?: string; role?: string }>;
+  login: (
+    username: string,
+    passphrase: string
+  ) => Promise<{ success: boolean; error?: string; role?: string }>;
   register: (
     username: string,
     passphrase?: string,
@@ -44,7 +47,7 @@ const mapToAuthUser = (data: any): AuthUser => ({
   identity_roles: data.identity_roles || [],
   contacts: data.contacts || [],
   wishmail_enabled: Boolean(data.wishmail_enabled),
-  is_active: data.is_active === undefined ? true : Boolean(data.is_active)
+  is_active: data.is_active === undefined ? true : Boolean(data.is_active),
 });
 
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -59,8 +62,8 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
     const response = await fetch('/api/users/me', {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
@@ -82,7 +85,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     const response = await fetch('/api/users/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, passphrase })
+      body: JSON.stringify({ username, passphrase }),
     });
 
     const data = await response.json();
@@ -113,8 +116,8 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
         identity_orientations: identityFields?.orientations,
         identity_roles: identityFields?.roles,
         contacts,
-        wishmail_enabled: wishmailEnabled
-      })
+        wishmail_enabled: wishmailEnabled,
+      }),
     });
 
     const data = await response.json();

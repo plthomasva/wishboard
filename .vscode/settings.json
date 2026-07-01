@@ -1,9 +1,9 @@
 {
-    "chat.tools.terminal.autoApprove": {
-        "npx vitest": true
-    },
-    "sonarlint.connectedMode.project": {
-        "connectionId": "plthomasva",
-        "projectKey": "plthomasva_wishboard"
-    }
+  "chat.tools.terminal.autoApprove": {
+    "npx vitest": true
+  },
+  "sonarlint.connectedMode.project": {
+    "connectionId": "plthomasva",
+    "projectKey": "plthomasva_wishboard"
+  }
 }

@@ -6,8 +6,8 @@ vi.mock('./logger.js', () => ({
     info: vi.fn(),
     debug: vi.fn(),
     error: vi.fn(),
-    warn: vi.fn()
-  }
+    warn: vi.fn(),
+  },
 }));
 
 describe('socket.js', () => {
@@ -18,13 +18,17 @@ describe('socket.js', () => {
   it('initSocket creates and returns io instance, handles connect/disconnect events', async () => {
     const mockSocket = { on: vi.fn(), id: 'test-socket-id' };
     const mockIo = {
-      on: vi.fn(function(event, cb) {
+      on: vi.fn(function (event, cb) {
         if (event === 'connection') cb(mockSocket);
       }),
       emit: vi.fn(),
     };
 
-    vi.doMock('socket.io', () => ({ Server: function MockServer() { return mockIo; } }));
+    vi.doMock('socket.io', () => ({
+      Server: function MockServer() {
+        return mockIo;
+      },
+    }));
 
     const { initSocket, getIO } = await import('./socket.js');
 
@@ -56,7 +60,8 @@ describe('socket.js', () => {
   it('emit helpers silently no-op when io is not initialized', async () => {
     vi.doMock('socket.io', () => ({ Server: vi.fn(() => null) }));
 
-    const { emitNewWish, emitWishFlagged, emitWishDeleted, emitSystemLog } = await import('./socket.js');
+    const { emitNewWish, emitWishFlagged, emitWishDeleted, emitSystemLog } =
+      await import('./socket.js');
 
     // None of these should throw
     expect(() => emitNewWish({ id: '1', content: 'test' })).not.toThrow();
@@ -70,9 +75,14 @@ describe('socket.js', () => {
       on: vi.fn(),
       emit: vi.fn(),
     };
-    vi.doMock('socket.io', () => ({ Server: function MockServer() { return mockIo; } }));
+    vi.doMock('socket.io', () => ({
+      Server: function MockServer() {
+        return mockIo;
+      },
+    }));
 
-    const { initSocket, emitNewWish, emitWishFlagged, emitWishDeleted, emitSystemLog } = await import('./socket.js');
+    const { initSocket, emitNewWish, emitWishFlagged, emitWishDeleted, emitSystemLog } =
+      await import('./socket.js');
 
     initSocket({}, {});
 
@@ -96,7 +106,8 @@ describe('socket.js', () => {
 
     beforeEach(() => {
       process.env.REALTIME_PROVIDER = 'apigateway';
-      process.env.WEBSOCKET_API_ENDPOINT = 'https://my-api.execute-api.us-east-1.amazonaws.com/production';
+      process.env.WEBSOCKET_API_ENDPOINT =
+        'https://my-api.execute-api.us-east-1.amazonaws.com/production';
     });
 
     afterEach(() => {
@@ -118,14 +129,14 @@ describe('socket.js', () => {
         default: {
           prepare: () => ({
             all: mockAll,
-            run: vi.fn()
-          })
-        }
+            run: vi.fn(),
+          }),
+        },
       }));
 
       const { emitNewWish } = await import('./socket.js');
       emitNewWish({ id: 'w1' });
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       expect(mockAll).toHaveBeenCalled();
     });
 
@@ -144,13 +155,13 @@ describe('socket.js', () => {
 
       vi.doMock('@aws-sdk/client-apigatewaymanagementapi', () => {
         return {
-          ApiGatewayManagementApiClient: function() {
+          ApiGatewayManagementApiClient: function () {
             return { send: mockSend };
           },
-          PostToConnectionCommand: function(args) {
+          PostToConnectionCommand: function (args) {
             this.ConnectionId = args.ConnectionId;
             this.Data = args.Data;
-          }
+          },
         };
       });
 
@@ -161,17 +172,18 @@ describe('socket.js', () => {
             all: () => [
               { connection_id: 'conn-active' },
               { connection_id: 'conn-gone' },
-              { connection_id: 'conn-err' }
+              { connection_id: 'conn-err' },
             ],
-            run: mockRun
-          })
-        }
+            run: mockRun,
+          }),
+        },
       }));
 
-      const { emitNewWish, emitWishFlagged, emitWishDeleted, emitWishReactivated, emitSystemLog } = await import('./socket.js');
+      const { emitNewWish, emitWishFlagged, emitWishDeleted, emitWishReactivated, emitSystemLog } =
+        await import('./socket.js');
 
       emitNewWish({ id: 'w1' });
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       expect(mockSend).toHaveBeenCalled();
       expect(mockRun).toHaveBeenCalledWith('conn-gone');
 
@@ -179,23 +191,25 @@ describe('socket.js', () => {
       emitWishDeleted('w1');
       emitWishReactivated({ id: 'w1' });
       emitSystemLog('test log');
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     });
 
     it('broadcastToApiGateway handles db error gracefully', async () => {
       vi.doMock('./db.js', () => ({
         default: {
           prepare: () => ({
-            all: () => { throw new Error('DB Error'); }
-          })
-        }
+            all: () => {
+              throw new Error('DB Error');
+            },
+          }),
+        },
       }));
 
       const { emitNewWish } = await import('./socket.js');
       expect(() => {
         emitNewWish({ id: 'w1' });
       }).not.toThrow();
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     });
   });
 });

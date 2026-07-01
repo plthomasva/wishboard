@@ -5,7 +5,7 @@ import React from 'react';
 import * as AuthContext from '../AuthContext';
 
 vi.mock('../AuthContext', () => ({
-  useAuth: vi.fn()
+  useAuth: vi.fn(),
 }));
 
 const mockFetch = vi.fn();
@@ -18,14 +18,14 @@ describe('SearchPage Coverage', () => {
 
   it('opens and closes SendWishmailModal', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as any);
-    
+
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ([{ id: 'w1', content: 'Wish content', wishmail_enabled: true }])
+      json: async () => [{ id: 'w1', content: 'Wish content', wishmail_enabled: true }],
     });
 
     render(<SearchPage />);
-    
+
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
 
     await waitFor(() => expect(screen.getByText('Wish content')).toBeInTheDocument());
@@ -41,7 +41,9 @@ describe('SearchPage Coverage', () => {
     await waitFor(() => expect(screen.queryByText('Send Wishmail')).not.toBeInTheDocument());
   });
   it('handles search fetch failure gracefully', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof AuthContext.useAuth>);
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as unknown as ReturnType<
+      typeof AuthContext.useAuth
+    >);
     mockFetch.mockResolvedValue({ ok: false, json: async () => ({ error: 'Search failed' }) });
     render(<SearchPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
@@ -49,34 +51,51 @@ describe('SearchPage Coverage', () => {
   });
 
   it('performs temporary search with attributes when unauthenticated', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as unknown as ReturnType<typeof AuthContext.useAuth>);
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as unknown as ReturnType<
+      typeof AuthContext.useAuth
+    >);
     mockFetch.mockResolvedValue({
       ok: true,
-      json: async () => ([{ id: 'w2', content: 'Attribute Wish', wishmail_enabled: false }])
+      json: async () => [{ id: 'w2', content: 'Attribute Wish', wishmail_enabled: false }],
     });
 
     render(<SearchPage />);
-    fireEvent.change(screen.getByPlaceholderText('e.g. woman, cisgender man'), { target: { value: 'man' } });
+    fireEvent.change(screen.getByPlaceholderText('e.g. woman, cisgender man'), {
+      target: { value: 'man' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-    
+
     await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('sg=man')));
   });
 
   it('handles admin delete successfully', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: { id: 'u1', username: 'admin', role: 'admin', identity_genders: [], identity_orientations: [], identity_roles: [] }, token: 'fake-token' } as unknown as ReturnType<typeof AuthContext.useAuth>);
-    
+    vi.mocked(AuthContext.useAuth).mockReturnValue({
+      user: {
+        id: 'u1',
+        username: 'admin',
+        role: 'admin',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
+      token: 'fake-token',
+    } as unknown as ReturnType<typeof AuthContext.useAuth>);
+
     mockFetch.mockImplementation(async (url) => {
       if (typeof url === 'string' && url.includes('/api/admin/wishes/w1/remove')) {
         return { ok: true, json: async () => ({ success: true }) };
       }
-      return { ok: true, json: async () => ([{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }]) };
+      return {
+        ok: true,
+        json: async () => [{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }],
+      };
     });
 
     vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
 
     render(<SearchPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-    
+
     await waitFor(() => expect(screen.getByText('Test Wish')).toBeInTheDocument());
 
     const deleteBtn = screen.getByTitle('Admin Delete Wish');
@@ -86,13 +105,26 @@ describe('SearchPage Coverage', () => {
   });
 
   it('handles admin delete error', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: { id: 'u1', username: 'admin', role: 'admin', identity_genders: [], identity_orientations: [], identity_roles: [] }, token: 'fake-token' } as unknown as ReturnType<typeof AuthContext.useAuth>);
-    
+    vi.mocked(AuthContext.useAuth).mockReturnValue({
+      user: {
+        id: 'u1',
+        username: 'admin',
+        role: 'admin',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
+      token: 'fake-token',
+    } as unknown as ReturnType<typeof AuthContext.useAuth>);
+
     mockFetch.mockImplementation(async (url) => {
       if (typeof url === 'string' && url.includes('/api/admin/wishes/w1/remove')) {
         return { ok: false, json: async () => ({ error: 'Delete failed' }) };
       }
-      return { ok: true, json: async () => ([{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }]) };
+      return {
+        ok: true,
+        json: async () => [{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }],
+      };
     });
 
     vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
@@ -100,7 +132,7 @@ describe('SearchPage Coverage', () => {
 
     render(<SearchPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-    
+
     await waitFor(() => expect(screen.getByText('Test Wish')).toBeInTheDocument());
 
     const deleteBtn = screen.getByTitle('Admin Delete Wish');
@@ -110,13 +142,26 @@ describe('SearchPage Coverage', () => {
   });
 
   it('handles admin delete exception', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: { id: 'u1', username: 'admin', role: 'admin', identity_genders: [], identity_orientations: [], identity_roles: [] }, token: 'fake-token' } as unknown as ReturnType<typeof AuthContext.useAuth>);
-    
+    vi.mocked(AuthContext.useAuth).mockReturnValue({
+      user: {
+        id: 'u1',
+        username: 'admin',
+        role: 'admin',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
+      token: 'fake-token',
+    } as unknown as ReturnType<typeof AuthContext.useAuth>);
+
     mockFetch.mockImplementation(async (url) => {
       if (typeof url === 'string' && url.includes('/api/admin/wishes/w1/remove')) {
         return Promise.reject(new Error('Network error'));
       }
-      return { ok: true, json: async () => ([{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }]) };
+      return {
+        ok: true,
+        json: async () => [{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }],
+      };
     });
 
     vi.spyOn(globalThis, 'confirm').mockReturnValue(true);
@@ -124,7 +169,7 @@ describe('SearchPage Coverage', () => {
 
     render(<SearchPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-    
+
     await waitFor(() => expect(screen.getByText('Test Wish')).toBeInTheDocument());
 
     const deleteBtn = screen.getByTitle('Admin Delete Wish');
@@ -134,22 +179,34 @@ describe('SearchPage Coverage', () => {
   });
 
   it('aborts admin delete if unconfirmed', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ user: { id: 'u1', username: 'admin', role: 'admin', identity_genders: [], identity_orientations: [], identity_roles: [] }, token: 'fake-token' } as unknown as ReturnType<typeof AuthContext.useAuth>);
-    
-    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ([{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }]) });
+    vi.mocked(AuthContext.useAuth).mockReturnValue({
+      user: {
+        id: 'u1',
+        username: 'admin',
+        role: 'admin',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
+      token: 'fake-token',
+    } as unknown as ReturnType<typeof AuthContext.useAuth>);
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }],
+    });
 
     vi.spyOn(globalThis, 'confirm').mockReturnValue(false);
 
     render(<SearchPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
-    
+
     await waitFor(() => expect(screen.getByText('Test Wish')).toBeInTheDocument());
 
     const deleteBtn = screen.getByTitle('Admin Delete Wish');
     fireEvent.click(deleteBtn);
 
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(screen.getByText('Test Wish')).toBeInTheDocument();
   });
 });
-

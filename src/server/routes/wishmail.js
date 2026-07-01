@@ -1,7 +1,12 @@
 import express from 'express';
 import { customAlphabet } from 'nanoid';
 import db from '../db.js';
-import { getUserFromToken, getTokenFromRequestHeader, verifyPassphrase, parseJsonArray } from '../auth.js';
+import {
+  getUserFromToken,
+  getTokenFromRequestHeader,
+  verifyPassphrase,
+  parseJsonArray,
+} from '../auth.js';
 import logger from '../logger.js';
 
 const router = express.Router({ mergeParams: true });
@@ -17,7 +22,9 @@ const authorizeWishmailManagement = async (req, res, next) => {
   const secret = req.headers['x-wish-secret'] || req.body?.secret;
   const user = await getRequestUser(req);
 
-  const wish = await db.prepare('SELECT user_id, secret_hash FROM wishes WHERE id = ?').get(wish_id);
+  const wish = await db
+    .prepare('SELECT user_id, secret_hash FROM wishes WHERE id = ?')
+    .get(wish_id);
   if (!wish) {
     return res.status(404).json({ error: 'Wish not found.' });
   }
@@ -52,7 +59,9 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Mail content is required.' });
   }
 
-  const wish = await db.prepare('SELECT id, wishmail_enabled FROM wishes WHERE id = ?').get(wish_id);
+  const wish = await db
+    .prepare('SELECT id, wishmail_enabled FROM wishes WHERE id = ?')
+    .get(wish_id);
   if (!wish) {
     return res.status(404).json({ error: 'Wish not found.' });
   }
@@ -65,9 +74,11 @@ router.post('/', async (req, res) => {
   const now = new Date().toISOString();
   const parsedContacts = Array.isArray(return_contacts) ? JSON.stringify(return_contacts) : '[]';
 
-  await db.prepare(
-    'INSERT INTO wishmails (id, wish_id, content, return_contacts, sender_id, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(mailId, wish_id, content.trim(), parsedContacts, user?.id || null, now);
+  await db
+    .prepare(
+      'INSERT INTO wishmails (id, wish_id, content, return_contacts, sender_id, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    )
+    .run(mailId, wish_id, content.trim(), parsedContacts, user?.id || null, now);
 
   logger.info('Wishmail sent', { sender_id: user?.id || null, target_wish_id: wish_id });
   res.json({ success: true, id: mailId });
@@ -78,15 +89,19 @@ router.post('/', async (req, res) => {
 router.get('/', authorizeWishmailManagement, async (req, res) => {
   const { id: wish_id } = req.params;
 
-  const rows = await db.prepare('SELECT id, content, return_contacts, sender_id, read, created_at FROM wishmails WHERE wish_id = ? ORDER BY created_at DESC').all(wish_id);
+  const rows = await db
+    .prepare(
+      'SELECT id, content, return_contacts, sender_id, read, created_at FROM wishmails WHERE wish_id = ? ORDER BY created_at DESC'
+    )
+    .all(wish_id);
   res.json(
-    rows.map(row => ({
+    rows.map((row) => ({
       id: row.id,
       content: row.content,
       return_contacts: parseJsonArray(row.return_contacts),
       sender_id: row.sender_id,
       read: Boolean(row.read),
-      created_at: row.created_at
+      created_at: row.created_at,
     }))
   );
 });
@@ -96,7 +111,9 @@ router.get('/', authorizeWishmailManagement, async (req, res) => {
 router.post('/:mailId/read', authorizeWishmailManagement, async (req, res) => {
   const { id: wish_id, mailId } = req.params;
 
-  const result = await db.prepare('UPDATE wishmails SET read = 1 WHERE id = ? AND wish_id = ?').run(mailId, wish_id);
+  const result = await db
+    .prepare('UPDATE wishmails SET read = 1 WHERE id = ? AND wish_id = ?')
+    .run(mailId, wish_id);
   if (result.changes === 0) {
     return res.status(404).json({ error: 'Wishmail not found.' });
   }
@@ -109,7 +126,9 @@ router.post('/:mailId/read', authorizeWishmailManagement, async (req, res) => {
 router.delete('/:mailId', authorizeWishmailManagement, async (req, res) => {
   const { id: wish_id, mailId } = req.params;
 
-  const result = await db.prepare('DELETE FROM wishmails WHERE id = ? AND wish_id = ?').run(mailId, wish_id);
+  const result = await db
+    .prepare('DELETE FROM wishmails WHERE id = ? AND wish_id = ?')
+    .run(mailId, wish_id);
   if (result.changes === 0) {
     return res.status(404).json({ error: 'Wishmail not found.' });
   }

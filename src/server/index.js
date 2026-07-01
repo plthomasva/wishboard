@@ -22,9 +22,11 @@ const app = express();
 app.set('trust proxy', 1); // Trust first proxy (e.g. nginx) so req.ip uses X-Forwarded-For
 app.disable('x-powered-by');
 
-const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS
-  ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : ['http://localhost:3000', 'http://localhost:5173']);
+const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
+  ? process.env.CORS_ALLOWED_ORIGINS.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  : ['http://localhost:3000', 'http://localhost:5173'];
 
 const corsOptions = {
   origin(origin, callback) {
@@ -50,12 +52,15 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-const morganFormat = ':remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"';
-app.use(morgan(morganFormat, {
-  stream: {
-    write: (message) => logger.info(message.trim())
-  }
-}));
+const morganFormat =
+  ':remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"';
+app.use(
+  morgan(morganFormat, {
+    stream: {
+      write: (message) => logger.info(message.trim()),
+    },
+  })
+);
 
 // Start in-process metrics collection in non-Lambda, non-test environments
 const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -73,7 +78,7 @@ const limiter = rateLimit({
   handler: (req, res, next, options) => {
     logger.warn('Rate limit exceeded', { ip: req.ip, path: req.path });
     res.status(options.statusCode).send(options.message);
-  }
+  },
 });
 app.use('/api', limiter);
 
@@ -86,7 +91,7 @@ const frontendLimiter = rateLimit({
   handler: (req, res, next, options) => {
     logger.warn('Frontend Rate limit exceeded', { ip: req.ip, path: req.path });
     res.status(options.statusCode).send(options.message);
-  }
+  },
 });
 
 app.get('/api/config', (req, res) => {

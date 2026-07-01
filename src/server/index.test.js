@@ -19,7 +19,10 @@ describe('Server index.js', () => {
     }
     const indexPath = path.join(distPath, 'index.html');
     if (!fs.existsSync(indexPath)) {
-      fs.writeFileSync(indexPath, '<html><head><title>Wishboard</title></head><body>Mock HTML</body></html>');
+      fs.writeFileSync(
+        indexPath,
+        '<html><head><title>Wishboard</title></head><body>Mock HTML</body></html>'
+      );
     }
 
     const res = await request(app).get('/some-random-client-route');
@@ -32,6 +35,4 @@ describe('Server index.js', () => {
     expect(res.status).toBe(200);
     expect(res.body.realtimeProvider).toBeDefined();
   });
-
 });
-

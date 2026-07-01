@@ -26,7 +26,9 @@ export async function resetPassword(args, consoleLog = console.log, consoleError
   const salt = createSalt();
   const hash = hashPassphrase(passphrase, salt);
 
-  await db.prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?').run(hash, salt, user.id);
+  await db
+    .prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?')
+    .run(hash, salt, user.id);
   await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
 
   consoleLog(`\nSuccess! Passphrase for '${username}' has been reset.`);

@@ -12,7 +12,7 @@ vi.mock('../auth.js', () => ({
       return next();
     }
     return res.status(403).json({ error: 'Admin access required.' });
-  }
+  },
 }));
 
 // Mock the metrics collector
@@ -54,4 +54,3 @@ describe('localMetrics route', () => {
     expect(new Date(res.body.generatedAt).getTime()).not.toBeNaN();
   });
 });
-

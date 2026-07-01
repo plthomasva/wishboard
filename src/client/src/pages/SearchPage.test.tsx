@@ -11,8 +11,8 @@ vi.mock('../AuthContext', () => ({
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
-    refreshUser: vi.fn()
-  })
+    refreshUser: vi.fn(),
+  }),
 }));
 
 describe('SearchPage', () => {
@@ -20,8 +20,13 @@ describe('SearchPage', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [
-        { id: 'wish-1', content: 'Hello world', creator_genders: ['woman'], creator_orientations: ['queer'] }
-      ]
+        {
+          id: 'wish-1',
+          content: 'Hello world',
+          creator_genders: ['woman'],
+          creator_orientations: ['queer'],
+        },
+      ],
     }) as any;
   });
 
@@ -33,10 +38,18 @@ describe('SearchPage', () => {
   it('submits search with manual query fields and renders results', async () => {
     render(<SearchPage />);
 
-    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'hello' } });
-    fireEvent.change(screen.getByPlaceholderText(/e.g. woman, cisgender man/i), { target: { value: 'woman' } });
-    fireEvent.change(screen.getByPlaceholderText(/e.g. lesbian, bisexual/i), { target: { value: 'queer' } });
-    fireEvent.change(screen.getByPlaceholderText(/e.g. top, bottom/i), { target: { value: 'top' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'hello' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/e.g. woman, cisgender man/i), {
+      target: { value: 'woman' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/e.g. lesbian, bisexual/i), {
+      target: { value: 'queer' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/e.g. top, bottom/i), {
+      target: { value: 'top' },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
@@ -49,11 +62,13 @@ describe('SearchPage', () => {
   it('handles empty results', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => []
+      json: async () => [],
     }) as any;
 
     render(<SearchPage />);
-    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'unknown' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'unknown' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
@@ -63,11 +78,13 @@ describe('SearchPage', () => {
   it('handles API errors', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
-      json: async () => ({ error: 'Search failed' })
+      json: async () => ({ error: 'Search failed' }),
     }) as any;
 
     render(<SearchPage />);
-    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'error' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'error' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
     await waitFor(() => expect(screen.getByText(/Unable to perform search./i)).toBeInTheDocument());
@@ -75,7 +92,9 @@ describe('SearchPage', () => {
 
   it('does not error when clearing the search input', async () => {
     render(<SearchPage />);
-    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: '' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: '' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
   });
@@ -87,8 +106,13 @@ describe('SearchPage', () => {
         return Promise.resolve({
           ok: true,
           json: async () => [
-            { id: 'wish-1', content: 'Search result wish', creator_genders: [], creator_orientations: [] }
-          ]
+            {
+              id: 'wish-1',
+              content: 'Search result wish',
+              creator_genders: [],
+              creator_orientations: [],
+            },
+          ],
         });
       }
       if (url === '/api/wishes/wish-1/flag' && init?.method === 'POST') {
@@ -100,7 +124,9 @@ describe('SearchPage', () => {
     render(<SearchPage />);
 
     // Perform search
-    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), { target: { value: 'test' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'test' },
+    });
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
     // Wait for the wish to be displayed
@@ -111,7 +137,9 @@ describe('SearchPage', () => {
     fireEvent.click(flagBtn);
 
     // Verify confirm was called
-    expect(globalThis.window.confirm).toHaveBeenCalledWith('Are you sure you want to flag this wish as inappropriate?');
+    expect(globalThis.window.confirm).toHaveBeenCalledWith(
+      'Are you sure you want to flag this wish as inappropriate?'
+    );
 
     // Verify fetch flag endpoint was called
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes/wish-1/flag', { method: 'POST' });
@@ -121,7 +149,12 @@ describe('SearchPage', () => {
   });
 
   it('searches using user profile attributes by default when logged in', async () => {
-    mockUser = { username: 'testuser', genders: ['man'], orientations: ['straight'], roles: ['top'] };
+    mockUser = {
+      username: 'testuser',
+      genders: ['man'],
+      orientations: ['straight'],
+      roles: ['top'],
+    };
     render(<SearchPage />);
 
     // Should render the filter checkbox
@@ -134,11 +167,18 @@ describe('SearchPage', () => {
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
     // Since profile attributes are enabled, it does NOT set ignore_attributes=1
     expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/wishes?'));
-    expect(globalThis.fetch).not.toHaveBeenCalledWith(expect.stringContaining('ignore_attributes=1'));
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('ignore_attributes=1')
+    );
   });
 
   it('allows disabling profile attribute filtering when logged in', async () => {
-    mockUser = { username: 'testuser', genders: ['man'], orientations: ['straight'], roles: ['top'] };
+    mockUser = {
+      username: 'testuser',
+      genders: ['man'],
+      orientations: ['straight'],
+      roles: ['top'],
+    };
     render(<SearchPage />);
 
     const checkbox = screen.getByLabelText(/Filter results by my profile attributes/i);

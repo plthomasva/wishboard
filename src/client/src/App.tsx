@@ -19,17 +19,38 @@ const pages = [
   { id: 'display', label: 'Big Screen' },
   { id: 'account', label: 'My Account' },
   { id: 'about', label: 'About' },
-  { id: 'admin', label: 'Admin' }
+  { id: 'admin', label: 'Admin' },
 ];
 
-type PageId = 'home' | 'enter' | 'search' | 'display' | 'account' | 'about' | 'admin' | 'manage-wish' | 'wishmail-dashboard' | 'poster';
+type PageId =
+  | 'home'
+  | 'enter'
+  | 'search'
+  | 'display'
+  | 'account'
+  | 'about'
+  | 'admin'
+  | 'manage-wish'
+  | 'wishmail-dashboard'
+  | 'poster';
 
 const getHashPage = (): PageId => {
   if (typeof globalThis === 'undefined') {
     return 'home';
   }
   const hashPart = globalThis.location.hash.split('?')[0].replace(/^#/, '');
-  const validPages = ['home', 'enter', 'search', 'display', 'account', 'about', 'admin', 'manage-wish', 'wishmail-dashboard', 'poster'];
+  const validPages = [
+    'home',
+    'enter',
+    'search',
+    'display',
+    'account',
+    'about',
+    'admin',
+    'manage-wish',
+    'wishmail-dashboard',
+    'poster',
+  ];
   if (validPages.includes(hashPart)) {
     return hashPart as PageId;
   }
@@ -68,13 +89,13 @@ const removeKioskParams = () => {
   if (searchParams.has('kiosk')) {
     searchParams.delete('kiosk');
     const searchStr = searchParams.toString();
-    const newUrl = globalThis.location.pathname + (searchStr ? `?${searchStr}` : '') + globalThis.location.hash;
+    const newUrl =
+      globalThis.location.pathname + (searchStr ? `?${searchStr}` : '') + globalThis.location.hash;
     globalThis.history.replaceState({}, '', newUrl);
   }
 };
 
 function AppContent() {
-
   const [page, setPage] = useState<PageId>(getHashPage);
   const [isKiosk, setIsKiosk] = useState<boolean>(checkIsKioskParam);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
@@ -178,7 +199,9 @@ function AppContent() {
                   onClick={() => navigate('account')}
                   aria-label="My Account"
                 >
-                  <span aria-hidden="true" style={{ marginRight: '6px' }}>👤</span>
+                  <span aria-hidden="true" style={{ marginRight: '6px' }}>
+                    👤
+                  </span>
                   {user.username}
                 </button>
                 <button className="compact-btn" onClick={logout}>
@@ -188,10 +211,19 @@ function AppContent() {
             ) : (
               <>
                 <div
-                  style={{ display: 'flex', alignItems: 'center', fontWeight: 600, fontSize: '1.05rem', padding: '8px 12px', cursor: 'default' }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontWeight: 600,
+                    fontSize: '1.05rem',
+                    padding: '8px 12px',
+                    cursor: 'default',
+                  }}
                   aria-label="Guest Account"
                 >
-                  <span aria-hidden="true" style={{ marginRight: '6px' }}>👤</span>{' '}
+                  <span aria-hidden="true" style={{ marginRight: '6px' }}>
+                    👤
+                  </span>{' '}
                   Guest
                 </div>
                 <button className="compact-btn" onClick={() => navigate('account')}>
@@ -213,7 +245,9 @@ function AppContent() {
           {page === 'home' && <HomePage onNavigate={navigate} />}
           {page === 'enter' && <EnterWishPage />}
           {page === 'search' && <SearchPage />}
-          {page === 'display' && <DisplayPage onEnterKiosk={() => setIsKiosk(true)} isKiosk={false} />}
+          {page === 'display' && (
+            <DisplayPage onEnterKiosk={() => setIsKiosk(true)} isKiosk={false} />
+          )}
           {page === 'account' && <AccountPage />}
           {page === 'about' && <AboutPage />}
           {page === 'manage-wish' && <ManageWishPage />}
@@ -226,24 +260,29 @@ function AppContent() {
       {/* Mobile Bottom Tab Bar */}
       {!isKiosk && (
         <nav className="mobile-bottom-bar">
-          {pages.filter(p => !['admin', 'poster', 'about'].includes(p.id)).map((item) => (
-            <button
-              key={item.id}
-              className={`mobile-tab-button ${page === item.id ? 'active' : ''}`}
-              onClick={() => navigate(item.id as PageId)}
-            >
-              <div className="mobile-tab-icon">
-                {item.id === 'home' && '🏠'}
-                {item.id === 'enter' && '✨'}
-                {item.id === 'search' && '🔍'}
-                {item.id === 'display' && '📺'}
-                {item.id === 'account' && '👤'}
-              </div>
-              <span className="mobile-tab-label">{item.label}</span>
-            </button>
-          ))}
+          {pages
+            .filter((p) => !['admin', 'poster', 'about'].includes(p.id))
+            .map((item) => (
+              <button
+                key={item.id}
+                className={`mobile-tab-button ${page === item.id ? 'active' : ''}`}
+                onClick={() => navigate(item.id as PageId)}
+              >
+                <div className="mobile-tab-icon">
+                  {item.id === 'home' && '🏠'}
+                  {item.id === 'enter' && '✨'}
+                  {item.id === 'search' && '🔍'}
+                  {item.id === 'display' && '📺'}
+                  {item.id === 'account' && '👤'}
+                </div>
+                <span className="mobile-tab-label">{item.label}</span>
+              </button>
+            ))}
           {/* Hamburger Menu for the rest */}
-          <button className="mobile-tab-button" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          <button
+            className="mobile-tab-button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
             <div className="mobile-tab-icon">☰</div>
             <span className="mobile-tab-label">More</span>
           </button>
@@ -252,21 +291,63 @@ function AppContent() {
 
       {/* Mobile Hamburger Overlay */}
       {!isKiosk && isMobileMenuOpen && (
-        <div id="mobile-hamburger-menu" className="mobile-hamburger-menu" style={{ display: 'flex' }}>
+        <div
+          id="mobile-hamburger-menu"
+          className="mobile-hamburger-menu"
+          style={{ display: 'flex' }}
+        >
           <button
             aria-label="Close menu"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: 'transparent', border: 'none', cursor: 'default', padding: 0, margin: 0 }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'default',
+              padding: 0,
+              margin: 0,
+            }}
             onClick={() => setIsMobileMenuOpen(false)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') setIsMobileMenuOpen(false);
             }}
           />
           <div className="hamburger-content">
-            <button className="hamburger-close" onClick={() => setIsMobileMenuOpen(false)}>✕</button>
+            <button className="hamburger-close" onClick={() => setIsMobileMenuOpen(false)}>
+              ✕
+            </button>
             <div className="hamburger-items">
-              <button className="hamburger-item" onClick={() => { navigate('about'); setIsMobileMenuOpen(false); }}>About</button>
-              <button className="hamburger-item" onClick={() => { navigate('admin'); setIsMobileMenuOpen(false); }}>Admin</button>
-              {user && <button className="hamburger-item" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>Log out</button>}
+              <button
+                className="hamburger-item"
+                onClick={() => {
+                  navigate('about');
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                About
+              </button>
+              <button
+                className="hamburger-item"
+                onClick={() => {
+                  navigate('admin');
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                Admin
+              </button>
+              {user && (
+                <button
+                  className="hamburger-item"
+                  onClick={() => {
+                    logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  Log out
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -301,12 +382,16 @@ function AppContent() {
                 />
               </label>
               <div className="kiosk-modal-actions">
-                <button type="button" className="secondary-button" onClick={() => {
-                  setShowExitPrompt(false);
-                  setKioskError(null);
-                  setKioskUsername('');
-                  setKioskPassphrase('');
-                }}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setShowExitPrompt(false);
+                    setKioskError(null);
+                    setKioskUsername('');
+                    setKioskPassphrase('');
+                  }}
+                >
                   Cancel
                 </button>
                 <button type="submit" className="primary-button">

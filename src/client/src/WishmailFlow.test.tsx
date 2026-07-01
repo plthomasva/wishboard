@@ -9,9 +9,9 @@ describe('Wishmail UI Flow', () => {
     globalThis.window.location.hash = '';
 
     // Create a mini fake backend
-    let wishes: any[] = [];
+    const wishes: any[] = [];
     let mails: any[] = [];
-    
+
     globalThis.fetch = vi.fn().mockImplementation(async (url: string, options: any) => {
       if (url.startsWith('/api/users/exists')) {
         return { ok: true, json: async () => ({ exists: true }) };
@@ -19,9 +19,21 @@ describe('Wishmail UI Flow', () => {
 
       // Mock Login & Me
       if (url === '/api/users/login' || url === '/api/users/me') {
-        return { ok: true, json: async () => ({ success: true, token: 'fake-token', id: 'u1', username: 'usera', identity_genders: [], identity_orientations: [], identity_roles: [], contacts: [] }) };
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            token: 'fake-token',
+            id: 'u1',
+            username: 'usera',
+            identity_genders: [],
+            identity_orientations: [],
+            identity_roles: [],
+            contacts: [],
+          }),
+        };
       }
-      
+
       // Mock Create Wish
       if (url === '/api/wishes' && options?.method === 'POST') {
         const body = JSON.parse(options.body);
@@ -31,8 +43,10 @@ describe('Wishmail UI Flow', () => {
       }
       // Mock Get Single Wish
       if (url === '/api/wishes/w1' && (!options?.method || options.method === 'GET')) {
-        const wish = wishes.find(w => w.id === 'w1');
-        return wish ? { ok: true, json: async () => wish } : { ok: false, json: async () => ({ error: 'Not found' }) };
+        const wish = wishes.find((w) => w.id === 'w1');
+        return wish
+          ? { ok: true, json: async () => wish }
+          : { ok: false, json: async () => ({ error: 'Not found' }) };
       }
       // Mock Get Wishes
       if (url === '/api/users/me/wishes') {
@@ -54,7 +68,7 @@ describe('Wishmail UI Flow', () => {
 
       // Mock Delete Wishmail
       if (/^\/api\/wishes\/w1\/mail\/m1$/.test(url) && options?.method === 'DELETE') {
-        mails = mails.filter(m => m.id !== 'm1');
+        mails = mails.filter((m) => m.id !== 'm1');
         return { ok: true, json: async () => ({ success: true }) };
       }
 
@@ -67,14 +81,14 @@ describe('Wishmail UI Flow', () => {
 
     // 1. Go to Login
     fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
-    
+
     // Switch to login tab
     fireEvent.click(screen.getByRole('button', { name: 'Login' }));
 
     // Simulate typing and logging in
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'usera' } });
     fireEvent.change(screen.getByLabelText('Passphrase'), { target: { value: 'passwordA' } });
-    
+
     // Submit
     const loginButtons = screen.getAllByRole('button', { name: 'Login' });
     fireEvent.click(loginButtons[loginButtons.length - 1]);
@@ -85,13 +99,15 @@ describe('Wishmail UI Flow', () => {
 
     // 2. Go to Enter Wish
     fireEvent.click(screen.getByRole('button', { name: 'Enter a Wish' }));
-    
+
     // Enable wishmail
     const wishmailCheckbox = screen.getByLabelText(/Enable Wishmail/i);
     fireEvent.click(wishmailCheckbox);
-    
+
     // Submit wish
-    fireEvent.change(screen.getByPlaceholderText('Type your wish here'), { target: { value: 'My cool wish' } });
+    fireEvent.change(screen.getByPlaceholderText('Type your wish here'), {
+      target: { value: 'My cool wish' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Submit Wish' }));
 
     await waitFor(() => {
@@ -101,13 +117,16 @@ describe('Wishmail UI Flow', () => {
     // 3. User goes to Account to see their wish
     const accountButtons = screen.getAllByRole('button', { name: 'My Account' });
     fireEvent.click(accountButtons[0]);
-    
+
     await waitFor(() => {
       expect(screen.getByText('View Wishmail')).toBeInTheDocument();
     });
 
     // 4. Simulate receiving a wishmail (by injecting it into our fake backend)
-    await globalThis.fetch('/api/wishes/w1/mail', { method: 'POST', body: JSON.stringify({ content: 'Hello there' }) });
+    await globalThis.fetch('/api/wishes/w1/mail', {
+      method: 'POST',
+      body: JSON.stringify({ content: 'Hello there' }),
+    });
 
     // 5. Click View Wishmail
     fireEvent.click(screen.getByText('View Wishmail'));
@@ -120,14 +139,14 @@ describe('Wishmail UI Flow', () => {
     // 6. Delete the wishmail
     // Since globalThis.window.confirm is used, we must mock it
     const confirmSpy = vi.spyOn(globalThis.window, 'confirm').mockReturnValue(true);
-    
+
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
     await waitFor(() => {
       expect(screen.queryByText('Hello there')).not.toBeInTheDocument();
       expect(screen.getByText(/No messages yet/i)).toBeInTheDocument();
     });
-    
+
     confirmSpy.mockRestore();
   }, 15000);
 });

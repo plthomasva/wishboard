@@ -1,6 +1,6 @@
 # Analysis: Unifying Cross-Platform Deployment Scripts
 
-You asked if there is a standard, open-source mechanism to maintain the logical semantics of your deployment/setup processes in one place and *instantiate* (compile/transpile) platform-specific `.sh` and `.ps1` variants as build artifacts.
+You asked if there is a standard, open-source mechanism to maintain the logical semantics of your deployment/setup processes in one place and _instantiate_ (compile/transpile) platform-specific `.sh` and `.ps1` variants as build artifacts.
 
 ## The Short Answer
 

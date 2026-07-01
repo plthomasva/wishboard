@@ -1,3 +1,4 @@
+/* global process */
 let cryptoProvider;
 
 if (typeof globalThis !== 'undefined' && typeof globalThis.crypto?.getRandomValues === 'function') {
@@ -18,7 +19,8 @@ const randomIndex = (max) => {
 
   const typedArray = new Uint32Array(1);
 
-  while (true) { // NOSONAR
+  while (true) {
+    // NOSONAR
     cryptoProvider.getRandomValues(typedArray);
     const randomUint32 = typedArray[0];
 
@@ -31,9 +33,42 @@ const randomIndex = (max) => {
 const choose = (items) => items[randomIndex(items.length)];
 
 export const generatePassphrase = () => {
-  const adjectives = ['solar', 'bright', 'gentle', 'lucky', 'quiet', 'merry', 'wild', 'cosmic', 'velvet', 'golden'];
-  const nouns = ['spark', 'wish', 'cloud', 'echo', 'lantern', 'maple', 'beam', 'ripple', 'pixel', 'trail'];
-  const colors = ['blue', 'amber', 'jade', 'pearl', 'ruby', 'sapphire', 'copper', 'opal', 'sage', 'ivory'];
+  const adjectives = [
+    'solar',
+    'bright',
+    'gentle',
+    'lucky',
+    'quiet',
+    'merry',
+    'wild',
+    'cosmic',
+    'velvet',
+    'golden',
+  ];
+  const nouns = [
+    'spark',
+    'wish',
+    'cloud',
+    'echo',
+    'lantern',
+    'maple',
+    'beam',
+    'ripple',
+    'pixel',
+    'trail',
+  ];
+  const colors = [
+    'blue',
+    'amber',
+    'jade',
+    'pearl',
+    'ruby',
+    'sapphire',
+    'copper',
+    'opal',
+    'sage',
+    'ivory',
+  ];
 
   return `${choose(adjectives)}-${choose(nouns)}-${choose(colors)}`;
 };

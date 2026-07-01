@@ -14,7 +14,6 @@ export default function SendWishmailModal({ wishId, onClose }: Readonly<SendWish
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -29,8 +28,8 @@ export default function SendWishmailModal({ wishId, onClose }: Readonly<SendWish
       headers,
       body: JSON.stringify({
         content,
-        return_contacts: contacts.filter(c => c.value.trim())
-      })
+        return_contacts: contacts.filter((c) => c.value.trim()),
+      }),
     });
 
     if (response.ok) {
@@ -64,20 +63,34 @@ export default function SendWishmailModal({ wishId, onClose }: Readonly<SendWish
               />
             </label>
 
-            <fieldset style={{ border: '1px solid #d7dee5', borderRadius: '12px', padding: '16px', background: '#f8fafc', marginTop: '16px' }}>
-              <legend style={{ fontWeight: 600, padding: '0 8px' }}>Return Contacts (Optional)</legend>
-              <p className="microtext" style={{ marginTop: 0 }}>Provide a way for them to reply to you.</p>
+            <fieldset
+              style={{
+                border: '1px solid #d7dee5',
+                borderRadius: '12px',
+                padding: '16px',
+                background: '#f8fafc',
+                marginTop: '16px',
+              }}
+            >
+              <legend style={{ fontWeight: 600, padding: '0 8px' }}>
+                Return Contacts (Optional)
+              </legend>
+              <p className="microtext" style={{ marginTop: 0 }}>
+                Provide a way for them to reply to you.
+              </p>
 
-              <ContactEditor contacts={contacts} setContacts={setContacts} addButtonLabel="+ Add Return Contact" />
+              <ContactEditor
+                contacts={contacts}
+                setContacts={setContacts}
+                addButtonLabel="+ Add Return Contact"
+              />
             </fieldset>
 
             <div className="kiosk-modal-actions">
               <button type="button" className="secondary-button" onClick={onClose}>
                 Cancel
               </button>
-              <button type="submit">
-                Send Message
-              </button>
+              <button type="submit">Send Message</button>
             </div>
           </form>
         )}

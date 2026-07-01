@@ -19,8 +19,8 @@
 import os from 'node:os';
 import v8 from 'node:v8';
 
-const INTERVAL_MS = 5_000;   // sample every 5 seconds
-const RETENTION   = 720;     // keep 60 minutes of samples (720 × 5s)
+const INTERVAL_MS = 5_000; // sample every 5 seconds
+const RETENTION = 720; // keep 60 minutes of samples (720 × 5s)
 
 /** @type {{ ts: number, cpu: number, heapUsed: number, heapTotal: number, rss: number, load: number }[]} */
 const osSamples = [];
@@ -37,7 +37,7 @@ function newWindow() {
 
 // CPU tracking
 let prevCpuUsage = process.cpuUsage();
-let prevCpuTime  = Date.now();
+let prevCpuTime = Date.now();
 
 let collectorTimer = null;
 
@@ -81,25 +81,25 @@ export function startCollector() {
     const now = Date.now();
 
     // ── CPU % ──────────────────────────────────────────────────────────────────
-    const cpuNow   = process.cpuUsage();
-    const wallMs   = now - prevCpuTime;
-    const userMs   = (cpuNow.user   - prevCpuUsage.user)   / 1000;
+    const cpuNow = process.cpuUsage();
+    const wallMs = now - prevCpuTime;
+    const userMs = (cpuNow.user - prevCpuUsage.user) / 1000;
     const systemMs = (cpuNow.system - prevCpuUsage.system) / 1000;
-    const cpuPct   = wallMs > 0 ? Math.min(100, ((userMs + systemMs) / wallMs) * 100) : 0;
+    const cpuPct = wallMs > 0 ? Math.min(100, ((userMs + systemMs) / wallMs) * 100) : 0;
     prevCpuUsage = cpuNow;
-    prevCpuTime  = now;
+    prevCpuTime = now;
 
     // ── Memory ─────────────────────────────────────────────────────────────────
     const heap = v8.getHeapStatistics();
-    const mem  = process.memoryUsage();
+    const mem = process.memoryUsage();
 
     osSamples.push({
-      ts:        now,
-      cpu:       Math.round(cpuPct * 10) / 10,
-      heapUsed:  Math.round(heap.used_heap_size / 1024 / 1024 * 10) / 10,
-      heapTotal: Math.round(heap.heap_size_limit / 1024 / 1024 * 10) / 10,
-      rss:       Math.round(mem.rss / 1024 / 1024 * 10) / 10,
-      load:      Math.round(os.loadavg()[0] * 100) / 100,
+      ts: now,
+      cpu: Math.round(cpuPct * 10) / 10,
+      heapUsed: Math.round((heap.used_heap_size / 1024 / 1024) * 10) / 10,
+      heapTotal: Math.round((heap.heap_size_limit / 1024 / 1024) * 10) / 10,
+      rss: Math.round((mem.rss / 1024 / 1024) * 10) / 10,
+      load: Math.round(os.loadavg()[0] * 100) / 100,
     });
 
     if (osSamples.length > RETENTION) osSamples.shift();
@@ -133,7 +133,7 @@ export function stopCollector() {
  */
 export function getSnapshot(maxPoints = 360) {
   return {
-    osSamples:  osSamples.slice(-maxPoints),
+    osSamples: osSamples.slice(-maxPoints),
     httpSamples: httpSamples.slice(-maxPoints),
     intervalMs: INTERVAL_MS,
   };

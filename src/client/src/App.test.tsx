@@ -8,7 +8,7 @@ const loginMock = vi.fn();
 
 vi.mock('./AuthContext', () => ({
   AuthProvider: ({ children }: any) => <div>{children}</div>,
-  useAuth: () => useAuthMock()
+  useAuth: () => useAuthMock(),
 }));
 
 vi.mock('./pages/HomePage', () => ({ default: () => <div>HomePage Mock</div> }));
@@ -22,7 +22,7 @@ vi.mock('./pages/DisplayPage', () => ({
       <div>Is Kiosk: {isKiosk ? 'Yes' : 'No'}</div>
       <button onClick={onEnterKiosk}>Enter Kiosk</button>
     </div>
-  )
+  ),
 }));
 vi.mock('./pages/AdminPage', () => ({ default: () => <div>AdminPage Mock</div> }));
 vi.mock('./AccountPage', () => ({ default: () => <div>AccountPage Mock</div> }));
@@ -35,7 +35,7 @@ describe('App Component', () => {
       user: null,
       token: null,
       login: loginMock,
-      logout: vi.fn()
+      logout: vi.fn(),
     });
     globalThis.window.location.hash = '#home';
   });
@@ -110,7 +110,9 @@ describe('App Component', () => {
 
     // Fill credentials
     fireEvent.change(screen.getByPlaceholderText('e.g. admin'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), { target: { value: 'secret' } });
+    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), {
+      target: { value: 'secret' },
+    });
     fireEvent.click(screen.getByText('Confirm Exit'));
 
     await waitFor(() => {
@@ -130,11 +132,15 @@ describe('App Component', () => {
     fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
 
     fireEvent.change(screen.getByPlaceholderText('e.g. admin'), { target: { value: 'user' } });
-    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), { target: { value: 'secret' } });
+    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), {
+      target: { value: 'secret' },
+    });
     fireEvent.click(screen.getByText('Confirm Exit'));
 
     await waitFor(() => {
-      expect(screen.getByText('Access denied: You must be an admin to exit kiosk mode.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Access denied: You must be an admin to exit kiosk mode.')
+      ).toBeInTheDocument();
     });
 
     // Test cancel button
