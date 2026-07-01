@@ -9,6 +9,22 @@ const WishScanner = React.lazy(() => import('../components/WishScanner'));
 import { processCardImage } from '../cardProcessor';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+      (img as any)._tempUrl = url;
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image file.'));
+    };
+  });
+}
+
 export default function EnterWishPage() {
   const { token, user } = useAuth();
   const [content, setContent] = useState('');
@@ -158,16 +174,9 @@ export default function EnterWishPage() {
                 setProcessingStatus('Processing card image...');
                 setError(null);
 
-                let url = '';
+                let img: HTMLImageElement | null = null;
                 try {
-                  url = URL.createObjectURL(file);
-                  const img = new Image();
-                  img.src = url;
-                  await new Promise((resolve, reject) => {
-                    img.onload = resolve;
-                    img.onerror = () => reject(new Error('Failed to load image file.'));
-                  });
-
+                  img = await loadImage(file);
                   const { blob, text } = await processCardImage(img);
                   if (text) setContent(text);
                   setImageBlob(blob);
@@ -176,7 +185,9 @@ export default function EnterWishPage() {
                   setError(err.message || 'Error processing uploaded image.');
                   setImageBlob(null);
                 } finally {
-                  if (url) URL.revokeObjectURL(url);
+                  if (img && (img as any)._tempUrl) {
+                    URL.revokeObjectURL((img as any)._tempUrl);
+                  }
                   setIsProcessing(false);
                 }
               }}

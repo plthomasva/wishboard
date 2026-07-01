@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import cv from '@techstark/opencv-js';
 import {
   getElementDimensions,
   calculateDrawDimensions,
@@ -6,6 +7,7 @@ import {
   alignPolygons,
   applyDampening,
   applyTemporalSmoothing,
+  fallbackTextContour,
   processCardImage
 } from './cardProcessor';
 
@@ -176,4 +178,120 @@ describe('cardProcessor utility functions', () => {
       expect(result.text).toBe('Mocked OCR Text');
     });
   });
+
+  describe('calculateDrawDimensions extra cases', () => {
+    it('calculates correct proportions when video is narrower than canvas', () => {
+      const mockVideo = { videoWidth: 600, videoHeight: 800 } as any;
+      const mockCanvas = { clientWidth: 800, clientHeight: 600, width: 800, height: 600 } as any;
+      const result = calculateDrawDimensions(mockVideo, mockCanvas);
+      expect(result.drawH).toBeGreaterThan(0);
+      expect(result.drawW).toBeGreaterThan(0);
+    });
+  });
+
+  describe('getDefaultPoly extra cases', () => {
+    it('handles ratio greater than 5/3', () => {
+      const mockVideo = { videoWidth: 2000, videoHeight: 600 } as any;
+      const poly = getDefaultPoly(mockVideo);
+      expect(poly).toHaveLength(4);
+    });
+  });
+
+  describe('fallbackTextContour', () => {
+    it('returns null if contours size is 0', () => {
+      const mockContours = {
+        size: () => 0,
+        get: vi.fn()
+      } as any;
+      const result = fallbackTextContour({ videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
+      expect(result).toBeNull();
+    });
+
+    it('processes contours and returns points if text contours are found', () => {
+      const mockContours = {
+        size: () => 1,
+        get: () => ({})
+      } as any;
+      
+      vi.mocked(cv.contourArea).mockReturnValueOnce(200);
+      vi.mocked(cv.boundingRect).mockReturnValueOnce({ x: 50, y: 50, width: 200, height: 50 });
+
+      const result = fallbackTextContour({ videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
+      expect(result).toHaveLength(4);
+      expect(result?.[0].x).toBeDefined();
+    });
+
+    it('returns null if contours are too small or too large', () => {
+      const mockContours = {
+        size: () => 1,
+        get: () => ({})
+      } as any;
+      
+      // Too small area (area <= 50)
+      vi.mocked(cv.contourArea).mockReturnValueOnce(20);
+
+      const result = fallbackTextContour({ videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('applyTemporalSmoothing alignment case', () => {
+    it('calls alignPolygons and applyDampening when previousPoly is valid', () => {
+      const bestPoly = [
+        { x: 11, y: 11 },
+        { x: 21, y: 11 },
+        { x: 21, y: 21 },
+        { x: 11, y: 21 }
+      ];
+      const previousPoly = [
+        { x: 10, y: 10 },
+        { x: 20, y: 10 },
+        { x: 20, y: 20 },
+        { x: 10, y: 20 }
+      ];
+      const debugLines: string[] = [];
+      const result = applyTemporalSmoothing(bestPoly, previousPoly, debugLines);
+      expect(result).toHaveLength(4);
+    });
+
+    it('returns adjusted bestPoly if previousPoly is invalid (contains NaN)', () => {
+      const bestPoly = [
+        { x: 10, y: 10 },
+        { x: 20, y: 10 },
+        { x: 20, y: 20 },
+        { x: 10, y: 20 }
+      ];
+      const previousPoly = [
+        { x: NaN, y: 10 },
+        { x: 20, y: 10 },
+        { x: 20, y: 20 },
+        { x: 10, y: 20 }
+      ];
+      const result = applyTemporalSmoothing(bestPoly, previousPoly, []);
+      expect(result).toHaveLength(4);
+    });
+  });
+
+  describe('processCardImage error cases', () => {
+    it('throws error if dimensions are zero', async () => {
+      const mockImg = { naturalWidth: 0, naturalHeight: 0 } as any;
+      await expect(processCardImage(mockImg)).rejects.toThrow('Invalid image dimensions');
+    });
+
+    it('throws error if canvas toBlob fails', async () => {
+      const mockImg = { naturalWidth: 1000, naturalHeight: 600 } as any;
+      
+      const originalToBlob = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function(cb: any) {
+        cb(null); // Simulate failure
+      };
+
+      try {
+        await expect(processCardImage(mockImg)).rejects.toThrow('Failed to generate image blob');
+      } finally {
+        HTMLCanvasElement.prototype.toBlob = originalToBlob;
+      }
+    });
+  });
 });
+
