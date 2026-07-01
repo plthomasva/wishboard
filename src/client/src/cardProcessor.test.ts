@@ -262,7 +262,7 @@ describe('cardProcessor utility functions', () => {
         { x: 10, y: 20 }
       ];
       const previousPoly = [
-        { x: NaN, y: 10 },
+        { x: Number.NaN, y: 10 },
         { x: 20, y: 10 },
         { x: 20, y: 20 },
         { x: 10, y: 20 }
