@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.9.1...wishboard-v1.9.2) (2026-07-01)
+
+
+### Bug Fixes
+
+* clean up and improve consistency of system logs ([#94](https://github.com/plthomasva/wishboard/issues/94)) ([210060d](https://github.com/plthomasva/wishboard/commit/210060de2d6c96f0beadb1d4600530522bbf552f))
+* extract card processor utility and fix upload flow ([#96](https://github.com/plthomasva/wishboard/issues/96)) ([e1cace5](https://github.com/plthomasva/wishboard/commit/e1cace54eacd25992d687d7026441fcbc8b3e06f))
+
 ## [1.9.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.9.0...wishboard-v1.9.1) (2026-06-29)
 
 
