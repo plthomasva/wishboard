@@ -23,38 +23,43 @@ vi.mock('@techstark/opencv-js', () => {
     size = () => 1;
     get = () => new MockMat();
   }
+  const mockCv = {
+    Mat: MockMat,
+    MatVector: MockMatVector,
+    imread: vi.fn().mockReturnValue(new MockMat()),
+    cvtColor: vi.fn(),
+    COLOR_RGBA2GRAY: 'COLOR_RGBA2GRAY',
+    medianBlur: vi.fn(),
+    adaptiveThreshold: vi.fn(),
+    threshold: vi.fn(),
+    THRESH_BINARY: 'THRESH_BINARY',
+    THRESH_OTSU: 'THRESH_OTSU',
+    findContours: vi.fn(),
+    RETR_EXTERNAL: 'RETR_EXTERNAL',
+    CHAIN_APPROX_SIMPLE: 'CHAIN_APPROX_SIMPLE',
+    contourArea: vi.fn().mockReturnValue(500000),
+    boundingRect: vi.fn().mockReturnValue({ x: 0, y: 0, width: 100, height: 100 }),
+    drawContours: vi.fn(),
+    imshow: vi.fn(),
+    approxPolyDP: vi.fn(),
+    arcLength: vi.fn().mockReturnValue(10),
+    getPerspectiveTransform: vi.fn().mockReturnValue(new MockMat()),
+    warpPerspective: vi.fn(),
+    matFromArray: vi.fn().mockReturnValue(new MockMat()),
+    Size: class MockSize { constructor(public width?: number, public height?: number) {} },
+    Point: class MockPoint { constructor(public x?: number, public y?: number) {} },
+    GaussianBlur: vi.fn(),
+    Canny: vi.fn(),
+    BORDER_DEFAULT: 'BORDER_DEFAULT',
+    RETR_LIST: 'RETR_LIST',
+    Scalar: class MockScalar { value = 0; }
+  };
+
+  const promise = Promise.resolve(mockCv);
+  Object.assign(promise, mockCv);
+
   return {
-    default: {
-      Mat: MockMat,
-      MatVector: MockMatVector,
-      imread: vi.fn().mockReturnValue(new MockMat()),
-      cvtColor: vi.fn(),
-      COLOR_RGBA2GRAY: 'COLOR_RGBA2GRAY',
-      medianBlur: vi.fn(),
-      adaptiveThreshold: vi.fn(),
-      threshold: vi.fn(),
-      THRESH_BINARY: 'THRESH_BINARY',
-      THRESH_OTSU: 'THRESH_OTSU',
-      findContours: vi.fn(),
-      RETR_EXTERNAL: 'RETR_EXTERNAL',
-      CHAIN_APPROX_SIMPLE: 'CHAIN_APPROX_SIMPLE',
-      contourArea: vi.fn().mockReturnValue(500000),
-      boundingRect: vi.fn().mockReturnValue({ x: 0, y: 0, width: 100, height: 100 }),
-      drawContours: vi.fn(),
-      imshow: vi.fn(),
-      approxPolyDP: vi.fn(),
-      arcLength: vi.fn().mockReturnValue(10),
-      getPerspectiveTransform: vi.fn().mockReturnValue(new MockMat()),
-      warpPerspective: vi.fn(),
-      matFromArray: vi.fn().mockReturnValue(new MockMat()),
-      Size: class MockSize { constructor(public width?: number, public height?: number) {} },
-      Point: class MockPoint { constructor(public x?: number, public y?: number) {} },
-      GaussianBlur: vi.fn(),
-      Canny: vi.fn(),
-      BORDER_DEFAULT: 'BORDER_DEFAULT',
-      RETR_LIST: 'RETR_LIST',
-      Scalar: class MockScalar { value = 0; }
-    }
+    default: promise
   };
 });
 
@@ -203,7 +208,7 @@ describe('cardProcessor utility functions', () => {
         size: () => 0,
         get: vi.fn()
       } as any;
-      const result = fallbackTextContour({ videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
+      const result = fallbackTextContour(cv, { videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
       expect(result).toBeNull();
     });
 
@@ -216,7 +221,7 @@ describe('cardProcessor utility functions', () => {
       vi.mocked(cv.contourArea).mockReturnValueOnce(200);
       vi.mocked(cv.boundingRect).mockReturnValueOnce({ x: 50, y: 50, width: 200, height: 50 });
 
-      const result = fallbackTextContour({ videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
+      const result = fallbackTextContour(cv, { videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
       expect(result).toHaveLength(4);
       expect(result?.[0].x).toBeDefined();
     });
@@ -230,7 +235,7 @@ describe('cardProcessor utility functions', () => {
       // Too small area (area <= 50)
       vi.mocked(cv.contourArea).mockReturnValueOnce(20);
 
-      const result = fallbackTextContour({ videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
+      const result = fallbackTextContour(cv, { videoWidth: 1000, videoHeight: 600 } as any, mockContours, 1, 400, 300);
       expect(result).toBeNull();
     });
   });
@@ -262,7 +267,7 @@ describe('cardProcessor utility functions', () => {
         { x: 10, y: 20 }
       ];
       const previousPoly = [
-        { x: NaN, y: 10 },
+        { x: Number.NaN, y: 10 },
         { x: 20, y: 10 },
         { x: 20, y: 20 },
         { x: 10, y: 20 }
@@ -291,6 +296,15 @@ describe('cardProcessor utility functions', () => {
       } finally {
         HTMLCanvasElement.prototype.toBlob = originalToBlob;
       }
+    });
+  });
+
+  describe('OpenCV promise compatibility', () => {
+    it('verifies that the imported cv is a Promise and resolves correctly', async () => {
+      const cvImport = cv;
+      expect(cvImport).toBeInstanceOf(Promise);
+      const resolved = await (cvImport as any);
+      expect(resolved).toHaveProperty('imread');
     });
   });
 });
