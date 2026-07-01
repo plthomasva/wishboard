@@ -21,7 +21,7 @@
     "type-check": "tsc -p tsconfig.build.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky || true"
+    "prepare": "node .husky/install.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
