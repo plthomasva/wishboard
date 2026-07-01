@@ -38,7 +38,7 @@ This will automatically pull the necessary images and start both the Wishboard b
 
 ### AWS Serverless Deployment
 
-For cloud deployments, Wishboard can be deployed to your own AWS account using **AWS SAM (CloudFormation)**, running completely serverless on Lambda, EFS, API Gateway, S3, and CloudFront. 
+For cloud deployments, Wishboard can be deployed to your own AWS account using **AWS SAM (CloudFormation)**, running completely serverless on Lambda, EFS, API Gateway, S3, and CloudFront.
 
 Deployments are fully automated via **GitHub Actions** and an OIDC connection, so you don't need to manually configure infrastructure after the initial setup.
 
@@ -103,6 +103,44 @@ Wishboard uses `release-please` and GitHub Actions to automatically manage seman
 - **Log Viewer**: Application logs and web requests are recorded to rotating files in `data/logs`. Admins can view a live-tailing log feed directly within the Admin Dashboard (serving from AWS CloudWatch Logs in serverless mode).
 - **Live Metrics Dashboard**: Real-time performance dashboards built natively with Recharts. Depending on deployment mode, admins see either in-process local metrics (CPU, heap usage, RSS memory, OS load average, HTTP request rates, and response latencies) or live CloudWatch metrics (for AWS Lambda, API Gateway, and CloudFront).
 - **Demo Seeder**: The admin panel includes a demo seeder to populate users and wishes for development or testing.
+
+## Administration CLI
+
+Wishboard provides a unified command line interface (`wishboard`) to automate deployments, configure environments, and manage OIDC authentication.
+
+### Installation
+
+During local development, you can invoke the CLI directly using Node:
+
+```bash
+node src/cli/wishboard.js --help
+```
+
+Or run it via `npx` once dependencies are installed:
+
+```bash
+npx wishboard --help
+```
+
+### Supported Commands
+
+#### GitHub Actions OIDC Setup & Teardown
+
+Configure or destroy GitHub Actions OIDC authentication with AWS:
+
+```bash
+# Setup OIDC template and configure repository secrets/variables
+npx wishboard oidc setup --org <github_org> --repo <repo_name> --region <aws_region>
+
+# Teardown OIDC template and delete secrets/variables
+npx wishboard oidc destroy --org <github_org> --repo <repo_name> --region <aws_region>
+```
+
+Add `--dry-run` to preview the underlying commands without executing them.
+
+#### Roadmap Placeholders
+
+Other commands (such as `serverless deploy` or `kiosk deploy`) are currently under active migration. Run `npx wishboard --help` to view instructions on running their legacy scripts.
 
 ## Notes
 

@@ -2,11 +2,15 @@
   "name": "wishboard",
   "version": "1.9.2",
   "private": true,
+  "bin": {
+    "wishboard": "./src/cli/wishboard.js"
+  },
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"node --watch ./src/server/index.js\"",
     "prebuild": "node ./scripts/download-fonts.js",
     "build": "vite build",
+    "build:cli": "esbuild src/cli/wishboard.js --bundle --platform=node --format=esm --outfile=dist/wishboard.js",
     "preview": "vite preview",
     "start": "npm run build && node ./src/server/index.js",
     "test": "vitest run",
@@ -21,6 +25,7 @@
     "@codegenie/serverless-express": "^5.0.0",
     "@libsql/client": "^0.17.4",
     "@techstark/opencv-js": "^5.0.0-release.1",
+    "commander": "^15.0.0",
     "cors": "^2.8.5",
     "esbuild": "^0.28.0",
     "express": "^5.2.1",

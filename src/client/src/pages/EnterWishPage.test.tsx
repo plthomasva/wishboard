@@ -53,7 +53,7 @@ describe('EnterWishPage', () => {
       }
     } as any;
 
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null } as any);
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ id: 'wish-1', secret: 'secret-code' })
@@ -149,7 +149,7 @@ describe('EnterWishPage', () => {
     expect(screen.queryByText(/Handwritten wish attached/i)).not.toBeInTheDocument();
   });
   it('handles logged-in user UI appropriately', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as any);
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' });
     render(<EnterWishPage />);
     expect(screen.getByText(/Your account identity attributes are applied automatically to this wish./i)).toBeInTheDocument();
   });
