@@ -19,7 +19,7 @@ jobs:
         node-version: [22.x, 24.x]
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0 # Full history: better SonarQube relevancy and complete gitleaks scan
       - name: Use Node.js ${{ matrix.node-version }}
