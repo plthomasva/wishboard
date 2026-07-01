@@ -6,6 +6,7 @@ import AttributeInput from '../components/AttributeInput';
 import WishPreview from '../components/WishPreview';
 import WishFormFields from '../components/WishFormFields';
 const WishScanner = React.lazy(() => import('../components/WishScanner'));
+import { processCardImage } from '../cardProcessor';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
 export default function EnterWishPage() {
@@ -25,6 +26,8 @@ export default function EnterWishPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -117,6 +120,73 @@ export default function EnterWishPage() {
     image_url: imageBlob ? URL.createObjectURL(imageBlob) : undefined
   };
 
+  const renderUploadSection = () => {
+    if (isProcessing) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '12px' }}>
+          <div className="spinner" style={{ borderTopColor: '#166534', borderColor: 'rgba(22, 101, 52, 0.2)', marginBottom: '12px' }}></div>
+          <p style={{ margin: 0, color: '#166534', fontWeight: 'bold' }}>{processingStatus}</p>
+        </div>
+      );
+    }
+
+    if (imageBlob) {
+      return (
+        <div>
+          <p style={{ color: '#166534', fontWeight: 'bold' }}>✓ Handwritten wish attached</p>
+          <button type="button" className="secondary-button" onClick={() => setImageBlob(null)}>Remove Image</button>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <p style={{ margin: '0 0 12px 0' }}>Have a physical 3x5 wish card?</p>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button type="button" onClick={() => setShowScanner(true)}>Capture with Camera</button>
+          <label className="secondary-button" style={{ cursor: 'pointer', display: 'inline-block', margin: 0, padding: '12px 24px', borderRadius: '24px', fontWeight: 'bold' }}>
+            Upload Image{' '}
+            <input 
+              type="file" 
+              accept="image/*" 
+              style={{ display: 'none' }} 
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file?.type.startsWith('image/')) return;
+
+                setIsProcessing(true);
+                setProcessingStatus('Processing card image...');
+                setError(null);
+
+                let url = '';
+                try {
+                  url = URL.createObjectURL(file);
+                  const img = new Image();
+                  img.src = url;
+                  await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = () => reject(new Error('Failed to load image file.'));
+                  });
+
+                  const { blob, text } = await processCardImage(img);
+                  if (text) setContent(text);
+                  setImageBlob(blob);
+                } catch (err: any) {
+                  console.error(err);
+                  setError(err.message || 'Error processing uploaded image.');
+                  setImageBlob(null);
+                } finally {
+                  if (url) URL.revokeObjectURL(url);
+                  setIsProcessing(false);
+                }
+              }}
+            />
+          </label>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <section>
       <h1>Enter a Wish</h1>
@@ -134,35 +204,7 @@ export default function EnterWishPage() {
           />
 
           <div style={{ margin: '16px 0', padding: '16px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-            {imageBlob ? (
-              <div>
-                <p style={{ color: '#166534', fontWeight: 'bold' }}>✓ Handwritten wish attached</p>
-                <button type="button" className="secondary-button" onClick={() => setImageBlob(null)}>Remove Image</button>
-              </div>
-            ) : (
-              <div>
-                <p style={{ margin: '0 0 12px 0' }}>Have a physical 3x5 wish card?</p>
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => setShowScanner(true)}>Capture with Camera</button>
-                  <label className="secondary-button" style={{ cursor: 'pointer', display: 'inline-block', margin: 0, padding: '12px 24px', borderRadius: '24px', fontWeight: 'bold' }}>
-                    Upload Image{' '}
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      style={{ display: 'none' }} 
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file?.type.startsWith('image/')) {
-                          setImageBlob(file);
-                        } else {
-                          setImageBlob(null);
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-            )}
+            {renderUploadSection()}
           </div>
 
           {token ? (
