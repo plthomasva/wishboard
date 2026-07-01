@@ -1,5 +1,5 @@
 # Stage 1: Build the Vite frontend and install all dependencies
-FROM --platform=$BUILDPLATFORM node:22-slim AS builder
+FROM --platform=$BUILDPLATFORM node:24-slim AS builder
 
 WORKDIR /app
 
@@ -20,13 +20,13 @@ COPY scripts ./scripts
 RUN npm run build
 
 # Stage 2: Install production dependencies
-FROM node:22-slim AS deps
+FROM node:24-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 # Stage 3: Create the production image
-FROM node:22-slim AS runner
+FROM node:24-slim AS runner
 
 WORKDIR /app
 
