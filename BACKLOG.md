@@ -14,6 +14,7 @@ This document tracks feature requests, technical debt, and future improvements t
 The GitHub Actions OIDC Setup/Destroy scripts have been migrated to the unified Node.js CLI under `src/cli/`. The remaining scripts are planned to be ported in subsequent iterations:
 
 ### Phase 1: Build & DB Utilities
+
 - **`wishboard build download-fonts`**
   - **Source**: `scripts/download-fonts.js`
   - **Status**: Pending migration.
@@ -22,6 +23,7 @@ The GitHub Actions OIDC Setup/Destroy scripts have been migrated to the unified 
   - **Status**: Pending migration.
 
 ### Phase 2: Serverless Operations
+
 - **`wishboard serverless deploy`**
   - **Source**: `scripts/deploy-serverless.ps1` & `scripts/deploy-serverless.sh`
   - **Status**: Pending migration.
@@ -30,6 +32,7 @@ The GitHub Actions OIDC Setup/Destroy scripts have been migrated to the unified 
   - **Status**: Pending migration.
 
 ### Phase 3: Kiosk Operations
+
 - **`wishboard kiosk deploy`**
   - **Source**: `scripts/deploy-kiosk.ps1` & `scripts/deploy-kiosk.sh`
   - **Status**: Pending migration.
@@ -39,4 +42,3 @@ The GitHub Actions OIDC Setup/Destroy scripts have been migrated to the unified 
 - **`wishboard kiosk run`**
   - **Source**: `scripts/build-kiosk.sh`
   - **Status**: Pending migration.
-
