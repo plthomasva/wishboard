@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.10.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.10.0...wishboard-v1.10.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* proxy /images path in vite.config.ts for local dev mode ([77f5abf](https://github.com/plthomasva/wishboard/commit/77f5abf9c2c79e258e89d7e472026ceae189cc2a))
+* render image wishes correctly without borders, padding, or OCR text fallback ([77f5abf](https://github.com/plthomasva/wishboard/commit/77f5abf9c2c79e258e89d7e472026ceae189cc2a))
+* resolve OpenCV client-side loading and initialization error ([77f5abf](https://github.com/plthomasva/wishboard/commit/77f5abf9c2c79e258e89d7e472026ceae189cc2a))
+
 ## [1.10.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.9.2...wishboard-v1.10.0) (2026-07-01)
 
 
