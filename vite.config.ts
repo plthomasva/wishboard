@@ -53,5 +53,5 @@ export default defineConfig({
       exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/*.d.ts'],
       include: ['src/client/src/**/*.{js,ts,tsx}', 'src/server/**/*.{js,ts}', 'src/cli/**/*.{js,ts}', 'scripts/**/*.{js,ts}', 'aws-serverless/**/*.{js,mjs,ts}']
     }
-  }
+  } as any
 });
