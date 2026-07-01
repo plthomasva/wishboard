@@ -159,7 +159,7 @@ async function setUserActiveState(req, res, isActive) {
   await db.prepare('UPDATE users SET is_active = ? WHERE id = ?').run(activeInt, user.id);
   
   if (isActive) {
-    const wishes = await db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled FROM wishes WHERE user_id = ? AND is_active = 1').all(user.id);
+    const wishes = await db.prepare('SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled, image_id FROM wishes WHERE user_id = ? AND is_active = 1').all(user.id);
     const { emitWishReactivated } = await import('../socket.js');
     wishes.forEach(w => {
       emitWishReactivated({
@@ -167,7 +167,8 @@ async function setUserActiveState(req, res, isActive) {
         creator_genders: parseJsonArray(w.creator_genders),
         creator_orientations: parseJsonArray(w.creator_orientations),
         contacts: parseJsonArray(w.contacts),
-        wishmail_enabled: Boolean(w.wishmail_enabled)
+        wishmail_enabled: Boolean(w.wishmail_enabled),
+        image_id: w.image_id
       });
     });
     logger.info('User reactivated', { user_id: user.id });
@@ -193,7 +194,7 @@ router.get('/me/wishes', async (req, res) => {
   const user = req.user;
 
   const rows = await db
-    .prepare('SELECT id, content, contacts, wishmail_enabled, creator_genders, creator_orientations, flagged, created_at, updated_at, is_active FROM wishes WHERE user_id = ? ORDER BY created_at DESC')
+    .prepare('SELECT id, content, contacts, wishmail_enabled, creator_genders, creator_orientations, flagged, created_at, updated_at, is_active, image_id FROM wishes WHERE user_id = ? ORDER BY created_at DESC')
     .all(user.id);
     
   const formattedRows = rows.map(row => ({
@@ -202,7 +203,8 @@ router.get('/me/wishes', async (req, res) => {
     creator_orientations: parseJsonArray(row.creator_orientations),
     contacts: parseJsonArray(row.contacts),
     wishmail_enabled: Boolean(row.wishmail_enabled),
-    is_active: Boolean(row.is_active)
+    is_active: Boolean(row.is_active),
+    image_id: row.image_id
   }));
     
   res.json(formattedRows);

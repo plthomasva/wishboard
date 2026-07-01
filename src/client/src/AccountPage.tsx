@@ -217,7 +217,7 @@ export default function AccountPage() {
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[]; is_active: boolean }>>([]);
+  const [wishes, setWishes] = useState<Array<{ id: string; content: string; flagged: number; contacts: any[]; wishmail_enabled: boolean; creator_genders: string[]; creator_orientations: string[]; is_active: boolean; image_id?: string; image_url?: string }>>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePreview, setDeletePreview] = useState<{ wishesCount: number; wishmailsCount: number } | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);

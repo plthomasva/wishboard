@@ -87,14 +87,15 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
     }
   }, [isOverflowing, onOverflowChange]);
 
+  const hasImage = Boolean(wish.image_url || wish.image_id);
   return (
     <article
-      className={`${cardClass} ${isOverflowing && isEditorPreview ? 'text-overflow-hint' : ''}`}
+      className={`${cardClass} ${hasImage ? 'card-has-image' : ''} ${isOverflowing && isEditorPreview ? 'text-overflow-hint' : ''}`}
       key={wish.id}
       ref={containerRef}
     >
-      <div className={`wish-card-inner-scale ${wish.image_url || wish.image_id ? 'has-image' : ''}`} ref={contentRef} style={wish.image_url || wish.image_id ? { position: 'relative', height: '100%', padding: 0 } : {}}>
-        {!wish.image_url && !wish.image_id && (
+      <div className={`wish-card-inner-scale ${hasImage ? 'has-image' : ''}`} ref={contentRef} style={hasImage ? { position: 'relative', height: '100%', padding: 0 } : {}}>
+        {!hasImage && (
           <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />
         )}
         
@@ -114,12 +115,12 @@ export default function WishCard({ wish, cardClass = 'wish-card', showFlag = tru
           </button>
         )}
         
-        {wish.image_url || wish.image_id ? (
+        {hasImage ? (
           <div style={{ width: '100%', height: '100%', position: 'relative' }}>
             <img 
               src={getSafeImageSrc(wish)} 
               alt={wish.content || "Handwritten wish"} 
-              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px', display: 'block' }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
             <div style={{ position: 'absolute', top: '0', right: '6px', zIndex: 5, fontSize: '10px' }}>
               <IdentityStickers genders={wish.creator_genders} orientations={wish.creator_orientations} />

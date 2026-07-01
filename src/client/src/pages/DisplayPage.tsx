@@ -9,6 +9,8 @@ interface Wish {
   content: string;
   creator_genders?: string[];
   creator_orientations?: string[];
+  image_url?: string;
+  image_id?: string;
 }
 
 interface DisplayPageProps {

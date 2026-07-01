@@ -306,6 +306,13 @@ button:hover {
   container-type: inline-size;
 }
 
+.wish-card.card-has-image,
+.display-card.card-has-image {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
 /* Thumbtack / Pushpin */
 .wish-card::before,
 .display-card::before {
