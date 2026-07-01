@@ -48,3 +48,14 @@ This document outlines the core coding conventions, architectural patterns, envi
     ```powershell
     npm run test:watch
     ```
+
+- **Lint / Type-check / Format:** The project uses ESLint (flat config in `eslint.config.js`) and Prettier. Run these before committing:
+
+  ```powershell
+  npm run lint         # ESLint (use lint:fix to auto-fix)
+  npm run type-check   # tsc against tsconfig.build.json (app source, excludes tests)
+  npm run format:check # Prettier verification (use format to write)
+  ```
+
+- **CI Quality Gates:** The `Node.js CI` workflow runs lint, type-check, format-check, build, tests, gitleaks secret scanning, and the SonarQube scan on every push and PR. Git hooks (Husky) also run lint-staged on pre-commit and build + tests on pre-push.
+- **Rule Baseline:** `@typescript-eslint/no-explicit-any` and `ban-ts-comment` are set to **warn** (non-blocking); `eslint .` fails CI only on errors. Prefer fixing warnings in code you touch rather than adding new ones.

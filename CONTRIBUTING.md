@@ -29,10 +29,12 @@ This section guides you through submitting an enhancement suggestion for Wishboa
 
 - Fill in the required template
 - Do not include issue numbers in the PR title
-- Follow the TypeScript and React coding style currently implemented in the project.
+- Coding style is enforced by ESLint and Prettier — run `npm run lint` and `npm run format` before committing (the pre-commit hook also does this for staged files).
 - Include screenshots and animated GIFs in your pull request whenever possible.
 - End files with a newline.
 - Add or update unit tests to maintain test coverage for new or modified code.
+
+CI runs lint, type-check, format-check, build, tests, gitleaks secret scanning, and a SonarQube scan on every pull request; all must pass before merging.
 
 ## Development Setup
 
@@ -44,6 +46,8 @@ This section guides you through submitting an enhancement suggestion for Wishboa
    Start the local dev environment with `npm run dev`. This will launch both the Node backend and the Vite frontend.
 4. **Run tests:**
    Verify your changes with `npm run test` and `npm run test:coverage`.
+5. **Lint, format, and type-check:**
+   Run `npm run lint`, `npm run format`, and `npm run type-check` before committing. Husky installs git hooks on `npm install`: a pre-commit hook auto-lints and formats staged files, and a pre-push hook builds and runs the tests.
 
 ## License Limitations
 

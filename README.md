@@ -67,6 +67,16 @@ See the [**AWS Deployment Guide**](aws-serverless/deploy-instructions.md) for st
 - `npm start` — build and launch the Express server
 - `npm test` — run the test suite
 - `npm run test:coverage` — run tests with coverage reporting
+- `npm run lint` — lint the codebase with ESLint (`npm run lint:fix` to auto-fix)
+- `npm run type-check` — type-check the app source with the TypeScript compiler
+- `npm run format` — format the codebase with Prettier (`npm run format:check` to verify only)
+
+### Code quality & git hooks
+
+Husky git hooks run automatically: a **pre-commit** hook lints and formats staged files
+(via lint-staged), and a **pre-push** hook builds and runs the test suite. The same
+checks — lint, type-check, format, build, tests, gitleaks secret scanning, and the
+SonarQube scan — also run in CI on every push and pull request.
 
 ## Documentation
 
@@ -76,6 +86,7 @@ Detailed guides and documentation can be found in the `docs/` and `aws-serverles
 - [**AWS Deployment Guide**](aws-serverless/deploy-instructions.md) - Instructions and monthly pricing analysis for deploying to AWS as a serverless application.
 - [**Matching Rules**](docs/MATCHING_RULES.md) - A deep dive into how the matchmaking engine implicitly maps, expands, and cross-matches user identities.
 - [**Mutation Testing**](docs/MUTATION_TESTING.md) - Details on how we use Stryker to guarantee robust unit testing, and how to view the daily automated reports.
+- [**Architecture Decision Records**](docs/adr/) - Records of significant architectural decisions, such as unifying cross-platform deployment logic in a Node/TypeScript CLI.
 
 ## User Interface
 
