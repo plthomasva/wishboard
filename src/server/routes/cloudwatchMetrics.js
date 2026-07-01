@@ -18,11 +18,25 @@ const router = express.Router();
 router.use(requireAdmin);
 
 /**
+ * Build a single MetricDataQuery. Every metric we request shares this shape:
+ * a namespace/metric/dimensions triple sampled at a fixed resolution.
+ */
+const metricQuery = (id, namespace, metricName, dimensions, stat, label, period = 60) => ({
+  Id: id,
+  MetricStat: {
+    Metric: { Namespace: namespace, MetricName: metricName, Dimensions: dimensions },
+    Period: period,
+    Stat: stat,
+  },
+  Label: label,
+});
+
+/**
  * Build the list of MetricDataQuery objects for GetMetricData.
  * We request 1-minute resolution over the last hour, yielding 60 data points
  * per metric for smooth sparklines.
  */
-const buildMetricQueries = (_region) => {
+const buildMetricQueries = () => {
   const functionName = process.env.AWS_LAMBDA_FUNCTION_NAME; // e.g. wishboard-express-api
   // Derive the WebSocket function name by convention
   const wsFunction = functionName?.replace('-express-api', '-websocket-mgr') ?? null;
@@ -33,60 +47,33 @@ const buildMetricQueries = (_region) => {
   if (functionName) {
     const dims = [{ Name: 'FunctionName', Value: functionName }];
     queries.push(
-      {
-        Id: 'lambda_invocations',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/Lambda', MetricName: 'Invocations', Dimensions: dims },
-          Period: 60,
-          Stat: 'Sum',
-        },
-        Label: 'Invocations',
-      },
-      {
-        Id: 'lambda_errors',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/Lambda', MetricName: 'Errors', Dimensions: dims },
-          Period: 60,
-          Stat: 'Sum',
-        },
-        Label: 'Errors',
-      },
-      {
-        Id: 'lambda_throttles',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/Lambda', MetricName: 'Throttles', Dimensions: dims },
-          Period: 60,
-          Stat: 'Sum',
-        },
-        Label: 'Throttles',
-      },
-      {
-        Id: 'lambda_duration_p50',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/Lambda', MetricName: 'Duration', Dimensions: dims },
-          Period: 60,
-          Stat: 'p50',
-        },
-        Label: 'Duration p50 (ms)',
-      },
-      {
-        Id: 'lambda_duration_p99',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/Lambda', MetricName: 'Duration', Dimensions: dims },
-          Period: 60,
-          Stat: 'p99',
-        },
-        Label: 'Duration p99 (ms)',
-      },
-      {
-        Id: 'lambda_concurrent',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/Lambda', MetricName: 'ConcurrentExecutions', Dimensions: dims },
-          Period: 60,
-          Stat: 'Maximum',
-        },
-        Label: 'Concurrent Executions',
-      }
+      metricQuery('lambda_invocations', 'AWS/Lambda', 'Invocations', dims, 'Sum', 'Invocations'),
+      metricQuery('lambda_errors', 'AWS/Lambda', 'Errors', dims, 'Sum', 'Errors'),
+      metricQuery('lambda_throttles', 'AWS/Lambda', 'Throttles', dims, 'Sum', 'Throttles'),
+      metricQuery(
+        'lambda_duration_p50',
+        'AWS/Lambda',
+        'Duration',
+        dims,
+        'p50',
+        'Duration p50 (ms)'
+      ),
+      metricQuery(
+        'lambda_duration_p99',
+        'AWS/Lambda',
+        'Duration',
+        dims,
+        'p99',
+        'Duration p99 (ms)'
+      ),
+      metricQuery(
+        'lambda_concurrent',
+        'AWS/Lambda',
+        'ConcurrentExecutions',
+        dims,
+        'Maximum',
+        'Concurrent Executions'
+      )
     );
   }
 
@@ -94,24 +81,8 @@ const buildMetricQueries = (_region) => {
   if (wsFunction) {
     const wsDims = [{ Name: 'FunctionName', Value: wsFunction }];
     queries.push(
-      {
-        Id: 'ws_invocations',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/Lambda', MetricName: 'Invocations', Dimensions: wsDims },
-          Period: 60,
-          Stat: 'Sum',
-        },
-        Label: 'WS Invocations',
-      },
-      {
-        Id: 'ws_errors',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/Lambda', MetricName: 'Errors', Dimensions: wsDims },
-          Period: 60,
-          Stat: 'Sum',
-        },
-        Label: 'WS Errors',
-      }
+      metricQuery('ws_invocations', 'AWS/Lambda', 'Invocations', wsDims, 'Sum', 'WS Invocations'),
+      metricQuery('ws_errors', 'AWS/Lambda', 'Errors', wsDims, 'Sum', 'WS Errors')
     );
   }
 
@@ -122,59 +93,19 @@ const buildMetricQueries = (_region) => {
   // the $default stage does not emit to AWS/ApiGateway at all via the standard
   // namespace, but our SAM template uses HttpApi which is AWS::Serverless::HttpApi
   // with the $default stage → metrics appear under AWS/ApiGateway with stage "$default")
+  const stageDims = [{ Name: 'Stage', Value: '$default' }];
   queries.push(
-    {
-      Id: 'apigw_count',
-      MetricStat: {
-        Metric: {
-          Namespace: 'AWS/ApiGateway',
-          MetricName: 'Count',
-          Dimensions: [{ Name: 'Stage', Value: '$default' }],
-        },
-        Period: 60,
-        Stat: 'Sum',
-      },
-      Label: 'API Requests',
-    },
-    {
-      Id: 'apigw_4xx',
-      MetricStat: {
-        Metric: {
-          Namespace: 'AWS/ApiGateway',
-          MetricName: '4XXError',
-          Dimensions: [{ Name: 'Stage', Value: '$default' }],
-        },
-        Period: 60,
-        Stat: 'Sum',
-      },
-      Label: 'API 4xx Errors',
-    },
-    {
-      Id: 'apigw_5xx',
-      MetricStat: {
-        Metric: {
-          Namespace: 'AWS/ApiGateway',
-          MetricName: '5XXError',
-          Dimensions: [{ Name: 'Stage', Value: '$default' }],
-        },
-        Period: 60,
-        Stat: 'Sum',
-      },
-      Label: 'API 5xx Errors',
-    },
-    {
-      Id: 'apigw_latency',
-      MetricStat: {
-        Metric: {
-          Namespace: 'AWS/ApiGateway',
-          MetricName: 'Latency',
-          Dimensions: [{ Name: 'Stage', Value: '$default' }],
-        },
-        Period: 60,
-        Stat: 'p99',
-      },
-      Label: 'API Latency p99 (ms)',
-    }
+    metricQuery('apigw_count', 'AWS/ApiGateway', 'Count', stageDims, 'Sum', 'API Requests'),
+    metricQuery('apigw_4xx', 'AWS/ApiGateway', '4XXError', stageDims, 'Sum', 'API 4xx Errors'),
+    metricQuery('apigw_5xx', 'AWS/ApiGateway', '5XXError', stageDims, 'Sum', 'API 5xx Errors'),
+    metricQuery(
+      'apigw_latency',
+      'AWS/ApiGateway',
+      'Latency',
+      stageDims,
+      'p99',
+      'API Latency p99 (ms)'
+    )
   );
 
   // ── CloudFront ──────────────────────────────────────────────────────────────
@@ -188,64 +119,47 @@ const buildMetricQueries = (_region) => {
       { Name: 'Region', Value: 'Global' },
     ];
     queries.push(
-      {
-        Id: 'cf_requests',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/CloudFront', MetricName: 'Requests', Dimensions: cfDims },
-          Period: 60,
-          Stat: 'Sum',
-        },
-        Label: 'CF Requests',
-      },
-      {
-        Id: 'cf_bytes_dl',
-        MetricStat: {
-          Metric: {
-            Namespace: 'AWS/CloudFront',
-            MetricName: 'BytesDownloaded',
-            Dimensions: cfDims,
-          },
-          Period: 60,
-          Stat: 'Sum',
-        },
-        Label: 'CF Bytes Downloaded',
-      },
-      {
-        Id: 'cf_4xx_rate',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/CloudFront', MetricName: '4xxErrorRate', Dimensions: cfDims },
-          Period: 60,
-          Stat: 'Average',
-        },
-        Label: 'CF 4xx Error Rate (%)',
-      },
-      {
-        Id: 'cf_5xx_rate',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/CloudFront', MetricName: '5xxErrorRate', Dimensions: cfDims },
-          Period: 60,
-          Stat: 'Average',
-        },
-        Label: 'CF 5xx Error Rate (%)',
-      },
-      {
-        Id: 'cf_cache_hit_rate',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/CloudFront', MetricName: 'CacheHitRate', Dimensions: cfDims },
-          Period: 60,
-          Stat: 'Average',
-        },
-        Label: 'CF Cache Hit Rate (%)',
-      },
-      {
-        Id: 'cf_origin_latency',
-        MetricStat: {
-          Metric: { Namespace: 'AWS/CloudFront', MetricName: 'OriginLatency', Dimensions: cfDims },
-          Period: 60,
-          Stat: 'p99',
-        },
-        Label: 'CF Origin Latency p99 (ms)',
-      }
+      metricQuery('cf_requests', 'AWS/CloudFront', 'Requests', cfDims, 'Sum', 'CF Requests'),
+      metricQuery(
+        'cf_bytes_dl',
+        'AWS/CloudFront',
+        'BytesDownloaded',
+        cfDims,
+        'Sum',
+        'CF Bytes Downloaded'
+      ),
+      metricQuery(
+        'cf_4xx_rate',
+        'AWS/CloudFront',
+        '4xxErrorRate',
+        cfDims,
+        'Average',
+        'CF 4xx Error Rate (%)'
+      ),
+      metricQuery(
+        'cf_5xx_rate',
+        'AWS/CloudFront',
+        '5xxErrorRate',
+        cfDims,
+        'Average',
+        'CF 5xx Error Rate (%)'
+      ),
+      metricQuery(
+        'cf_cache_hit_rate',
+        'AWS/CloudFront',
+        'CacheHitRate',
+        cfDims,
+        'Average',
+        'CF Cache Hit Rate (%)'
+      ),
+      metricQuery(
+        'cf_origin_latency',
+        'AWS/CloudFront',
+        'OriginLatency',
+        cfDims,
+        'p99',
+        'CF Origin Latency p99 (ms)'
+      )
     );
   }
 
@@ -278,7 +192,7 @@ router.get('/', async (req, res) => {
     const now = new Date();
     const startTime = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
 
-    const queries = buildMetricQueries(region);
+    const queries = buildMetricQueries();
 
     let nextToken;
     const resultMap = {};
