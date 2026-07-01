@@ -36,7 +36,7 @@
     "@aws-sdk/client-apigatewaymanagementapi": "^3.1075.0",
     "@aws-sdk/client-cloudwatch": "3.1075.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.1075.0",
-    "@aws-sdk/client-s3": "^3.1075.0",
+    "@aws-sdk/client-s3": "^3.1078.0",
     "@codegenie/serverless-express": "^5.0.0",
     "@libsql/client": "^0.17.4",
     "@techstark/opencv-js": "^5.0.0-release.1",
