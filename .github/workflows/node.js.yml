@@ -65,3 +65,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # Aggregate gate with a stable name for branch-protection required checks.
+  # The matrix `build` job reports per-leg names (build (22.x)/(24.x)) when it
+  # runs but a single `build` when skipped (e.g. release-please PRs), so it
+  # can't be required directly. This job always reports "CI Success": it passes
+  # when the build succeeded or was skipped, and fails otherwise.
+  ci-success:
+    name: CI Success
+    if: always()
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify build result
+        run: |
+          result="${{ needs.build.result }}"
+          echo "build result: $result"
+          if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+            exit 1
+          fi
