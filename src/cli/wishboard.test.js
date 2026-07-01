@@ -6,6 +6,11 @@ vi.mock('./commands/oidc.js', () => ({
   destroyOidc: vi.fn(),
 }));
 
+vi.mock('./commands/serverless.js', () => ({
+  deployServerless: vi.fn(),
+  destroyServerless: vi.fn(),
+}));
+
 describe('wishboard CLI entrypoint', () => {
   let originalArgv;
   let exitSpy;
@@ -83,17 +88,27 @@ describe('wishboard CLI entrypoint', () => {
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
-  it('handles serverless deploy placeholder', async () => {
-    await runCLI(['serverless', 'deploy']);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('This command is not yet migrated')
+  it('routes to serverless deploy command with options', async () => {
+    const mod = await import('./commands/serverless.js');
+    await runCLI([
+      'serverless',
+      'deploy',
+      '--mode',
+      'dev',
+      '--stack-name',
+      'my-stack',
+      '--dry-run',
+    ]);
+    expect(mod.deployServerless).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'dev', stackName: 'my-stack', dryRun: true })
     );
   });
 
-  it('handles serverless destroy placeholder', async () => {
-    await runCLI(['serverless', 'destroy']);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('This command is not yet migrated')
+  it('routes to serverless destroy command with options', async () => {
+    const mod = await import('./commands/serverless.js');
+    await runCLI(['serverless', 'destroy', '--force', '--dry-run']);
+    expect(mod.destroyServerless).toHaveBeenCalledWith(
+      expect.objectContaining({ force: true, dryRun: true })
     );
   });
 

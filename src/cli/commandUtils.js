@@ -1,5 +1,23 @@
 import { spawnSync } from 'node:child_process';
 
+// npm/npx/sam are .cmd shims on Windows. Since Node's CVE-2024-27980 fix, they
+// can't be spawned directly, and `shell: true` with an args array is flagged
+// (DEP0190) because arguments are concatenated without escaping. Instead we
+// launch them through `cmd.exe /c`, which resolves the .cmd via PATHEXT while
+// letting Node apply proper Windows argument escaping.
+const WINDOWS_CMD_SHIMS = ['npm', 'npx', 'sam'];
+
+function needsCmdWrapper(command) {
+  return process.platform === 'win32' && WINDOWS_CMD_SHIMS.includes(command);
+}
+
+function spawnCross(command, args, options) {
+  if (needsCmdWrapper(command)) {
+    return spawnSync('cmd.exe', ['/c', command, ...args], options);
+  }
+  return spawnSync(command, args, options);
+}
+
 /**
  * Checks if a command exists in the system PATH.
  * @param {string} name
@@ -7,7 +25,12 @@ import { spawnSync } from 'node:child_process';
  */
 export function hasCommand(name) {
   try {
-    const res = spawnSync(name, ['--version'], { stdio: 'ignore' });
+    const res = spawnCross(name, ['--version'], { stdio: 'ignore' });
+    // When wrapped in cmd.exe, a missing command exits non-zero rather than
+    // raising ENOENT, so fall back to checking the exit status in that case.
+    if (needsCmdWrapper(name)) {
+      return !res.error && res.status === 0;
+    }
     return res.error?.code !== 'ENOENT';
   } catch {
     return false;
@@ -49,9 +72,7 @@ export function execCommand(command, args, options = {}) {
     return { status: 0, stdout: '', stderr: '' };
   }
 
-  // Under Windows, some commands like npm are .cmd or need shell execution.
-  // But aws, gh, git can be spawned directly without shell: true.
-  const result = spawnSync(command, args, { stdio, encoding: 'utf8', ...options });
+  const result = spawnCross(command, args, { stdio, encoding: 'utf8', ...options });
 
   if (result.error) {
     if (result.error.code === 'ENOENT') {

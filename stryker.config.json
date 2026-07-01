@@ -15,11 +15,13 @@
     "src/client/src/**/*.js",
     "src/server/**/*.js",
     "src/server/**/*.ts",
+    "src/cli/**/*.js",
     "!src/client/src/**/*.test.ts",
     "!src/client/src/**/*.test.tsx",
     "!src/client/src/**/*.test.js",
     "!src/server/**/*.test.js",
     "!src/server/**/*.test.ts",
+    "!src/cli/**/*.test.js",
     "!src/client/src/components/WishScanner.tsx"
   ],
   "ignorePatterns": ["!dist/**/*"]
