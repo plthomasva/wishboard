@@ -14,7 +14,7 @@ vi.mock('../components/WishScanner', () => ({
 
 describe('EnterWishPage', () => {
   beforeEach(() => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null });
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: null } as unknown as ReturnType<typeof AuthContext.useAuth>);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ id: 'wish-1', secret: 'secret-code' })
@@ -108,7 +108,7 @@ describe('EnterWishPage', () => {
     expect(screen.queryByText(/Handwritten wish attached/i)).not.toBeInTheDocument();
   });
   it('handles logged-in user UI appropriately', async () => {
-    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' });
+    vi.mocked(AuthContext.useAuth).mockReturnValue({ token: 'mock-token' } as unknown as ReturnType<typeof AuthContext.useAuth>);
     render(<EnterWishPage />);
     expect(screen.getByText(/Your account identity attributes are applied automatically to this wish./i)).toBeInTheDocument();
   });

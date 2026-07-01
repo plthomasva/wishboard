@@ -159,63 +159,70 @@ function getDeployRoleArn(stackName, region, accountId, repo, dryRun) {
 }
 
 /**
+ * Prints instructions to configure repository settings manually on GitHub.
+ */
+function printManualInstructions(roleArn, region, repo) {
+  console.log('\x1b[33mPlease manually set the following in your GitHub Repository settings (Settings -> Secrets and variables -> Actions):\x1b[0m\n');
+  console.log('  \x1b[32mRepository Secrets:\x1b[0m');
+  console.log(`    Name:  \x1b[36mAWS_ROLE_TO_ASSUME\x1b[0m`);
+  console.log(`    Value: ${roleArn}\n`);
+  console.log('  \x1b[32mRepository Variables:\x1b[0m');
+  console.log(`    Name:  \x1b[36mAWS_REGION\x1b[0m`);
+  console.log(`    Value: ${region}`);
+  console.log(`    Name:  \x1b[36mAWS_STACK_NAME\x1b[0m`);
+  console.log(`    Value: ${repo}-serverless-dev\n`);
+}
+
+/**
+ * Checks if the GitHub CLI is authenticated.
+ */
+function checkGitHubAuth(dryRun) {
+  if (dryRun) {
+    return true;
+  }
+  const authCheck = execCommand('gh', ['auth', 'status'], { stdio: 'pipe' });
+  return authCheck.status === 0;
+}
+
+/**
+ * Helper to set a GitHub secret or variable.
+ */
+function setGitHubRepoValue(type, name, value, dryRun) {
+  const res = execCommand('gh', [type, 'set', name, '--body', value], { dryRun });
+  if (res.status === 0) {
+    logInfo(`Set ${type}: ${name}`);
+    return true;
+  }
+  logWarn(`Failed to set ${type} ${name} via GitHub CLI.`);
+  return false;
+}
+
+/**
  * Populates GitHub Repository variables and secrets via GitHub CLI (gh).
  */
 function configureGitHubSecrets(roleArn, region, repo, dryRun) {
   logStep('Configuring GitHub Repository settings...');
-  let ghConfigured = false;
 
-  if (hasCommand('gh')) {
-    let ghAuth = false;
-    if (dryRun) {
-      ghAuth = true;
-    } else {
-      const authCheck = execCommand('gh', ['auth', 'status'], { stdio: 'pipe' });
-      ghAuth = authCheck.status === 0;
-    }
-
-    if (ghAuth) {
-      logInfo('GitHub CLI (gh) detected and authenticated. Configuring repository settings...');
-
-      const sResult = execCommand('gh', ['secret', 'set', 'AWS_ROLE_TO_ASSUME', '--body', roleArn], { dryRun });
-      if (sResult.status === 0) {
-        logInfo('Set secret: AWS_ROLE_TO_ASSUME');
-      } else {
-        logWarn('Failed to set secret AWS_ROLE_TO_ASSUME via GitHub CLI.');
-      }
-
-      const rResult = execCommand('gh', ['variable', 'set', 'AWS_REGION', '--body', region], { dryRun });
-      if (rResult.status === 0) {
-        logInfo(`Set variable: AWS_REGION = ${region}`);
-      } else {
-        logWarn('Failed to set variable AWS_REGION.');
-      }
-
-      const stResult = execCommand('gh', ['variable', 'set', 'AWS_STACK_NAME', '--body', `${repo}-serverless-dev`], { dryRun });
-      if (stResult.status === 0) {
-        logInfo(`Set variable: AWS_STACK_NAME = ${repo}-serverless-dev`);
-      } else {
-        logWarn('Failed to set variable AWS_STACK_NAME.');
-      }
-
-      ghConfigured = true;
-    } else {
-      logWarn("GitHub CLI (gh) is installed but not authenticated. Run 'gh auth login' to authenticate.");
-    }
-  } else {
+  if (!hasCommand('gh')) {
     logInfo('GitHub CLI (gh) not detected.');
+    printManualInstructions(roleArn, region, repo);
+    return;
   }
 
-  if (!ghConfigured) {
-    console.log('\x1b[33mPlease manually set the following in your GitHub Repository settings (Settings -> Secrets and variables -> Actions):\x1b[0m\n');
-    console.log('  \x1b[32mRepository Secrets:\x1b[0m');
-    console.log(`    Name:  \x1b[36mAWS_ROLE_TO_ASSUME\x1b[0m`);
-    console.log(`    Value: ${roleArn}\n`);
-    console.log('  \x1b[32mRepository Variables:\x1b[0m');
-    console.log(`    Name:  \x1b[36mAWS_REGION\x1b[0m`);
-    console.log(`    Value: ${region}`);
-    console.log(`    Name:  \x1b[36mAWS_STACK_NAME\x1b[0m`);
-    console.log(`    Value: ${repo}-serverless-dev\n`);
+  if (!checkGitHubAuth(dryRun)) {
+    logWarn("GitHub CLI (gh) is installed but not authenticated. Run 'gh auth login' to authenticate.");
+    printManualInstructions(roleArn, region, repo);
+    return;
+  }
+
+  logInfo('GitHub CLI (gh) detected and authenticated. Configuring repository settings...');
+
+  const s1 = setGitHubRepoValue('secret', 'AWS_ROLE_TO_ASSUME', roleArn, dryRun);
+  const s2 = setGitHubRepoValue('variable', 'AWS_REGION', region, dryRun);
+  const s3 = setGitHubRepoValue('variable', 'AWS_STACK_NAME', `${repo}-serverless-dev`, dryRun);
+
+  if (!s1 || !s2 || !s3) {
+    printManualInstructions(roleArn, region, repo);
   }
 }
 
