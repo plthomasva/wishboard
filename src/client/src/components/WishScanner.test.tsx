@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach, afterEach, afterAll } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import WishScanner from './WishScanner';
 
 // Global opencv and tesseract mocks are used from setupTests.ts
@@ -10,9 +10,9 @@ vi.mock('tesseract.js', () => ({
   }
 }));
 
-const originalMediaDevices = global.navigator.mediaDevices;
+const originalMediaDevices = globalThis.navigator.mediaDevices;
 
-Object.defineProperty(global.navigator, 'mediaDevices', {
+Object.defineProperty(globalThis.navigator, 'mediaDevices', {
   value: {
     getUserMedia: vi.fn().mockResolvedValue({
       getTracks: () => [{ stop: vi.fn() }]
@@ -24,10 +24,10 @@ Object.defineProperty(global.navigator, 'mediaDevices', {
 
 describe('WishScanner', () => {
   beforeEach(() => {
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
+    vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
       return setTimeout(() => cb(0), 16) as any;
     });
-    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id: number) => {
+    vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation((id: number) => {
       clearTimeout(id);
     });
   });
@@ -38,16 +38,20 @@ describe('WishScanner', () => {
 
   afterAll(() => {
     if (originalMediaDevices) {
-      Object.defineProperty(global.navigator, 'mediaDevices', { value: originalMediaDevices, writable: true, configurable: true });
+      Object.defineProperty(globalThis.navigator, 'mediaDevices', { value: originalMediaDevices, writable: true, configurable: true });
     } else {
-      delete (global.navigator as any).mediaDevices;
+      delete (globalThis.navigator as any).mediaDevices;
     }
   });
 
-  it('renders correctly and handles cancel', () => {
+  it('renders correctly and handles cancel', async () => {
     const onCancel = vi.fn();
     render(<WishScanner onCapture={vi.fn()} onCancel={onCancel} />);
     
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onCancel).toHaveBeenCalled();
   });

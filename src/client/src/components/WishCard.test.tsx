@@ -108,6 +108,9 @@ describe('WishCard', () => {
     };
     render(<WishCard wish={wish} />);
     
+    const article = screen.getByRole('article');
+    expect(article).toHaveClass('card-has-image');
+    
     const img = screen.getByRole('img', { name: 'This text should be hidden' });
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', '/images/test-image.png');

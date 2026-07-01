@@ -1,4 +1,4 @@
-import cv from '@techstark/opencv-js';
+import cvPromise from '@techstark/opencv-js';
 import Tesseract from 'tesseract.js';
 
 export type Point = { x: number; y: number };
@@ -39,7 +39,7 @@ export function calculateDrawDimensions(video: ProcessableElement, canvas: HTMLC
   return { drawW, drawH, drawX, drawY };
 }
 
-export function detectDocumentContour(video: ProcessableElement, processScale: number, pWidth: number, pHeight: number) {
+export function detectDocumentContour(cv: any, video: ProcessableElement, processScale: number, pWidth: number, pHeight: number) {
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = pWidth;
   tempCanvas.height = pHeight;
@@ -82,7 +82,7 @@ export function detectDocumentContour(video: ProcessableElement, processScale: n
   return { src, contours, hierarchy, maxArea, bestPoly };
 }
 
-export function fallbackTextContour(video: ProcessableElement, contours: any, processScale: number, pWidth: number, pHeight: number): Point[] | null {
+export function fallbackTextContour(cv: any, video: ProcessableElement, contours: any, processScale: number, pWidth: number, pHeight: number): Point[] | null {
   let minX = pWidth, minY = pHeight, maxX = 0, maxY = 0;
   let foundText = false;
   for (let i = 0; i < contours.size(); ++i) {
@@ -219,13 +219,16 @@ export async function processCardImage(img: HTMLImageElement): Promise<{ blob: B
     throw new Error("Invalid image dimensions");
   }
 
+  const cvResolved = await (cvPromise as any);
+  const cv = cvResolved.default || cvResolved;
+
   const processScale = 400 / width;
   const pWidth = 400;
   const pHeight = Math.floor(height * processScale);
 
-  let { src, contours, hierarchy, bestPoly } = detectDocumentContour(img, processScale, pWidth, pHeight);
+  let { src, contours, hierarchy, bestPoly } = detectDocumentContour(cv, img, processScale, pWidth, pHeight);
 
-  bestPoly ??= fallbackTextContour(img, contours, processScale, pWidth, pHeight);
+  bestPoly ??= fallbackTextContour(cv, img, contours, processScale, pWidth, pHeight);
 
   src.delete(); contours.delete(); hierarchy.delete();
 

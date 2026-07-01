@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import cv from '@techstark/opencv-js';
+import cvPromise from '@techstark/opencv-js';
 import {
   Point,
   calculateDrawDimensions,
@@ -24,6 +24,7 @@ interface DrawConfig {
 }
 
 function renderOverlay(
+  cv: any,
   ctx: CanvasRenderingContext2D, 
   canvas: HTMLCanvasElement, 
   video: HTMLVideoElement, 
@@ -122,6 +123,28 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
   const smoothedCornersRef = useRef<{x: number, y: number}[] | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  const cvRef = useRef<any>(null);
+  const [cvReady, setCvReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function loadOpenCV() {
+      try {
+        const resolved = await (cvPromise as any);
+        if (active) {
+          cvRef.current = resolved.default || resolved;
+          setCvReady(true);
+        }
+      } catch (err) {
+        console.error('Error loading OpenCV', err);
+      }
+    }
+    loadOpenCV();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   useEffect(() => {
     let activeStream: MediaStream | null = null;
     async function setupCamera() {
@@ -157,6 +180,11 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
 
   const drawOverlay = () => {
     if (!videoRef.current || !canvasRef.current || isProcessing) return;
+    const cv = cvRef.current;
+    if (!cv) {
+      animationFrameRef.current = requestAnimationFrame(drawOverlay);
+      return;
+    }
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
@@ -181,12 +209,12 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
         const pWidth = 400;
         const pHeight = Math.floor(video.videoHeight * processScale);
         
-        let { src, contours, hierarchy, maxArea, bestPoly } = detectDocumentContour(video, processScale, pWidth, pHeight);
+        let { src, contours, hierarchy, maxArea, bestPoly } = detectDocumentContour(cv, video, processScale, pWidth, pHeight);
         
         if (bestPoly) {
             debugLines.push(`State: Tracked (${Math.floor(maxArea)}px)`);
         } else {
-            bestPoly = fallbackTextContour(video, contours, processScale, pWidth, pHeight);
+            bestPoly = fallbackTextContour(cv, video, contours, processScale, pWidth, pHeight);
             if (bestPoly) {
                 debugLines.push("State: Center Crop Fallback");
             }
@@ -198,7 +226,7 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
 
         smoothedCornersRef.current = applyTemporalSmoothing(bestPoly, smoothedCornersRef.current, debugLines);
         
-        renderOverlay(ctx, canvas, video, smoothedCornersRef.current, { x: drawX, y: drawY, w: drawW, h: drawH }, stickerZoneHeightPercentage);
+        renderOverlay(cv, ctx, canvas, video, smoothedCornersRef.current, { x: drawX, y: drawY, w: drawW, h: drawH }, stickerZoneHeightPercentage);
 
     } catch (err: any) {
         debugLines.push(`Error: ${err.message || err.toString()}`);
@@ -272,7 +300,22 @@ export default function WishScanner({ onCapture, onCancel, stickerZoneHeightPerc
       ) : (
         <div style={{ position: 'absolute', bottom: '20px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '16px', zIndex: 10 }}>
           <button type="button" onClick={onCancel} style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '24px', cursor: 'pointer' }}>Cancel</button>
-          <button type="button" onClick={processImage} style={{ background: 'white', color: 'black', border: 'none', padding: '12px 32px', borderRadius: '24px', fontWeight: 'bold', cursor: 'pointer' }}>Take Photo</button>
+          <button 
+            type="button" 
+            onClick={processImage} 
+            disabled={!cvReady}
+            style={{ 
+              background: cvReady ? 'white' : 'rgba(255,255,255,0.4)', 
+              color: 'black', 
+              border: 'none', 
+              padding: '12px 32px', 
+              borderRadius: '24px', 
+              fontWeight: 'bold', 
+              cursor: cvReady ? 'pointer' : 'not-allowed' 
+            }}
+          >
+            {cvReady ? 'Take Photo' : 'Loading Scanner...'}
+          </button>
         </div>
       )}
     </div>
