@@ -21,7 +21,7 @@ const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
 const app = appModule.default;
-const { reloadRules } = await import('../rulesManager.js');
+const { reloadRules, stopWatchingRules } = await import('../rulesManager.js');
 
 const clearTestData = async () => {
   await db.exec('DELETE FROM sessions');
@@ -44,6 +44,7 @@ afterEach(async () => {
 });
 
 afterAll(() => {
+  stopWatchingRules();
   fs.rmSync(tmpRulesDir, { recursive: true, force: true });
 });
 

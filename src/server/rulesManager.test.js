@@ -44,6 +44,7 @@ describe('rulesManager', () => {
   });
 
   afterAll(() => {
+    rulesManager?.stopWatchingRules?.();
     fs.rmSync(tmpRulesDir, { recursive: true, force: true });
   });
 
