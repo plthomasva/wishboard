@@ -456,6 +456,10 @@ Resources:
             Path: /api/{proxy+}
             Method: ANY
     Metadata:
+      # NOTE: `sam build` runs a production-only `npm install` then requires
+      # esbuild — so esbuild must stay in package.json "dependencies" (not
+      # devDependencies), or the build fails on clean hosts (CI runners) with
+      # "Cannot find esbuild". It is a build-time tool only; unused at runtime.
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
