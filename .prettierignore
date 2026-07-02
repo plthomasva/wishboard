@@ -9,3 +9,6 @@ src/client/public
 package-lock.json
 *.ttf
 *.log
+
+# Managed by release-please; its changelog formatting isn't Prettier-compatible.
+CHANGELOG.md
