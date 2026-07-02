@@ -108,6 +108,23 @@ function getStackOutput(stackName, common, key, dryRun) {
   return value === 'None' ? '' : value;
 }
 
+/**
+ * Validates an externally-supplied CloudFormation parameter value. These flow
+ * into a quoted string handed to `sam deploy --parameter-overrides`, so we
+ * reject anything outside a conservative allowlist (letters, digits, and the
+ * `. _ : / -` used by ARNs/domains/ids). This prevents a value from breaking out
+ * of the quoting or injecting shell metacharacters — defense-in-depth, since
+ * these are normally developer-supplied config.
+ */
+function assertSafeParam(name, value) {
+  if (value && !/^[A-Za-z0-9._:/-]+$/.test(value)) {
+    throw new Error(
+      `Invalid value for ${name}: only letters, digits, and ". _ : / -" are allowed.`
+    );
+  }
+  return value;
+}
+
 /** Assembles the CloudFormation parameter override tokens for sam deploy. */
 function buildParameterOverrides(mode) {
   const nodeEnv = mode === 'dev' ? 'development' : 'production';
@@ -122,6 +139,11 @@ function buildParameterOverrides(mode) {
     process.env.HOSTED_ZONE_ID || getOverrideValue('HostedZoneId', tomlOverrides);
   const acmCertificateArn =
     process.env.ACM_CERTIFICATE_ARN || getOverrideValue('AcmCertificateArn', tomlOverrides);
+
+  assertSafeParam('ProjectName', projectName);
+  assertSafeParam('DomainName', domainName);
+  assertSafeParam('HostedZoneId', hostedZoneId);
+  assertSafeParam('AcmCertificateArn', acmCertificateArn);
 
   // Pass as a single space-separated string with quoted values. sam rejects a
   // bare empty token (e.g. `DomainName=`), so the optional domain params must be

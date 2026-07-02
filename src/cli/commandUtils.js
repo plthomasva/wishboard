@@ -13,7 +13,10 @@ function needsCmdWrapper(command) {
 
 function spawnCross(command, args, options) {
   if (needsCmdWrapper(command)) {
-    return spawnSync('cmd.exe', ['/c', command, ...args], options);
+    // Invoke the interpreter by a fixed absolute path in the (unwriteable)
+    // System32 directory rather than a bare "cmd.exe" resolved via PATH, which
+    // a writable PATH entry could shadow.
+    return spawnSync('C:\\Windows\\System32\\cmd.exe', ['/c', command, ...args], options);
   }
   return spawnSync(command, args, options);
 }

@@ -62,6 +62,17 @@ describe('serverless commands', () => {
       );
     });
 
+    it('rejects parameter override values containing unsafe characters', () => {
+      process.env.DOMAIN_NAME = 'evil.com; rm -rf /';
+      try {
+        expect(() =>
+          deployServerless({ mode: 'dev', stackName: 'wishboard-serverless-dev', dryRun: true })
+        ).toThrow(/Invalid value for DomainName/);
+      } finally {
+        delete process.env.DOMAIN_NAME;
+      }
+    });
+
     it('throws if AWS authentication fails', () => {
       vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args) => {
         if (cmd === 'aws' && args.includes('get-caller-identity')) {
