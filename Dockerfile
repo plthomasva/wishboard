@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Install all dependencies (including devDependencies needed for Vite)
 COPY package.json package-lock.json ./
+COPY .husky ./.husky
 RUN npm ci
 
 # Copy the rest of the application
@@ -23,6 +24,7 @@ RUN npm run build
 FROM node:24-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY .husky ./.husky
 RUN npm ci --omit=dev
 
 # Stage 3: Create the production image
