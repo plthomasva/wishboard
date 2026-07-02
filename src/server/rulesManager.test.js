@@ -1,16 +1,17 @@
 /** @vitest-environment node */
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+import os from 'node:os';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rulesPath = path.resolve(__dirname, '../../data/rules.rulesManager.test.yaml');
+// Write the test rules file to a throwaway temp dir (reaped in afterAll) rather
+// than into the repo's data/ directory.
+const tmpRulesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wishboard-rulesmgr-'));
+const rulesPath = path.join(tmpRulesDir, 'rules.test.yaml');
 
 process.env.NODE_ENV = 'test';
 process.env.RULES_PATH = rulesPath;
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import fs from 'node:fs';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let rulesManager;
 
@@ -40,6 +41,11 @@ describe('rulesManager', () => {
       fs.unlinkSync(rulesPath);
     }
     vi.restoreAllMocks();
+  });
+
+  afterAll(() => {
+    rulesManager?.stopWatchingRules?.();
+    fs.rmSync(tmpRulesDir, { recursive: true, force: true });
   });
 
   it('starts with empty rules if file not found', async () => {

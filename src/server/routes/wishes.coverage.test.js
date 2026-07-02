@@ -1,23 +1,27 @@
 /** @vitest-environment node */
 import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const testRules = path.resolve(__dirname, '../../../data/rules.wishesCoverage.test.yaml');
+// Write the test rules copy to a throwaway temp dir (reaped in afterAll) rather
+// than into the repo's data/ directory.
+const tmpRulesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wishboard-wishes-cov-'));
+const testRules = path.join(tmpRulesDir, 'rules.test.yaml');
 
 process.env.WISHBOARD_DB_PATH = ':memory:';
 process.env.NODE_ENV = 'test';
 process.env.RULES_PATH = testRules;
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import fs from 'node:fs';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
 const db = (await import('../db.js')).default;
 const app = appModule.default;
-const { reloadRules } = await import('../rulesManager.js');
+const { reloadRules, stopWatchingRules } = await import('../rulesManager.js');
 
 const clearTestData = async () => {
   await db.exec('DELETE FROM sessions');
@@ -37,6 +41,11 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await clearTestData();
+});
+
+afterAll(() => {
+  stopWatchingRules();
+  fs.rmSync(tmpRulesDir, { recursive: true, force: true });
 });
 
 describe('wishes.js coverage', () => {

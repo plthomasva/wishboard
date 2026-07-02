@@ -106,8 +106,9 @@ loadRules();
 
 // Watch for changes. Use debounce to prevent multiple triggers on save.
 let watchTimeout = null;
+let rulesWatcher = null;
 if (fs.existsSync(rulesPath) && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
-  fs.watch(rulesPath, (eventType) => {
+  rulesWatcher = fs.watch(rulesPath, (eventType) => {
     if (eventType === 'change') {
       if (watchTimeout) clearTimeout(watchTimeout);
       watchTimeout = setTimeout(() => {
@@ -116,7 +117,24 @@ if (fs.existsSync(rulesPath) && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
       }, 500);
     }
   });
+  // fs.watch can emit EPERM/ENOENT when the watched file is replaced or removed
+  // (common on Windows); log and continue rather than crashing the process.
+  rulesWatcher.on('error', (err) => {
+    logger.warn(`rules watcher error (continuing without hot-reload): ${err.message}`);
+  });
 }
+
+/** Stops the rules file watcher and clears any pending reload (used on shutdown and in tests). */
+export const stopWatchingRules = () => {
+  if (watchTimeout) {
+    clearTimeout(watchTimeout);
+    watchTimeout = null;
+  }
+  if (rulesWatcher) {
+    rulesWatcher.close();
+    rulesWatcher = null;
+  }
+};
 
 export const getRules = () => rulesCache;
 export const reloadRules = loadRules;

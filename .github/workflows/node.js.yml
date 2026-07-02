@@ -59,6 +59,16 @@ jobs:
         run: npm run build --if-present
       - name: Test and Coverage
         run: npm run test:coverage
+      - name: Ensure tests leave no artifacts in the working tree
+        if: matrix.node-version == '24.x'
+        run: |
+          leaked=$(ls -1 dummy-path.log* src/client/dummy-path.log* data/rules.*.test.yaml 2>/dev/null || true)
+          if [ -n "$leaked" ]; then
+            echo "::error::Tests wrote artifacts into the repo (should use os.tmpdir):"
+            echo "$leaked"
+            exit 1
+          fi
+          echo "No test artifacts leaked into the working tree."
       - name: SonarCloud Scan
         if: github.actor != 'dependabot[bot]' && matrix.node-version == '22.x'
         uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
