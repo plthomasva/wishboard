@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.11.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.10.1...wishboard-v1.11.0) (2026-07-02)
+
+
+### Features
+
+* enforce lint, type-check, format, and secret scanning in CI ([#101](https://github.com/plthomasva/wishboard/issues/101)) ([e1b607e](https://github.com/plthomasva/wishboard/commit/e1b607e6d213cf21cb538129499495f3036a52c2))
+* migrate serverless deploy/destroy to unified wishboard CLI ([#118](https://github.com/plthomasva/wishboard/issues/118)) ([1b08d0a](https://github.com/plthomasva/wishboard/commit/1b08d0a0c00ed49c4d01003c4498d13707be91d0))
+
+
+### Bug Fixes
+
+* **deps:** override qs to ^6.15.2 to resolve DoS advisory ([#103](https://github.com/plthomasva/wishboard/issues/103)) ([932696d](https://github.com/plthomasva/wishboard/commit/932696d3636782b8515874dec0916c6d1f0b22a9))
+* make husky prepare cross-platform (Windows cmd has no 'true') ([#117](https://github.com/plthomasva/wishboard/issues/117)) ([0679570](https://github.com/plthomasva/wishboard/commit/06795708f09addf7a47e547b3c8dc5521f700c6e))
+
 ## [1.10.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.10.0...wishboard-v1.10.1) (2026-07-01)
 
 ### Bug Fixes
