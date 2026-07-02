@@ -1,9 +1,18 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
+import os from 'node:os';
+import fs from 'node:fs';
+import nodePath from 'node:path';
 
 describe('Logger', () => {
+  let tmpDir;
+
   afterEach(async () => {
     vi.resetModules();
     vi.restoreAllMocks();
+    if (tmpDir) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      tmpDir = undefined;
+    }
   });
 
   it('initializes logger with silent console in test environment', async () => {
@@ -18,9 +27,11 @@ describe('Logger', () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
-    // We mock path so we don't actually create files in weird places during the test
+    // Point the log file at a throwaway temp dir (reaped in afterEach) so the
+    // test never writes log files into the repo working tree.
+    tmpDir = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'wishboard-logtest-'));
     const path = await import('node:path');
-    vi.spyOn(path.default, 'join').mockReturnValue('dummy-path.log');
+    vi.spyOn(path.default, 'join').mockReturnValue(nodePath.join(tmpDir, 'app.log'));
 
     const mockEmitSystemLog = vi.fn();
     vi.doMock('./socket.js', () => ({

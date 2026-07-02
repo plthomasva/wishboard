@@ -1,13 +1,18 @@
 /** @vitest-environment node */
 import path from 'node:path';
-const rulesPath = path.resolve(process.cwd(), 'data/rules.wishesRoute.test.yaml');
+import fs from 'node:fs';
+import os from 'node:os';
+
+// Write the test rules copy to a throwaway temp dir (reaped in afterAll) rather
+// than into the repo's data/ directory.
+const tmpRulesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wishboard-wishes-'));
+const rulesPath = path.join(tmpRulesDir, 'rules.test.yaml');
 
 process.env.WISHBOARD_DB_PATH = ':memory:';
 process.env.NODE_ENV = 'test';
 process.env.RULES_PATH = rulesPath;
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import fs from 'node:fs';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
@@ -32,6 +37,10 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await clearTestData();
+});
+
+afterAll(() => {
+  fs.rmSync(tmpRulesDir, { recursive: true, force: true });
 });
 
 describe('Authenticated wish creation', () => {
