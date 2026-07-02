@@ -149,9 +149,26 @@ npx wishboard oidc destroy --org <github_org> --repo <repo_name> --region <aws_r
 
 Add `--dry-run` to preview the underlying commands without executing them.
 
+#### AWS Serverless Deploy & Teardown
+
+Build and deploy (or tear down) the serverless stack:
+
+```bash
+# Deploy: build frontend + backend, deploy the stack, upload assets, invalidate CloudFront
+npx wishboard serverless deploy --mode dev --region <aws_region>
+
+# Deploy only the frontend to an already-deployed stack
+npx wishboard serverless deploy --frontend-only
+
+# Tear down a stack (a non-dev/production stack additionally requires --force)
+npx wishboard serverless destroy --stack-name <stack> --force
+```
+
+Options fall back to `aws-serverless/samconfig.toml`, then to your AWS config. Add `--dry-run` to preview the commands, or `--guided` to force the interactive first-time `sam deploy` setup.
+
 #### Roadmap Placeholders
 
-Other commands (such as `serverless deploy` or `kiosk deploy`) are currently under active migration. Run `npx wishboard --help` to view instructions on running their legacy scripts.
+The remaining `kiosk`, `db`, and `build` commands are still under active migration. Run `npx wishboard --help` to view instructions on running their legacy scripts.
 
 ## Notes
 

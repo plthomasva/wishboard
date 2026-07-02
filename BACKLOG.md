@@ -11,7 +11,9 @@ This document tracks feature requests, technical debt, and future improvements t
 
 ## Unified CLI Migration Roadmap
 
-The GitHub Actions OIDC Setup/Destroy scripts have been migrated to the unified Node.js CLI under `src/cli/`. The remaining scripts are planned to be ported in subsequent iterations:
+The GitHub Actions OIDC Setup/Destroy scripts and the AWS serverless deploy/destroy
+scripts have been migrated to the unified Node.js CLI under `src/cli/`. The remaining
+scripts are planned to be ported in subsequent iterations:
 
 ### Phase 1: Build & DB Utilities
 
@@ -22,14 +24,14 @@ The GitHub Actions OIDC Setup/Destroy scripts have been migrated to the unified 
   - **Source**: `scripts/reset-password.js`
   - **Status**: Pending migration.
 
-### Phase 2: Serverless Operations
+### Phase 2: Serverless Operations ✅
 
 - **`wishboard serverless deploy`**
   - **Source**: `scripts/deploy-serverless.ps1` & `scripts/deploy-serverless.sh`
-  - **Status**: Pending migration.
+  - **Status**: Migrated to `src/cli/commands/serverless.js`; legacy scripts removed.
 - **`wishboard serverless destroy`**
   - **Source**: `scripts/destroy-serverless.ps1` & `scripts/destroy-serverless.sh`
-  - **Status**: Pending migration.
+  - **Status**: Migrated to `src/cli/commands/serverless.js`; legacy scripts removed.
 
 ### Phase 3: Kiosk Operations
 

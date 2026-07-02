@@ -60,23 +60,17 @@ To enable this, you must first configure AWS OIDC (OpenID Connect) authenticatio
 2. **Trigger a Deployment:**
    Push a commit to the `main` branch, or manually trigger the `Deploy Serverless` workflow from the GitHub Actions tab.
 
-### Local Script Deployment
+### Local CLI Deployment
 
-If you prefer to deploy locally, run the bundled deploy scripts, which execute every step in order (frontend build → `sam build` → native-binary post-build → `sam deploy` → S3 upload → CloudFront invalidation). The first run walks you through interactive SAM configuration; subsequent runs reuse it.
+If you prefer to deploy locally, use the unified CLI, which executes every step in order (frontend build → `sam build` → native-binary post-build → `sam deploy` → S3 upload → CloudFront invalidation). The first run walks you through interactive SAM configuration; subsequent runs reuse it. Works identically on macOS, Linux, and Windows.
 
 ```bash
-# macOS / Linux / Git Bash
-./scripts/deploy-serverless.sh --profile wishboard      # or omit --profile for default creds
+npx wishboard serverless deploy --profile wishboard      # or omit --profile for default creds
 ```
 
-```powershell
-# Windows PowerShell
-./scripts/deploy-serverless.ps1 -Profile wishboard      # or omit -Profile for default creds
-```
-
-Useful flags: `--guided`/`-Guided` (force first-time config), `--mode`/`-Mode`
-(deploy as `prod` or `dev`), `--frontend-only`/`-FrontendOnly`
-(rebuild + reupload the UI without touching the backend), `--stack-name`/`--region`.
+Useful flags: `--guided` (force first-time config), `--mode` (deploy as `prod` or `dev`),
+`--frontend-only` (rebuild + reupload the UI without touching the backend),
+`--skip-frontend-upload`, `--stack-name`, `--region`, and `--dry-run` to preview commands.
 
 To run the steps manually instead, follow the sections below.
 
@@ -202,15 +196,15 @@ If you modify any frontend files:
 
 ## Uninstalling / Teardown
 
-If you want to completely remove Wishboard from your AWS account to stop incurring charges, you must run the teardown scripts. CloudFormation will fail to delete S3 buckets if they contain data, so the bundled script automates emptying the buckets before deletion.
+If you want to completely remove Wishboard from your AWS account to stop incurring charges, you must tear down the stack. CloudFormation will fail to delete S3 buckets if they contain data, so the CLI automates emptying the buckets before deletion.
 
 > [!WARNING]
-> This action is permanent. All uploaded images and database records will be permanently deleted. **A `-Force` flag is required when deleting a production stack.**
+> This action is permanent. All uploaded images and database records will be permanently deleted. **A `--force` flag is required when deleting a production (non-dev) stack.**
 
 1. **Destroy the Application Stack:**
 
    ```bash
-   ./scripts/destroy-serverless.sh --force
+   npx wishboard serverless destroy --force
    ```
 
 2. **Destroy the OIDC Deployment Role (Optional):**

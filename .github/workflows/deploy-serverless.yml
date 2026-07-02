@@ -59,10 +59,9 @@ jobs:
           aws-region: ${{ github.event.inputs.region || vars.AWS_REGION || 'us-east-1' }}
           audience: sts.amazonaws.com
 
-      - name: Run serverless deploy script
+      - name: Deploy serverless stack
         run: |
-          chmod +x ./scripts/deploy-serverless.sh
-          ./scripts/deploy-serverless.sh \
+          node src/cli/wishboard.js serverless deploy \
             --mode "${{ github.event.inputs.mode || 'dev' }}" \
             --region "${{ github.event.inputs.region || vars.AWS_REGION || 'us-east-1' }}" \
             --stack-name "${{ github.event.inputs.stack_name || vars.AWS_STACK_NAME || 'wishboard-serverless-dev' }}"

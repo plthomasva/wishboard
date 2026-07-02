@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setupOidc, destroyOidc } from './commands/oidc.js';
+import { deployServerless, destroyServerless } from './commands/serverless.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
@@ -55,33 +56,54 @@ oidc
     }
   });
 
-// Placeholder commands for the rest of the roadmap
+// Serverless Command Group
 const serverless = program
   .command('serverless')
-  .description('Manage AWS serverless stack deployments (Not yet ported - use scripts/*)');
+  .description('Manage AWS serverless stack deployments');
 
 serverless
   .command('deploy')
   .description(
-    'Build and deploy Wishboard to AWS Serverless (Legacy script: scripts/deploy-serverless.*)'
+    'Build and deploy Wishboard to AWS Serverless (Lambda + API Gateway + S3 + CloudFront)'
   )
-  .action(() => {
-    console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
-    console.log('Please run the legacy script instead:');
-    console.log(String.raw`  Windows:    .\scripts\deploy-serverless.ps1`);
-    console.log('  Linux/Mac:  ./scripts/deploy-serverless.sh\n');
+  .option(
+    '--profile <name>',
+    'Named AWS CLI profile (falls back to samconfig.toml, then default credentials)'
+  )
+  .option('--stack-name <name>', 'CloudFormation stack name (falls back to samconfig.toml)')
+  .option('--region <name>', 'AWS region (falls back to samconfig.toml, then AWS config)')
+  .option('--mode <mode>', 'Deployment mode: prod or dev', 'prod')
+  .option('--guided', 'Force interactive sam deploy --guided (first-time setup)')
+  .option('--frontend-only', 'Rebuild and upload only the frontend; skip the backend build/deploy')
+  .option(
+    '--skip-frontend-upload',
+    'Deploy the backend only; skip the S3 upload and CloudFront invalidation'
+  )
+  .option('--dry-run', 'Preview the commands without executing them')
+  .action((options) => {
+    try {
+      deployServerless(options);
+    } catch (err) {
+      console.error(`\x1b[31mError during deploy: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
   });
 
 serverless
   .command('destroy')
-  .description(
-    'Teardown Wishboard AWS Serverless stack (Legacy script: scripts/destroy-serverless.*)'
-  )
-  .action(() => {
-    console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
-    console.log('Please run the legacy script instead:');
-    console.log(String.raw`  Windows:    .\scripts\destroy-serverless.ps1`);
-    console.log('  Linux/Mac:  ./scripts/destroy-serverless.sh\n');
+  .description('Empty stack buckets and tear down the Wishboard AWS Serverless stack')
+  .option('--profile <name>', 'Named AWS CLI profile (falls back to samconfig.toml)')
+  .option('--stack-name <name>', 'CloudFormation stack name (falls back to samconfig.toml)')
+  .option('--region <name>', 'AWS region (falls back to samconfig.toml)')
+  .option('--force', 'Required to delete a non-dev (production) stack')
+  .option('--dry-run', 'Preview the commands without executing them')
+  .action((options) => {
+    try {
+      destroyServerless(options);
+    } catch (err) {
+      console.error(`\x1b[31mError during destroy: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
   });
 
 const kiosk = program
