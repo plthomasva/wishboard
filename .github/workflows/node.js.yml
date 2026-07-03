@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0 # Full history: better SonarQube relevancy and complete gitleaks scan
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v6.4.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
