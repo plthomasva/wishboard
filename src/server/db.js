@@ -26,8 +26,16 @@ if (!url) {
 
 const db = createClient({ url });
 
+// Concurrency hardening for the serverless target, where the ApiFunction and
+// WebSocketFunction Lambdas share one SQLite file over EFS: wait up to 5s for a
+// write lock instead of failing immediately with SQLITE_BUSY when writes overlap.
+// The database stays in the default rollback-journal mode ON PURPOSE — do NOT
+// enable WAL on the EFS deployment: WAL coordinates via single-host shared memory
+// and will corrupt a database accessed from multiple Lambda hosts over a network
+// filesystem. See docs/adr/0002-serverless-database-architecture.md.
 await db.executeMultiple(`
   PRAGMA foreign_keys = ON;
+  PRAGMA busy_timeout = 5000;
 
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
