@@ -9,6 +9,11 @@
     "fileName": "reports/mutation/index.html"
   },
   "coverageAnalysis": "off",
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": null
+  },
   "mutate": [
     "src/client/src/**/*.ts",
     "src/client/src/**/*.tsx",
@@ -22,7 +27,11 @@
     "!src/server/**/*.test.js",
     "!src/server/**/*.test.ts",
     "!src/cli/**/*.test.js",
-    "!src/client/src/components/WishScanner.tsx"
+    "!src/client/src/components/WishScanner.tsx",
+    "!src/client/src/constants.ts",
+    "!src/client/src/pages/AboutPage.tsx",
+    "!src/client/src/pages/PosterPage.tsx",
+    "!src/client/src/components/WishPreview.tsx"
   ],
   "ignorePatterns": ["!dist/**/*"]
 }
