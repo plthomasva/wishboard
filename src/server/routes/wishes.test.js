@@ -140,7 +140,7 @@ describe('Authenticated wish creation', () => {
       .field('content', 'This should fail')
       .set('Accept', 'application/json');
 
-    expect(wishResponse.status).toBe(500);
+    expect(wishResponse.status).toBe(400);
     expect(wishResponse.text).toMatch(/Invalid file type/);
   });
 });

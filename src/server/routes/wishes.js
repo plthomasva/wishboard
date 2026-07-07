@@ -28,7 +28,12 @@ const fileFilter = (req, file, cb) => {
   if (allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only PNG, JPG, and WEBP are allowed.'), false);
+    // A client-input validation error: mark it safe-to-expose with a 400 so the
+    // JSON error handler returns the helpful message (not a generic 500).
+    const err = new Error('Invalid file type. Only PNG, JPG, and WEBP are allowed.');
+    err.status = 400;
+    err.expose = true;
+    cb(err, false);
   }
 };
 const upload = multer({
