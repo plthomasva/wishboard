@@ -55,14 +55,38 @@ _(Also considered and set aside: Cloudflare D1 — wrong ecosystem, we're on AWS
 - **Interim:** Option 1 hardening (shipped with this ADR) makes the current EFS setup safe at today's volume.
 - **Target:** **Option 2 (Turso free tier)** is the architecturally correct answer for multiple Lambdas and stays cost-free at low volume — pending validation that the free tier fits our usage and that Lambda↔Turso latency is acceptable.
 
+## Deployment reality (important context for the decision)
+
+Real high-traffic events (conventions) run on a **dedicated single-node Raspberry Pi**, not on serverless. This reframes the urgency:
+
+- The multi-writer contention problem is essentially a **serverless-only** concern. On the Pi there is one Express process with a single libSQL connection, so DB access is already serialized by the app/event loop — no cross-process lock contention, and `SQLITE_BUSY` is a near-non-event regardless of journal mode.
+- So the highest-traffic path (Pi) largely **sidesteps the issue by topology**, and the serverless path is the lower-traffic one. This lowers the pressure to migrate, but doesn't remove the correctness gap for whatever serverless traffic does occur.
+
+### WAL on single-node (Pi) — safe and beneficial, if gated
+
+On the Pi (single host, local disk) **WAL is safe** (its single-host shared-memory requirement is met) and beneficial: readers no longer block the writer, so the big-screen display and attendees' phones can keep searching while wishes are being submitted — valuable on a busy event day. The CPU/SD-wear worry is minor for this low-write workload (sequential WAL appends + small periodic checkpoints; WAL is commonly recommended for embedded/Pi SQLite).
+
+Guardrail: WAL must be **opt-in behind an explicit flag** set only by the single-node/Docker deployment (e.g. `WISHBOARD_DB_WAL=1`), **never auto-enabled** — leaking WAL onto the EFS/serverless file risks cross-host corruption. Do **not** infer "single node" from a `file:` URL (EFS is also `file:`). Candidate follow-up, tracked separately.
+
+### Serverless latency scenarios (where contention would actually bite)
+
+With `busy_timeout=5000` an overlapping write waits rather than fails; added latency ≈ (writers queued ahead) × (per-write lock-hold time, inflated by EFS network `fsync`). It exceeds human tolerance only under: a **synchronized submission burst** (dozens of writers in the same seconds), **WebSocket connection churn** (the WS Lambda writes `websocket_connections` on connect/disconnect), **EFS latency spikes** (inflate every lock-hold at once), or **retry storms**. In rollback-journal mode a writer's EXCLUSIVE lock also briefly **blocks readers**, so a write burst can slow _searches_ too — another reason WAL (unavailable on EFS) or a real singleton (Turso) suits a concurrent serverless topology.
+
+### Graceful failure handling (shipped, topology-agnostic)
+
+Independent of the storage choice, a write that does time out now fails **safely**: a global JSON error handler returns a friendly, retryable `503` for `SQLITE_BUSY` (and JSON, not HTML, for any error), and the client shows a clear message while **preserving the user's entered data** for a one-tap retry. (Previously a non-JSON 500 surfaced as a silent no-op.) This makes an occasional timeout bearable regardless of which option wins.
+
 ## Open questions before accepting
 
 - [ ] Confirm Turso free-tier limits (rows read/written, storage, DB count) comfortably exceed projected usage.
 - [ ] Measure Lambda↔Turso latency vs. current EFS latency.
 - [ ] Confirm `busy_timeout` actually persists on the libSQL file connection under load (interim mitigation validity).
 - [ ] If staying on EFS for now, decide whether `ReservedConcurrentExecutions: 1` is worth the latency tradeoff at current volume.
+- [ ] Decide whether to enable **WAL on the single-node (Pi) deployment** behind an explicit opt-in flag (never on EFS).
+- [ ] Reassess overall urgency given that real events run on the single-node Pi, not serverless.
 
 ## Consequences
 
-- Until this is accepted and acted on, serverless remains SQLite-on-EFS with the `busy_timeout` mitigation — adequate at low volume, not at scale.
+- Until this is accepted and acted on, serverless remains SQLite-on-EFS with the `busy_timeout` mitigation + graceful JSON error handling — adequate at low volume, not at scale.
 - Whatever is chosen, the **kiosk stays embedded file-SQLite**, and **WAL is never enabled on EFS**.
+- Graceful write-failure handling (JSON errors, friendly retry, preserved form data) is now part of the baseline regardless of topology.

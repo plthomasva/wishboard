@@ -96,19 +96,33 @@ export default function EnterWishPage() {
       });
     }
 
-    const response = await fetch('/api/wishes', {
-      method: 'POST',
-      headers,
-      body,
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      setError(data.error || 'Could not submit wish.');
+    let response: Response;
+    try {
+      response = await fetch('/api/wishes', {
+        method: 'POST',
+        headers,
+        body,
+      });
+    } catch {
+      // Network/connection failure — the form is untouched so they can retry.
+      setError('Could not reach the server. Your wish is still here — please try again.');
       return;
     }
 
-    setResult({ id: data.id, secret: data.secret });
+    let data: { id?: string; secret?: string; error?: string } = {};
+    try {
+      data = await response.json();
+    } catch {
+      // Non-JSON error body (e.g. a raw 5xx); fall through to the generic
+      // message below. The form is preserved, so the user can retry by hand.
+    }
+
+    if (!response.ok) {
+      setError(data.error || 'Could not submit your wish. Please try again in a moment.');
+      return;
+    }
+
+    setResult({ id: data.id ?? '', secret: data.secret });
     setContent('');
     setPassphrase('');
     setCreatorGenders('');

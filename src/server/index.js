@@ -15,6 +15,7 @@ import morgan from 'morgan';
 import logger from './logger.js';
 import { metricsMiddleware, startCollector } from './metricsCollector.js';
 import { initSocket } from './socket.js';
+import { jsonErrorHandler } from './errorHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -117,6 +118,9 @@ app.use(express.static(distPath));
 app.get('*path', frontendLimiter, (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
+
+// JSON error handler — registered last so it catches errors from every route.
+app.use(jsonErrorHandler);
 
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);

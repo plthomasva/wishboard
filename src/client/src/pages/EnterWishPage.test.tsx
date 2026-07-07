@@ -122,6 +122,53 @@ describe('EnterWishPage', () => {
     });
   });
 
+  it('shows a friendly message and keeps the form when the server returns a non-JSON error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => {
+          throw new SyntaxError('Unexpected token < in JSON');
+        },
+      })
+    );
+
+    render(<EnterWishPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Type your wish here/i), {
+      target: { value: 'keep me' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Submit Wish/i }));
+
+    expect(await screen.findByText(/try again/i)).toBeInTheDocument();
+    // The form is preserved so the user can retry by hand.
+    expect((screen.getByPlaceholderText(/Type your wish here/i) as HTMLTextAreaElement).value).toBe(
+      'keep me'
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  });
+
+  it('shows a friendly message and keeps the form on a network failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+    render(<EnterWishPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Type your wish here/i), {
+      target: { value: 'keep me too' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Submit Wish/i }));
+
+    expect(await screen.findByText(/could not reach the server/i)).toBeInTheDocument();
+    expect((screen.getByPlaceholderText(/Type your wish here/i) as HTMLTextAreaElement).value).toBe(
+      'keep me too'
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  });
+
   it('toggles Advanced Match Criteria', async () => {
     render(<EnterWishPage />);
 
