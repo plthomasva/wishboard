@@ -142,6 +142,22 @@ await db.executeMultiple(`
   );
 `);
 
+// WAL is opt-in for single-node deployments (the Pi/kiosk, set via
+// WISHBOARD_DB_WAL=1 in the production container). It lets readers (the display
+// and phones searching) run without blocking the writer during submission
+// bursts. Guards keep it OFF for serverless: WAL requires single-host shared
+// memory and would corrupt the EFS-shared file across Lambda hosts — so we
+// require the explicit flag AND refuse it in Lambda AND only for a local file
+// (never :memory:, never a remote libSQL URL).
+if (
+  process.env.WISHBOARD_DB_WAL === '1' &&
+  !process.env.AWS_LAMBDA_FUNCTION_NAME &&
+  url.startsWith('file:') &&
+  url !== 'file::memory:'
+) {
+  await db.execute('PRAGMA journal_mode = WAL');
+}
+
 const ensureColumn = async (table, column, type) => {
   const rs = await db.execute(`PRAGMA table_info(${table})`);
   const hasColumn = rs.rows.some((info) => info.name === column);

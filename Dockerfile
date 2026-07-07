@@ -37,6 +37,10 @@ ENV NODE_ENV=production
 ENV PORT=3000
 # Ensure sqlite data, logs, and rules persist to the mounted volume
 ENV WISHBOARD_DB_PATH=/app/data/wishboard.db
+# Single-node deployment: enable SQLite WAL so reads don't block writes during
+# submission bursts. Safe here (one process, local disk); the serverless target
+# does not use this image and must never set this on the EFS-shared database.
+ENV WISHBOARD_DB_WAL=1
 
 # Copy node_modules from deps stage (has correctly built native bindings)
 COPY --from=deps /app/node_modules ./node_modules
