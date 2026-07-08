@@ -182,9 +182,58 @@ describe('db initialization', () => {
     expect(remoteCalls.some((c) => c.includes('INSERT OR IGNORE INTO'))).toBe(true);
     expect(writeSpy).toHaveBeenCalled();
 
-    process.env.DATABASE_URL = originalUrl;
-    process.env.NODE_ENV = originalNodeEnv;
+    // Restore with delete-if-undefined: `process.env.X = undefined` coerces to
+    // the string 'undefined', which would poison DATABASE_URL for later tests.
+    if (originalUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = originalUrl;
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
     existsSpy.mockRestore();
     writeSpy.mockRestore();
+  });
+
+  it('does not crash on boot when the remote driver rejects connection PRAGMAs', async () => {
+    // Regression: a remote libSQL/sqld server rejects `PRAGMA foreign_keys` /
+    // `PRAGMA busy_timeout` as an "unsupported statement". These must be applied
+    // individually and best-effort so a rejection can't abort schema init.
+    const originalUrl = process.env.DATABASE_URL;
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.DATABASE_URL = 'http://localhost:8080';
+    process.env.NODE_ENV = 'production';
+
+    const executeMultiple = vi.fn().mockResolvedValue({});
+    const execute = vi.fn().mockImplementation((arg) => {
+      const sql = typeof arg === 'string' ? arg : arg.sql;
+      // sqld's Hrana parser rejects the connection-setting PRAGMAs (but not
+      // read pragmas like PRAGMA table_info that ensureColumn relies on).
+      if (/^\s*PRAGMA\s+(foreign_keys|busy_timeout)/i.test(sql)) {
+        return Promise.reject(new Error('SQL_PARSE_ERROR: unsupported statement'));
+      }
+      return Promise.resolve({ rows: [], rowsAffected: 0 });
+    });
+    mockClient.execute = execute;
+    mockClient.executeMultiple = executeMultiple;
+
+    const fs = await import('node:fs');
+    // No legacy DB → skip the migration branch entirely.
+    const existsSpy = vi.spyOn(fs.default, 'existsSync').mockReturnValue(false);
+
+    vi.resetModules();
+    // Must resolve (module init must not throw) despite every PRAGMA rejecting.
+    await expect(import('./db.js')).resolves.toBeDefined();
+
+    // The table DDL still ran, and the PRAGMAs were attempted one-by-one
+    // (not inside the executeMultiple sequence, which is what used to abort).
+    expect(executeMultiple).toHaveBeenCalled();
+    const pragmaCalls = execute.mock.calls
+      .map(([a]) => (typeof a === 'string' ? a : a.sql))
+      .filter((s) => /^\s*PRAGMA\s+(foreign_keys|busy_timeout)/i.test(s));
+    expect(pragmaCalls.length).toBe(2);
+
+    if (originalUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = originalUrl;
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    existsSpy.mockRestore();
   });
 });

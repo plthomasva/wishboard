@@ -1,6 +1,10 @@
 services:
   db:
-    image: ghcr.io/tursodatabase/libsql-server:latest
+    # Pinned (not :latest) for reproducible, offline-safe deploys. sqld 0.24.33
+    # broke stats-file persistence under our rootless-Docker volume; 0.24.32 is
+    # the last-known-good. Bumps come via Dependabot (docker-compose) as PRs.
+    # Changing this minor/major may require recreating the db_data volume.
+    image: ghcr.io/tursodatabase/libsql-server:v0.24.32
     container_name: wishboard-db
     user: '0:0'
     volumes:

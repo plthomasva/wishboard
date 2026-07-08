@@ -33,10 +33,22 @@ const db = createClient({ url });
 // enable WAL on the EFS deployment: WAL coordinates via single-host shared memory
 // and will corrupt a database accessed from multiple Lambda hosts over a network
 // filesystem. See docs/adr/0002-serverless-database-architecture.md.
-await db.executeMultiple(`
-  PRAGMA foreign_keys = ON;
-  PRAGMA busy_timeout = 5000;
+// Connection PRAGMAs are applied individually and best-effort. A remote
+// libSQL/sqld server (the Pi/container deployment, DATABASE_URL=http://…) manages
+// concurrency itself and its Hrana parser rejects these as an "unsupported
+// statement" — and rejecting them *inside* an executeMultiple() sequence aborts
+// the whole schema init, which crash-loops the app. Run each on its own so a
+// local file DB still gets FK enforcement + a 5s write-lock wait, while an
+// unsupported PRAGMA on the remote driver is skipped instead of fatal.
+for (const pragma of ['PRAGMA foreign_keys = ON', 'PRAGMA busy_timeout = 5000']) {
+  try {
+    await db.execute(pragma);
+  } catch (err) {
+    console.warn(`Skipping unsupported "${pragma}" on this database driver: ${err.message}`);
+  }
+}
 
+await db.executeMultiple(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
