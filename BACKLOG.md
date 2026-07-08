@@ -2,6 +2,24 @@
 
 This document tracks feature requests, technical debt, and future improvements that are planned but not yet implemented.
 
+## Open GitHub Issues
+
+Enhancement and technical-debt work tracked as issues, for traceability:
+
+### Testing & Quality
+
+- **[#120](https://github.com/plthomasva/wishboard/issues/120)** — Measure and act on the Stryker mutation score (surface it, close the `WishScanner` mutation blind spot, decide a threshold).
+- **[#134](https://github.com/plthomasva/wishboard/issues/134)** — Add a Playwright client E2E smoke test (deferred from #121) to catch real-browser bundling/runtime breakage that jsdom can't.
+
+### Database & Deployment
+
+- **[#136](https://github.com/plthomasva/wishboard/issues/136)** — Spike: validate Turso free-tier fit to resolve [ADR 0002](docs/adr/0002-serverless-database-architecture.md) (the serverless SQLite-on-EFS topology).
+- **[#145](https://github.com/plthomasva/wishboard/issues/145)** — Decide the durable shape for the Pi's libSQL data volume: keep the `build-kiosk.sh` chown, switch to a bind mount, or rely on the image's own chown (rootless-Docker ownership).
+
+### Deferred, not yet issue-tracked
+
+- **Serverless/Pi perf follow-ups** (deferred from the now-closed #140, which shipped the lazy-opencv fix): serve `/assets` gzip/brotli-compressed with long-lived `Cache-Control` headers on the Pi's nginx; and move the synchronous `crypto.scryptSync` in `src/server/auth.js` to async `scrypt` so password hashing doesn't block the event loop under concurrency.
+
 ## Infrastructure & DevOps
 
 - **Automated Database Backups**
@@ -33,7 +51,7 @@ scripts are planned to be ported in subsequent iterations:
   - **Source**: `scripts/destroy-serverless.ps1` & `scripts/destroy-serverless.sh`
   - **Status**: Migrated to `src/cli/commands/serverless.js`; legacy scripts removed.
 
-### Phase 3: Kiosk Operations
+### Phase 3: Kiosk Operations ✅
 
 - **`wishboard kiosk deploy`**
   - **Source**: `scripts/deploy-kiosk.ps1` & `scripts/deploy-kiosk.sh`
