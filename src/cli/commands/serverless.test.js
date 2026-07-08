@@ -245,6 +245,32 @@ describe('serverless commands', () => {
       }
     });
 
+    it('parses escaped-quote samconfig parameter_overrides so the domain is not blanked (regression #158)', () => {
+      // SAM writes parameter_overrides with escaped inner quotes; the CLI must
+      // parse these, or DomainName resolves empty and CloudFormation tears down
+      // the custom domain (DNS + ACM cert).
+      const samconfig = [
+        'version = 0.1',
+        '[default.deploy.parameters]',
+        'stack_name = "wishboard-serverless-dev"',
+        'parameter_overrides = "ProjectName=\\"wishboard\\" DomainName=\\"demo.wishboards.app\\" HostedZoneId=\\"Z07ABC\\" AcmCertificateArn=\\"arn:aws:acm:us-east-1:1:certificate/abc\\" NodeEnv=\\"development\\""',
+      ].join('\n');
+      vi.mocked(fs.readFileSync).mockReturnValue(samconfig);
+
+      deployServerless({
+        stackName: 'wishboard-serverless-dev',
+        region: 'us-east-1',
+        mode: 'dev',
+        dryRun: true,
+      });
+
+      const pov = overridesOf(findDeploy());
+      expect(pov).toContain("DomainName='demo.wishboards.app'");
+      expect(pov).toContain("HostedZoneId='Z07ABC'");
+      expect(pov).toContain("AcmCertificateArn='arn:aws:acm:us-east-1:1:certificate/abc'");
+      expect(pov).not.toContain("DomainName=''");
+    });
+
     it('reads stack_name, region, and profile from samconfig.toml when no CLI options given', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readFileSync).mockReturnValue(

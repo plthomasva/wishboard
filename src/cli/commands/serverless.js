@@ -32,10 +32,33 @@ function readTomlValue(key) {
   return '';
 }
 
-/** Extracts a key's value from a space-separated Key="Value" parameter_overrides string. */
+/**
+ * Extracts a key's value from a space-separated Key="Value" parameter_overrides
+ * string. SAM writes samconfig.toml with *escaped* inner quotes
+ * (`DomainName=\"demo.example.com\"`), so strip backslashes first — otherwise the
+ * `Key="…"` match fails, the value resolves empty, and an empty override silently
+ * tears down conditional resources (e.g. the custom domain). See #158.
+ */
 function getOverrideValue(key, overrides) {
-  const match = overrides.match(new RegExp(`${key}="([^"]*)"`));
+  const normalized = overrides.replace(/\\/g, '');
+  const match = normalized.match(new RegExp(`${key}="([^"]*)"`));
   return match ? match[1] : '';
+}
+
+/**
+ * Defense-in-depth against the #158 class of bug: if samconfig.toml clearly sets a
+ * non-empty value for a param but we resolved it empty, refuse to deploy rather
+ * than emit `Key=''` and delete the resources that value gates.
+ */
+function assertNotSilentlyBlanked(key, resolved, tomlOverrides) {
+  const raw = tomlOverrides.replace(/\\/g, '').match(new RegExp(`${key}="([^"]+)"`));
+  if (raw && !resolved) {
+    throw new Error(
+      `${key} is set in samconfig.toml ("${raw[1]}") but resolved to empty. Refusing to deploy an ` +
+        `empty ${key}, which would tear down dependent resources (e.g. the custom domain). ` +
+        `This indicates a samconfig parsing bug — see #158.`
+    );
+  }
 }
 
 /** Resolves config with precedence: CLI options > samconfig.toml > defaults. */
@@ -144,6 +167,14 @@ function buildParameterOverrides(mode) {
   assertSafeParam('DomainName', domainName);
   assertSafeParam('HostedZoneId', hostedZoneId);
   assertSafeParam('AcmCertificateArn', acmCertificateArn);
+
+  // Never silently blank a param that samconfig explicitly sets (would delete the
+  // custom domain / cert). An env override still wins; this only guards accidents.
+  if (!process.env.DOMAIN_NAME) assertNotSilentlyBlanked('DomainName', domainName, tomlOverrides);
+  if (!process.env.HOSTED_ZONE_ID)
+    assertNotSilentlyBlanked('HostedZoneId', hostedZoneId, tomlOverrides);
+  if (!process.env.ACM_CERTIFICATE_ARN)
+    assertNotSilentlyBlanked('AcmCertificateArn', acmCertificateArn, tomlOverrides);
 
   // Pass as a single space-separated string with quoted values. sam rejects a
   // bare empty token (e.g. `DomainName=`), so the optional domain params must be
