@@ -108,7 +108,13 @@ export function deployKiosk(options) {
       throw new Error('Remote build-kiosk.sh failed.');
     }
 
-    console.log('\n\x1b[32mKiosk deployment complete! Container started.\x1b[0m\n');
+    if (dryRun) {
+      console.log(
+        '\n\x1b[33m[DRY RUN] No changes made. Re-run without --dry-run to deploy.\x1b[0m\n'
+      );
+    } else {
+      console.log('\n\x1b[32mKiosk deployment complete! Container started.\x1b[0m\n');
+    }
   } finally {
     // Always clean up the remote temp dir.
     if (!dryRun && remoteTemp && remoteTemp !== '/' && remoteTemp !== '/tmp') {

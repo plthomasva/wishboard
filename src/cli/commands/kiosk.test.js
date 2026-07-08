@@ -105,6 +105,16 @@ describe('kiosk commands', () => {
       expect(calls.length).toBeGreaterThan(0);
       expect(calls.every((c) => c[2]?.dryRun === true)).toBe(true);
     });
+
+    it('does not claim the container started when doing a dry run', () => {
+      deployKiosk({ host: 'pi.local', dryRun: true });
+      const logged = vi
+        .mocked(console.log)
+        .mock.calls.map((c) => String(c[0]))
+        .join('\n');
+      expect(logged).not.toContain('Container started');
+      expect(logged).toContain('[DRY RUN] No changes made');
+    });
   });
 
   describe('setupKiosk', () => {
