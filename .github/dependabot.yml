@@ -13,3 +13,9 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+  # Watches image tags in docker-compose.yml (e.g. the pinned libsql-server
+  # version) and opens upgrade PRs — the reviewed alternative to :latest.
+  - package-ecosystem: 'docker-compose'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
