@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.12.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.11.0...wishboard-v1.12.0) (2026-07-08)
+
+
+### Features
+
+* graceful JSON error handling for API writes + friendly client retry ([#138](https://github.com/plthomasva/wishboard/issues/138)) ([ae8bcdf](https://github.com/plthomasva/wishboard/commit/ae8bcdf7066846bf6cab9181b00b8b87681a8513))
+* migrate kiosk commands to unified wishboard CLI ([#139](https://github.com/plthomasva/wishboard/issues/139)) ([9baf478](https://github.com/plthomasva/wishboard/commit/9baf478035cef4efca8fc605d28a66630b7426e6))
+
+
+### Bug Fixes
+
+* **db:** set busy_timeout + guard against WAL on EFS; ADR for serverless DB ([#135](https://github.com/plthomasva/wishboard/issues/135)) ([fe9ea90](https://github.com/plthomasva/wishboard/commit/fe9ea90f6d426bef009cadd6fafe30bd1e2d5ac9))
+
 ## [1.11.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.10.1...wishboard-v1.11.0) (2026-07-02)
 
 
