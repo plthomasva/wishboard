@@ -15,7 +15,7 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 - **[#136](https://github.com/plthomasva/wishboard/issues/136)** — Spike: validate Turso free-tier fit to resolve [ADR 0002](docs/adr/0002-serverless-database-architecture.md) (the serverless SQLite-on-EFS topology).
 - **[#145](https://github.com/plthomasva/wishboard/issues/145)** — Decide the durable shape for the Pi's libSQL data volume: keep the `build-kiosk.sh` chown, switch to a bind mount, or rely on the image's own chown (rootless-Docker ownership).
-- **[#158](https://github.com/plthomasva/wishboard/issues/158)** — `serverless deploy` mis-parses samconfig `parameter_overrides` (escaped quotes), which can silently tear down the custom domain (DNS + ACM cert). Parse fix plus a fail-loud guard against blanking a configured domain.
+- **[#162](https://github.com/plthomasva/wishboard/issues/162)** — Adopt S3 account-regional namespaces for buckets (squat-proof names; drops the hand-coded `${AWS::AccountId}` scheme). Surfaced during the #158 custom-domain incident.
 
 ### Performance
 
