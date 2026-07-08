@@ -168,7 +168,7 @@ Options fall back to `aws-serverless/samconfig.toml`, then to your AWS config. A
 
 #### Roadmap Placeholders
 
-The remaining `kiosk`, `db`, and `build` commands are still under active migration. Run `npx wishboard --help` to view instructions on running their legacy scripts.
+The remaining `db` and `build` commands are still under active migration. Run `npx wishboard --help` to view instructions on running their legacy scripts.
 
 ## Notes
 

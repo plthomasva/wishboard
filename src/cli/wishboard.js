@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setupOidc, destroyOidc } from './commands/oidc.js';
 import { deployServerless, destroyServerless } from './commands/serverless.js';
+import { deployKiosk, setupKiosk, runKiosk } from './commands/kiosk.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
@@ -106,40 +107,72 @@ serverless
     }
   });
 
-const kiosk = program
-  .command('kiosk')
-  .description('Manage kiosk deployments and setup (Not yet ported - use scripts/*)');
+const kiosk = program.command('kiosk').description('Deploy and manage the Raspberry Pi kiosk');
 
 kiosk
   .command('deploy')
-  .description('Deploy container stack to remote kiosk (Legacy script: scripts/deploy-kiosk.*)')
-  .action(() => {
-    console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
-    console.log('Please run the legacy script instead:');
-    console.log(String.raw`  Windows:    .\scripts\deploy-kiosk.ps1`);
-    console.log('  Linux/Mac:  ./scripts/deploy-kiosk.sh\n');
+  .description('Deploy the container stack to a remote Raspberry Pi over SSH')
+  .option('--user <name>', 'SSH user on the Pi', 'pi')
+  .option('--host <name>', 'Pi hostname or IP address', 'raspberrypi.local')
+  .option('--mode <mode>', 'Deployment mode: prod, dev, or dual', 'dev')
+  .option(
+    '--domain <name>',
+    'Public domain (used in prod mode)',
+    'wishboard.painless-computing.com'
+  )
+  .option('--reset-rules', 'Reset the data/rules volume to baseline (default: keep existing)')
+  .option(
+    '--app-version <version>',
+    'Container image tag to deploy (default: package.json version)'
+  )
+  .option('--dry-run', 'Preview the commands without executing them')
+  .action((options) => {
+    try {
+      deployKiosk(options);
+    } catch (err) {
+      console.error(`\x1b[31mError during kiosk deploy: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
   });
 
 kiosk
   .command('setup')
-  .description(
-    'Configure system properties on target Raspberry Pi (Legacy script: scripts/setup-kiosk.sh)'
+  .description('Configure the local Raspberry Pi as a kiosk (runs scripts/setup-kiosk.sh)')
+  .option('--mode <mode>', 'Deployment mode: prod, dev, or dual', 'prod')
+  .option(
+    '--domain <name>',
+    'Public domain (used in prod mode)',
+    'wishboard.painless-computing.com'
   )
-  .action(() => {
-    console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
-    console.log('Please run the legacy script instead:');
-    console.log('  Linux/Mac:  ./scripts/setup-kiosk.sh\n');
+  .option('--dry-run', 'Preview the commands without executing them')
+  .action((options) => {
+    try {
+      setupKiosk(options);
+    } catch (err) {
+      console.error(`\x1b[31mError during kiosk setup: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
   });
 
 kiosk
   .command('run')
-  .description(
-    'Run docker-compose and display settings locally on target Pi (Legacy script: scripts/build-kiosk.sh)'
+  .description('Bring up the kiosk container + display locally (runs scripts/build-kiosk.sh)')
+  .option('--mode <mode>', 'Deployment mode: prod, dev, or dual', 'dev')
+  .option(
+    '--domain <name>',
+    'Public domain (used in prod mode)',
+    'wishboard.painless-computing.com'
   )
-  .action(() => {
-    console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
-    console.log('Please run the legacy script instead:');
-    console.log('  Linux/Mac:  ./scripts/build-kiosk.sh\n');
+  .option('--reset-rules', 'Reset the data/rules volume to baseline (default: keep existing)')
+  .option('--app-version <version>', 'Container image tag to run (default: package.json version)')
+  .option('--dry-run', 'Preview the commands without executing them')
+  .action((options) => {
+    try {
+      runKiosk(options);
+    } catch (err) {
+      console.error(`\x1b[31mError during kiosk run: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
   });
 
 const dbGroup = program

@@ -48,19 +48,13 @@ If successful, your certificates will be securely saved to:
 
 ## Step 2: Run the Deployment Orchestrator
 
-From your **local developer machine** (not the Pi), run the automated deployment script. This script will configure the Pi, install Docker Rootless, set up Nginx with your new SSL certificates, and launch the kiosk.
-
-### Windows (PowerShell)
-
-```powershell
-.\scripts\deploy-kiosk.ps1 -AdminUsername pi -HostName raspberrypi.local -Mode prod -DomainName wishboard.example.com
-```
-
-### macOS / Linux (Bash)
+From your **local developer machine** (not the Pi), run the unified deployment command. It configures the Pi, installs Docker Rootless, sets up the kiosk, and launches the container — the **same command on any OS** (Windows, macOS, or Linux):
 
 ```bash
-./scripts/deploy-kiosk.sh pi raspberrypi.local prod wishboard.example.com
+npx wishboard kiosk deploy --host raspberrypi.local --mode prod --domain wishboard.example.com
 ```
+
+Add `--user <name>` if your Pi login isn't `pi`, `--reset-rules` to reset the data/rules volume, and `--dry-run` to preview the exact SSH/scp steps without executing them.
 
 ### Networking Modes
 

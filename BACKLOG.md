@@ -37,10 +37,10 @@ scripts are planned to be ported in subsequent iterations:
 
 - **`wishboard kiosk deploy`**
   - **Source**: `scripts/deploy-kiosk.ps1` & `scripts/deploy-kiosk.sh`
-  - **Status**: Pending migration.
+  - **Status**: Migrated to `src/cli/commands/kiosk.js` (cross-platform SSH/scp orchestration); legacy `.ps1`/`.sh` pair removed.
 - **`wishboard kiosk setup`**
   - **Source**: `scripts/setup-kiosk.sh`
-  - **Status**: Pending migration.
+  - **Status**: Migrated — CLI wrapper runs the Pi-only bash script, which stays as the system-admin source of truth (apt/systemd/rootless-docker/hotspot; no Windows twin to unify).
 - **`wishboard kiosk run`**
   - **Source**: `scripts/build-kiosk.sh`
-  - **Status**: Pending migration.
+  - **Status**: Migrated — CLI wrapper runs the Pi-only bash script (kept as source of truth).
