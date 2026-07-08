@@ -6,7 +6,9 @@ import AttributeInput from '../components/AttributeInput';
 import WishPreview from '../components/WishPreview';
 import WishFormFields from '../components/WishFormFields';
 const WishScanner = React.lazy(() => import('../components/WishScanner'));
-import { processCardImage } from '../cardProcessor';
+// cardProcessor pulls in the ~15.6 MB @techstark/opencv-js blob. Import it
+// dynamically at the point of use (card upload / scan) so it is not fetched
+// on page load — mirrors the React.lazy(WishScanner) above. See issue #140.
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
 function loadImage(file: File): Promise<HTMLImageElement> {
@@ -224,6 +226,7 @@ export default function EnterWishPage() {
                 let img: HTMLImageElement | null = null;
                 try {
                   img = await loadImage(file);
+                  const { processCardImage } = await import('../cardProcessor');
                   const { blob, text } = await processCardImage(img);
                   if (text) setContent(text);
                   setImageBlob(blob);
