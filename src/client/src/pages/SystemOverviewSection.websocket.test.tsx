@@ -338,6 +338,10 @@ describe('SystemOverviewSection WebSocket', () => {
     expect(screen.getByText(/GET \/api\/admin\/local-metrics/)).toBeInTheDocument();
   });
 
+  // Rendering 2000+ log-line nodes and polling getByText over that large tree
+  // is inherently slow (~5s), so give this test a generous budget. On a loaded
+  // CPU (e.g. the pre-push hook runs `vite build` right before the suite) the
+  // default 5s testTimeout / 1s waitFor were tripping intermittently. See #142.
   it('clips logs exceeding 2000 lines', async () => {
     // Generate 2005 log lines
     const initialLogs = Array.from({ length: 2005 }, (_, i) => `log line ${i}`).join('\n');
@@ -346,7 +350,9 @@ describe('SystemOverviewSection WebSocket', () => {
     });
 
     render(<SystemOverviewSection {...defaultProps} />);
-    await waitFor(() => expect(screen.getByText('log line 2004')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('log line 2004')).toBeInTheDocument(), {
+      timeout: 10000,
+    });
 
     const socket = getMockSocket();
     const sysLogHandler = (socket.on as any).mock.calls.find(
@@ -357,8 +363,10 @@ describe('SystemOverviewSection WebSocket', () => {
       sysLogHandler('new live log line');
     });
 
-    await waitFor(() => expect(screen.getByText('new live log line')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('new live log line')).toBeInTheDocument(), {
+      timeout: 10000,
+    });
     // Since it exceeded 2000 lines, log line 0 should be gone
     expect(screen.queryByText('log line 0')).not.toBeInTheDocument();
-  });
+  }, 15000);
 });
