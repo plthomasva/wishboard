@@ -11,6 +11,12 @@ vi.mock('./commands/serverless.js', () => ({
   destroyServerless: vi.fn(),
 }));
 
+vi.mock('./commands/kiosk.js', () => ({
+  deployKiosk: vi.fn(),
+  setupKiosk: vi.fn(),
+  runKiosk: vi.fn(),
+}));
+
 describe('wishboard CLI entrypoint', () => {
   let originalArgv;
   let exitSpy;
@@ -112,24 +118,27 @@ describe('wishboard CLI entrypoint', () => {
     );
   });
 
-  it('handles kiosk deploy placeholder', async () => {
-    await runCLI(['kiosk', 'deploy']);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('This command is not yet migrated')
+  it('routes to kiosk deploy command with options', async () => {
+    const mod = await import('./commands/kiosk.js');
+    await runCLI(['kiosk', 'deploy', '--host', 'mypi.local', '--mode', 'prod', '--dry-run']);
+    expect(mod.deployKiosk).toHaveBeenCalledWith(
+      expect.objectContaining({ host: 'mypi.local', mode: 'prod', dryRun: true })
     );
   });
 
-  it('handles kiosk setup placeholder', async () => {
-    await runCLI(['kiosk', 'setup']);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('This command is not yet migrated')
+  it('routes to kiosk setup command with options', async () => {
+    const mod = await import('./commands/kiosk.js');
+    await runCLI(['kiosk', 'setup', '--mode', 'dual', '--dry-run']);
+    expect(mod.setupKiosk).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'dual', dryRun: true })
     );
   });
 
-  it('handles kiosk run placeholder', async () => {
-    await runCLI(['kiosk', 'run']);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('This command is not yet migrated')
+  it('routes to kiosk run command with options', async () => {
+    const mod = await import('./commands/kiosk.js');
+    await runCLI(['kiosk', 'run', '--reset-rules', '--dry-run']);
+    expect(mod.runKiosk).toHaveBeenCalledWith(
+      expect.objectContaining({ resetRules: true, dryRun: true })
     );
   });
 
