@@ -15,10 +15,12 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 - **[#136](https://github.com/plthomasva/wishboard/issues/136)** — Spike: validate Turso free-tier fit to resolve [ADR 0002](docs/adr/0002-serverless-database-architecture.md) (the serverless SQLite-on-EFS topology).
 - **[#145](https://github.com/plthomasva/wishboard/issues/145)** — Decide the durable shape for the Pi's libSQL data volume: keep the `build-kiosk.sh` chown, switch to a bind mount, or rely on the image's own chown (rootless-Docker ownership).
+- **[#158](https://github.com/plthomasva/wishboard/issues/158)** — `serverless deploy` mis-parses samconfig `parameter_overrides` (escaped quotes), which can silently tear down the custom domain (DNS + ACM cert). Parse fix plus a fail-loud guard against blanking a configured domain.
 
-### Deferred, not yet issue-tracked
+### Performance
 
-- **Serverless/Pi perf follow-ups** (deferred from the now-closed #140, which shipped the lazy-opencv fix): serve `/assets` gzip/brotli-compressed with long-lived `Cache-Control` headers on the Pi's nginx; and move the synchronous `crypto.scryptSync` in `src/server/auth.js` to async `scrypt` so password hashing doesn't block the event loop under concurrency.
+- **[#156](https://github.com/plthomasva/wishboard/issues/156)** — Serve static assets gzip/brotli-compressed with long-lived, immutable `Cache-Control` headers on the Pi's nginx (follow-up to #140).
+- **[#157](https://github.com/plthomasva/wishboard/issues/157)** — Move password hashing off the event loop (`crypto.scryptSync` → async `crypto.scrypt`) so it doesn't block under concurrency (follow-up to #140).
 
 ## Infrastructure & DevOps
 
