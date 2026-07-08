@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: ['main']
 
+concurrency:
+  # Cancel superseded runs for the same ref (rapid PR pushes / force-pushes).
+  # Grouped by ref so different PRs never cancel each other.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
