@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.12.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.12.0...wishboard-v1.12.1) (2026-07-08)
+
+
+### Bug Fixes
+
+* **kiosk:** make the Pi container DB deployment work (pin sqld, offline pulls, remote-PRAGMA crash) ([#144](https://github.com/plthomasva/wishboard/issues/144)) ([36fdbd3](https://github.com/plthomasva/wishboard/commit/36fdbd360bfdfd08cd3253cb669db50b3b047348))
+
+
+### Performance Improvements
+
+* lazy-load opencv/cardProcessor so it isn't fetched on page load ([#141](https://github.com/plthomasva/wishboard/issues/141)) ([138391c](https://github.com/plthomasva/wishboard/commit/138391c2c2c77524db624548c48a782d6e8e6ac2)), closes [#140](https://github.com/plthomasva/wishboard/issues/140)
+
 ## [1.12.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.11.0...wishboard-v1.12.0) (2026-07-08)
 
 
