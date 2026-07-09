@@ -8,8 +8,11 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 ### Testing & Quality
 
-- **[#120](https://github.com/plthomasva/wishboard/issues/120)** — Measure and act on the Stryker mutation score (surface it, close the `WishScanner` mutation blind spot, decide a threshold).
 - **[#134](https://github.com/plthomasva/wishboard/issues/134)** — Add a Playwright client E2E smoke test (deferred from #121) to catch real-browser bundling/runtime breakage that jsdom can't.
+- **[#164](https://github.com/plthomasva/wishboard/issues/164)** — CI: SonarQube quality gate races auto-merge — `CI Success` goes green before Sonar's server-side verdict posts, so red gates slip through. Fix by adding `sonar.qualitygate.wait=true` (not a sleep); also unblock the current red gate (2 `kiosk.js` S5443 findings) and sweep accumulated issues.
+- **[#165](https://github.com/plthomasva/wishboard/issues/165)** — Un-exclude `WishScanner.tsx` from Stryker `mutate` and give it a real component test suite (split from #120; its `cardProcessor.ts` delegate is now hardened to ~80%).
+- **[#168](https://github.com/plthomasva/wishboard/issues/168)** — Harden `demoSeeder.js` mutation coverage (240 LOC behind a single happy-path assertion, ~24%; split from #120).
+- **[#169](https://github.com/plthomasva/wishboard/issues/169)** — Refactor `runSamDeploy` to accept an injectable sleep so the retry-loop mutants can be tested without real 5s waits (split from #120 / #132).
 
 ### Database & Deployment
 
