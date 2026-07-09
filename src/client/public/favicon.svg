@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Wishboard: a wish card pinned to a board">
+  <defs>
+    <radialGradient id="pin" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#ff8a8a" />
+      <stop offset="45%" stop-color="#ff5252" />
+      <stop offset="100%" stop-color="#b71c1c" />
+    </radialGradient>
+  </defs>
+
+  <!-- Corkboard -->
+  <rect x="0" y="0" width="64" height="64" rx="12" fill="#d7ccc8" />
+
+  <!-- Wish card, pinned slightly askew (5:3 index card) -->
+  <g transform="rotate(-6 32 34)">
+    <!-- lift shadow -->
+    <rect x="12.2" y="23.4" width="42" height="25.2" rx="2.5" fill="#000" opacity="0.16" />
+    <!-- card -->
+    <rect x="11" y="21.4" width="42" height="25.2" rx="2.5" fill="#fffdf3"
+          stroke="#000" stroke-opacity="0.12" stroke-width="0.5" />
+    <!-- red top-margin line -->
+    <line x1="14" y1="27.6" x2="50" y2="27.6" stroke="#ef5350" stroke-opacity="0.55" stroke-width="1" />
+    <!-- faint blue ruled lines -->
+    <line x1="14" y1="32.4" x2="50" y2="32.4" stroke="#2196f3" stroke-opacity="0.2" stroke-width="0.8" />
+    <line x1="14" y1="37.2" x2="50" y2="37.2" stroke="#2196f3" stroke-opacity="0.2" stroke-width="0.8" />
+    <line x1="14" y1="42.0" x2="50" y2="42.0" stroke="#2196f3" stroke-opacity="0.2" stroke-width="0.8" />
+    <!-- pushpin cast shadow on the card -->
+    <ellipse cx="32" cy="23.6" rx="4" ry="1.4" fill="#000" opacity="0.18" />
+    <!-- red pushpin through the top of the card -->
+    <circle cx="32" cy="21.4" r="4.6" fill="url(#pin)" />
+    <circle cx="30.3" cy="19.7" r="1.15" fill="#fff" opacity="0.85" />
+  </g>
+</svg>
