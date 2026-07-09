@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.12.1...wishboard-v1.12.2) (2026-07-09)
+
+
+### Bug Fixes
+
+* **client:** add a pinned-wish-card favicon ([#170](https://github.com/plthomasva/wishboard/issues/170)) ([3dd2bd9](https://github.com/plthomasva/wishboard/commit/3dd2bd9d1990cc0930b135b5fd8269f7414ae67e))
+* **serverless:** parse escaped-quote samconfig overrides; guard blank domain ([#160](https://github.com/plthomasva/wishboard/issues/160)) ([51141f6](https://github.com/plthomasva/wishboard/commit/51141f6cfd86573dce033cd62db93355a2fdf860))
+
 ## [1.12.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.12.0...wishboard-v1.12.1) (2026-07-08)
 
 
