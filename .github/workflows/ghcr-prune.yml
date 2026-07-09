@@ -1,0 +1,33 @@
+name: Prune GHCR Images (manual)
+
+# Manually prune orphaned / untagged versions from the ghcr.io/<owner>/wishboard
+# container package. The dataaxiom action is multi-arch aware: it preserves the
+# untagged child manifests and attestations that still belong to a tagged image
+# (latest, release tags, live pr-* builds) and removes only genuinely-orphaned
+# untagged versions left behind by overwritten tags and deleted PR images.
+#
+# Defaults to a dry run — flip the input off to actually delete.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Report only, do not delete (run this first)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: none
+
+jobs:
+  prune-untagged:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prune untagged / orphaned image versions
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          # Needs a PAT with delete:packages — reuses the secret pr-cleanup.yml uses.
+          token: ${{ secrets.GHCR_DELETE_PAT }}
+          packages: wishboard
+          delete-untagged: true
+          dry-run: ${{ inputs.dry-run }}
