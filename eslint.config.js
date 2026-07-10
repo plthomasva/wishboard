@@ -1,3 +1,11 @@
+// Version pin: `eslint` and `@eslint/js` are held on the 9.x line — Dependabot
+// bumps to 10.x were ignored (PRs #114 eslint, #129 @eslint/js). Reason:
+// `eslint-plugin-react` has no ESLint 10 support yet — on v10 it hits a removed
+// RuleContext API (jsx-eslint/eslint-plugin-react#3977; fix in PR #3979). The
+// rest of the toolchain already allows eslint ^10; this plugin is the lone
+// holdout. Lift the pin once it ships a stable release with `eslint ^10` in its
+// peers. (Related: `typescript-eslint` still peers `typescript <6.1.0`, which
+// keeps us on typescript 6.0.x and blocks the Dependabot TS 7 bump — same wait.)
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
