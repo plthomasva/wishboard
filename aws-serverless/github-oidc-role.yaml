@@ -227,6 +227,18 @@ Resources:
                 Resource:
                   - !Sub 'arn:aws:cloudfront::${AWS::AccountId}:origin-access-control/*'
 
+              # 7d. CloudFront Function Management (WebSocket path rewrite)
+              - Effect: Allow
+                Action:
+                  - cloudfront:CreateFunction
+                  - cloudfront:UpdateFunction
+                  - cloudfront:PublishFunction
+                  - cloudfront:DescribeFunction
+                  - cloudfront:GetFunction
+                  - cloudfront:DeleteFunction
+                Resource:
+                  - !Sub 'arn:aws:cloudfront::${AWS::AccountId}:function/*'
+
               # 8a. Taggable EC2 Resource Creation
               - Effect: Allow
                 Action:
