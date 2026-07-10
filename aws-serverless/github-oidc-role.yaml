@@ -236,6 +236,8 @@ Resources:
                   - cloudfront:DescribeFunction
                   - cloudfront:GetFunction
                   - cloudfront:DeleteFunction
+                  - cloudfront:TagResource
+                  - cloudfront:UntagResource
                 Resource:
                   - !Sub 'arn:aws:cloudfront::${AWS::AccountId}:function/*'
 
