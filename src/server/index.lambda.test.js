@@ -20,9 +20,10 @@ describe('Server index.js - Lambda Mode', () => {
     // local-metrics is only meaningful outside Lambda; in Lambda mode it returns 400
     const res = await request(app)
       .get('/api/admin/local-metrics')
-      .set('Authorization', 'Bearer invalid-token'); // will fail auth first with 403
-    // We just confirm the route is present (403 = admin required, not 404)
-    expect([400, 403]).toContain(res.status);
+      .set('Authorization', 'Bearer invalid-token'); // invalid token -> 401 (no valid session)
+    // We just confirm the route is present and rejects: 401 (bad token), 403
+    // (admin required), or 400 (route reached in Lambda mode) — never 404.
+    expect([400, 401, 403]).toContain(res.status);
 
     server.close();
   }, 20000);

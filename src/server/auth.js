@@ -91,7 +91,13 @@ export const requireAuth = async (req, res, next) => {
 
 export const requireAdmin = async (req, res, next) => {
   const user = await getUserFromRequest(req);
-  if (user?.role !== 'admin') {
+  // Distinguish "no valid session" (401) from "authenticated but not admin"
+  // (403). Collapsing both into 403 hid expired/orphaned tokens from the client,
+  // which then couldn't tell "log back in" from "you're not allowed".
+  if (!user) {
+    return res.status(401).json({ error: 'Authentication required.' });
+  }
+  if (user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required.' });
   }
   req.user = user;
