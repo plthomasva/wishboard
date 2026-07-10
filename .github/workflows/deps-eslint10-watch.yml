@@ -1,0 +1,70 @@
+name: Watch upstream peers (ESLint 10 / TS 7)
+
+# We pin eslint to 9.x (eslint-plugin-react has no ESLint 10 support) and
+# typescript to 6.0.x (typescript-eslint peers TS <6.1.0). This weekly job
+# checks whether those upstream peer ranges have relaxed and, when they have,
+# comments on the tracking issue (#180) once per condition so we get notified.
+# See eslint.config.js for the pin rationale.
+
+on:
+  schedule:
+    - cron: '17 13 * * 1' # weekly, Mondays 13:17 UTC
+  workflow_dispatch: # allow a manual check
+
+permissions:
+  issues: write
+
+env:
+  TRACKING_ISSUE: '180'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check whether upstream peers unblock our pins
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+
+          # Does <version> satisfy <pkg>@latest's peer range for <peer-key>?
+          # Echoes "yes|<range>", "no|<range>", or "unknown".
+          satisfies() {
+            local pkg="$1" key="$2" version="$3" range
+            range=$(npm view "$pkg@latest" "peerDependencies.$key" 2>/dev/null || true)
+            if [ -z "$range" ]; then echo "unknown"; return; fi
+            if npx --yes semver -r "$range" "$version" >/dev/null 2>&1; then
+              echo "yes|$range"
+            else
+              echo "no|$range"
+            fi
+          }
+
+          # Comment on the tracking issue once per condition (marker-guarded).
+          notify() {
+            local marker="$1" body="$2"
+            if gh issue view "$TRACKING_ISSUE" --repo "$REPO" --json comments \
+                 --jq '.comments[].body' 2>/dev/null | grep -qF "$marker"; then
+              echo "Already notified for $marker."
+              return
+            fi
+            printf '%s\n%b\n\n_Auto-detected by the weekly upstream-peer watcher._' \
+              "$marker" "$body" | gh issue comment "$TRACKING_ISSUE" --repo "$REPO" --body-file -
+          }
+
+          react=$(satisfies eslint-plugin-react eslint 10.0.0)
+          tse=$(satisfies typescript-eslint typescript 7.0.0)
+          echo "eslint-plugin-react vs eslint@10 -> $react"
+          echo "typescript-eslint  vs typescript@7 -> $tse"
+
+          case "$react" in
+            yes*) notify '<!-- watch:eslint-plugin-react-eslint10 -->' \
+              "✅ **eslint-plugin-react** now allows \`eslint@10\` (peer: \`${react#yes|}\`). The eslint 9.x pin can be lifted — bump \`eslint\`+\`@eslint/js\`, \`@dependabot unignore\`, and drop the note in \`eslint.config.js\`." ;;
+          esac
+          case "$tse" in
+            yes*) notify '<!-- watch:typescript-eslint-ts7 -->' \
+              "✅ **typescript-eslint** now allows \`typescript@7\` (peer: \`${tse#yes|}\`). The TypeScript 7 bump (#176) is unblocked." ;;
+          esac
+
+          echo "Done."
