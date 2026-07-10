@@ -206,6 +206,17 @@ describe('Server Auth Helper Functions', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
+    it('await requireAdmin returns 401 when there is no valid session', async () => {
+      const req = { headers: {} };
+      const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+      const next = vi.fn();
+
+      await requireAdmin(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Authentication required.' });
+      expect(next).not.toHaveBeenCalled();
+    });
+
     it('await requireAdmin sets req.user and calls next if user is an admin', async () => {
       // Create an admin test user in DB
       const userId = 'user-' + Math.random().toString(36).substring(2, 9);

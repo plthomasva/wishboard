@@ -61,10 +61,10 @@ describe('Admin routes', () => {
     return response.body.token;
   };
 
-  it('rejects admin routes without admin credentials', async () => {
+  it('rejects admin routes without a valid session (401)', async () => {
     const response = await request(app).get('/api/admin/flags');
-    expect(response.status).toBe(403);
-    expect(response.body.error).toBe('Admin access required.');
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe('Authentication required.');
   });
 
   it('lists flagged wishes and allows removal by admin', async () => {
@@ -295,6 +295,31 @@ describe('Admin routes', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(404);
     expect(response.body.error).toBe('User not found.');
+  });
+
+  it('refuses to delete the account the admin is signed in as', async () => {
+    const token = await loginAsAdmin();
+    const admin = await db
+      .prepare('SELECT id FROM users WHERE username = ?')
+      .get(defaultAdminUsername);
+
+    const response = await request(app)
+      .post(`/api/admin/users/${admin.id}/delete`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.error).toMatch(/signed in as/);
+    // The signed-in admin must still exist.
+    const stillThere = await db.prepare('SELECT id FROM users WHERE id = ?').get(admin.id);
+    expect(stillThere).toBeTruthy();
+  });
+
+  it('marks admin responses no-store so stale privileged responses are never cached', async () => {
+    const token = await loginAsAdmin();
+    const response = await request(app)
+      .get('/api/admin/users')
+      .set('Authorization', `Bearer ${token}`);
+    expect(response.headers['cache-control']).toContain('no-store');
   });
 
   it('handles errors during demo reset', async () => {

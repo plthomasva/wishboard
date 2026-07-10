@@ -13,6 +13,14 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
+// Admin responses reflect live, privileged state — never let a browser or proxy
+// cache them (e.g. serving a stale 403 after a session is fixed, or stale data
+// after a mutation). CloudFront already bypasses /api/*, this covers the rest.
+router.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
+
 const checkResult = (result, res, entityName) => {
   if (result.changes === 0) {
     return res.status(404).json({ error: `${entityName} not found.` });
@@ -93,6 +101,15 @@ router.get('/users/:id/delete-preview', requireAdmin, async (req, res) => {
 
 router.post('/users/:id/delete', requireAdmin, async (req, res) => {
   const { id } = req.params;
+
+  // Never delete the account you're signed in as: it also deletes your own
+  // session below, orphaning your token — you'd keep seeing the admin UI while
+  // every request 401s. Delete a different admin, or use the self-service
+  // account-deletion flow (which guards against removing the last admin).
+  if (id === req.user.id) {
+    return res.status(409).json({ error: "You can't delete the account you're signed in as." });
+  }
+
   await db
     .prepare('DELETE FROM wishmails WHERE wish_id IN (SELECT id FROM wishes WHERE user_id = ?)')
     .run(id);
