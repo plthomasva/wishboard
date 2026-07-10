@@ -191,6 +191,9 @@ describe('socket.js', () => {
       emitWishDeleted('w1');
       emitWishReactivated({ id: 'w1' });
       emitSystemLog('test log');
+      // A second synchronous call must hit the re-entrancy guard (this is what
+      // prevents the log -> broadcast -> log feedback storm).
+      emitSystemLog('while a sys:log broadcast is in flight');
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
 

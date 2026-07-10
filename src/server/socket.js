@@ -91,12 +91,15 @@ const broadcastToApiGateway = async (event, data) => {
   const promises = rows.map(async (row) => {
     const connectionId = typeof row.connection_id === 'string' ? row.connection_id : '';
     try {
-      await client.send(
-        new PostToConnectionCommand({
-          ConnectionId: connectionId,
-          Data: payload,
-        })
-      );
+      // Fail fast: if egress to the WS management API is broken, a send can hang
+      // until the Lambda's 30s timeout. Cap each attempt so one bad connection
+      // (or a missing egress path) can't stall the whole invocation.
+      await Promise.race([
+        client.send(new PostToConnectionCommand({ ConnectionId: connectionId, Data: payload })),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('PostToConnection timed out after 3s')), 3000)
+        ),
+      ]);
     } catch (err) {
       if (err.name === 'GoneException' || err.$metadata?.httpStatusCode === 410) {
         logger.info(`Connection ${connectionId} is gone, removing from DB.`);
@@ -152,9 +155,20 @@ export const emitWishReactivated = (wish) => {
   }
 };
 
+// Re-entrancy guard: broadcastToApiGateway logs while it runs, and those logs
+// feed back through logger's SocketTransport into emitSystemLog. Without this,
+// a single log line snowballs into thousands of broadcasts (observed: 18k+
+// broadcasts / 8 min, each hanging on PostToConnection -> 30s Lambda timeouts).
+let sysLogBroadcastInFlight = false;
 export const emitSystemLog = (logEntry) => {
   if (getProvider() === 'apigateway') {
-    broadcastToApiGateway('sys:log', logEntry);
+    if (sysLogBroadcastInFlight) return;
+    sysLogBroadcastInFlight = true;
+    Promise.resolve()
+      .then(() => broadcastToApiGateway('sys:log', logEntry))
+      .finally(() => {
+        sysLogBroadcastInFlight = false;
+      });
   } else if (io) {
     io.emit('sys:log', logEntry);
   }
