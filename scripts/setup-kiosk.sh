@@ -60,13 +60,27 @@ elif [[ "$MODE" = "dual" ]]; then
   echo "Setting up virtual ap0 interface for AP/STA concurrency..."
   sudo tee /usr/local/bin/enable-ap0.sh > /dev/null << 'EOF'
 #!/bin/bash
-iw dev wlan0 interface add ap0 type __ap || true
+set -e
+# Create the virtual AP interface for single-radio AP/STA concurrency.
+# Fail loud: a creation failure must surface as a FAILED unit, not a silently
+# dead hotspot. The old "|| true" masked exactly this and left ap0 missing.
+if ! iw dev ap0 info >/dev/null 2>&1; then
+  iw dev wlan0 interface add ap0 type __ap
+fi
+ip link set ap0 up
+# Ensure NetworkManager manages ap0 even if this ever runs after NM has started.
+nmcli device set ap0 managed yes 2>/dev/null || true
 EOF
   sudo chmod +x /usr/local/bin/enable-ap0.sh
 
   sudo tee /etc/systemd/system/wifi-ap0.service > /dev/null << 'EOF'
 [Unit]
 Description=Create virtual ap0 interface for Wi-Fi AP
+# wlan0 must exist before a vif can be added to it (a likely cause of the old
+# silent boot-time failure), and NM must not start until ap0 exists so it
+# adopts ap0 as a managed device from the outset.
+After=sys-subsystem-net-devices-wlan0.device
+Wants=sys-subsystem-net-devices-wlan0.device
 Before=NetworkManager.service
 
 [Service]
@@ -90,7 +104,42 @@ EOF
   sudo nmcli con modify Hotspot 802-11-wireless.mode ap ipv4.method shared
   sudo nmcli con modify Hotspot wifi-sec.key-mgmt wpa-psk wifi-sec.psk "wishboard2026"
   sudo nmcli con modify Hotspot connection.autoconnect-priority 100
-  echo "Dual Mode Hotspot configured on ap0."
+
+  # Single-radio AP/STA concurrency requires the AP (ap0) and the wlan0 client
+  # to share ONE channel (iw list: "#{ AP } <= 1 ... #channels <= 1"). Leaving
+  # the channel unset makes NM default the AP to 2.4 GHz, which collides with a
+  # 5 GHz home connection and silently fails to start. Install a NetworkManager
+  # dispatcher that keeps ap0 pinned to wlan0's current channel, so the AP
+  # follows the router if it ever moves channels.
+  sudo tee /etc/NetworkManager/dispatcher.d/90-wishboard-ap-channel.sh > /dev/null << 'EOF'
+#!/bin/bash
+IFACE="$1"; ACTION="$2"
+[ "$IFACE" = "wlan0" ] || exit 0
+case "$ACTION" in up|dhcp4-change|connectivity-change) ;; *) exit 0 ;; esac
+ch=$(iw dev wlan0 info 2>/dev/null | awk '/channel/ {print $2; exit}')
+[ -n "$ch" ] || exit 0
+if [ "$ch" -gt 14 ]; then band=a; else band=bg; fi
+cur=$(nmcli -g 802-11-wireless.channel con show Hotspot 2>/dev/null)
+if [ "$cur" != "$ch" ]; then
+  logger -t wishboard-ap "pinning ap0 hotspot to wlan0 channel $ch (band $band)"
+  nmcli con modify Hotspot 802-11-wireless.band "$band" 802-11-wireless.channel "$ch"
+  nmcli device set ap0 managed yes 2>/dev/null || true
+  nmcli con up Hotspot || true
+fi
+EOF
+  sudo chmod 755 /etc/NetworkManager/dispatcher.d/90-wishboard-ap-channel.sh
+
+  # Bring the AP up now on wlan0's current channel; the dispatcher keeps it in
+  # sync thereafter. wlan0 is already associated at setup time.
+  CURRENT_CH=$(iw dev wlan0 info 2>/dev/null | awk '/channel/ {print $2; exit}')
+  if [[ -n "$CURRENT_CH" ]]; then
+    if [[ "$CURRENT_CH" -gt 14 ]]; then AP_BAND=a; else AP_BAND=bg; fi
+    sudo nmcli con modify Hotspot 802-11-wireless.band "$AP_BAND" 802-11-wireless.channel "$CURRENT_CH"
+    echo "Pinned Hotspot to wlan0 channel $CURRENT_CH (band $AP_BAND)."
+  fi
+  sudo nmcli device set ap0 managed yes 2>/dev/null || true
+  sudo nmcli con up Hotspot || true
+  echo "Dual Mode Hotspot configured on ap0 (channel follows wlan0)."
 fi
 
 echo "Generating network utility scripts..."
@@ -101,7 +150,7 @@ echo "Converting networking to PROD mode (isolated hotspot)..."
 sudo nmcli con delete Hotspot || true
 sudo systemctl disable wifi-ap0.service || true
 sudo systemctl stop wifi-ap0.service || true
-sudo rm -f /etc/systemd/system/wifi-ap0.service /usr/local/bin/enable-ap0.sh
+sudo rm -f /etc/systemd/system/wifi-ap0.service /usr/local/bin/enable-ap0.sh /etc/NetworkManager/dispatcher.d/90-wishboard-ap-channel.sh
 sudo systemctl daemon-reload
 sudo iw dev ap0 del || true
 
@@ -121,7 +170,7 @@ echo "Restoring NetworkManager configuration..."
 sudo nmcli con delete Hotspot || true
 sudo systemctl disable wifi-ap0.service || true
 sudo systemctl stop wifi-ap0.service || true
-sudo rm -f /etc/systemd/system/wifi-ap0.service /usr/local/bin/enable-ap0.sh
+sudo rm -f /etc/systemd/system/wifi-ap0.service /usr/local/bin/enable-ap0.sh /etc/NetworkManager/dispatcher.d/90-wishboard-ap-channel.sh
 sudo systemctl daemon-reload
 sudo iw dev ap0 del || true
 sudo systemctl restart NetworkManager
