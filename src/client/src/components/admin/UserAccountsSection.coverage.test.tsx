@@ -39,6 +39,45 @@ describe('UserAccountsSection Coverage', () => {
     await waitFor(() => expect(screen.getByText('user1')).toBeInTheDocument());
   });
 
+  it('calls onSessionExpired when loading users returns 401 (dead session)', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 401 }) // loadUsers
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ isProduction: true }) }); // loadConfig
+    const onSessionExpired = vi.fn();
+
+    render(
+      <UserAccountsSection
+        authHeader={{}}
+        setMessage={vi.fn()}
+        setError={vi.fn()}
+        refreshCounter={0}
+        triggerRefresh={vi.fn()}
+        onSessionExpired={onSessionExpired}
+      />
+    );
+
+    await waitFor(() => expect(onSessionExpired).toHaveBeenCalled());
+  });
+
+  it('surfaces an error (not a silently-empty table) when loading users fails non-401', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 500 }) // loadUsers
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ isProduction: true }) }); // loadConfig
+    const setError = vi.fn();
+
+    render(
+      <UserAccountsSection
+        authHeader={{}}
+        setMessage={vi.fn()}
+        setError={setError}
+        refreshCounter={0}
+        triggerRefresh={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(setError).toHaveBeenCalledWith('Failed to load user accounts.'));
+  });
+
   it('handles delete preview fetch failure', async () => {
     mockFetch
       .mockResolvedValueOnce({
