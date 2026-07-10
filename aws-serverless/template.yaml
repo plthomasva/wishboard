@@ -537,6 +537,24 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*'
 
+  # Rewrites CloudFront /socket.io/* requests to the bare WebSocket API stage
+  # (/production) so the $connect upgrade reaches API Gateway WebSocket exactly
+  # at its stage. Without it the origin saw /production/socket.io/ and rejected
+  # the upgrade (403), which the SPA CustomErrorResponses masked as 200 index.html.
+  WebSocketPathRewriteFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub '${ProjectName}-ws-path-rewrite'
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Rewrite /socket.io/* to the WebSocket API stage path
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          event.request.uri = '/production';
+          return event.request;
+        }
+
   # =========================================================================
   # Route 53 & ACM Custom Domain Configuration (Conditional)
   # =========================================================================
@@ -628,7 +646,9 @@ Resources:
           # Origin 4: WebSocket API Gateway
           - Id: WebSocketApiOrigin
             DomainName: !Sub '${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com'
-            OriginPath: /production
+            # No OriginPath: the WebSocketPathRewrite function (below) sets the URI
+            # to the bare stage path (/production) for /socket.io/* requests, so
+            # the $connect upgrade hits API Gateway WebSocket exactly at its stage.
             CustomOriginConfig:
               HTTPSPort: 443
               OriginProtocolPolicy: https-only
@@ -677,6 +697,9 @@ Resources:
             # UserAgentRefererHeaders policy stripped them, so the WS upgrade
             # failed with 426 Upgrade Required. Matches the /api/* behavior.
             OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac # Managed-AllViewerExceptHostHeader
+            FunctionAssociations:
+              - EventType: viewer-request
+                FunctionARN: !GetAtt WebSocketPathRewriteFunction.FunctionMetadata.FunctionARN
           # Route /images/* to the S3 Images Bucket (Cache Images)
           - PathPattern: /images/*
             TargetOriginId: ImagesS3Origin
