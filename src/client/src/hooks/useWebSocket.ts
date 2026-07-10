@@ -17,7 +17,9 @@ class RawWebSocketWrapper {
     // Fallback to routing over CloudFront /socket.io path or configured URL
     const wsUrl =
       (import.meta.env.VITE_WS_URL as string) ||
-      `${protocol}//${globalThis.location.host}/socket.io`;
+      // Trailing slash matters: CloudFront's `/socket.io/*` behavior does not
+      // match the bare `/socket.io`, which would fall through to the S3 origin.
+      `${protocol}//${globalThis.location.host}/socket.io/`;
 
     try {
       this.ws = new WebSocket(wsUrl);
