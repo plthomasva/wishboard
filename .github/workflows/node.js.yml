@@ -79,8 +79,16 @@ jobs:
           fi
           echo "No test artifacts leaked into the working tree."
       - name: SonarCloud Scan
+        # Dependabot runs can't see SONAR_TOKEN (secrets are withheld from
+        # dependabot events), so Sonar is scoped to human PRs / pushes — which
+        # are also the ones auto-merge can race. See #164.
         if: github.actor != 'dependabot[bot]' && matrix.node-version == '22.x'
         uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        with:
+          # Block this job until SonarCloud finishes computing the Quality Gate
+          # and fail if it's red, so "CI Success" (and auto-merge) can't go green
+          # before Sonar has weighed in. Closes the auto-merge/Sonar race (#164).
+          args: -Dsonar.qualitygate.wait=true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

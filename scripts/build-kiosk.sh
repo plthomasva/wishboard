@@ -72,7 +72,7 @@ export APP_VERSION=$APP_VERSION
 #   dev/dual -> always : testing wants the freshest image for a moving tag
 #            (e.g. pr-NNN / latest), which 'missing' would serve stale from cache.
 PULL_POLICY="missing"
-if [ "$MODE" = "dev" ] || [ "$MODE" = "dual" ]; then
+if [[ "$MODE" = "dev" || "$MODE" = "dual" ]]; then
   PULL_POLICY="always"
 fi
 echo "Docker image pull policy: $PULL_POLICY (mode: $MODE)"
@@ -85,7 +85,7 @@ $RUN_CMD compose --env-file .env up -d --pull "$PULL_POLICY"
 # so its schema init runs against a now-writable DB. See #144.
 echo "Aligning libsql-server data ownership to the sqld uid (666)..."
 for _ in $(seq 1 20); do
-    if [ -n "$($RUN_CMD exec -u 0 wishboard-db sh -c 'ls -A /var/lib/sqld 2>/dev/null')" ]; then
+    if [[ -n "$($RUN_CMD exec -u 0 wishboard-db sh -c 'ls -A /var/lib/sqld 2>/dev/null')" ]]; then
         break
     fi
     sleep 1

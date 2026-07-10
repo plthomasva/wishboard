@@ -132,6 +132,20 @@ describe('kiosk commands', () => {
     it('rejects an invalid mode', () => {
       expect(() => setupKiosk({ mode: 'nope' })).toThrow(/Mode must be one of/);
     });
+
+    it('is side-effect-free in dry-run (no staged copy, no temp dir created/removed)', () => {
+      setupKiosk({ mode: 'dual', dryRun: true });
+      const call = vi
+        .mocked(commandUtils.execCommand)
+        .mock.calls.find((c) => c[0] === 'bash' && String(c[1][0]).includes('setup-kiosk.sh'));
+      expect(call).toBeDefined();
+      expect(call[1][1]).toBe('dual');
+      expect(call[2]?.dryRun).toBe(true);
+      // Dry-run must not touch the filesystem: no mkdtemp, no staged copy, no cleanup.
+      expect(fs.mkdtempSync).not.toHaveBeenCalled();
+      expect(fs.copyFileSync).not.toHaveBeenCalled();
+      expect(fs.rmSync).not.toHaveBeenCalled();
+    });
   });
 
   describe('runKiosk', () => {

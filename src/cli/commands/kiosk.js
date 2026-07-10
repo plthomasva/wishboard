@@ -73,7 +73,7 @@ export function deployKiosk(options) {
 
   // 1. Remote temp dir
   logStep('[1/4] Creating remote temporary directory...');
-  let remoteTemp = '/tmp/wishboard-dry-run';
+  let remoteTemp = path.join(os.tmpdir(), 'wishboard-dry-run');
   if (dryRun) {
     logInfo(`[DRY RUN] Would run: ssh ${target} "mktemp -d"`);
   } else {
@@ -142,7 +142,7 @@ export function setupKiosk(options) {
   // setup-kiosk.sh moves <dir>/docker-compose.yml into the wishboard home, so
   // stage a COPY in a temp dir — never move the repo's own compose file.
   const stageDir = dryRun
-    ? '/tmp/wishboard-kiosk-setup'
+    ? path.join(os.tmpdir(), 'wishboard-kiosk-setup')
     : fs.mkdtempSync(path.join(os.tmpdir(), 'wishboard-kiosk-'));
   try {
     if (!dryRun && fs.existsSync(COMPOSE_FILE)) {
