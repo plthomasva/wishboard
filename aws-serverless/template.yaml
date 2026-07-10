@@ -672,7 +672,11 @@ Resources:
               - POST
               - DELETE
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # Managed-CachingDisabled
-            OriginRequestPolicyId: acba4595-bd28-49b8-b9fe-13317c0390fa # Managed-UserAgentRefererHeaders
+            # AllViewerExceptHostHeader forwards the Sec-WebSocket-* / Upgrade /
+            # Connection handshake headers (and sets Host to the origin). The old
+            # UserAgentRefererHeaders policy stripped them, so the WS upgrade
+            # failed with 426 Upgrade Required. Matches the /api/* behavior.
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac # Managed-AllViewerExceptHostHeader
           # Route /images/* to the S3 Images Bucket (Cache Images)
           - PathPattern: /images/*
             TargetOriginId: ImagesS3Origin
