@@ -49,7 +49,7 @@ const insertRule = (rule) =>
 const updateRuleRow = (rule) => {
   const setCols = RULE_COLUMNS.filter((c) => c !== 'id');
   return db.execute({
-    sql: `UPDATE rules SET ${setCols.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`,
+    sql: `UPDATE rules SET ${setCols.map((c) => c + ' = ?').join(', ')} WHERE id = ?`,
     args: [...setCols.map((c) => rule[c] ?? null), rule.id],
   });
 };
@@ -80,14 +80,16 @@ const maybeRefreshCache = () => {
 };
 
 /**
- * A legacy rules.yaml (RULES_PATH, else data/rules.yaml) may exist from a pre-#188
- * single-node deployment. Return its rules so a first-boot migration can preserve
- * any customizations; null if it's absent, empty, or unreadable.
+ * A pre-#188 single-node (Pi) deployment persisted its rules in a rules.yaml file
+ * — at RULES_PATH if set, otherwise in the data dir (its Docker `/app/data` volume).
+ * Return those rules so the first DB boot migrates them once, preserving any admin
+ * customizations. null when no such file exists (fresh deploy, or serverless where
+ * RULES_PATH points at an empty /tmp), in which case the bundled defaults seed.
  */
 const loadLegacyYamlRules = () => {
   const legacyPath = process.env.RULES_PATH || path.join(dataDir, 'rules.yaml');
+  if (!fs.existsSync(legacyPath)) return null;
   try {
-    if (!fs.existsSync(legacyPath)) return null;
     const parsed = YAML.parse(fs.readFileSync(legacyPath, 'utf8'));
     return Array.isArray(parsed?.rules) && parsed.rules.length > 0 ? parsed.rules : null;
   } catch (err) {

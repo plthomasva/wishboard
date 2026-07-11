@@ -24,11 +24,7 @@ const clearTestData = async () => {
   await db.exec('DELETE FROM sessions');
   await db.exec('DELETE FROM wishes');
   await db.exec("DELETE FROM users WHERE role != 'admin'");
-  const srcRules = path.resolve(process.cwd(), 'data/rules.yaml');
-  if (fs.existsSync(srcRules)) {
-    fs.copyFileSync(srcRules, rulesPath);
-  }
-  reloadRules();
+  await reloadRules();
 };
 
 beforeEach(async () => {

@@ -122,6 +122,35 @@ describe('rulesManager (DB-backed)', () => {
     );
   });
 
+  it('migrates a legacy rules.yaml (RULES_PATH) into the DB on first boot, preserving customizations', async () => {
+    const fs = await import('node:fs');
+    const os = await import('node:os');
+    const pathMod = await import('node:path');
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'wb-rules-mig-'));
+    const yamlPath = pathMod.join(dir, 'rules.yaml');
+    fs.writeFileSync(
+      yamlPath,
+      [
+        'rules:',
+        '  - id: custom_pet',
+        '    rule_type: expansion',
+        '    trigger_attribute: role',
+        '    trigger_value: pet',
+        '    target_attribute: role',
+        '    target_value: pup',
+      ].join('\n') + '\n',
+      'utf8'
+    );
+
+    ({ db, rm } = await importFresh({ RULES_PATH: yamlPath }));
+
+    // Seeded from the legacy file, not the 29 bundled defaults.
+    expect(rm.getRules()).toHaveLength(1);
+    expect(rm.getRules().map((r) => r.id)).toContain('custom_pet');
+
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
   it('stopWatchingRules is a no-op (file watcher removed with the DB migration)', () => {
     expect(() => rm.stopWatchingRules()).not.toThrow();
   });

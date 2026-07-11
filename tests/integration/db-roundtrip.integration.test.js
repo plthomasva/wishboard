@@ -16,9 +16,7 @@ process.env.NODE_ENV = 'test';
 process.env.WISHBOARD_DB_PATH = dbFile;
 process.env.RULES_PATH = rulesPath;
 
-// Seed the matching rules the engine expects (mirrors the server unit tests).
-const srcRules = path.resolve(process.cwd(), 'data/rules.yaml');
-if (fs.existsSync(srcRules)) fs.copyFileSync(srcRules, rulesPath);
+// Matching rules are auto-seeded into the DB by rulesManager on first boot.
 
 const request = (await import('supertest')).default;
 const app = (await import('../../src/server/index.js')).default;

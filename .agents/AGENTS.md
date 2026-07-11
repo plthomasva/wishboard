@@ -22,13 +22,13 @@ This document outlines the core coding conventions, architectural patterns, envi
 
 ## 3. Architecture & Matching Engine Rules
 
-- **Configuration-Driven Rules:** Do not hardcode gender, orientation, or role matching logic inside the backend code. The matchmaking system utilizes a dynamic rule system defined in `data/rules.yaml`.
+- **Configuration-Driven Rules:** Do not hardcode gender, orientation, or role matching logic inside the backend code. The matchmaking system uses a dynamic rule system stored in a `rules` table in the DB (seed defaults in `src/server/defaultRules.js`; edited live via the admin UI).
 - **Rule Types:**
   1. `enrichment`: Implicitly adds a target attribute if the trigger matches (e.g., adding `woman` if orientation is `lesbian`).
   2. `acceptance`: Overrides matching to automatically accept a broad set of targets (e.g., pan/queer orientations matching all genders).
   3. `expansion`: Synonyms and variants mapping (e.g., expanding `enby`, `non-binary` to `nonbinary`).
   4. `cross_match`: Bidirectional matches between complementary roles.
-- **Extending Matching Logic:** To add support for new identities or matching terms, modify the rules in `data/rules.yaml` rather than introducing custom parsing helpers in `src/server/routes/wishes.js`.
+- **Extending Matching Logic:** To add support for new identities or matching terms, add/edit rules via the admin UI (they live in the DB) — or change the seed defaults in `src/server/defaultRules.js` — rather than introducing custom parsing helpers in `src/server/routes/wishes.js`.
 
 ---
 
