@@ -187,7 +187,13 @@ const matchesAttribute = (searcherVals, desiredVals, category, rules) => {
 const matchesGenderPreferenceImplicit = (searcherAttributes, desiredGenders, rules) => {
   if (!desiredGenders || desiredGenders.length === 0) return true;
   const searcherOrientations = searcherAttributes.orientation || [];
-  if (!searcherOrientations || searcherOrientations.length === 0) return true;
+  // No orientation means we have NO basis to infer who this person wants. Treating
+  // that as "wants everyone" is the #199 over-match (a woman's wish with no stated
+  // orientation and no desired gender was shown to a straight man). With no explicit
+  // desired gender and no orientation to derive one from, there is no established
+  // preference, so it must not match — the user should set an orientation or an
+  // explicit desired gender to be matched implicitly. See docs/MATCHING_RULES.md.
+  if (!searcherOrientations || searcherOrientations.length === 0) return false;
 
   const accepted = buildAcceptedSet(searcherAttributes, 'gender', rules);
   if (accepted.size === 0) return false;

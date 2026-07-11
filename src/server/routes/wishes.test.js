@@ -254,7 +254,11 @@ describe('Matchmaking logic', () => {
     expect(resSearch1.body).toHaveLength(1);
   });
 
-  it('accepts all genders when orientation is not specified', async () => {
+  it('does not match when neither orientation nor a desired gender is specified (#199)', async () => {
+    // Previously an unspecified orientation meant "accepts all genders", which
+    // over-matched — a woman's wish with no stated orientation and no desired
+    // gender was shown to a straight man. With no basis to infer a preference,
+    // it must not match; the user should set an orientation or a desired gender.
     await request(app).post('/api/wishes').send({
       content: 'No orientation wish',
       creator_genders: 'woman',
@@ -265,6 +269,25 @@ describe('Matchmaking logic', () => {
       sg: 'man',
       so: 'straight',
       q: 'No orientation wish',
+    });
+
+    expect(resSearch1.body).toHaveLength(0);
+  });
+
+  it('still matches a no-orientation wish when the searcher fits an explicit desired gender', async () => {
+    // Tightening the implicit path must not harm wishes that DO state who they
+    // want: no orientation, but an explicit desired gender still matches.
+    await request(app).post('/api/wishes').send({
+      content: 'No orientation but wants men',
+      creator_genders: 'woman',
+      creator_orientations: '',
+      desired_genders: 'man',
+    });
+
+    const resSearch1 = await request(app).get('/api/wishes').query({
+      sg: 'man',
+      so: 'straight',
+      q: 'No orientation but wants men',
     });
 
     expect(resSearch1.body).toHaveLength(1);
