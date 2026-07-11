@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.14.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.14.0...wishboard-v1.14.1) (2026-07-11)
+
+
+### Bug Fixes
+
+* **kiosk:** --reset-rules resets only the DB rules, not images/whole DB ([#194](https://github.com/plthomasva/wishboard/issues/194)) ([#204](https://github.com/plthomasva/wishboard/issues/204)) ([fcb5e63](https://github.com/plthomasva/wishboard/commit/fcb5e6327e83634269a70c3eb9172fc56eb22d2d))
+* **kiosk:** resolve poster + Wi-Fi popup domain at runtime, not build time ([#202](https://github.com/plthomasva/wishboard/issues/202)) ([0ad074c](https://github.com/plthomasva/wishboard/commit/0ad074ce45867151983b72b933257481a5d2ea77))
+* **matching:** unspecified orientation must not match everyone ([#199](https://github.com/plthomasva/wishboard/issues/199)) ([#203](https://github.com/plthomasva/wishboard/issues/203)) ([e4acccf](https://github.com/plthomasva/wishboard/commit/e4acccf15075ffb8e7073cc866349a5e79a89ac6))
+
 ## [1.14.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.13.0...wishboard-v1.14.0) (2026-07-11)
 
 
