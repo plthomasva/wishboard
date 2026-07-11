@@ -16,7 +16,7 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 ### Database & Deployment
 
-- **[#188](https://github.com/plthomasva/wishboard/issues/188)** — Durable rules storage for serverless: with EFS removed (#187), `rules.yaml` lives on the Lambda's ephemeral `/tmp`, so admin rule edits don't persist across cold starts. Move rules into the DB (Turso) or S3. (The Turso migration itself, #136, is done — resolved by #187; see [ADR 0002](docs/adr/0002-serverless-database-architecture.md).)
+- **[#188](https://github.com/plthomasva/wishboard/issues/188)** — Durable rules storage: move matching rules into the DB (seeded from bundled defaults). **Resolved by [#193](https://github.com/plthomasva/wishboard/pull/193) (in review).** See [ADR 0002](docs/adr/0002-serverless-database-architecture.md).
 - **[#145](https://github.com/plthomasva/wishboard/issues/145)** — Decide the durable shape for the Pi's libSQL data volume: keep the `build-kiosk.sh` chown, switch to a bind mount, or rely on the image's own chown (rootless-Docker ownership).
 - **[#162](https://github.com/plthomasva/wishboard/issues/162)** — Adopt S3 account-regional namespaces for buckets (squat-proof names; drops the hand-coded `${AWS::AccountId}` scheme). Surfaced during the #158 custom-domain incident.
 
@@ -24,6 +24,20 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 - **[#156](https://github.com/plthomasva/wishboard/issues/156)** — Serve static assets gzip/brotli-compressed with long-lived, immutable `Cache-Control` headers on the Pi's nginx (follow-up to #140).
 - **[#157](https://github.com/plthomasva/wishboard/issues/157)** — Move password hashing off the event loop (`crypto.scryptSync` → async `crypto.scrypt`) so it doesn't block under concurrency (follow-up to #140).
+
+### Bugs
+
+- **[#199](https://github.com/plthomasva/wishboard/issues/199)** — Matching over-matches: a "straight man" user was shown a "lesbian woman" wish. Tighten the acceptance/expansion rules and add regression tests for orientation/gender pairings.
+- **[#196](https://github.com/plthomasva/wishboard/issues/196)** — Event poster shows the default domain (`wishboard.painless-computing.com`) instead of the runtime domain (e.g. on `demo.wishboards.app`).
+- **[#197](https://github.com/plthomasva/wishboard/issues/197)** — Kiosk Wi-Fi join popup shows `http://<local-ip>:3000` instead of the https DNS-masqueraded domain.
+- **[#198](https://github.com/plthomasva/wishboard/issues/198)** — Kiosk emoji decorations (e.g. 👤) render as blank rectangles — missing emoji font in the kiosk browser.
+- **[#194](https://github.com/plthomasva/wishboard/issues/194)** — Kiosk `--reset-rules` does `rm -rf` on the whole `/app/data` volume (deletes uploaded images) and no longer resets the DB-stored rules; it should clear the DB `rules` table instead. (Related: `build-kiosk.sh`'s legacy `wishboard_data → ./data` copy runs on every deploy and clobbers live data — fixed alongside #193.)
+
+### Features & Enhancements
+
+- **[#200](https://github.com/plthomasva/wishboard/issues/200)** — Let a user exclude a wish from their future searches (not-interested / hide). Server-side per-user for logged-in users; open design question for anonymous scoping (localStorage vs anon-session).
+- **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
+- **[#195](https://github.com/plthomasva/wishboard/issues/195)** — Add a `wishboard auth token` CLI helper to mint/print an admin bearer token for scripting/verification.
 
 ## Infrastructure & DevOps
 
