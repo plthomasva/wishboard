@@ -1,7 +1,7 @@
 node_modules
 dist
 data/*
-!data/rules.yaml
+!data/.gitkeep
 .vite
 npm-debug.log*
 .DS_Store
