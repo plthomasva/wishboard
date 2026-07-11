@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
     target_value,
   };
 
-  addRule(rule);
+  await addRule(rule);
 
   logger.info('Admin created match rule', { admin_user_id: req.user.id, rule_id: id });
   res.json({ success: true, id });
@@ -60,7 +60,7 @@ router.put('/:id', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const updated = updateRule(req.params.id, {
+  const updated = await updateRule(req.params.id, {
     rule_type,
     trigger_attribute,
     trigger_value,
@@ -79,7 +79,7 @@ router.put('/:id', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
-  const success = deleteRule(req.params.id);
+  const success = await deleteRule(req.params.id);
   if (!success) {
     return res.status(404).json({ error: 'Rule not found' });
   }

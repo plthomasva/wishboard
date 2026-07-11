@@ -1,268 +1,128 @@
 /** @vitest-environment node */
-import path from 'node:path';
-import fs from 'node:fs';
-import os from 'node:os';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-// Write the test rules file to a throwaway temp dir (reaped in afterAll) rather
-// than into the repo's data/ directory.
-const tmpRulesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wishboard-rulesmgr-'));
-const rulesPath = path.join(tmpRulesDir, 'rules.test.yaml');
+// Each test re-imports against a fresh in-memory DB (db.js uses :memory: under
+// NODE_ENV=test), which rulesManager auto-seeds with the bundled defaults on boot.
+const importFresh = async (env = {}) => {
+  vi.resetModules();
+  for (const [k, v] of Object.entries(env)) process.env[k] = v;
+  const db = (await import('./db.js')).default;
+  const rm = await import('./rulesManager.js');
+  return { db, rm };
+};
 
-process.env.NODE_ENV = 'test';
-process.env.RULES_PATH = rulesPath;
+const fullRule = (over = {}) => ({
+  id: 'rule-1',
+  rule_type: 'expansion',
+  trigger_attribute: 'gender',
+  trigger_value: 'woman',
+  context_attribute: null,
+  context_value: null,
+  target_attribute: 'gender',
+  target_value: 'woman, female',
+  ...over,
+});
 
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+const insertDirect = (db, id) =>
+  db.execute({
+    sql: 'INSERT INTO rules (id, rule_type, trigger_attribute, trigger_value, target_attribute, target_value) VALUES (?,?,?,?,?,?)',
+    args: [id, 'expansion', 'gender', 'woman', 'gender', 'women'],
+  });
 
-let rulesManager;
-
-describe('rulesManager', () => {
-  let loggerInstance;
-  let spyError;
-  let spyWarn;
+describe('rulesManager (DB-backed)', () => {
+  let db;
+  let rm;
 
   beforeEach(async () => {
-    if (fs.existsSync(rulesPath)) {
-      fs.unlinkSync(rulesPath);
-    }
-    // Force re-import to reset module state
-    vi.resetModules();
-
-    // Import logger dynamically AFTER resetModules so it matches the instance used by rulesManager!
-    loggerInstance = (await import('./logger.js')).default;
-    rulesManager = await import('./rulesManager.js');
-
-    // Spy on logger calls and silence them during tests
-    spyError = vi.spyOn(loggerInstance, 'error').mockImplementation(() => {});
-    spyWarn = vi.spyOn(loggerInstance, 'warn').mockImplementation(() => {});
+    ({ db, rm } = await importFresh());
   });
 
-  afterEach(async () => {
-    if (fs.existsSync(rulesPath)) {
-      fs.unlinkSync(rulesPath);
-    }
-    vi.restoreAllMocks();
+  afterEach(() => {
+    delete process.env.RULES_CACHE_TTL_MS;
   });
 
-  afterAll(() => {
-    rulesManager?.stopWatchingRules?.();
-    fs.rmSync(tmpRulesDir, { recursive: true, force: true });
+  it('seeds the 29 bundled default rules into a fresh database on boot', () => {
+    expect(rm.getRules().length).toBe(29);
   });
 
-  it('starts with empty rules if file not found', async () => {
-    expect(rulesManager.getRules()).toEqual([]);
+  it('seedIfEmpty is a no-op when rules already exist', async () => {
+    await rm.seedIfEmpty();
+    expect(rm.getRules().length).toBe(29); // not doubled
   });
 
-  it('loads valid YAML and populates rules', async () => {
-    const validYaml = `
-rules:
-  - id: "rule-1"
-    rule_type: "expansion"
-    trigger_attribute: "role"
-    trigger_value: "pet"
-    target_attribute: "role"
-    target_value: "pup"
-`;
-    fs.writeFileSync(rulesPath, validYaml, 'utf8');
-    rulesManager.reloadRules();
-    const rules = rulesManager.getRules();
-    expect(rules.length).toBe(1);
-    expect(rules[0].id).toBe('rule-1');
+  it('seedIfEmpty repopulates an empty table with the defaults', async () => {
+    await db.execute('DELETE FROM rules');
+    await rm.seedIfEmpty();
+    await rm.reloadRules();
+    expect(rm.getRules().length).toBe(29);
   });
 
-  it('falls back to previous state on invalid YAML', async () => {
-    const validYaml = `
-rules:
-  - id: "rule-1"
-`;
-    fs.writeFileSync(rulesPath, validYaml, 'utf8');
-    rulesManager.reloadRules();
-    expect(rulesManager.getRules().length).toBe(1);
+  describe('CRUD against an empty table', () => {
+    beforeEach(async () => {
+      await db.execute('DELETE FROM rules');
+      await rm.reloadRules();
+      expect(rm.getRules()).toEqual([]);
+    });
 
-    // write invalid yaml
-    fs.writeFileSync(rulesPath, 'rules: [invalid', 'utf8');
-    rulesManager.reloadRules();
+    it('addRule inserts and updates the cache + DB', async () => {
+      await rm.addRule(fullRule());
+      expect(rm.getRules().length).toBe(1);
+      await rm.reloadRules();
+      expect(rm.getRules()[0].id).toBe('rule-1');
+    });
 
-    // should still be 1 (fallback)
-    expect(rulesManager.getRules().length).toBe(1);
+    it('updateRule merges fields and persists', async () => {
+      await rm.addRule(fullRule());
+      expect(await rm.updateRule('rule-1', { trigger_value: 'man' })).toBe(true);
+      await rm.reloadRules();
+      expect(rm.getRules()[0].trigger_value).toBe('man');
+    });
 
-    // Assert error log and syntax error tracking
-    expect(spyError).toHaveBeenCalledWith(
-      'Failed to load or parse rules.yaml. Retaining previous valid rules state.',
-      expect.objectContaining({ error: expect.stringContaining('YAML syntax errors') })
+    it('updateRule returns false for an unknown id', async () => {
+      expect(await rm.updateRule('nope', { trigger_value: 'x' })).toBe(false);
+    });
+
+    it('deleteRule removes from the cache + DB', async () => {
+      await rm.addRule(fullRule());
+      expect(await rm.deleteRule('rule-1')).toBe(true);
+      await rm.reloadRules();
+      expect(rm.getRules()).toEqual([]);
+    });
+
+    it('deleteRule returns false for an unknown id', async () => {
+      expect(await rm.deleteRule('nope')).toBe(false);
+    });
+  });
+
+  it('reloadRules picks up changes written directly to the DB', async () => {
+    await db.execute('DELETE FROM rules');
+    await rm.reloadRules();
+    await insertDirect(db, 'ext-1');
+    await rm.reloadRules();
+    expect(rm.getRules().map((r) => r.id)).toContain('ext-1');
+  });
+
+  it('getRules triggers a background reload once the cache is stale (TTL)', async () => {
+    ({ db, rm } = await importFresh({ RULES_CACHE_TTL_MS: '0' }));
+    await db.execute('DELETE FROM rules');
+    await rm.reloadRules();
+    expect(rm.getRules().length).toBe(0);
+
+    // Another instance writes a rule straight to the shared DB.
+    await insertDirect(db, 'ext-2');
+
+    // TTL=0 means the cache is immediately stale, so getRules kicks a background
+    // reload (fire-and-forget). Poll until that reload lands the external change.
+    await vi.waitFor(
+      () => {
+        rm.getRules(); // trigger the background refresh
+        expect(rm.getRules().map((r) => r.id)).toContain('ext-2');
+      },
+      { timeout: 1000, interval: 20 }
     );
   });
 
-  it('keeps previous state if "rules" array is missing', () => {
-    const validYaml = `
-rules:
-  - id: "rule-1"
-`;
-    fs.writeFileSync(rulesPath, validYaml, 'utf8');
-    rulesManager.reloadRules();
-    expect(rulesManager.getRules().length).toBe(1);
-
-    // valid yaml but no rules array
-    fs.writeFileSync(rulesPath, 'other_key: true', 'utf8');
-    rulesManager.reloadRules();
-
-    expect(rulesManager.getRules().length).toBe(1);
-
-    expect(spyWarn).toHaveBeenCalledWith(
-      'Rules file parsed but "rules" array is missing or invalid. Keeping previous state.'
-    );
-  });
-
-  it('adds a new rule and saves', async () => {
-    fs.writeFileSync(rulesPath, 'rules: []\n', 'utf8');
-    rulesManager.reloadRules();
-    rulesManager.addRule({ id: 'rule-new', rule_type: 'expansion' });
-
-    expect(rulesManager.getRules().length).toBe(1);
-    const content = fs.readFileSync(rulesPath, 'utf8');
-    expect(content).toContain('rule-new');
-  });
-
-  it('adds a new rule when rules key is missing in YAML file', async () => {
-    fs.writeFileSync(rulesPath, 'other_key: true\n', 'utf8');
-    rulesManager.reloadRules();
-    rulesManager.addRule({ id: 'rule-new', rule_type: 'expansion' });
-
-    expect(rulesManager.getRules().length).toBe(1);
-    const content = fs.readFileSync(rulesPath, 'utf8');
-    expect(content).toContain('rule-new');
-  });
-
-  it('updates an existing rule', async () => {
-    const validYaml = `
-rules:
-  - id: "rule-1"
-    rule_type: "enrichment"
-    trigger_value: "val1"
-  - id: "rule-2"
-    rule_type: "expansion"
-    trigger_value: "old"
-  - id: "rule-3"
-    rule_type: "cross_match"
-    trigger_value: "val3"
-`;
-    fs.writeFileSync(rulesPath, validYaml, 'utf8');
-    rulesManager.reloadRules();
-
-    const success = rulesManager.updateRule('rule-2', { trigger_value: 'new' });
-    expect(success).toBe(true);
-
-    const rules = rulesManager.getRules();
-    expect(rules.length).toBe(3);
-    expect(rules[0].trigger_value).toBe('val1');
-    expect(rules[1].trigger_value).toBe('new');
-    expect(rules[2].trigger_value).toBe('val3');
-
-    const content = fs.readFileSync(rulesPath, 'utf8');
-    expect(content).toContain('new');
-    expect(content).not.toContain('old');
-  });
-
-  it('returns false when updating a non-existent rule', async () => {
-    expect(rulesManager.updateRule('does-not-exist', {})).toBe(false);
-  });
-
-  it('deletes an existing rule', async () => {
-    const validYaml = `
-rules:
-  - id: "rule-1"
-  - id: "rule-3"
-  - id: "rule-4"
-`;
-    fs.writeFileSync(rulesPath, validYaml, 'utf8');
-    rulesManager.reloadRules();
-
-    const success = rulesManager.deleteRule('rule-3');
-    expect(success).toBe(true);
-
-    const rules = rulesManager.getRules();
-    expect(rules.length).toBe(2);
-    expect(rules[0].id).toBe('rule-1');
-    expect(rules[1].id).toBe('rule-4');
-
-    const content = fs.readFileSync(rulesPath, 'utf8');
-    expect(content).not.toContain('rule-3');
-    expect(content).toContain('rule-1');
-    expect(content).toContain('rule-4');
-  });
-
-  it('returns false when deleting a non-existent rule', async () => {
-    expect(rulesManager.deleteRule('does-not-exist')).toBe(false);
-  });
-
-  it('handles update and delete when rules key is missing in YAML document', async () => {
-    fs.writeFileSync(rulesPath, 'other_key: true\n', 'utf8');
-    rulesManager.reloadRules();
-
-    expect(rulesManager.updateRule('some-id', { trigger_value: 'val' })).toBe(false);
-    expect(rulesManager.deleteRule('some-id')).toBe(false);
-  });
-
-  describe('auto-seeding rules', () => {
-    const originalEnv = process.env.NODE_ENV;
-    const defaultRulesVal = fs.readFileSync(
-      path.resolve(__dirname, '../../data/rules.yaml'),
-      'utf8'
-    );
-
-    beforeEach(() => {
-      process.env.NODE_ENV = 'development';
-    });
-
-    afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
-    });
-
-    it('seeds rules if the target file does not exist', async () => {
-      if (fs.existsSync(rulesPath)) {
-        fs.unlinkSync(rulesPath);
-      }
-
-      vi.resetModules();
-      await import('./rulesManager.js');
-
-      expect(fs.existsSync(rulesPath)).toBe(true);
-      const content = fs.readFileSync(rulesPath, 'utf8');
-      expect(content).toEqual(defaultRulesVal);
-    });
-
-    it('seeds rules if the target file is empty', async () => {
-      fs.writeFileSync(rulesPath, '', 'utf8');
-
-      vi.resetModules();
-      await import('./rulesManager.js');
-
-      expect(fs.existsSync(rulesPath)).toBe(true);
-      const content = fs.readFileSync(rulesPath, 'utf8');
-      expect(content).toEqual(defaultRulesVal);
-    });
-
-    it('seeds rules if the target file has zero rules', async () => {
-      fs.writeFileSync(rulesPath, 'rules: []\n', 'utf8');
-
-      vi.resetModules();
-      await import('./rulesManager.js');
-
-      expect(fs.existsSync(rulesPath)).toBe(true);
-      const content = fs.readFileSync(rulesPath, 'utf8');
-      expect(content).toEqual(defaultRulesVal);
-    });
-
-    it('does not overwrite rules if the target file has rules', async () => {
-      const customRules =
-        'rules:\n  - id: custom-rule\n    rule_type: expansion\n    trigger_attribute: role\n    trigger_value: custom\n    target_attribute: role\n    target_value: custom-val\n';
-      fs.writeFileSync(rulesPath, customRules, 'utf8');
-
-      vi.resetModules();
-      await import('./rulesManager.js');
-
-      expect(fs.existsSync(rulesPath)).toBe(true);
-      const content = fs.readFileSync(rulesPath, 'utf8');
-      expect(content).toEqual(customRules);
-    });
+  it('stopWatchingRules is a no-op (file watcher removed with the DB migration)', () => {
+    expect(() => rm.stopWatchingRules()).not.toThrow();
   });
 });

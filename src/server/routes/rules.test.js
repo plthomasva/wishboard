@@ -1,16 +1,7 @@
 /** @vitest-environment node */
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rulesPath = path.resolve(__dirname, '../../../data/rules.rulesRoute.test.yaml');
-
 process.env.NODE_ENV = 'test';
-process.env.RULES_PATH = rulesPath;
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import fs from 'node:fs';
 
 const request = (await import('supertest')).default;
 const appModule = await import('../index.js');
@@ -24,10 +15,8 @@ const defaultAdminSecret = 'admin-board';
 const clearTestData = async () => {
   await db.exec('DELETE FROM sessions');
   await db.exec("DELETE FROM users WHERE role != 'admin'");
-  if (fs.existsSync(rulesPath)) {
-    fs.unlinkSync(rulesPath);
-  }
-  reloadRules();
+  await db.exec('DELETE FROM rules');
+  await reloadRules();
 };
 
 beforeEach(async () => await clearTestData());
@@ -78,7 +67,7 @@ describe('rules routes', () => {
     expect(res.body.id).toBeDefined();
 
     const getRes = await request(app).get('/api/rules').set('Authorization', `Bearer ${token}`);
-    expect(getRes.body.length).toBe(1);
+    expect(getRes.body).toHaveLength(1);
     expect(getRes.body[0].trigger_value).toBe('pet');
   });
 
@@ -169,7 +158,7 @@ describe('rules routes', () => {
     expect(deleteRes.status).toBe(200);
 
     const getRes = await request(app).get('/api/rules').set('Authorization', `Bearer ${token}`);
-    expect(getRes.body.length).toBe(0);
+    expect(getRes.body).toHaveLength(0);
   });
 
   it('returns 404 when deleting non-existent rule', async () => {

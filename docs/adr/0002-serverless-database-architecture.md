@@ -95,6 +95,6 @@ Independent of the storage choice, a write that does time out now fails **safely
 
 - **Serverless now runs on Turso** (hosted libSQL); the VPC, subnets, IGW, route tables, security group, EFS (filesystem / mount targets / access point), and both CloudWatch interface endpoints are **deleted**. The ~$1/day is eliminated.
 - The **kiosk stays embedded file-SQLite** on the Pi (unchanged); one `@libsql/client` codebase still serves both targets.
-- One capability EFS provided is not yet replaced: **`rules.yaml` persistence**. On serverless it now lives on the Lambda's ephemeral `/tmp`, so moderation-rule edits don't survive cold starts (the app falls back to empty rules if unseeded). Durable rule storage (DB- or S3-backed) is a tracked follow-up.
+- The one capability EFS provided beyond the DB — **`rules.yaml` persistence** — is now **resolved in #188**: matching rules live in a `rules` table in the DB (seeded from a bundled default), on both the Pi and serverless. (Interim state after this ADR was ephemeral `/tmp`, which is why live serverless rules briefly dropped to zero.) EFS was ruled out for rules because it would require putting the Lambda back in a VPC, which then can't reach Turso.
 - Graceful write-failure handling (JSON errors, friendly retry, preserved form data) remains part of the baseline.
 - **WAL is now a non-issue on serverless** (no EFS); it stays a gated opt-in for the Pi only.
