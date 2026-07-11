@@ -38,7 +38,7 @@ This will automatically pull the necessary images and start both the Wishboard b
 
 ### AWS Serverless Deployment
 
-For cloud deployments, Wishboard can be deployed to your own AWS account using **AWS SAM (CloudFormation)**, running completely serverless on Lambda, EFS, API Gateway, S3, and CloudFront.
+For cloud deployments, Wishboard can be deployed to your own AWS account using **AWS SAM (CloudFormation)**, running completely serverless on Lambda, API Gateway, S3, CloudFront, and a hosted **Turso** (libSQL) database — no VPC or EFS.
 
 Deployments are fully automated via **GitHub Actions** and an OIDC connection, so you don't need to manually configure infrastructure after the initial setup.
 
