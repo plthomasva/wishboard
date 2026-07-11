@@ -143,11 +143,23 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
       });
     };
 
+    // sys:log is an admin-only, opt-in channel. Subscribe while this view is
+    // mounted (re-subscribing after any reconnect), and unsubscribe on unmount so
+    // an admin who navigates to another tab stops receiving the log stream. The
+    // server rejects the subscription unless the token is an admin's. See #189.
+    const token = (authHeader?.Authorization || '').replace(/^Bearer\s+/i, '');
+    const subscribe = () => socket.emit('subscribe', { channel: 'sys:log', token });
+
     socket.on('sys:log', handleNewLog);
+    socket.on('connect', subscribe);
+    subscribe();
+
     return () => {
+      socket.emit('unsubscribe', { channel: 'sys:log' });
       socket.off('sys:log', handleNewLog);
+      socket.off('connect', subscribe);
     };
-  }, [socket]);
+  }, [socket, authHeader]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

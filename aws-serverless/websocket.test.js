@@ -16,9 +16,15 @@ vi.mock('../src/server/logger.js', () => {
     default: {
       info: vi.fn(),
       error: vi.fn(),
+      warn: vi.fn(),
     },
   };
 });
+
+const mockGetUserFromToken = vi.fn();
+vi.mock('../src/server/auth.js', () => ({
+  getUserFromToken: (...args) => mockGetUserFromToken(...args),
+}));
 
 describe('websocket.mjs', () => {
   beforeEach(() => {
@@ -67,5 +73,39 @@ describe('websocket.mjs', () => {
       requestContext: { connectionId: 'conn-1', routeKey: '$connect' },
     });
     expect(res.statusCode).toBe(500);
+  });
+
+  it('subscribe to sys:log with an admin token records the subscription', async () => {
+    mockGetUserFromToken.mockResolvedValueOnce({ id: 'a1', username: 'admin', role: 'admin' });
+    const ws = await import('./websocket.mjs');
+    const res = await ws.handler({
+      requestContext: { connectionId: 'conn-1', routeKey: 'subscribe' },
+      body: JSON.stringify({ channel: 'sys:log', token: 'admin-token' }),
+    });
+    // UPDATE … SET sub_syslog = 1, user_id = ? WHERE connection_id = ?
+    expect(mockRun).toHaveBeenCalledWith('a1', 'conn-1');
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('rejects a sys:log subscribe from a non-admin token', async () => {
+    mockGetUserFromToken.mockResolvedValueOnce({ id: 'u1', role: 'user' });
+    const ws = await import('./websocket.mjs');
+    const res = await ws.handler({
+      requestContext: { connectionId: 'conn-1', routeKey: 'subscribe' },
+      body: JSON.stringify({ channel: 'sys:log', token: 'user-token' }),
+    });
+    expect(mockRun).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('unsubscribe from sys:log clears the subscription', async () => {
+    const ws = await import('./websocket.mjs');
+    const res = await ws.handler({
+      requestContext: { connectionId: 'conn-1', routeKey: 'unsubscribe' },
+      body: JSON.stringify({ channel: 'sys:log' }),
+    });
+    // UPDATE … SET sub_syslog = 0 WHERE connection_id = ?
+    expect(mockRun).toHaveBeenCalledWith('conn-1');
+    expect(res.statusCode).toBe(200);
   });
 });

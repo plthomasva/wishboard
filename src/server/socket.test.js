@@ -71,9 +71,11 @@ describe('socket.js', () => {
   });
 
   it('emit helpers broadcast to all clients when io is initialized', async () => {
+    const roomEmit = vi.fn();
     const mockIo = {
       on: vi.fn(),
       emit: vi.fn(),
+      to: vi.fn(() => ({ emit: roomEmit })),
     };
     vi.doMock('socket.io', () => ({
       Server: function MockServer() {
@@ -96,8 +98,51 @@ describe('socket.js', () => {
     emitWishDeleted('w1');
     expect(mockIo.emit).toHaveBeenCalledWith('wish:deleted', 'w1');
 
+    // sys:log is scoped to the admin-only 'syslog' room, not a global broadcast.
     emitSystemLog('a log line');
-    expect(mockIo.emit).toHaveBeenCalledWith('sys:log', 'a log line');
+    expect(mockIo.to).toHaveBeenCalledWith('syslog');
+    expect(roomEmit).toHaveBeenCalledWith('sys:log', 'a log line');
+    expect(mockIo.emit).not.toHaveBeenCalledWith('sys:log', 'a log line');
+  });
+
+  it('socket.io subscribe joins the syslog room only for an admin token', async () => {
+    let connectionCb;
+    const mockIo = {
+      on: vi.fn((event, cb) => {
+        if (event === 'connection') connectionCb = cb;
+      }),
+      emit: vi.fn(),
+      to: vi.fn(() => ({ emit: vi.fn() })),
+    };
+    vi.doMock('socket.io', () => ({
+      Server: function MockServer() {
+        return mockIo;
+      },
+    }));
+    vi.doMock('./auth.js', () => ({
+      getUserFromToken: vi.fn(async (token) =>
+        token === 'admin-token' ? { id: 'a1', role: 'admin' } : { id: 'u1', role: 'user' }
+      ),
+    }));
+
+    const { initSocket } = await import('./socket.js');
+    const socket = { on: vi.fn(), join: vi.fn(), leave: vi.fn(), id: 's1' };
+    initSocket({}, {});
+    connectionCb(socket);
+
+    const handlerFor = (event) => socket.on.mock.calls.find(([e]) => e === event)?.[1];
+
+    // Non-admin token: no room join.
+    await handlerFor('subscribe')({ channel: 'sys:log', token: 'user-token' });
+    expect(socket.join).not.toHaveBeenCalled();
+
+    // Admin token: joins the syslog room.
+    await handlerFor('subscribe')({ channel: 'sys:log', token: 'admin-token' });
+    expect(socket.join).toHaveBeenCalledWith('syslog');
+
+    // Unsubscribe leaves the room.
+    handlerFor('unsubscribe')({ channel: 'sys:log' });
+    expect(socket.leave).toHaveBeenCalledWith('syslog');
   });
 
   describe('API Gateway WebSocket mode', () => {
@@ -213,6 +258,24 @@ describe('socket.js', () => {
         emitNewWish({ id: 'w1' });
       }).not.toThrow();
       await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    it('sys:log broadcast queries only subscribed connections; wish:* queries all', async () => {
+      const prepareSpy = vi.fn(() => ({ all: vi.fn().mockResolvedValue([]), run: vi.fn() }));
+      vi.doMock('./db.js', () => ({ default: { prepare: prepareSpy } }));
+
+      const { emitSystemLog, emitNewWish } = await import('./socket.js');
+
+      emitSystemLog('log line');
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(prepareSpy).toHaveBeenCalledWith(
+        'SELECT connection_id FROM websocket_connections WHERE sub_syslog = 1'
+      );
+
+      emitNewWish({ id: 'w1' });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Public board events broadcast to every connection (no sub_syslog filter).
+      expect(prepareSpy).toHaveBeenCalledWith('SELECT connection_id FROM websocket_connections');
     });
   });
 });
