@@ -6,12 +6,14 @@ import AdminPage from './AdminPage';
 let mockUser: any = null;
 let mockToken: any = null;
 const loginMock = vi.fn();
+const logoutMock = vi.fn();
 
 vi.mock('../AuthContext', () => ({
   useAuth: () => ({
     user: mockUser,
     token: mockToken,
     login: loginMock,
+    logout: logoutMock,
   }),
 }));
 
@@ -132,6 +134,7 @@ describe('AdminPage', () => {
     mockUser = null;
     mockToken = null;
     loginMock.mockReset();
+    logoutMock.mockReset();
 
     globalThis.fetch = vi.fn().mockImplementation((input, options) => {
       const url = typeof input === 'string' ? input : '';
@@ -523,5 +526,30 @@ describe('AdminPage', () => {
       expect.stringContaining('/api/rules/rule-1'),
       expect.objectContaining({ method: 'PUT' })
     );
+  });
+
+  it('a 401 from an admin call logs out and shows a session-expired message (#184)', async () => {
+    mockUser = { id: 'admin-id', username: 'admin', role: 'admin' };
+    mockToken = 'admin-token';
+
+    // Force the Users list to 401 (dead/expired/orphaned session) while the admin
+    // UI is up, so onSessionExpired -> handleSessionExpired -> logout + message.
+    globalThis.fetch = vi.fn(async (input: any) => {
+      const url = String(input);
+      if (url.endsWith('/api/admin/users')) return { ok: false, status: 401 } as any;
+      if (url.endsWith('/api/admin/config'))
+        return { ok: true, json: async () => ({ isProduction: false }) } as any;
+      if (url.endsWith('/api/config'))
+        return { ok: true, json: async () => ({ realtimeProvider: 'socketio' }) } as any;
+      return { ok: true, json: async () => [] } as any;
+    }) as any;
+
+    render(<AdminPage />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Users/i }));
+    });
+
+    await waitFor(() => expect(logoutMock).toHaveBeenCalled());
+    expect(screen.getByText(/session expired or is no longer valid/i)).toBeInTheDocument();
   });
 });

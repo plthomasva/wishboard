@@ -385,4 +385,93 @@ describe('UserAccountsSection Coverage', () => {
     // Since userToDelete is null, we can't legitimately click the confirm button.
     // The component logic `if (!userToDelete) return;` is inherently protected by the modal not rendering.
   });
+
+  // #184: on a 401 from any mutation, hand off to onSessionExpired (drop to login)
+  // instead of surfacing a generic error. Covers the handledUnauthorized() early
+  // return in each action handler.
+  const renderWithSession = (onSessionExpired: () => void, setError = vi.fn()) => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'u1', username: 'user1', role: 'user' }],
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ isProduction: true }) });
+    render(
+      <UserAccountsSection
+        authHeader={{}}
+        setMessage={vi.fn()}
+        setError={setError}
+        refreshCounter={0}
+        triggerRefresh={vi.fn()}
+        onSessionExpired={onSessionExpired}
+      />
+    );
+    return waitFor(() => expect(screen.getByText('user1')).toBeInTheDocument());
+  };
+
+  it('changeRole 401 fires onSessionExpired instead of a role error', async () => {
+    const onSessionExpired = vi.fn();
+    const setError = vi.fn();
+    await renderWithSession(onSessionExpired, setError);
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
+    fireEvent.click(screen.getByRole('button', { name: 'Promote' }));
+    await waitFor(() => expect(onSessionExpired).toHaveBeenCalled());
+    expect(setError).not.toHaveBeenCalledWith('Failed to update role.');
+  });
+
+  it('resetPassphrase 401 fires onSessionExpired', async () => {
+    globalThis.confirm = vi.fn(() => true);
+    const onSessionExpired = vi.fn();
+    await renderWithSession(onSessionExpired);
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Password' }));
+    await waitFor(() => expect(onSessionExpired).toHaveBeenCalled());
+  });
+
+  it('delete preview 401 fires onSessionExpired', async () => {
+    const onSessionExpired = vi.fn();
+    await renderWithSession(onSessionExpired);
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(onSessionExpired).toHaveBeenCalled());
+  });
+
+  it('delete user 401 fires onSessionExpired', async () => {
+    const onSessionExpired = vi.fn();
+    await renderWithSession(onSessionExpired);
+    // Preview succeeds so the confirm modal opens...
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ wishesCount: 5, wishmailsCount: 0 }),
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await waitFor(() =>
+      expect(screen.getByText(/This action is permanent and cannot be undone/)).toBeInTheDocument()
+    );
+    // ...then the actual delete returns 401.
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, Delete Account' }));
+    await waitFor(() => expect(onSessionExpired).toHaveBeenCalled());
+  });
+
+  it('runSeeder 401 fires onSessionExpired', async () => {
+    const onSessionExpired = vi.fn();
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ isProduction: false }) });
+    render(
+      <UserAccountsSection
+        authHeader={{}}
+        setMessage={vi.fn()}
+        setError={vi.fn()}
+        refreshCounter={0}
+        triggerRefresh={vi.fn()}
+        onSessionExpired={onSessionExpired}
+      />
+    );
+    await waitFor(() => expect(screen.getByText('Demo Seeder (Dev Only)')).toBeInTheDocument());
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
+    fireEvent.click(screen.getByRole('button', { name: 'Run Seeder' }));
+    await waitFor(() => expect(onSessionExpired).toHaveBeenCalled());
+  });
 });
