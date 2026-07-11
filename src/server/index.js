@@ -98,6 +98,12 @@ const frontendLimiter = rateLimit({
 app.get('/api/config', (req, res) => {
   res.json({
     realtimeProvider: process.env.REALTIME_PROVIDER || 'socketio',
+    // Public domain + AP IP are resolved at RUNTIME (per deployment), not baked in
+    // at Vite build time — a single GHCR image is deployed to many domains, so a
+    // build-time VITE_WISHBOARD_DOMAIN is always wrong somewhere. The poster and the
+    // kiosk Wi-Fi popup read these. Empty when unset; the client falls back sensibly.
+    domain: process.env.WISHBOARD_DOMAIN || '',
+    apIp: process.env.WISHBOARD_AP_IP || '',
   });
 });
 
