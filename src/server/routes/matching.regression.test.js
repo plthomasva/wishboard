@@ -3,68 +3,194 @@ import { describe, it, expect } from 'vitest';
 import { isCompatible } from './wishes.js';
 import defaultRules from '../defaultRules.js';
 
-// Regression matrix for #199: the matching engine was over-matching (a "straight
-// man" searcher was shown a "lesbian woman" wish). Matching is BIDIRECTIONAL —
-// the searcher must want the creator AND the creator must want the searcher.
-// These pin down orientation/gender pairings against the bundled default rules.
+// Regression matrix for the matching engine (#199 and follow-up semantics review).
+//
+// Matching is BIDIRECTIONAL: the searcher must want the wish creator AND the wish
+// creator must want the searcher. When a "desired" field is blank the engine infers
+// the preference from that party's ORIENTATION (the implicit path); an explicit
+// desired value overrides it.
+//
+// The expected results below encode deliberate product decisions (confirmed with the
+// maintainer), not just current behavior:
+//   • Unspecified orientation + no desired gender => NO match (was the #199 over-match).
+//   • Bisexual matches binary genders only; pansexual is gender-blind (bi≠pan by design).
+//   • Trans people are matched via gender (trans woman = woman) — inclusive by default.
+//   • A nonbinary person with a binary orientation matches nobody implicitly (no basis
+//     to infer their preference); they must set an explicit desired gender / broad search.
+//   • Roles cross-match complementary pairs (handler↔pet, top↔bottom) with expansion
+//     (pet→pup,kitten).
 
-const wish = ({ g = [], o = [], r = [], dg = [], dorient = [], dr = [] }) => ({
-  creator_genders: JSON.stringify(g),
-  creator_orientations: JSON.stringify(o),
-  creator_roles: JSON.stringify(r),
-  desired_genders: JSON.stringify(dg),
-  desired_orientations: JSON.stringify(dorient),
-  desired_roles: JSON.stringify(dr),
+const arr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+const wish = ({ g, o, r, dg, dorient, dr } = {}) => ({
+  creator_genders: JSON.stringify(arr(g)),
+  creator_orientations: JSON.stringify(arr(o)),
+  creator_roles: JSON.stringify(arr(r)),
+  desired_genders: JSON.stringify(arr(dg)),
+  desired_orientations: JSON.stringify(arr(dorient)),
+  desired_roles: JSON.stringify(arr(dr)),
 });
-
-const searcher = ({ g = [], o = [], r = [] }) => ({
-  identity_genders: g,
-  identity_orientations: o,
-  identity_roles: r,
+const searcher = ({ g, o, r } = {}) => ({
+  identity_genders: arr(g),
+  identity_orientations: arr(o),
+  identity_roles: arr(r),
 });
-
 const match = (w, s) => isCompatible(w, s, defaultRules);
 
-describe('#199 matching regression — bidirectional gender/orientation', () => {
-  const straightMan = searcher({ g: ['man'], o: ['straight'] });
-  const straightWoman = searcher({ g: ['woman'], o: ['straight'] });
-  const lesbianWoman = searcher({ g: ['woman'], o: ['lesbian'] });
-  const gayMan = searcher({ g: ['man'], o: ['gay'] });
-
-  it('straight man ↛ lesbian woman (orientation stated, no desired)', () => {
-    expect(match(wish({ g: ['woman'], o: ['lesbian'] }), straightMan)).toBe(false);
+describe('matching: core orientation × gender (bidirectional, implicit)', () => {
+  it('straight man ↔ straight woman match', () => {
+    expect(match(wish({ g: 'woman', o: 'straight' }), searcher({ g: 'man', o: 'straight' }))).toBe(
+      true
+    );
+    expect(match(wish({ g: 'man', o: 'straight' }), searcher({ g: 'woman', o: 'straight' }))).toBe(
+      true
+    );
   });
 
-  it('straight man ↛ lesbian woman (she explicitly desires women)', () => {
-    expect(match(wish({ g: ['woman'], o: ['lesbian'], dg: ['woman'] }), straightMan)).toBe(false);
+  it('gay man ↔ gay man match; lesbian woman ↔ lesbian woman match', () => {
+    expect(match(wish({ g: 'man', o: 'gay' }), searcher({ g: 'man', o: 'gay' }))).toBe(true);
+    expect(match(wish({ g: 'woman', o: 'lesbian' }), searcher({ g: 'woman', o: 'lesbian' }))).toBe(
+      true
+    );
   });
 
-  it('straight man ↛ a woman wish with no orientation and no desired (the loose case)', () => {
-    // The suspected over-match: an empty orientation must not mean "wants everyone".
-    expect(match(wish({ g: ['woman'] }), straightMan)).toBe(false);
+  it('straight man ↛ lesbian woman (she does not want men)', () => {
+    expect(match(wish({ g: 'woman', o: 'lesbian' }), searcher({ g: 'man', o: 'straight' }))).toBe(
+      false
+    );
   });
 
-  it('straight man → straight woman (mutual)', () => {
-    expect(match(wish({ g: ['woman'], o: ['straight'] }), straightMan)).toBe(true);
+  it('straight man ↛ gay man; straight woman ↛ lesbian woman', () => {
+    expect(match(wish({ g: 'man', o: 'gay' }), searcher({ g: 'man', o: 'straight' }))).toBe(false);
+    expect(match(wish({ g: 'woman', o: 'lesbian' }), searcher({ g: 'woman', o: 'straight' }))).toBe(
+      false
+    );
   });
 
-  it('lesbian woman → lesbian woman (mutual)', () => {
-    expect(match(wish({ g: ['woman'], o: ['lesbian'] }), lesbianWoman)).toBe(true);
+  it('bisexual matches both binary directions', () => {
+    // bi man ↔ straight woman, bi man ↔ gay man, bi woman ↔ straight man, bi woman ↔ lesbian
+    expect(match(wish({ g: 'woman', o: 'straight' }), searcher({ g: 'man', o: 'bisexual' }))).toBe(
+      true
+    );
+    expect(match(wish({ g: 'man', o: 'gay' }), searcher({ g: 'man', o: 'bisexual' }))).toBe(true);
+    expect(match(wish({ g: 'man', o: 'straight' }), searcher({ g: 'woman', o: 'bisexual' }))).toBe(
+      true
+    );
+    expect(match(wish({ g: 'woman', o: 'lesbian' }), searcher({ g: 'woman', o: 'bisexual' }))).toBe(
+      true
+    );
+  });
+});
+
+describe('matching: unspecified orientation (#199)', () => {
+  it('a wish with a gender but no orientation and no desired gender matches nobody', () => {
+    expect(match(wish({ g: 'woman' }), searcher({ g: 'man', o: 'straight' }))).toBe(false);
+    expect(match(wish({ g: 'man' }), searcher({ g: 'woman', o: 'straight' }))).toBe(false);
   });
 
-  it('gay man → gay man (mutual)', () => {
-    expect(match(wish({ g: ['man'], o: ['gay'] }), gayMan)).toBe(true);
+  it('but an explicit desired gender still matches even with no orientation', () => {
+    expect(match(wish({ g: 'woman', dg: 'man' }), searcher({ g: 'man', o: 'straight' }))).toBe(
+      true
+    );
   });
 
-  it('straight man ↛ gay man', () => {
-    expect(match(wish({ g: ['man'], o: ['gay'] }), straightMan)).toBe(false);
+  it('a searcher with no orientation matches nobody implicitly (broad search is the escape hatch)', () => {
+    expect(match(wish({ g: 'woman', o: 'straight' }), searcher({ g: 'man' }))).toBe(false);
+  });
+});
+
+describe('matching: bisexual is binary-only, pansexual is gender-blind (bi ≠ pan by design)', () => {
+  it('bisexual does NOT implicitly match a nonbinary person', () => {
+    expect(match(wish({ g: 'nonbinary', o: 'pan' }), searcher({ g: 'man', o: 'bisexual' }))).toBe(
+      false
+    );
+    expect(
+      match(wish({ g: 'nonbinary', o: 'queer' }), searcher({ g: 'woman', o: 'bisexual' }))
+    ).toBe(false);
   });
 
-  it('lesbian woman ↛ straight man wish', () => {
-    expect(match(wish({ g: ['man'], o: ['straight'] }), lesbianWoman)).toBe(false);
+  it('pan/queer nonbinary people match each other', () => {
+    expect(
+      match(wish({ g: 'nonbinary', o: 'pan' }), searcher({ g: 'nonbinary', o: 'queer' }))
+    ).toBe(true);
+    expect(
+      match(wish({ g: 'nonbinary', o: 'queer' }), searcher({ g: 'nonbinary', o: 'pan' }))
+    ).toBe(true);
   });
 
-  it('straight woman → straight man wish (mutual)', () => {
-    expect(match(wish({ g: ['man'], o: ['straight'], dg: ['woman'] }), straightWoman)).toBe(true);
+  it('a pan person ↛ a straight man (bidirectional: the straight man does not want nonbinary)', () => {
+    expect(match(wish({ g: 'man', o: 'straight' }), searcher({ g: 'nonbinary', o: 'pan' }))).toBe(
+      false
+    );
+  });
+});
+
+describe('matching: trans inclusion (kept — a trans woman is a woman)', () => {
+  it('straight man ↔ straight trans woman match', () => {
+    expect(
+      match(wish({ g: 'trans-woman', o: 'straight' }), searcher({ g: 'man', o: 'straight' }))
+    ).toBe(true);
+    expect(
+      match(wish({ g: 'man', o: 'straight' }), searcher({ g: 'trans-woman', o: 'straight' }))
+    ).toBe(true);
+  });
+
+  it('gay man ↔ gay trans man match', () => {
+    expect(match(wish({ g: 'trans-man', o: 'gay' }), searcher({ g: 'man', o: 'gay' }))).toBe(true);
+  });
+
+  it('lesbian woman ↔ lesbian trans woman match', () => {
+    expect(
+      match(wish({ g: 'trans-woman', o: 'lesbian' }), searcher({ g: 'woman', o: 'lesbian' }))
+    ).toBe(true);
+  });
+});
+
+describe('matching: nonbinary + a binary orientation matches nobody implicitly (leave as-is)', () => {
+  it('nonbinary/straight has no implicit preference to derive', () => {
+    expect(
+      match(wish({ g: 'man', o: 'straight' }), searcher({ g: 'nonbinary', o: 'straight' }))
+    ).toBe(false);
+    expect(
+      match(wish({ g: 'woman', o: 'straight' }), searcher({ g: 'nonbinary', o: 'straight' }))
+    ).toBe(false);
+  });
+});
+
+describe('matching: explicit desired overrides implicit orientation', () => {
+  it('a lesbian woman who explicitly desires a man matches a straight man', () => {
+    // She stated who she wants (a man); he wants a woman and she is one. Mutual.
+    expect(
+      match(wish({ g: 'woman', o: 'lesbian', dg: 'man' }), searcher({ g: 'man', o: 'straight' }))
+    ).toBe(true);
+  });
+});
+
+describe('matching: roles (cross-match + expansion)', () => {
+  // Gender/orientation are held compatible (straight man ↔ straight woman) so these
+  // isolate the role dimension.
+  const straightWomanWanting = (dr) => wish({ g: 'woman', o: 'straight', dr });
+  const straightManWithRole = (r) => searcher({ g: 'man', o: 'straight', r });
+
+  it('a wish desiring a handler matches a pet (and pup/kitten via expansion)', () => {
+    expect(match(straightWomanWanting('handler'), straightManWithRole('pet'))).toBe(true);
+    expect(match(straightWomanWanting('handler'), straightManWithRole('pup'))).toBe(true);
+    expect(match(straightWomanWanting('handler'), straightManWithRole('kitten'))).toBe(true);
+  });
+
+  it('a wish desiring a pet matches a handler (cross-match is bidirectional)', () => {
+    expect(match(straightWomanWanting('pet'), straightManWithRole('handler'))).toBe(true);
+  });
+
+  it('top ↔ bottom cross-match both ways', () => {
+    expect(match(straightWomanWanting('top'), straightManWithRole('bottom'))).toBe(true);
+    expect(match(straightWomanWanting('bottom'), straightManWithRole('top'))).toBe(true);
+  });
+
+  it('an unrelated role does not satisfy a role desire', () => {
+    expect(match(straightWomanWanting('handler'), straightManWithRole('top'))).toBe(false);
+  });
+
+  it('no desired role means the role dimension does not constrain the match', () => {
+    expect(match(straightWomanWanting([]), straightManWithRole('pet'))).toBe(true);
   });
 });
