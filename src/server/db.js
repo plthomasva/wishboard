@@ -119,6 +119,17 @@ await db.executeMultiple(`
     connection_id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS rules (
+    id TEXT PRIMARY KEY,
+    rule_type TEXT NOT NULL,
+    trigger_attribute TEXT NOT NULL,
+    trigger_value TEXT NOT NULL,
+    context_attribute TEXT,
+    context_value TEXT,
+    target_attribute TEXT NOT NULL,
+    target_value TEXT NOT NULL
+  );
 `);
 
 const ensureColumn = async (table, column, type) => {

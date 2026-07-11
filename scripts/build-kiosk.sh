@@ -43,8 +43,15 @@ if $RUN_CMD ps -a --format '{{.Names}}' | grep -Eq '^wishboard$'; then
     echo "Stopping legacy wishboard container..."
     $RUN_CMD stop wishboard || true
     
-    if [[ "$DEPLOY_RULES" != "reset" ]]; then
-        echo "Migrating legacy data to new bind mount..."
+    # One-time migration of the legacy wishboard_data named volume INTO the bind
+    # mount — ONLY when the bind mount has no data yet. This guard is critical: the
+    # container is named `wishboard` even under compose, so without it this cp -a ran
+    # on every deploy and clobbered live data (rules edits, uploaded images) with the
+    # stale, orphaned wishboard_data volume.
+    if [[ "$DEPLOY_RULES" != "reset" ]] \
+        && [ ! -f "$WISHBOARD_HOME/wishboard/data/rules.yaml" ] \
+        && [ ! -f "$WISHBOARD_HOME/wishboard/data/wishboard.db" ]; then
+        echo "First run: migrating legacy wishboard_data volume into the bind mount..."
         sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard/data
         $RUN_CMD run --rm -v wishboard_data:/from -v $WISHBOARD_HOME/wishboard/data:/to alpine sh -c 'cp -a /from/. /to/ 2>/dev/null || true'
     fi

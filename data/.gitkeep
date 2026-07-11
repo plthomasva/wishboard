@@ -1,0 +1,1 @@
+Placeholder so data/ stays in git (the Dockerfile COPYs it). Runtime contents (DB, images, rules) are gitignored; default matching rules live in src/server/defaultRules.js.

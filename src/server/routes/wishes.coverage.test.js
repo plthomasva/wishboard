@@ -2,12 +2,9 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
-import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-// Write the test rules copy to a throwaway temp dir (reaped in afterAll) rather
-// than into the repo's data/ directory.
+// Throwaway temp dir for the legacy RULES_PATH (reaped in afterAll). The DB-backed
+// rulesManager auto-seeds the default rules, so nothing is copied in.
 const tmpRulesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wishboard-wishes-cov-'));
 const testRules = path.join(tmpRulesDir, 'rules.test.yaml');
 
@@ -27,12 +24,7 @@ const clearTestData = async () => {
   await db.exec('DELETE FROM sessions');
   await db.exec('DELETE FROM wishes');
   await db.exec("DELETE FROM users WHERE role != 'admin'");
-
-  const srcRules = path.resolve(__dirname, '../../../data/rules.yaml');
-  if (fs.existsSync(srcRules)) {
-    fs.copyFileSync(srcRules, testRules);
-  }
-  reloadRules();
+  await reloadRules();
 };
 
 beforeEach(async () => {
