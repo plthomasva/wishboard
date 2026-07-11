@@ -37,6 +37,8 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 - **[#200](https://github.com/plthomasva/wishboard/issues/200)** — Let a user exclude a wish from their future searches (not-interested / hide). Server-side per-user for logged-in users; open design question for anonymous scoping (localStorage vs anon-session).
 - **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
 - **[#195](https://github.com/plthomasva/wishboard/issues/195)** — Add a `wishboard auth token` CLI helper to mint/print an admin bearer token for scripting/verification.
+- **[#206](https://github.com/plthomasva/wishboard/issues/206)** — Expand the default role rules (power-exchange, activity, pet-play, rope, etc.) with cross-match/expansion, incl. switch/versatile modeling. Follow-up to the initial role defaults added with #199.
+- **[#207](https://github.com/plthomasva/wishboard/issues/207)** — Optional identity flags (SVG) on pills: canonical orientation/gender flags first, then a sparse curated set of role flags where one exists. Presentational only; render as SVG (see #198), admin-editable mapping.
 
 ## Infrastructure & DevOps
 
