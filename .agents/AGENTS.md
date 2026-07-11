@@ -6,7 +6,7 @@ This document outlines the core coding conventions, architectural patterns, envi
 
 ## 1. Project Context & Stack
 
-- **Description:** A private, disconnected wish board for conventions running on local hardware (e.g., Raspberry Pi 4) or deployed via an AWS serverless stack (Lambda + API Gateway + SQLite on EFS + CloudFront + S3).
+- **Description:** A private, disconnected wish board for conventions running on local hardware (e.g., Raspberry Pi 4) or deployed via an AWS serverless stack (Lambda + API Gateway + CloudFront + S3 + hosted Turso/libSQL; no VPC or EFS).
 - **Backend:** Node.js (ES modules), Express, SQLite (`libsql` or native sqlite3), WebSockets (using `socket.io` for standard and AWS API Gateway for serverless).
 - **Frontend:** React, TypeScript, Vite.
 - **Database:** SQLite. Remote database migrations are handled via custom local-to-remote migration scripts.

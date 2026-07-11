@@ -38,6 +38,11 @@ jobs:
       DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
       HOSTED_ZONE_ID: ${{ vars.HOSTED_ZONE_ID }}
       ACM_CERTIFICATE_ARN: ${{ vars.ACM_CERTIFICATE_ARN }}
+      # Turso DB endpoint + the SSM parameter name holding its auth token. Both
+      # non-secret (the token itself lives only in SSM), so they are repo
+      # Variables, not Secrets. Required in CI because samconfig.toml is gitignored.
+      DATABASE_URL: ${{ vars.DATABASE_URL }}
+      DATABASE_AUTH_TOKEN_SSM: ${{ vars.DATABASE_AUTH_TOKEN_SSM }}
 
     steps:
       - name: Checkout repository

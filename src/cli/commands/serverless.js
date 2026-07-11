@@ -163,10 +163,19 @@ function buildParameterOverrides(mode) {
   const acmCertificateArn =
     process.env.ACM_CERTIFICATE_ARN || getOverrideValue('AcmCertificateArn', tomlOverrides);
 
+  // DatabaseUrl is the (non-secret) libSQL/Turso endpoint; DatabaseAuthTokenSsm
+  // names the SSM SecureString the Lambda reads the token from at runtime. The
+  // token itself never flows through here.
+  const databaseUrl = process.env.DATABASE_URL || getOverrideValue('DatabaseUrl', tomlOverrides);
+  const databaseAuthTokenSsm =
+    process.env.DATABASE_AUTH_TOKEN_SSM || getOverrideValue('DatabaseAuthTokenSsm', tomlOverrides);
+
   assertSafeParam('ProjectName', projectName);
   assertSafeParam('DomainName', domainName);
   assertSafeParam('HostedZoneId', hostedZoneId);
   assertSafeParam('AcmCertificateArn', acmCertificateArn);
+  assertSafeParam('DatabaseUrl', databaseUrl);
+  assertSafeParam('DatabaseAuthTokenSsm', databaseAuthTokenSsm);
 
   // Never silently blank a param that samconfig explicitly sets (would delete the
   // custom domain / cert). An env override still wins; this only guards accidents.
@@ -175,6 +184,10 @@ function buildParameterOverrides(mode) {
     assertNotSilentlyBlanked('HostedZoneId', hostedZoneId, tomlOverrides);
   if (!process.env.ACM_CERTIFICATE_ARN)
     assertNotSilentlyBlanked('AcmCertificateArn', acmCertificateArn, tomlOverrides);
+  // Blanking DatabaseUrl would silently fall the Lambda back to a (read-only)
+  // local file path and crash the app, so guard it like the domain params.
+  if (!process.env.DATABASE_URL)
+    assertNotSilentlyBlanked('DatabaseUrl', databaseUrl, tomlOverrides);
 
   // Pass as a single space-separated string with quoted values. sam rejects a
   // bare empty token (e.g. `DomainName=`), so the optional domain params must be
@@ -182,7 +195,8 @@ function buildParameterOverrides(mode) {
   return (
     `ProjectName='${projectName}' DomainName='${domainName}' ` +
     `HostedZoneId='${hostedZoneId}' AcmCertificateArn='${acmCertificateArn}' ` +
-    `NodeEnv='${nodeEnv}'`
+    `NodeEnv='${nodeEnv}' DatabaseUrl='${databaseUrl}' ` +
+    `DatabaseAuthTokenSsm='${databaseAuthTokenSsm}'`
   );
 }
 

@@ -9,14 +9,14 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 ### Testing & Quality
 
 - **[#134](https://github.com/plthomasva/wishboard/issues/134)** — Add a Playwright client E2E smoke test (deferred from #121) to catch real-browser bundling/runtime breakage that jsdom can't.
-- **[#164](https://github.com/plthomasva/wishboard/issues/164)** — CI: SonarQube quality gate races auto-merge — `CI Success` goes green before Sonar's server-side verdict posts, so red gates slip through. Fix by adding `sonar.qualitygate.wait=true` (not a sleep); also unblock the current red gate (2 `kiosk.js` S5443 findings) and sweep accumulated issues.
+- **[#180](https://github.com/plthomasva/wishboard/issues/180)** — Upgrade to ESLint 10 once `eslint-plugin-react` supports it (currently pinned to 9.x; Dependabot 10.x updates ignored). A weekly CI watcher (#181) pings this issue when the upstream peers unblock.
 - **[#165](https://github.com/plthomasva/wishboard/issues/165)** — Un-exclude `WishScanner.tsx` from Stryker `mutate` and give it a real component test suite (split from #120; its `cardProcessor.ts` delegate is now hardened to ~80%).
 - **[#168](https://github.com/plthomasva/wishboard/issues/168)** — Harden `demoSeeder.js` mutation coverage (240 LOC behind a single happy-path assertion, ~24%; split from #120).
 - **[#169](https://github.com/plthomasva/wishboard/issues/169)** — Refactor `runSamDeploy` to accept an injectable sleep so the retry-loop mutants can be tested without real 5s waits (split from #120 / #132).
 
 ### Database & Deployment
 
-- **[#136](https://github.com/plthomasva/wishboard/issues/136)** — Spike: validate Turso free-tier fit to resolve [ADR 0002](docs/adr/0002-serverless-database-architecture.md) (the serverless SQLite-on-EFS topology).
+- **[#188](https://github.com/plthomasva/wishboard/issues/188)** — Durable rules storage for serverless: with EFS removed (#187), `rules.yaml` lives on the Lambda's ephemeral `/tmp`, so admin rule edits don't persist across cold starts. Move rules into the DB (Turso) or S3. (The Turso migration itself, #136, is done — resolved by #187; see [ADR 0002](docs/adr/0002-serverless-database-architecture.md).)
 - **[#145](https://github.com/plthomasva/wishboard/issues/145)** — Decide the durable shape for the Pi's libSQL data volume: keep the `build-kiosk.sh` chown, switch to a bind mount, or rely on the image's own chown (rootless-Docker ownership).
 - **[#162](https://github.com/plthomasva/wishboard/issues/162)** — Adopt S3 account-regional namespaces for buckets (squat-proof names; drops the hand-coded `${AWS::AccountId}` scheme). Surfaced during the #158 custom-domain incident.
 
@@ -30,7 +30,7 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 - **Automated Database Backups**
   - **Description**: Implement a backup procedure to periodically snapshot the SQLite database (and optionally user-uploaded images in S3) to prevent data loss in the event of accidental stack deletion or corruption.
   - **Environment**: Production serverless deployments.
-  - **Notes**: For the serverless AWS stack, we could leverage AWS Backup for the EFS file system, or schedule a Lambda function to copy the SQLite `.db` file to a dedicated backup S3 bucket on a cron schedule.
+  - **Notes**: The serverless DB is now hosted **Turso** (libSQL) — evaluate its point-in-time restore vs. scheduling periodic `turso db dump` exports to a backup S3 bucket. The Pi keeps its embedded file DB (back up the `wishboard_data` volume). User-uploaded images live in S3 either way.
 
 ## Unified CLI Migration Roadmap
 

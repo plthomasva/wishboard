@@ -271,6 +271,29 @@ describe('serverless commands', () => {
       expect(pov).not.toContain("DomainName=''");
     });
 
+    it('passes DatabaseUrl and DatabaseAuthTokenSsm from samconfig into the overrides', () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        [
+          'version = 0.1',
+          '[default.deploy.parameters]',
+          'stack_name = "wishboard-serverless-dev"',
+          'parameter_overrides = "ProjectName=\\"wishboard-dev\\" DatabaseUrl=\\"libsql://db.turso.io\\" DatabaseAuthTokenSsm=\\"/wishboard/dev/turso-auth-token\\" NodeEnv=\\"development\\""',
+        ].join('\n')
+      );
+
+      deployServerless({
+        stackName: 'wishboard-serverless-dev',
+        region: 'us-east-1',
+        mode: 'dev',
+        dryRun: true,
+      });
+
+      const pov = overridesOf(findDeploy());
+      expect(pov).toContain("DatabaseUrl='libsql://db.turso.io'");
+      expect(pov).toContain("DatabaseAuthTokenSsm='/wishboard/dev/turso-auth-token'");
+    });
+
     it('reads stack_name, region, and profile from samconfig.toml when no CLI options given', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readFileSync).mockReturnValue(

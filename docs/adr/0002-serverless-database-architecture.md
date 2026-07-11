@@ -1,7 +1,7 @@
 # ADR 0002: Serverless database architecture (SQLite-on-EFS vs. managed libSQL)
 
-- **Status:** Proposed (deciding)
-- **Date:** 2026-07
+- **Status:** Accepted — Option 2 (managed libSQL / Turso). Implemented 2026-07-10 (#136 spike → PR #187).
+- **Date:** 2026-07 (accepted 2026-07-10)
 
 ## Context
 
@@ -50,10 +50,17 @@ Correct concurrency, but **always-on cost** and operational overhead violate the
 
 _(Also considered and set aside: Cloudflare D1 — wrong ecosystem, we're on AWS/CloudFront; Neon/DynamoDB — a data-layer rewrite.)_
 
-## Leaning (not yet final)
+## Decision (accepted 2026-07-10)
 
-- **Interim:** Option 1 hardening (shipped with this ADR) makes the current EFS setup safe at today's volume.
-- **Target:** **Option 2 (Turso free tier)** is the architecturally correct answer for multiple Lambdas and stays cost-free at low volume — pending validation that the free tier fits our usage and that Lambda↔Turso latency is acceptable.
+**Option 2 (managed libSQL / Turso) is adopted for the serverless target**, resolving the #136 spike. The serverless `DATABASE_URL` now points at a hosted Turso database (`libsql://…`, co-located in `us-east-1`), the EFS mount is gone, and **both Lambdas leave the VPC entirely** — which was the whole point:
+
+- **Cost:** the VPC existed only to reach EFS. Removing it deleted the CloudWatch + CloudWatch Logs **interface endpoints** that were quietly costing **~$1/day** (~$29/mo) — a cost this ADR's original analysis (and the deploy guide's cost table) missed. Turso itself sits inside its free tier with >100× headroom. Net serverless DB cost: **$0**.
+- **Real-time, fixed as a side effect:** an in-VPC Lambda has no egress to `execute-api`, so server→client WebSocket broadcasts silently timed out. A VPC-less Lambda reaches `execute-api` normally, so real-time now works. See [ADR 0003](0003-serverless-realtime-websockets.md).
+- **Concurrency:** Turso is a real singleton — no NFS file locking, no `SQLITE_BUSY`-from-EFS, no reserved-concurrency workaround.
+
+Spike results (#136): free-tier limits clear by >100× on every axis (5 GB storage, 500 M row reads/mo, 10 M writes/mo, 100 DBs); the app's real `db.js` init + a write/read roundtrip validated against hosted Turso; Lambda↔Turso latency made negligible by co-locating the Turso primary in `us-east-1` (region `iad`).
+
+The Turso auth token is stored as a SecureString **SSM parameter** and fetched by the Lambda at cold start — never in the template, the deploy command, or CI. See `aws-serverless/deploy-instructions.md`.
 
 ## Deployment reality (important context for the decision)
 
@@ -76,17 +83,18 @@ With `busy_timeout=5000` an overlapping write waits rather than fails; added lat
 
 Independent of the storage choice, a write that does time out now fails **safely**: a global JSON error handler returns a friendly, retryable `503` for `SQLITE_BUSY` (and JSON, not HTML, for any error), and the client shows a clear message while **preserving the user's entered data** for a one-tap retry. (Previously a non-JSON 500 surfaced as a silent no-op.) This makes an occasional timeout bearable regardless of which option wins.
 
-## Open questions before accepting
+## Open questions — resolved
 
-- [ ] Confirm Turso free-tier limits (rows read/written, storage, DB count) comfortably exceed projected usage.
-- [ ] Measure Lambda↔Turso latency vs. current EFS latency.
-- [ ] Confirm `busy_timeout` actually persists on the libSQL file connection under load (interim mitigation validity).
-- [ ] If staying on EFS for now, decide whether `ReservedConcurrentExecutions: 1` is worth the latency tradeoff at current volume.
-- [ ] Decide whether to enable **WAL on the single-node (Pi) deployment** behind an explicit opt-in flag (never on EFS).
-- [ ] Reassess overall urgency given that real events run on the single-node Pi, not serverless.
+- [x] **Turso free-tier fit** — confirmed: projected usage sits >100× under every limit (storage / reads / writes / DB count).
+- [x] **Lambda↔Turso latency** — addressed by co-locating the Turso primary in `us-east-1` (region `iad`), next to the stack (~1–2 ms vs. ~150 ms cross-region for the initial Tokyo default).
+- [x] **`busy_timeout` on the libSQL connection** — moot on Turso: it rejects the PRAGMA as unsupported, and `db.js` applies PRAGMAs individually + best-effort so it's skipped, not fatal. Still applies to the Pi's file DB.
+- [x] **`ReservedConcurrentExecutions: 1`** — not needed; Turso serializes writes server-side, so the EFS multi-writer concern is gone.
+- [ ] **WAL on the single-node (Pi)** — still open, unchanged by this decision (the Pi keeps the embedded file DB; the now-removed EFS made this serverless-irrelevant). Tracked as a candidate follow-up.
 
 ## Consequences
 
-- Until this is accepted and acted on, serverless remains SQLite-on-EFS with the `busy_timeout` mitigation + graceful JSON error handling — adequate at low volume, not at scale.
-- Whatever is chosen, the **kiosk stays embedded file-SQLite**, and **WAL is never enabled on EFS**.
-- Graceful write-failure handling (JSON errors, friendly retry, preserved form data) is now part of the baseline regardless of topology.
+- **Serverless now runs on Turso** (hosted libSQL); the VPC, subnets, IGW, route tables, security group, EFS (filesystem / mount targets / access point), and both CloudWatch interface endpoints are **deleted**. The ~$1/day is eliminated.
+- The **kiosk stays embedded file-SQLite** on the Pi (unchanged); one `@libsql/client` codebase still serves both targets.
+- One capability EFS provided is not yet replaced: **`rules.yaml` persistence**. On serverless it now lives on the Lambda's ephemeral `/tmp`, so moderation-rule edits don't survive cold starts (the app falls back to empty rules if unseeded). Durable rule storage (DB- or S3-backed) is a tracked follow-up.
+- Graceful write-failure handling (JSON errors, friendly retry, preserved form data) remains part of the baseline.
+- **WAL is now a non-issue on serverless** (no EFS); it stays a gated opt-in for the Pi only.

@@ -8,22 +8,19 @@ This guide details how to build, deploy, maintain, and estimate the monthly cost
 
 Here is a monthly cost breakdown for a moderate-use environment (e.g., 5,000 active monthly users, 10,000 API requests, and 1 GB of image uploads):
 
-| Service                    | Estimated Monthly Usage                               | Free Tier Covered?                                                                    | Estimated Monthly Cost                  |
-| :------------------------- | :---------------------------------------------------- | :------------------------------------------------------------------------------------ | :-------------------------------------- |
-| **Amazon CloudFront**      | 10,000 HTTP requests, <10 GB egress data              | Yes (covered by permanent 1 TB egress / 10M requests)                                 | **$0.00**                               |
-| **Amazon S3**              | 1 GB storage, 10,000 GETs, 1,000 PUTs                 | Yes (covered by 5 GB / 20k GET / 2k PUT Free Tier)                                    | **$0.00** (or **$0.03** post-Free Tier) |
-| **AWS Lambda**             | 10,000 invocations (avg. 500ms execution, 512MB RAM)  | Yes (covered by permanent 1M requests / 400k GB-sec)                                  | **$0.00**                               |
-| **Amazon API Gateway**     | 10,000 HTTP API requests, 1,000 WebSocket connections | HTTP API: $0.01. WebSockets: $0.01.                                                   | **$0.02**                               |
-| **Amazon EFS**             | 1 GB database storage, low throughput                 | Yes (covered by 5 GB EFS Standard Free Tier)                                          | **$0.00** (or **$0.30** post-Free Tier) |
-| **VPC Networking**         | Private subnet traffic (EFS + S3 Gateway Endpoint)    | **Zero-NAT Optimization**: Routed via S3 Gateway VPC Endpoint. No NAT Gateway needed. | **$0.00**                               |
-| **Route 53 & ACM**         | 1 Hosted Zone, 1 ACM certificate, low DNS queries     | ACM: Free. Route 53 Hosted Zone: $0.50.                                               | **$0.50**                               |
-| **Total (Free Tier)**      |                                                       |                                                                                       | **$0.52 / month**                       |
-| **Total (Post-Free Tier)** |                                                       |                                                                                       | **$0.85 / month**                       |
+| Service                    | Estimated Monthly Usage                               | Free Tier Covered?                                                    | Estimated Monthly Cost                  |
+| :------------------------- | :---------------------------------------------------- | :-------------------------------------------------------------------- | :-------------------------------------- |
+| **Amazon CloudFront**      | 10,000 HTTP requests, <10 GB egress data              | Yes (covered by permanent 1 TB egress / 10M requests)                 | **$0.00**                               |
+| **Amazon S3**              | 1 GB storage, 10,000 GETs, 1,000 PUTs                 | Yes (covered by 5 GB / 20k GET / 2k PUT Free Tier)                    | **$0.00** (or **$0.03** post-Free Tier) |
+| **AWS Lambda**             | 10,000 invocations (avg. 500ms execution, 512MB RAM)  | Yes (covered by permanent 1M requests / 400k GB-sec)                  | **$0.00**                               |
+| **Amazon API Gateway**     | 10,000 HTTP API requests, 1,000 WebSocket connections | HTTP API: $0.01. WebSockets: $0.01.                                   | **$0.02**                               |
+| **Turso (hosted libSQL)**  | 1 DB, a few MB, low read/write volume                 | Yes — sits >100× under the free tier (5 GB / 500M reads / 10M writes) | **$0.00**                               |
+| **Route 53 & ACM**         | 1 Hosted Zone, 1 ACM certificate, low DNS queries     | ACM: Free. Route 53 Hosted Zone: $0.50.                               | **$0.50**                               |
+| **Total (Free Tier)**      |                                                       |                                                                       | **$0.52 / month**                       |
+| **Total (Post-Free Tier)** |                                                       |                                                                       | **$0.55 / month**                       |
 
-> [!TIP]
-> **Zero-NAT Cost Optimization:**
-> Normally, AWS Lambda functions inside a VPC require a NAT Gateway ($32.40/month base charge) to connect to S3 or external APIs. 
-> To bypass this cost, we configure an **S3 Gateway VPC Endpoint** (which is completely free) inside our private subnets. Because the Express API only reads/writes to EFS SQLite and uploads images to S3, it doesn't need public internet access at runtime, allowing our VPC configuration to cost exactly **$0.00**!
+> [!NOTE]
+> **No VPC, by design.** Earlier revisions ran the Lambdas in a VPC to reach a SQLite database on EFS, using a free S3 Gateway Endpoint to dodge a NAT Gateway. But that topology still ran **CloudWatch + CloudWatch Logs interface endpoints at ~$0.01/hr each (~$1/day)** — a line this table originally omitted. Moving the database to **Turso** (reachable over the public internet) removed the reason for the VPC entirely: no VPC, no EFS, no interface endpoints — and, as a bonus, server→client WebSockets now work, because a VPC-less Lambda can reach `execute-api`. See [ADR 0002](../docs/adr/0002-serverless-database-architecture.md) and [ADR 0003](../docs/adr/0003-serverless-realtime-websockets.md).
 
 ---
 
@@ -36,6 +33,38 @@ Before starting, make sure you have the following installed and configured on yo
 3. **Node.js** (v22+) and **npm**.
 4. **Vite** (already configured in the project).
 5. **Route 53 Hosted Zone ID** (Optional, if you wish to use a custom domain).
+6. **A Turso database** and its auth token stored in SSM — see **[Database (Turso)](#database-turso)** below.
+
+---
+
+## Database (Turso)
+
+The serverless stack uses a hosted **[Turso](https://turso.tech)** (libSQL) database — there is **no VPC and no EFS**. Set this up once per environment before deploying:
+
+1. **Create the database**, co-located with the stack's region for low latency (`iad` = `us-east-1`):
+
+   ```bash
+   turso group create wishboard-us --location iad   # once per org, if you have no US group
+   turso db create wishboard --group wishboard-us
+   turso db show wishboard --url                     # -> the DatabaseUrl (libsql://…)
+   ```
+
+2. **Mint an auth token and store it in SSM** (SecureString). The Lambda reads it at cold start; it never lives in the template, the deploy command, or CI:
+
+   ```bash
+   turso db tokens create wishboard
+   aws ssm put-parameter --name /wishboard/dev/turso-auth-token \
+     --type SecureString --value "<token>" --overwrite --region us-east-1
+   ```
+
+3. Pass the **URL** and the **SSM parameter name** to the deploy as the `DatabaseUrl` and `DatabaseAuthTokenSsm` parameters — via `sam --guided`, `samconfig.toml` (local; gitignored), or the `DATABASE_URL` / `DATABASE_AUTH_TOKEN_SSM` repository **Variables** (CI).
+
+### Rotating the token
+
+Turso tokens are all valid concurrently, but there is **no per-token revoke** — `turso db tokens invalidate` rotates the database's signing key and kills _every_ token at once.
+
+- **Proactive roll (no leak):** `turso db tokens create`, then `aws ssm put-parameter --overwrite` the new value. New Lambda cold starts pick it up; warm ones keep working on the old (still-valid) token — zero downtime.
+- **Compromise:** `turso db tokens invalidate` (kills all) → `turso db tokens create` → put the fresh token in SSM → force new cold starts (redeploy). Brief window while it propagates.
 
 ---
 
@@ -56,6 +85,9 @@ To enable this, you must first configure AWS OIDC (OpenID Connect) authenticatio
    ```
 
    _This creates an IAM Role in your AWS account and automatically configures the necessary Repository Secrets and Variables in your GitHub repository using the `gh` CLI._
+
+   > [!IMPORTANT]
+   > Also set two repository **Variables** (not Secrets), or CI can't reach the database: `DATABASE_URL` (the Turso `libsql://` URL) and `DATABASE_AUTH_TOKEN_SSM` (the SSM parameter name). Both are non-secret — the token itself stays in SSM. See **[Database (Turso)](#database-turso)**.
 
 2. **Trigger a Deployment:**
    Push a commit to the `main` branch, or manually trigger the `Deploy Serverless` workflow from the GitHub Actions tab.
@@ -120,6 +152,8 @@ SAM will prompt you for the following parameters:
 - **DomainName**: Your custom domain (e.g. `wishboard.yourdomain.com`). Leave empty to use the default CloudFront URL.
 - **HostedZoneId**: The Route 53 Hosted Zone ID for domain verification. Leave empty if not using a custom domain.
 - **AcmCertificateArn**: If you already have an SSL certificate in `us-east-1`, paste its ARN here.
+- **DatabaseUrl**: Your Turso database URL (`libsql://<db>-<org>.aws-us-east-1.turso.io`). Not a secret. See **[Database (Turso)](#database-turso)** below.
+- **DatabaseAuthTokenSsm**: The name of the SSM SecureString parameter holding the Turso auth token (e.g. `/wishboard/dev/turso-auth-token`). The token itself is never passed here.
 
 Once deployment finishes, it will print the S3 bucket names and the CloudFront URL in the command output (e.g., `FrontendBucketName` and `CloudFrontUrl`).
 
@@ -190,7 +224,7 @@ If you modify any frontend files:
 
 - Access your board at the custom domain URL (if configured) or the default CloudFront URL (e.g. `https://dxxxxxxxxxxxxx.cloudfront.net`).
 - File uploads are securely and automatically uploaded to S3 and served directly via CloudFront at `/images/*`.
-- WebSockets operate seamlessly at `/socket.io/*` using API Gateway WebSockets, with connection states persisted automatically inside the SQLite database on EFS.
+- WebSockets operate seamlessly at `/socket.io/*` using API Gateway WebSockets, with connection states persisted automatically in the `websocket_connections` table in Turso. See [ADR 0003](../docs/adr/0003-serverless-realtime-websockets.md).
 
 ---
 
