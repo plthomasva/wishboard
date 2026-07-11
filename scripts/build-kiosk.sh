@@ -60,11 +60,11 @@ if $RUN_CMD ps -a --format '{{.Names}}' | grep -Eq '^wishboard$'; then
     $RUN_CMD rm wishboard || true
 fi
 
-if [[ "$DEPLOY_RULES" = "reset" ]]; then
-    echo "Resetting container volume and local data..."
-    $RUN_CMD volume rm wishboard_data db_data || true
-    sudo rm -rf $WISHBOARD_HOME/wishboard/data/* || true
-fi
+# NOTE: --reset-rules (DEPLOY_RULES=reset) is handled AFTER the stack is up (see
+# below). It used to `volume rm db_data` + `rm -rf data/*` here, which nuked the
+# ENTIRE database (users, wishes, sessions) and DELETED UPLOADED IMAGES — far more
+# than "reset rules", and it no longer even reset the DB-backed rules correctly.
+# See #194 and docs/adr/0004-kiosk-data-persistence.md.
 
 # Navigate to the application directory where docker-compose.yml is uploaded
 cd $WISHBOARD_HOME/wishboard
@@ -99,6 +99,26 @@ for _ in $(seq 1 20); do
 done
 $RUN_CMD exec -u 0 wishboard-db chown -R 666:666 /var/lib/sqld || true
 $RUN_CMD compose --env-file .env restart wishboard
+
+if [[ "$DEPLOY_RULES" = "reset" ]]; then
+    # #194: reset matching rules ONLY — do not touch users, wishes, or images.
+    # Rules live in the DB `rules` table (see ADR 0002/0004). Clear that table,
+    # then restart the app so rulesManager.seedIfEmpty() reseeds the bundled
+    # defaults on boot. Remove only the vestigial legacy rules.yaml (NOT images)
+    # so the reseed uses the bundled defaults rather than a stale file.
+    echo "Resetting matching rules to the bundled defaults (DB rules table)..."
+    sudo rm -f $WISHBOARD_HOME/wishboard/data/rules.yaml || true
+    # Wait for the app to be up, then clear the rules table via the app's own
+    # libSQL client (DATABASE_URL points at the db service on the compose network).
+    for _ in $(seq 1 20); do
+        if $RUN_CMD exec wishboard node -e "import('@libsql/client').then(async ({ createClient }) => { const c = createClient({ url: process.env.DATABASE_URL }); await c.execute('DELETE FROM rules'); process.exit(0); }).catch(() => process.exit(1))"; then
+            echo "Rules table cleared."
+            break
+        fi
+        sleep 1
+    done
+    $RUN_CMD compose --env-file .env restart wishboard
+fi
 
 echo "Restarting Display Manager..."
 sudo systemctl restart lightdm || true
