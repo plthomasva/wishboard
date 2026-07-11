@@ -79,10 +79,13 @@ describe('useWebSocket', () => {
     let mockWebSocketInstance;
 
     class MockWebSocket {
+      static OPEN = 1;
       public onopen;
       public onclose;
       public onmessage;
       public onerror;
+      public readyState = 0;
+      public send = vi.fn();
 
       constructor(public url) {
         // eslint-disable-next-line @typescript-eslint/no-this-alias -- capture mock instance for assertions
@@ -171,6 +174,37 @@ describe('useWebSocket', () => {
 
       // Test off edge case
       result.current.socket.off('nonexistent-event', () => {});
+    });
+
+    it('emit queues messages until open, flushes on open, then sends immediately', async () => {
+      const { useWebSocket } = await import('./useWebSocket');
+      const { result } = renderHook(() => useWebSocket());
+      const socket = result.current.socket;
+
+      // Not open yet: emit queues the action frame instead of sending.
+      socket.emit('subscribe', { channel: 'sys:log', token: 't' });
+      expect(mockWebSocketInstance.send).not.toHaveBeenCalled();
+
+      // On open, the queued frame flushes.
+      act(() => {
+        mockWebSocketInstance.readyState = 1;
+        mockWebSocketInstance.onopen();
+      });
+      expect(mockWebSocketInstance.send).toHaveBeenCalledWith(
+        JSON.stringify({ action: 'subscribe', channel: 'sys:log', token: 't' })
+      );
+
+      // Now open: emit sends immediately (no data payload → just the action).
+      mockWebSocketInstance.send.mockClear();
+      socket.emit('unsubscribe', { channel: 'sys:log' });
+      expect(mockWebSocketInstance.send).toHaveBeenCalledWith(
+        JSON.stringify({ action: 'unsubscribe', channel: 'sys:log' })
+      );
+
+      // emit with no data still produces a bare action frame.
+      mockWebSocketInstance.send.mockClear();
+      socket.emit('ping');
+      expect(mockWebSocketInstance.send).toHaveBeenCalledWith(JSON.stringify({ action: 'ping' }));
     });
 
     it('handles connection error and reconnects', async () => {
