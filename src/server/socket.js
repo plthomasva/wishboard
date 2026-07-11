@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import db from './db.js';
 import logger from './logger.js';
+import { getUserFromToken } from './auth.js';
 
 let io = null;
 let apigwClient = null;
@@ -34,6 +35,19 @@ export const initSocket = (httpServer, corsOptions) => {
 
   io.on('connection', (socket) => {
     logger.info(`WebSocket client connected: ${socket.id}`);
+
+    // sys:log is an admin-only, opt-in channel: a client joins the 'syslog' room
+    // only when it subscribes AND presents an admin token. Board events (wish:*)
+    // stay a public broadcast to everyone. See #189 / ADR 0003.
+    socket.on('subscribe', async ({ channel, token } = {}) => {
+      if (channel !== 'sys:log') return;
+      const user = await getUserFromToken(token);
+      if (user?.role === 'admin') socket.join('syslog');
+    });
+
+    socket.on('unsubscribe', ({ channel } = {}) => {
+      if (channel === 'sys:log') socket.leave('syslog');
+    });
 
     socket.on('disconnect', () => {
       logger.info(`WebSocket client disconnected: ${socket.id}`);
@@ -81,9 +95,15 @@ const broadcastToApiGateway = async (event, data) => {
     return;
   }
 
+  // sys:log goes only to connections that subscribed to it (admins who opened the
+  // log viewer); every other event is a public board broadcast to all connections.
+  const query =
+    event === 'sys:log'
+      ? 'SELECT connection_id FROM websocket_connections WHERE sub_syslog = 1'
+      : 'SELECT connection_id FROM websocket_connections';
   let rows = [];
   try {
-    rows = await db.prepare('SELECT connection_id FROM websocket_connections').all();
+    rows = await db.prepare(query).all();
   } catch (err) {
     logger.error('Failed to fetch websocket connections from DB:', err.message);
     return;
@@ -187,7 +207,7 @@ export const emitSystemLog = (logEntry) => {
         })
     );
   } else if (io) {
-    io.emit('sys:log', logEntry);
+    io.to('syslog').emit('sys:log', logEntry);
   }
 };
 

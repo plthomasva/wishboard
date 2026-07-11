@@ -6,6 +6,7 @@ type Listener = (...args: unknown[]) => void;
 class RawWebSocketWrapper {
   private listeners: Record<string, Listener[]> = {};
   private ws: WebSocket | null = null;
+  private pending: string[] = [];
   public connected: boolean = false;
 
   constructor() {
@@ -26,6 +27,9 @@ class RawWebSocketWrapper {
 
       this.ws.onopen = () => {
         this.connected = true;
+        // Flush anything queued before the socket opened (e.g. an early subscribe).
+        this.pending.forEach((m) => this.ws?.send(m));
+        this.pending = [];
         this.trigger('connect');
       };
 
@@ -63,6 +67,20 @@ class RawWebSocketWrapper {
   public off(event: string, cb: Listener) {
     if (!this.listeners[event]) return;
     this.listeners[event] = this.listeners[event].filter((l) => l !== cb);
+  }
+
+  /**
+   * Send an action message to the server, mirroring socket.io's `emit(event, data)`
+   * so callers stay transport-agnostic. Here it becomes an API Gateway WebSocket
+   * action frame (`{ action, ...data }`), queued until the socket is open.
+   */
+  public emit(event: string, data?: Record<string, unknown>) {
+    const message = JSON.stringify({ action: event, ...(data ?? {}) });
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(message);
+    } else {
+      this.pending.push(message);
+    }
   }
 
   private trigger(event: string, data?: any) {

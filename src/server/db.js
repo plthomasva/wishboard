@@ -146,6 +146,13 @@ await ensureColumn('wishes', 'wishmail_enabled', 'INTEGER DEFAULT 0');
 await ensureColumn('wishes', 'is_active', 'INTEGER DEFAULT 1');
 await ensureColumn('wishes', 'image_id', 'TEXT');
 
+// WebSocket subscription state (serverless API Gateway target). Board events
+// (wish:*) broadcast to everyone, but sys:log is an admin-only, opt-in channel:
+// user_id records who owns the connection, sub_syslog whether they've subscribed
+// to the log stream. See ADR 0003 and #189.
+await ensureColumn('websocket_connections', 'user_id', 'TEXT');
+await ensureColumn('websocket_connections', 'sub_syslog', 'INTEGER DEFAULT 0');
+
 const defaultAdminUsername = process.env.WISHBOARD_ADMIN_USERNAME || 'admin';
 const defaultAdminSecret = process.env.WISHBOARD_ADMIN_SECRET || 'admin-board';
 

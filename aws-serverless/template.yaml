@@ -177,20 +177,42 @@ Resources:
       RouteKey: '$disconnect'
       Target: !Sub 'integrations/${WebSocketIntegrationDisconnect}'
 
-  WebSocketDeployment:
-    Type: AWS::ApiGatewayV2::Deployment
-    DependsOn:
-      - WebSocketConnectRoute
-      - WebSocketDisconnectRoute
+  # Custom action routes (RouteSelectionExpression = $request.body.action) for the
+  # channel subscribe/unsubscribe protocol. AuthorizationType stays NONE (like
+  # $connect); the token is validated inside the Lambda. See #189 / ADR 0003.
+  WebSocketIntegrationMessage:
+    Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketFunction.Arn}/invocations'
+
+  WebSocketSubscribeRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: subscribe
+      AuthorizationType: NONE
+      Target: !Sub 'integrations/${WebSocketIntegrationMessage}'
+
+  WebSocketUnsubscribeRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: unsubscribe
+      AuthorizationType: NONE
+      Target: !Sub 'integrations/${WebSocketIntegrationMessage}'
 
   WebSocketStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
       ApiId: !Ref WebSocketApi
       StageName: production
-      DeploymentId: !Ref WebSocketDeployment
+      # AutoDeploy so route/integration changes reach the stage automatically. A
+      # manual AWS::ApiGatewayV2::Deployment is an immutable snapshot that does NOT
+      # refresh when routes are added — which is exactly why subscribe/unsubscribe
+      # (#189) didn't take on their first deploy until this was switched on.
+      AutoDeploy: true
       Tags:
         Project: wishboard
 

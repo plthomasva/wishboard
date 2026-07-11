@@ -369,4 +369,27 @@ describe('SystemOverviewSection WebSocket', () => {
     // Since it exceeded 2000 lines, log line 0 should be gone
     expect(screen.queryByText('log line 0')).not.toBeInTheDocument();
   }, 15000);
+
+  it('subscribes to the admin-only sys:log channel on mount, unsubscribes on unmount', async () => {
+    const { unmount } = render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+
+    const socket = getMockSocket();
+    // Token is extracted from the Bearer auth header.
+    expect(socket.emit).toHaveBeenCalledWith('subscribe', {
+      channel: 'sys:log',
+      token: 'test-token',
+    });
+
+    unmount();
+    expect(socket.emit).toHaveBeenCalledWith('unsubscribe', { channel: 'sys:log' });
+  });
+
+  it('subscribes with an empty token when no auth header is present', async () => {
+    render(<SystemOverviewSection authHeader={{}} refreshCounter={0} />);
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+
+    const socket = getMockSocket();
+    expect(socket.emit).toHaveBeenCalledWith('subscribe', { channel: 'sys:log', token: '' });
+  });
 });
