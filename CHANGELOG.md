@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.13.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.12.2...wishboard-v1.13.0) (2026-07-11)
+
+
+### Features
+
+* **serverless:** migrate DB to Turso, remove VPC/EFS, fix real-time ([#136](https://github.com/plthomasva/wishboard/issues/136)) ([#187](https://github.com/plthomasva/wishboard/issues/187)) ([d15b256](https://github.com/plthomasva/wishboard/commit/d15b256d609e3610930afa8546a4147f37af8602))
+
+
+### Bug Fixes
+
+* **admin:** 401 for dead sessions, block self-delete, no-store admin responses ([#183](https://github.com/plthomasva/wishboard/issues/183)) ([883970e](https://github.com/plthomasva/wishboard/commit/883970e4778323538b84fcf247b4dac668e683a8))
+* **kiosk:** repair dual-mode Wi-Fi AP (ap0 missing, unmanaged, channel-unpinned) ([#172](https://github.com/plthomasva/wishboard/issues/172)) ([fc96e93](https://github.com/plthomasva/wishboard/commit/fc96e9388ff4ea3288cc3ebfc0dc3a29231a5c42))
+* **realtime:** stop the sys:log broadcast feedback loop + fail-fast PostToConnection ([#186](https://github.com/plthomasva/wishboard/issues/186)) ([a74fcaa](https://github.com/plthomasva/wishboard/commit/a74fcaa1b159c884ec824409d37fa31ed35bb597))
+* **serverless:** make WebSocket real-time work through CloudFront (websocket-mgr was never invoked) ([#185](https://github.com/plthomasva/wishboard/issues/185)) ([13feb8e](https://github.com/plthomasva/wishboard/commit/13feb8ea589c4a93a3b6aedf5c3e8b923b3ea010))
+* **sonar:** green the quality gate and enforce it in CI ([#164](https://github.com/plthomasva/wishboard/issues/164)) ([#182](https://github.com/plthomasva/wishboard/issues/182)) ([5d06375](https://github.com/plthomasva/wishboard/commit/5d06375d051bb70be4d1fe6f610b310664ef5ab5))
+
 ## [1.12.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.12.1...wishboard-v1.12.2) (2026-07-09)
 
 
