@@ -41,20 +41,20 @@ describe('rulesManager (DB-backed)', () => {
     delete process.env.RULES_CACHE_TTL_MS;
   });
 
-  it('seeds the 29 bundled default rules into a fresh database on boot', () => {
-    expect(rm.getRules().length).toBe(29);
+  it('seeds the 32 bundled default rules into a fresh database on boot', () => {
+    expect(rm.getRules().length).toBe(32);
   });
 
   it('seedIfEmpty is a no-op when rules already exist', async () => {
     await rm.seedIfEmpty();
-    expect(rm.getRules().length).toBe(29); // not doubled
+    expect(rm.getRules().length).toBe(32); // not doubled
   });
 
   it('seedIfEmpty repopulates an empty table with the defaults', async () => {
     await db.execute('DELETE FROM rules');
     await rm.seedIfEmpty();
     await rm.reloadRules();
-    expect(rm.getRules().length).toBe(29);
+    expect(rm.getRules().length).toBe(32);
   });
 
   describe('CRUD against an empty table', () => {
@@ -144,7 +144,7 @@ describe('rulesManager (DB-backed)', () => {
 
     ({ db, rm } = await importFresh({ RULES_PATH: yamlPath }));
 
-    // Seeded from the legacy file, not the 29 bundled defaults.
+    // Seeded from the legacy file, not the 32 bundled defaults.
     expect(rm.getRules()).toHaveLength(1);
     expect(rm.getRules().map((r) => r.id)).toContain('custom_pet');
 

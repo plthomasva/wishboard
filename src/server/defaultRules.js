@@ -289,6 +289,12 @@ const rows = [
     'gender',
     'nonbinary, enby, non-binary, genderqueer, agender, trans-nonbinary, cis-nonbinary',
   ],
+  // Role rules (see docs/MATCHING_RULES.md). Cross-match makes complementary roles
+  // find each other bidirectionally; expansion broadens a role to its sub-kinds so
+  // a "handler" wish also reaches a "pup"/"kitten" without enumerating every pair.
+  ['exp_pet', 'expansion', 'role', 'pet', null, null, 'role', 'pet, pup, kitten'],
+  ['cross_handler_pet', 'cross_match', 'role', 'handler', null, null, 'role', 'pet'],
+  ['cross_top_bottom', 'cross_match', 'role', 'top', null, null, 'role', 'bottom'],
 ];
 
 export default rows.map((row) => Object.fromEntries(FIELDS.map((f, i) => [f, row[i]])));
