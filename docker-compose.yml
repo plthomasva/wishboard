@@ -29,6 +29,11 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=http://db:8080
+      # Public domain + AP IP for the poster/Wi-Fi popup, resolved at runtime via
+      # /api/config. Substituted from the .env that build-kiosk.sh writes (empty in
+      # a bare `docker compose up`, which is fine — the client falls back to the host).
+      - WISHBOARD_DOMAIN=${WISHBOARD_DOMAIN:-}
+      - WISHBOARD_AP_IP=${WISHBOARD_AP_IP:-}
       # - WISHBOARD_ADMIN_USERNAME=admin
       # - WISHBOARD_ADMIN_SECRET=admin-board
       # - CORS_ALLOWED_ORIGINS=http://your-domain.com

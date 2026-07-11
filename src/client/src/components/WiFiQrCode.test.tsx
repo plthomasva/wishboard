@@ -3,9 +3,14 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import WiFiQrCode from './WiFiQrCode';
 
+const setConfig = (cfg: Record<string, unknown> | undefined) => {
+  (globalThis as Record<string, unknown>).__WISHBOARD_CONFIG__ = cfg;
+};
+
 describe('WiFiQrCode', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    setConfig(undefined);
   });
 
   afterEach(() => {
@@ -14,7 +19,18 @@ describe('WiFiQrCode', () => {
       vi.runOnlyPendingTimers();
     });
     vi.useRealTimers();
+    setConfig(undefined);
+    delete (import.meta.env as Record<string, unknown>).VITE_WISHBOARD_DOMAIN;
+    delete (import.meta.env as Record<string, unknown>).VITE_WISHBOARD_AP_IP;
   });
+
+  const showPopup = () => {
+    render(<WiFiQrCode />);
+    // Initial wait is 10000ms
+    act(() => {
+      vi.advanceTimersByTime(10000);
+    });
+  };
 
   it('initializes invisibly and waits for the initial delay', () => {
     const { container } = render(<WiFiQrCode />);
@@ -22,24 +38,13 @@ describe('WiFiQrCode', () => {
   });
 
   it('becomes visible after the initial delay', () => {
-    render(<WiFiQrCode />);
-
-    // Initial wait is 10000ms
-    act(() => {
-      vi.advanceTimersByTime(10000);
-    });
-
+    showPopup();
     expect(screen.getByText('Connect to Wishboard')).toBeInTheDocument();
     expect(screen.getByText(/Wishboard_WiFi/)).toBeInTheDocument();
   });
 
   it('hides itself after the display duration', () => {
-    render(<WiFiQrCode />);
-
-    // Initial show
-    act(() => {
-      vi.advanceTimersByTime(10000);
-    });
+    showPopup();
     expect(screen.getByText('Connect to Wishboard')).toBeInTheDocument();
 
     // Hide duration is 30000ms
@@ -51,52 +56,37 @@ describe('WiFiQrCode', () => {
     expect(screen.queryByText('Connect to Wishboard')).not.toBeInTheDocument();
   });
 
-  it('displays the correct network credentials in the QR and text', () => {
-    render(<WiFiQrCode />);
-    act(() => {
-      vi.advanceTimersByTime(10000);
-    });
-
-    // Password verification
+  it('displays the network credentials and the local AP IP (http) with no config', () => {
+    showPopup();
     expect(screen.getByText(new RegExp(['wishboard', '2026'].join(''), 'i'))).toBeInTheDocument();
-
-    // Verify the URL hint is present
-    const domain =
-      import.meta.env.VITE_WISHBOARD_DOMAIN ||
-      import.meta.env.VITE_WISHBOARD_AP_IP ||
-      '10.42.0.1:3000';
-    const parsed = new URL(domain.includes('://') ? domain : `http://${domain}`);
-    const hostname = parsed.hostname.toLowerCase();
-    const isPainlessDomain =
-      hostname === 'painless-computing.com' || hostname.endsWith('.painless-computing.com');
-    const url = isPainlessDomain ? `https://${domain}` : `http://${domain}`;
-    expect(screen.getByText(url)).toBeInTheDocument();
+    // No server config and no build-time env → local AP IP over http.
+    expect(screen.getByText('http://10.42.0.1:3000')).toBeInTheDocument();
   });
 
-  it('displays https URL for painless-computing.com domains', () => {
-    const originalDomain = import.meta.env.VITE_WISHBOARD_DOMAIN;
-    import.meta.env.VITE_WISHBOARD_DOMAIN = 'wishboard.painless-computing.com';
+  it('prefers the server-configured public domain over the build-time env (https)', () => {
+    // The #197 fix: the runtime domain wins over anything baked in at build time.
+    setConfig({ domain: 'demo.wishboards.app' });
+    (import.meta.env as Record<string, unknown>).VITE_WISHBOARD_DOMAIN = 'stale.example.com';
 
-    render(<WiFiQrCode />);
-    act(() => {
-      vi.advanceTimersByTime(10000);
-    });
+    showPopup();
+
+    expect(screen.getByText('https://demo.wishboards.app')).toBeInTheDocument();
+  });
+
+  it('uses the build-time domain over https when there is no server config', () => {
+    (import.meta.env as Record<string, unknown>).VITE_WISHBOARD_DOMAIN =
+      'wishboard.painless-computing.com';
+
+    showPopup();
 
     expect(screen.getByText('https://wishboard.painless-computing.com')).toBeInTheDocument();
-
-    import.meta.env.VITE_WISHBOARD_DOMAIN = originalDomain;
   });
-  it('falls back to http if URL parsing fails', () => {
-    const originalDomain = import.meta.env.VITE_WISHBOARD_DOMAIN;
-    import.meta.env.VITE_WISHBOARD_DOMAIN = 'invalid url:// bad';
 
-    render(<WiFiQrCode />);
-    act(() => {
-      vi.advanceTimersByTime(10000);
-    });
+  it('falls back to the server-provided AP IP over http when no public domain is set', () => {
+    setConfig({ apIp: '192.168.4.1:3000' });
 
-    expect(screen.getByText('http://invalid url:// bad')).toBeInTheDocument();
+    showPopup();
 
-    import.meta.env.VITE_WISHBOARD_DOMAIN = originalDomain;
+    expect(screen.getByText('http://192.168.4.1:3000')).toBeInTheDocument();
   });
 });

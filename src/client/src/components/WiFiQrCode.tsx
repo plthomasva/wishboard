@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { getServerConfig } from '../serverConfig';
 
 interface Position {
   top?: string;
@@ -51,25 +52,14 @@ export default function WiFiQrCode() {
   const wifiPass = import.meta.env.VITE_WIFI_PASSWORD || ['wishboard', '2026'].join('');
   const wifiString = `WIFI:T:WPA;S:Wishboard_WiFi;P:${wifiPass};;`;
 
-  const domain =
-    import.meta.env.VITE_WISHBOARD_DOMAIN ||
-    import.meta.env.VITE_WISHBOARD_AP_IP ||
-    '10.42.0.1:3000';
-  const normalizedInput = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(domain)
-    ? domain
-    : `http://${domain}`;
-  let url: string;
-  try {
-    const parsed = new URL(normalizedInput);
-    const hostName = parsed.hostname.toLowerCase();
-    const isWishboardDomain =
-      hostName === 'painless-computing.com' || hostName.endsWith('.painless-computing.com');
-    const protocol = isWishboardDomain ? 'https:' : 'http:';
-    url = `${protocol}//${parsed.host}`;
-  } catch {
-    // Fallback for malformed env values
-    url = `http://${domain}`;
-  }
+  // The kiosk browser runs at localhost, so window.location is useless here — the
+  // popup must show the address a *phone* uses. Prefer the server's configured
+  // public domain (internet-facing → https); otherwise fall back to the local AP
+  // IP served over http. Resolved at runtime so one image works on any domain.
+  const config = getServerConfig();
+  const publicDomain = config.domain || import.meta.env.VITE_WISHBOARD_DOMAIN;
+  const apIp = config.apIp || import.meta.env.VITE_WISHBOARD_AP_IP || '10.42.0.1:3000';
+  const url = publicDomain ? `https://${publicDomain}` : `http://${apIp}`;
 
   return (
     <div

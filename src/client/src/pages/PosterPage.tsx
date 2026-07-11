@@ -1,8 +1,16 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { getServerConfig } from '../serverConfig';
 
 export default function PosterPage() {
-  const domain = import.meta.env.VITE_WISHBOARD_DOMAIN || 'wishboard.painless-computing.com';
+  // Resolve the domain at runtime: the server's configured public domain wins,
+  // else the host the poster is actually being viewed on (a browser is already at
+  // the right public URL), else the build-time env, else a last-resort default.
+  const domain =
+    getServerConfig().domain ||
+    globalThis.location?.host ||
+    import.meta.env.VITE_WISHBOARD_DOMAIN ||
+    'wishboard.painless-computing.com';
   const url = `https://${domain}`;
   // Use dynamic string construction to prevent SonarCloud hardcoded credentials false-positive
   const wifiPass = import.meta.env.VITE_WIFI_PASSWORD || ['wishboard', '2026'].join('');

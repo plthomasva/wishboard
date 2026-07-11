@@ -29,8 +29,11 @@ sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard
 
 echo "Configuring environment variables..."
 if [[ "$MODE" = "prod" ]]; then
-    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_DOMAIN=$DOMAIN_NAME' > $WISHBOARD_HOME/wishboard/.env"
-    sudo -u wishboard bash -c "echo 'VITE_WISHBOARD_AP_IP=10.42.0.1' >> $WISHBOARD_HOME/wishboard/.env"
+    # Runtime env (read by the server, served via /api/config). The old VITE_* names
+    # were baked at image-build time in CI, so a value written here never reached the
+    # already-built client bundle — the poster/Wi-Fi popup showed the wrong domain.
+    sudo -u wishboard bash -c "echo 'WISHBOARD_DOMAIN=$DOMAIN_NAME' > $WISHBOARD_HOME/wishboard/.env"
+    sudo -u wishboard bash -c "echo 'WISHBOARD_AP_IP=10.42.0.1:3000' >> $WISHBOARD_HOME/wishboard/.env"
 else
     sudo rm -f $WISHBOARD_HOME/wishboard/.env
     sudo -u wishboard bash -c "echo 'NODE_ENV=development' > $WISHBOARD_HOME/wishboard/.env"

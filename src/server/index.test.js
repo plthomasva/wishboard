@@ -34,5 +34,20 @@ describe('Server index.js', () => {
     const res = await request(app).get('/api/config');
     expect(res.status).toBe(200);
     expect(res.body.realtimeProvider).toBeDefined();
+    // Runtime-resolved domain + AP IP for the poster / Wi-Fi popup.
+    expect(res.body).toHaveProperty('domain');
+    expect(res.body).toHaveProperty('apIp');
+  });
+
+  it('serves the configured WISHBOARD_DOMAIN on /api/config', async () => {
+    const prev = process.env.WISHBOARD_DOMAIN;
+    process.env.WISHBOARD_DOMAIN = 'demo.wishboards.app';
+    try {
+      const res = await request(app).get('/api/config');
+      expect(res.body.domain).toBe('demo.wishboards.app');
+    } finally {
+      if (prev === undefined) delete process.env.WISHBOARD_DOMAIN;
+      else process.env.WISHBOARD_DOMAIN = prev;
+    }
   });
 });

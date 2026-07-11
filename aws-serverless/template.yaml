@@ -238,6 +238,10 @@ Resources:
           # migration follow-up); the app falls back to empty rules if unseeded.
           RULES_PATH: /tmp/rules.yaml
           AWS_S3_BUCKET: !Ref ImagesBucket
+          # Public domain for the poster/Wi-Fi popup, served at runtime via /api/config.
+          # Empty when no custom domain is configured — the client then falls back to
+          # the host it's viewed on (correct for the raw CloudFront URL).
+          WISHBOARD_DOMAIN: !Ref DomainName
           REALTIME_PROVIDER: apigateway
           WEBSOCKET_API_ENDPOINT: !Sub 'https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/production'
       Tags:
