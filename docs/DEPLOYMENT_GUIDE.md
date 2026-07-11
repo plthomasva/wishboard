@@ -54,7 +54,7 @@ From your **local developer machine** (not the Pi), run the unified deployment c
 npx wishboard kiosk deploy --host raspberrypi.local --mode prod --domain wishboard.example.com
 ```
 
-Add `--user <name>` if your Pi login isn't `pi`, `--reset-rules` to reset the data/rules volume, and `--dry-run` to preview the exact SSH/scp steps without executing them.
+Add `--user <name>` if your Pi login isn't `pi`, and `--dry-run` to preview the exact SSH/scp steps without executing them. `--reset-rules` re-seeds the matching rules from the bundled defaults (`src/server/defaultRules.js`) — rules live in the database `rules` table now, not a file. ⚠️ In its current form `--reset-rules` also clears the whole `/app/data` volume, including uploaded images; omit it for normal deploys (tracked in [#194](https://github.com/plthomasva/wishboard/issues/194)).
 
 ### Networking Modes
 
@@ -103,11 +103,9 @@ If you need to inject special environment variables (like changing the default a
 
 ## Updating the Application
 
-When a new version of Wishboard is published, you can effortlessly upgrade your deployment by re-running the deployment script from your developer machine.
+When a new version of Wishboard is published, re-run the same unified deploy command from your developer machine. It pulls the new image and cleanly restarts the container without destroying your persisted data — the matching rules and app database in the `db_data` libSQL volume, and uploaded images in the `data/` bind mount.
 
-The script uses Docker to pull the new image and cleanly restart the service without destroying your underlying SQLite database (which is safely persisted in the `wishboard_data` volume).
-
-```powershell
+```bash
 # Upgrade to a specific version
-.\scripts\deploy-kiosk.ps1 -AdminUsername pi -HostName raspberrypi.local -Mode prod -DomainName wishboard.example.com -AppVersion v1.3.0
+npx wishboard kiosk deploy --host raspberrypi.local --mode prod --domain wishboard.example.com --app-version v1.3.0
 ```

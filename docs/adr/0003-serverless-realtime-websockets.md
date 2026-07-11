@@ -1,6 +1,6 @@
 # ADR 0003: Serverless real-time via API Gateway WebSockets
 
-- **Status:** Accepted — implemented across #185, #186, #187 (2026-07).
+- **Status:** Accepted — implemented across #185, #186, #187, then hardened to an admin-only `sys:log` channel in #189/#190 (2026-07).
 - **Date:** 2026-07
 
 ## Context
@@ -31,8 +31,8 @@ browser ──wss──▶ CloudFront (/socket.io/*) ──▶ API Gateway WebSo
                                                    ▼
                                    websocket_connections table (Turso)
                                                    ▲
-                    ApiFunction ──SELECT ids──┘  then PostToConnection ──▶ each client
-                    (on wish:created / sys:log / …)
+                    ApiFunction ──SELECT ids──┘  then PostToConnection ──▶ clients
+                    (wish:* → all; sys:log → subscribed admins only, #190)
 ```
 
 - The `websocket_connections` table is the **only shared connection state** across
@@ -75,13 +75,26 @@ broadcasts complete before the freeze. This depends on the VPC removal in ADR 00
 an in-VPC Lambda had no egress to `execute-api`, so broadcasts couldn't be delivered
 at all regardless of timing.
 
+### 4. `sys:log` restricted to a subscribed, admin-only channel (#189/#190)
+
+Broadcasting every server log line to _every_ connected client (the original #186
+model) leaked operational detail — client IPs, request paths, stack traces — to
+anyone viewing the board. `sys:log` is now an **opt-in, admin-only** channel: the
+client subscribes (with its admin token) when the log viewer mounts, the server
+honors the subscription only for admins (a `sub_syslog` flag on
+`websocket_connections`; a `syslog` room under socket.io), and the broadcast query
+targets only subscribed connections (`WHERE sub_syslog = 1`). `wish:*` events stay
+public. This also resolves the "chatty broadcast" cost noted below: log lines now
+fan out only to the handful of admins who asked for them.
+
 ## Consequences
 
 - Real-time works on the serverless target through a single CloudFront distribution;
   no separate WebSocket domain.
 - Each mutating request carries a small **broadcast tail** (the handler awaits
   delivery before returning), bounded by the 3 s per-connection cap.
-- `sys:log` broadcasts every server log line to every client, which is chatty and
-  costs a DB read + `PostToConnection` per line. It is _safe_ (guarded) but a future
-  optimization could filter by level or debounce.
+- `sys:log` fans out only to subscribed **admin** connections (#190), so it no longer
+  costs a `PostToConnection` per client per line. A per-connection DB read + post
+  still happens per subscribed admin per line; if the admin count ever grows, filter
+  by level or debounce.
 - The kiosk path is unaffected — it keeps in-process socket.io.

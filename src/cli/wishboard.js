@@ -120,7 +120,7 @@ kiosk
     'Public domain (used in prod mode)',
     'wishboard.painless-computing.com'
   )
-  .option('--reset-rules', 'Reset the data/rules volume to baseline (default: keep existing)')
+  .option('--reset-rules', 'Re-seed matching rules from bundled defaults (default: keep existing)')
   .option(
     '--app-version <version>',
     'Container image tag to deploy (default: package.json version)'
@@ -163,7 +163,7 @@ kiosk
     'Public domain (used in prod mode)',
     'wishboard.painless-computing.com'
   )
-  .option('--reset-rules', 'Reset the data/rules volume to baseline (default: keep existing)')
+  .option('--reset-rules', 'Re-seed matching rules from bundled defaults (default: keep existing)')
   .option('--app-version <version>', 'Container image tag to run (default: package.json version)')
   .option('--dry-run', 'Preview the commands without executing them')
   .action((options) => {

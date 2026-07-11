@@ -14,7 +14,7 @@ Offline wish board for conventions, built to run on a Raspberry Pi or similar lo
 ## Architecture
 
 - Backend: Node.js + Express
-- Database: SQLite (local file under `data/`)
+- Database: libSQL/SQLite — a local file under `data/` for a bare `npm start`; the Docker/kiosk path runs a separate `libsql-server` container, and serverless uses hosted Turso
 - Frontend: React + Vite
 - Offline Hosting: static assets served locally by Express
 
@@ -22,7 +22,7 @@ Offline wish board for conventions, built to run on a Raspberry Pi or similar lo
 
 - `src/server/` — backend API and static file serving
 - `src/client/` — React app for kiosk, search, admin and display
-- `data/` — local SQLite database file storage
+- `data/` — local libSQL/SQLite file + uploaded images (bare install / kiosk bind mount)
 
 ## Getting started
 
