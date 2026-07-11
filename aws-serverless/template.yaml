@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AWS Serverless target for Wishboard - SQLite on EFS, API Gateway, Lambda, S3, and CloudFront.
+Description: AWS Serverless target for Wishboard - Turso (hosted libSQL), API Gateway, Lambda, S3, and CloudFront.
 
 Parameters:
   ProjectName:
@@ -26,6 +26,14 @@ Parameters:
       - production
       - development
     Description: Node environment for the Lambdas (production or development).
+  DatabaseUrl:
+    Type: String
+    Default: ''
+    Description: 'libSQL/Turso database URL (e.g. libsql://<db>.turso.io). Not a secret.'
+  DatabaseAuthTokenSsm:
+    Type: String
+    Default: ''
+    Description: 'Name of the SSM SecureString parameter holding the Turso auth token (e.g. /wishboard/dev/turso-auth-token). The token itself never appears in this template.'
 
 Conditions:
   UseCustomDomain: !Not [!Equals [!Ref DomainName, '']]
@@ -33,215 +41,9 @@ Conditions:
     !And [!Not [!Equals [!Ref DomainName, '']], !Equals [!Ref AcmCertificateArn, '']]
 
 Resources:
-  # =========================================================================
-  # VPC Networking (Zero-NAT Cost Topology)
-  # =========================================================================
-  VPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
-      Tags:
-        - Key: Name
-          Value: !Sub '${ProjectName}-vpc'
-        - Key: Project
-          Value: wishboard
-
-  PublicSubnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Select [0, !GetAZs '']
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: !Sub '${ProjectName}-subnet-1'
-        - Key: Project
-          Value: wishboard
-
-  PublicSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.2.0/24
-      AvailabilityZone: !Select [1, !GetAZs '']
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: !Sub '${ProjectName}-subnet-2'
-        - Key: Project
-          Value: wishboard
-
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub '${ProjectName}-igw'
-        - Key: Project
-          Value: wishboard
-
-  VPCGatewayAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      VpcId: !Ref VPC
-      InternetGatewayId: !Ref InternetGateway
-
-  RouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub '${ProjectName}-rt'
-        - Key: Project
-          Value: wishboard
-
-  PublicRoute:
-    Type: AWS::EC2::Route
-    DependsOn: VPCGatewayAttachment
-    Properties:
-      RouteTableId: !Ref RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-
-  Subnet1Association:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet1
-      RouteTableId: !Ref RouteTable
-
-  Subnet2Association:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet2
-      RouteTableId: !Ref RouteTable
-
-  # Gateway VPC Endpoint for S3 (Completely Free, avoids NAT Gateway costs)
-  S3Endpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
-      VpcId: !Ref VPC
-      VpcEndpointType: Gateway
-      RouteTableIds:
-        - !Ref RouteTable
-      Tags:
-        - Key: Project
-          Value: wishboard
-
-  CloudWatchEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.monitoring'
-      VpcId: !Ref VPC
-      VpcEndpointType: Interface
-      SubnetIds:
-        - !Ref PublicSubnet1
-        - !Ref PublicSubnet2
-      SecurityGroupIds:
-        - !Ref SecurityGroup
-      PrivateDnsEnabled: true
-      Tags:
-        - Key: Project
-          Value: wishboard
-
-  CloudWatchLogsEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.logs'
-      VpcId: !Ref VPC
-      VpcEndpointType: Interface
-      SubnetIds:
-        - !Ref PublicSubnet1
-        - !Ref PublicSubnet2
-      SecurityGroupIds:
-        - !Ref SecurityGroup
-      PrivateDnsEnabled: true
-      Tags:
-        - Key: Project
-          Value: wishboard
-
-  SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security group for Lambda functions and EFS
-      VpcId: !Ref VPC
-      SecurityGroupEgress:
-        - IpProtocol: '-1'
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Project
-          Value: wishboard
-
-  SecurityGroupEfsIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref SecurityGroup
-      IpProtocol: tcp
-      FromPort: 2049
-      ToPort: 2049
-      SourceSecurityGroupId: !Ref SecurityGroup
-
-  SecurityGroupHttpsIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref SecurityGroup
-      IpProtocol: tcp
-      FromPort: 443
-      ToPort: 443
-      SourceSecurityGroupId: !Ref SecurityGroup
-
-  # =========================================================================
-  # Amazon EFS (Serverless SQLite Database Storage)
-  # =========================================================================
-  FileSystem:
-    Type: AWS::EFS::FileSystem
-    Properties:
-      Encrypted: true
-      PerformanceMode: generalPurpose
-      ThroughputMode: elastic
-      FileSystemTags:
-        - Key: Name
-          Value: !Sub '${ProjectName}-db-fs'
-        - Key: Project
-          Value: wishboard
-
-  MountTarget1:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref FileSystem
-      SubnetId: !Ref PublicSubnet1
-      SecurityGroups:
-        - !Ref SecurityGroup
-
-  MountTarget2:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref FileSystem
-      SubnetId: !Ref PublicSubnet2
-      SecurityGroups:
-        - !Ref SecurityGroup
-
-  # EFS Access Point to guarantee non-root permissions for Lambda
-  AccessPoint:
-    Type: AWS::EFS::AccessPoint
-    Properties:
-      FileSystemId: !Ref FileSystem
-      PosixUser:
-        Uid: '1000'
-        Gid: '1000'
-      RootDirectory:
-        Path: /wishboard
-        CreationInfo:
-          OwnerUid: '1000'
-          OwnerGid: '1000'
-          Permissions: '0777'
-      AccessPointTags:
-        - Key: Project
-          Value: wishboard
+  # VPC networking + EFS removed (#136): the app now uses Turso (hosted libSQL)
+  # over the public internet, so the Lambdas need no VPC, EFS, or interface
+  # endpoints. This is what eliminates the ~$1/day interface-endpoint cost.
 
   # =========================================================================
   # Amazon S3 Buckets (Frontend Hosting & Wish Images)
@@ -397,9 +199,6 @@ Resources:
   # =========================================================================
   ApiFunction:
     Type: AWS::Serverless::Function
-    DependsOn:
-      - MountTarget1
-      - MountTarget2
     Properties:
       FunctionName: !Sub '${ProjectName}-express-api'
       CodeUri: ../
@@ -407,30 +206,33 @@ Resources:
       Runtime: nodejs22.x
       Timeout: 30
       MemorySize: 1024
-      VpcConfig:
-        SecurityGroupIds:
-          - !Ref SecurityGroup
-        SubnetIds:
-          - !Ref PublicSubnet1
-          - !Ref PublicSubnet2
-      FileSystemConfigs:
-        - Arn: !GetAtt AccessPoint.Arn
-          LocalMountPath: /mnt/efs
       Environment:
         Variables:
           NODE_ENV: !Ref NodeEnv
-          DATABASE_URL: file:/mnt/efs/wishboard.db
-          RULES_PATH: /mnt/efs/rules.yaml
+          DATABASE_URL: !Ref DatabaseUrl
+          DATABASE_AUTH_TOKEN_SSM: !Ref DatabaseAuthTokenSsm
+          # No EFS: rules.yaml lives on the writable /tmp overlay. Edits are not
+          # durable across cold starts (a Turso/S3-backed rules store is the
+          # migration follow-up); the app falls back to empty rules if unseeded.
+          RULES_PATH: /tmp/rules.yaml
           AWS_S3_BUCKET: !Ref ImagesBucket
           REALTIME_PROVIDER: apigateway
           WEBSOCKET_API_ENDPOINT: !Sub 'https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/production'
       Tags:
         Project: wishboard
       Policies:
-        - AWSLambdaVPCAccessExecutionRole
-        - AmazonElasticFileSystemClientFullAccess
         - S3CrudPolicy:
             BucketName: !Ref ImagesBucket
+        - Statement:
+            - Effect: Allow
+              Action: ssm:GetParameter
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${DatabaseAuthTokenSsm}'
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource: '*'
+              Condition:
+                StringEquals:
+                  kms:ViaService: !Sub 'ssm.${AWS::Region}.amazonaws.com'
         - Statement:
             - Effect: Allow
               Action:
@@ -483,9 +285,6 @@ Resources:
 
   WebSocketFunction:
     Type: AWS::Serverless::Function
-    DependsOn:
-      - MountTarget1
-      - MountTarget2
     Properties:
       FunctionName: !Sub '${ProjectName}-websocket-mgr'
       CodeUri: ../
@@ -493,24 +292,24 @@ Resources:
       Runtime: nodejs22.x
       Timeout: 10
       MemorySize: 512
-      VpcConfig:
-        SecurityGroupIds:
-          - !Ref SecurityGroup
-        SubnetIds:
-          - !Ref PublicSubnet1
-          - !Ref PublicSubnet2
-      FileSystemConfigs:
-        - Arn: !GetAtt AccessPoint.Arn
-          LocalMountPath: /mnt/efs
       Environment:
         Variables:
           NODE_ENV: !Ref NodeEnv
-          DATABASE_URL: file:/mnt/efs/wishboard.db
+          DATABASE_URL: !Ref DatabaseUrl
+          DATABASE_AUTH_TOKEN_SSM: !Ref DatabaseAuthTokenSsm
       Tags:
         Project: wishboard
       Policies:
-        - AWSLambdaVPCAccessExecutionRole
-        - AmazonElasticFileSystemClientFullAccess
+        - Statement:
+            - Effect: Allow
+              Action: ssm:GetParameter
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${DatabaseAuthTokenSsm}'
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource: '*'
+              Condition:
+                StringEquals:
+                  kms:ViaService: !Sub 'ssm.${AWS::Region}.amazonaws.com'
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -597,6 +396,15 @@ Resources:
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
+    # W1030: cfn-lint can't follow the nested !If — when AcmCertificateArn is
+    # empty, CreateCertificate is true and ViewerCertificate uses the *created*
+    # cert (!Ref AcmCertificate), so the empty param never reaches the ARN
+    # property. The template is correct; suppress the false positive.
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W1030
     Properties:
       Tags:
         - Key: Project

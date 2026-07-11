@@ -24,7 +24,23 @@ if (!url) {
   url = dbPath === ':memory:' ? 'file::memory:' : `file:${dbPath}`;
 }
 
-const db = createClient({ url });
+// Turso (hosted libSQL) requires an auth token; a local file or the Pi's
+// unauthenticated sqld does not. Resolve it from, in order: an explicit
+// DATABASE_AUTH_TOKEN env var (local dev, tests, the Pi), or a SecureString SSM
+// parameter named by DATABASE_AUTH_TOKEN_SSM (the serverless target — so the
+// token never lives in the template, the deploy command, or CI; the Lambda's
+// role reads it at cold start). Pass it only when present so the file, Pi, and
+// Turso targets all share one client.
+let authToken = process.env.DATABASE_AUTH_TOKEN;
+if (!authToken && process.env.DATABASE_AUTH_TOKEN_SSM) {
+  const { SSMClient, GetParameterCommand } = await import('@aws-sdk/client-ssm');
+  const ssm = new SSMClient({});
+  const res = await ssm.send(
+    new GetParameterCommand({ Name: process.env.DATABASE_AUTH_TOKEN_SSM, WithDecryption: true })
+  );
+  authToken = res.Parameter?.Value;
+}
+const db = createClient(authToken ? { url, authToken } : { url });
 
 // Concurrency hardening for the serverless target, where the ApiFunction and
 // WebSocketFunction Lambdas share one SQLite file over EFS: wait up to 5s for a

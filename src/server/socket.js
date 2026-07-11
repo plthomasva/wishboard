@@ -7,6 +7,21 @@ let apigwClient = null;
 
 const getProvider = () => process.env.REALTIME_PROVIDER || 'socketio';
 
+// On Lambda the invocation freezes the instant the HTTP response resolves, which
+// cuts off any un-awaited broadcast promise mid-flight — its `await db…all()` /
+// PostToConnection never runs, so clients get nothing. (This was masked while the
+// sys:log storm kept the event loop hot; killing the storm in #186 exposed it.)
+// Track in-flight API Gateway broadcasts so the Lambda handler can await them via
+// flushBroadcasts() before returning. No-op on the socket.io target — io.emit is
+// synchronous and nothing is tracked there.
+const pendingBroadcasts = new Set();
+const track = (promise) => {
+  pendingBroadcasts.add(promise);
+  promise.finally(() => pendingBroadcasts.delete(promise));
+  return promise;
+};
+export const flushBroadcasts = () => Promise.allSettled(pendingBroadcasts);
+
 export const initSocket = (httpServer, corsOptions) => {
   if (getProvider() === 'apigateway') {
     logger.info('API Gateway WebSocket mode enabled. Skipping Socket.io initialization.');
@@ -125,7 +140,7 @@ const broadcastToApiGateway = async (event, data) => {
 // Generic emit wrapper methods
 export const emitNewWish = (wish) => {
   if (getProvider() === 'apigateway') {
-    broadcastToApiGateway('wish:created', wish);
+    track(broadcastToApiGateway('wish:created', wish));
   } else if (io) {
     io.emit('wish:created', wish);
   }
@@ -133,7 +148,7 @@ export const emitNewWish = (wish) => {
 
 export const emitWishFlagged = (wish) => {
   if (getProvider() === 'apigateway') {
-    broadcastToApiGateway('wish:flagged', wish);
+    track(broadcastToApiGateway('wish:flagged', wish));
   } else if (io) {
     io.emit('wish:flagged', wish);
   }
@@ -141,7 +156,7 @@ export const emitWishFlagged = (wish) => {
 
 export const emitWishDeleted = (wishId) => {
   if (getProvider() === 'apigateway') {
-    broadcastToApiGateway('wish:deleted', wishId);
+    track(broadcastToApiGateway('wish:deleted', wishId));
   } else if (io) {
     io.emit('wish:deleted', wishId);
   }
@@ -149,7 +164,7 @@ export const emitWishDeleted = (wishId) => {
 
 export const emitWishReactivated = (wish) => {
   if (getProvider() === 'apigateway') {
-    broadcastToApiGateway('wish:reactivated', wish);
+    track(broadcastToApiGateway('wish:reactivated', wish));
   } else if (io) {
     io.emit('wish:reactivated', wish);
   }
@@ -164,11 +179,13 @@ export const emitSystemLog = (logEntry) => {
   if (getProvider() === 'apigateway') {
     if (sysLogBroadcastInFlight) return;
     sysLogBroadcastInFlight = true;
-    Promise.resolve()
-      .then(() => broadcastToApiGateway('sys:log', logEntry))
-      .finally(() => {
-        sysLogBroadcastInFlight = false;
-      });
+    track(
+      Promise.resolve()
+        .then(() => broadcastToApiGateway('sys:log', logEntry))
+        .finally(() => {
+          sysLogBroadcastInFlight = false;
+        })
+    );
   } else if (io) {
     io.emit('sys:log', logEntry);
   }
