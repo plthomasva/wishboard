@@ -8,7 +8,17 @@ export default function UserAccountsSection({
   setError,
   refreshCounter,
   triggerRefresh,
+  onSessionExpired,
 }: any) {
+  // A 401 means the session is dead; hand off so the app can drop to login.
+  // Returns true when handled, so callers can stop.
+  const handledUnauthorized = (response: Response) => {
+    if (response.status === 401) {
+      onSessionExpired?.();
+      return true;
+    }
+    return false;
+  };
   const [users, setUsers] = useState<Array<{ id: string; username: string; role: string }>>([]);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [deletePreview, setDeletePreview] = useState<{
@@ -21,7 +31,13 @@ export default function UserAccountsSection({
   const loadUsers = async () => {
     setError(null);
     const response = await fetch('/api/admin/users', { headers: authHeader });
-    if (response.ok) setUsers(await response.json());
+    if (response.ok) {
+      setUsers(await response.json());
+    } else if (!handledUnauthorized(response)) {
+      // Surface the failure instead of leaving a silently-empty table that
+      // reads as "no accounts exist."
+      setError('Failed to load user accounts.');
+    }
   };
 
   const loadConfig = async () => {
@@ -29,6 +45,8 @@ export default function UserAccountsSection({
     if (response.ok) {
       const config = await response.json();
       setIsProduction(config.isProduction);
+    } else {
+      handledUnauthorized(response);
     }
   };
 
@@ -46,6 +64,7 @@ export default function UserAccountsSection({
       body: JSON.stringify({ role }),
     });
     if (!response.ok) {
+      if (handledUnauthorized(response)) return;
       setError('Failed to update role.');
       return;
     }
@@ -67,6 +86,7 @@ export default function UserAccountsSection({
       headers: authHeader,
     });
     if (!response.ok) {
+      if (handledUnauthorized(response)) return;
       setError('Failed to reset passphrase.');
       return;
     }
@@ -81,6 +101,7 @@ export default function UserAccountsSection({
       headers: authHeader,
     });
     if (!response.ok) {
+      if (handledUnauthorized(response)) return;
       setError('Failed to fetch delete preview.');
       return;
     }
@@ -101,6 +122,7 @@ export default function UserAccountsSection({
       headers: authHeader,
     });
     if (!response.ok) {
+      if (handledUnauthorized(response)) return;
       setError('Failed to delete user.');
       return;
     }
@@ -116,6 +138,7 @@ export default function UserAccountsSection({
       headers: { ...authHeader, 'Content-Type': 'application/json' },
     });
     if (!response.ok) {
+      if (handledUnauthorized(response)) return;
       setError('Failed to run seeder.');
       return;
     }

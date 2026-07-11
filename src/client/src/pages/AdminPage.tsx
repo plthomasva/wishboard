@@ -6,7 +6,7 @@ import SystemOverviewSection from '../components/admin/SystemOverviewSection';
 import UserAccountsSection from '../components/admin/UserAccountsSection';
 
 export default function AdminPage() {
-  const { user, token, login } = useAuth();
+  const { user, token, login, logout } = useAuth();
   const [username, setUsername] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -43,6 +43,14 @@ export default function AdminPage() {
   };
 
   const triggerRefresh = () => setRefreshCounter((c) => c + 1);
+
+  // A 401 from an admin call means our session is dead (expired/orphaned). Drop
+  // it and bounce to the login form instead of leaving a stale admin UI that
+  // silently shows nothing.
+  const handleSessionExpired = () => {
+    logout();
+    setError('Your session expired or is no longer valid — please log in again.');
+  };
 
   return (
     <section>
@@ -140,6 +148,7 @@ export default function AdminPage() {
                 setError={setError}
                 refreshCounter={refreshCounter}
                 triggerRefresh={triggerRefresh}
+                onSessionExpired={handleSessionExpired}
               />
             )}
             {activeTab === 'overview' && (
