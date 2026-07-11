@@ -4,6 +4,20 @@ The Wishboard matching engine is designed to be inclusive, flexible, and
 powerful. It leverages four types of rules to create connections between users
 based on their identities (gender, orientation, role) and their desired matches.
 
+## Where rules live and how to edit them
+
+At runtime the rules live in a **`rules` table in the database** — Turso on the
+serverless target, the embedded libSQL container on the Pi — so they persist across
+restarts and cold starts and are shared across all Lambda instances. Edit them
+through the **admin Rules page**; changes propagate to the matching engine within a
+short cache TTL (`RULES_CACHE_TTL_MS`, default 60s).
+
+The bundled default set is [`src/server/defaultRules.js`](../src/server/defaultRules.js),
+which seeds the table on first boot. A pre-existing legacy `rules.yaml` (from before
+the DB migration, [ADR 0002](adr/0002-serverless-database-architecture.md)) is
+migrated once and then the database is the single source of truth — there is no
+longer a `data/rules.yaml` runtime file.
+
 ## 1. Enrichment (Implicit Attribute Mapping)
 
 **Purpose**: To implicitly add an attribute to a user's profile based on the
