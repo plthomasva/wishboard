@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.14.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.13.0...wishboard-v1.14.0) (2026-07-11)
+
+
+### Features
+
+* **realtime:** admin-only, subscribed sys:log WebSocket channel ([#189](https://github.com/plthomasva/wishboard/issues/189)) ([#190](https://github.com/plthomasva/wishboard/issues/190)) ([3378575](https://github.com/plthomasva/wishboard/commit/33785754a1d3e074dd6122b59ce706ad1b695226))
+* **rules:** store matching rules in the DB, seeded from bundled defaults ([#188](https://github.com/plthomasva/wishboard/issues/188)) ([#193](https://github.com/plthomasva/wishboard/issues/193)) ([9218bea](https://github.com/plthomasva/wishboard/commit/9218beab96c56a3ea0a97d2c6bf773d5c4a1c65b))
+
+
+### Bug Fixes
+
+* **admin-ui:** surface admin load failures + drop dead sessions to login ([#184](https://github.com/plthomasva/wishboard/issues/184)) ([a302faa](https://github.com/plthomasva/wishboard/commit/a302faa849ab5daeb84be46deea41bc8de81a6e4))
+
 ## [1.13.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.12.2...wishboard-v1.13.0) (2026-07-11)
 
 
