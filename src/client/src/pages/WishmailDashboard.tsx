@@ -260,9 +260,9 @@ export default function WishmailDashboard() {
                     Return Contacts
                   </span>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    {mail.return_contacts.map((c, i) => (
+                    {mail.return_contacts.map((c) => (
                       <span
-                        key={i}
+                        key={`${c.type}-${c.value}`}
                         style={{
                           background: '#f8fafc',
                           padding: '6px 12px',

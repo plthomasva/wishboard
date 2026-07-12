@@ -75,8 +75,8 @@ class RawWebSocketWrapper {
    * action frame (`{ action, ...data }`), queued until the socket is open.
    */
   public emit(event: string, data?: Record<string, unknown>) {
-    const message = JSON.stringify({ action: event, ...(data ?? {}) });
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    const message = JSON.stringify({ action: event, ...data });
+    if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(message);
     } else {
       this.pending.push(message);
