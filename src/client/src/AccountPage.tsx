@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useExcludedWishes } from './hooks/useExcludedWishes';
 // @ts-ignore
 import { generatePassphrase } from './passphrase.js';
 import InfoToggle from './components/InfoToggle';
@@ -248,6 +249,7 @@ function UnauthenticatedAccountView({
 
 export default function AccountPage() {
   const { user, token, login, register, logout, refreshUser } = useAuth();
+  const { excludedIds, unexcludeWish } = useExcludedWishes();
   const [username, setUsername] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [identityGenders, setIdentityGenders] = useState('');
@@ -274,6 +276,7 @@ export default function AccountPage() {
       image_url?: string;
     }>
   >([]);
+  const [hiddenWishes, setHiddenWishes] = useState<Array<any>>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePreview, setDeletePreview] = useState<{
     wishesCount: number;
@@ -301,9 +304,45 @@ export default function AccountPage() {
     setWishes(data);
   };
 
+  const loadHiddenWishes = async () => {
+    if (user) {
+      try {
+        const response = await fetch('/api/wishes/exclusions', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setHiddenWishes(data);
+        }
+      } catch (err) {
+        console.error('Failed to load hidden wishes:', err);
+      }
+    } else {
+      if (excludedIds.length === 0) {
+        setHiddenWishes([]);
+        return;
+      }
+      try {
+        const response = await fetch(
+          `/api/wishes?ids=${excludedIds.join(',')}&ignore_attributes=1`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setHiddenWishes(data);
+        }
+      } catch (err) {
+        console.error('Failed to load local hidden wishes:', err);
+      }
+    }
+  };
+
   useEffect(() => {
     loadWishes();
   }, [user]);
+
+  useEffect(() => {
+    loadHiddenWishes();
+  }, [user, excludedIds]);
 
   useEffect(() => {
     if (!user) {
@@ -409,6 +448,32 @@ export default function AccountPage() {
     loadWishes();
   };
 
+  const unhideWish = async (id: string) => {
+    setError(null);
+    setMessage(null);
+    try {
+      if (!user) {
+        await unexcludeWish(id);
+        setMessage('Wish is now visible again.');
+        setHiddenWishes((prev) => prev.filter((w) => w.id !== id));
+        return;
+      }
+
+      const response = await fetch(`/api/wishes/${encodeURIComponent(id)}/exclude`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) {
+        setError('Unable to un-hide wish.');
+        return;
+      }
+      setMessage('Wish is now visible again.');
+      loadHiddenWishes();
+    } catch {
+      setError('Error un-hiding wish.');
+    }
+  };
+
   const handleDeletePreview = async () => {
     setError(null);
     const response = await fetch('/api/users/me/delete-preview', {
@@ -455,25 +520,60 @@ export default function AccountPage() {
 
   if (!user) {
     return (
-      <UnauthenticatedAccountView
-        mode={mode}
-        setMode={setMode}
-        effectiveMode={effectiveMode}
-        onLogin={onLogin}
-        onRegister={onRegister}
-        username={username}
-        setUsername={setUsername}
-        passphrase={passphrase}
-        setPassphrase={setPassphrase}
-        identityGenders={identityGenders}
-        setIdentityGenders={setIdentityGenders}
-        identityOrientations={identityOrientations}
-        setIdentityOrientations={setIdentityOrientations}
-        identityRoles={identityRoles}
-        setIdentityRoles={setIdentityRoles}
-        message={message}
-        error={error}
-      />
+      <>
+        <UnauthenticatedAccountView
+          mode={mode}
+          setMode={setMode}
+          effectiveMode={effectiveMode}
+          onLogin={onLogin}
+          onRegister={onRegister}
+          username={username}
+          setUsername={setUsername}
+          passphrase={passphrase}
+          setPassphrase={setPassphrase}
+          identityGenders={identityGenders}
+          setIdentityGenders={setIdentityGenders}
+          identityOrientations={identityOrientations}
+          setIdentityOrientations={setIdentityOrientations}
+          identityRoles={identityRoles}
+          setIdentityRoles={setIdentityRoles}
+          message={message}
+          error={error}
+        />
+        {hiddenWishes.length > 0 && (
+          <div style={{ marginTop: '40px', marginBottom: '32px' }}>
+            <h2>Hidden Wishes (Not Interested)</h2>
+            <p style={{ marginBottom: '16px', fontSize: '0.9rem', color: '#556275' }}>
+              These wishes are hidden from your search results on this device. If you log in, they
+              will be saved to your account so they stay hidden across all your sessions.
+            </p>
+            <div className="wish-grid">
+              {hiddenWishes.map((wish) => (
+                <div
+                  key={wish.id}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+                >
+                  <div style={{ opacity: 0.7 }}>
+                    <WishCard wish={wish} showFlag={false} />
+                  </div>
+                  <div
+                    className="wish-actions"
+                    style={{ marginTop: 0, justifyContent: 'flex-start' }}
+                  >
+                    <button
+                      className="secondary-button"
+                      onClick={() => unhideWish(wish.id)}
+                      style={{ background: '#e2e8f0', color: '#1e293b' }}
+                    >
+                      Un-hide
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -586,7 +686,7 @@ export default function AccountPage() {
         <div style={{ marginBottom: '24px' }}>
           {contacts.map((contact, index) => (
             <div
-              key={index}
+              key={`${contact.type}-${contact.value || index}`}
               style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}
             >
               <select
@@ -742,6 +842,37 @@ export default function AccountPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {hiddenWishes.length > 0 && (
+        <div style={{ marginTop: '40px', marginBottom: '32px' }}>
+          <h2>Hidden Wishes (Not Interested)</h2>
+          <p style={{ marginBottom: '16px', fontSize: '0.9rem', color: '#556275' }}>
+            These wishes are hidden from your search results. You can make them visible again at any
+            time.
+          </p>
+          <div className="wish-grid">
+            {hiddenWishes.map((wish) => (
+              <div key={wish.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ opacity: 0.7 }}>
+                  <WishCard wish={wish} showFlag={false} />
+                </div>
+                <div
+                  className="wish-actions"
+                  style={{ marginTop: 0, justifyContent: 'flex-start' }}
+                >
+                  <button
+                    className="secondary-button"
+                    onClick={() => unhideWish(wish.id)}
+                    style={{ background: '#e2e8f0', color: '#1e293b' }}
+                  >
+                    Un-hide
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

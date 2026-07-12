@@ -98,7 +98,7 @@ describe('Wishmail UI Flow', () => {
     });
 
     // 2. Go to Enter Wish
-    fireEvent.click(screen.getByRole('button', { name: 'Enter a Wish' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Enter a Wish' })[0]);
 
     // Enable wishmail
     const wishmailCheckbox = screen.getByLabelText(/Enable Wishmail/i);

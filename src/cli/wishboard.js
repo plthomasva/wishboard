@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { setupOidc, destroyOidc } from './commands/oidc.js';
 import { deployServerless, destroyServerless } from './commands/serverless.js';
 import { deployKiosk, setupKiosk, runKiosk } from './commands/kiosk.js';
+import { generateAuthToken } from './commands/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
@@ -201,6 +202,29 @@ buildGroup
     console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
     console.log('Please run the legacy script instead:');
     console.log('  node scripts/download-fonts.js\n');
+  });
+
+const auth = program.command('auth').description('Manage user authentication and tokens');
+
+auth
+  .command('token <username>')
+  .description('Generate a session token for a user')
+  .option(
+    '--url <url>',
+    'Base URL of the remote Wishboard instance (e.g. https://demo.wishboards.app)'
+  )
+  .option(
+    '--passphrase <passphrase>',
+    'Passphrase for remote authentication (if not provided, you will be prompted)'
+  )
+  .option('--dry-run', 'Preview the action without executing it')
+  .action(async (username, options) => {
+    try {
+      await generateAuthToken(username, options);
+    } catch (err) {
+      console.error(`\x1b[31mError generating token: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
   });
 
 program.parse(process.argv);

@@ -52,6 +52,7 @@ import {
   parseJsonArray,
   normalizeArrayInput,
   createSalt,
+  requireAuth,
 } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
 import logger from '../logger.js';
@@ -406,6 +407,54 @@ router.get('/random', async (req, res) => {
   );
 });
 
+/**
+ * Parse a comma-separated list of IDs from a query parameter that may be a
+ * string or an array of strings (express can produce either).
+ * Trims, deduplicates, and caps at 200 entries.
+ * @param {string | string[] | undefined} raw
+ * @returns {string[]}
+ */
+function parseQueryIds(raw) {
+  let str = '';
+  if (typeof raw === 'string') {
+    str = raw;
+  } else if (Array.isArray(raw)) {
+    str = raw.map(String).join(',');
+  }
+  return str
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean)
+    .slice(0, 200);
+}
+
+/**
+ * Append exclusion filter clauses to the SQL query.
+ * @param {object} params
+ * @param {string} params.sql
+ * @param {any[]} params.args
+ * @param {object|null} params.searcher
+ * @param {string | string[] | undefined} params.excludeQuery
+ * @returns {{ sql: string; args: any[] }}
+ */
+function applyExclusionFilter({ sql, args, searcher, excludeQuery }) {
+  let updatedSql = sql;
+  const updatedArgs = [...args];
+  if (searcher) {
+    updatedSql +=
+      ' AND NOT EXISTS (SELECT 1 FROM wish_exclusions x WHERE x.wish_id = w.id AND x.user_id = ?)';
+    updatedArgs.push(searcher.id);
+  } else {
+    const excludeIds = parseQueryIds(excludeQuery);
+    if (excludeIds.length > 0) {
+      const placeholders = excludeIds.map(() => '?').join(', ');
+      updatedSql += ` AND w.id NOT IN (${placeholders})`;
+      updatedArgs.push(...excludeIds);
+    }
+  }
+  return { sql: updatedSql, args: updatedArgs };
+}
+
 router.get('/', async (req, res) => {
   const searcher = await getRequestUser(req);
   const query = (req.query.q || '').trim();
@@ -423,17 +472,39 @@ router.get('/', async (req, res) => {
     identity_roles: searcherRoles,
   };
 
-  const rows = query
-    ? await db
-        .prepare(
-          'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.content LIKE ? AND w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50'
-        )
-        .all(`%${query}%`)
-    : await db
-        .prepare(
-          'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY w.created_at DESC LIMIT 50'
-        )
-        .all();
+  let sql =
+    'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1)';
+  let args = [];
+
+  if (query) {
+    sql += ' AND w.content LIKE ?';
+    args.push(`%${query}%`);
+  }
+
+  if (req.query.ids) {
+    const filterIds = parseQueryIds(req.query.ids);
+    if (filterIds.length > 0) {
+      const placeholders = filterIds.map(() => '?').join(', ');
+      sql += ` AND w.id IN (${placeholders})`;
+      args.push(...filterIds);
+    }
+  }
+
+  const includeExcluded =
+    req.query.include_excluded === '1' || req.query.include_excluded === 'true';
+
+  if (!includeExcluded) {
+    ({ sql, args } = applyExclusionFilter({
+      sql,
+      args,
+      searcher,
+      excludeQuery: req.query.exclude,
+    }));
+  }
+
+  sql += ' ORDER BY w.created_at DESC LIMIT 50';
+
+  const rows = await db.prepare(sql).all(...args);
 
   const rules = getRules();
   const filtered = ignoreAttributes
@@ -454,6 +525,78 @@ router.get('/', async (req, res) => {
       image_id: wish.image_id,
     }))
   );
+});
+
+// List excluded wish IDs - must be before /:id to avoid param capture
+router.get('/exclusions/list', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const rows = await db
+    .prepare('SELECT wish_id FROM wish_exclusions WHERE user_id = ?')
+    .all(userId);
+
+  res.json(rows.map((row) => row.wish_id));
+});
+
+// List full excluded wishes - must be before /:id to avoid param capture
+router.get('/exclusions', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const rows = await db
+    .prepare(
+      'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wish_exclusions x JOIN wishes w ON x.wish_id = w.id WHERE x.user_id = ?'
+    )
+    .all(userId);
+
+  res.json(
+    rows.map((wish) => ({
+      id: wish.id,
+      content: wish.content,
+      creator_genders: parseJsonArray(wish.creator_genders),
+      creator_orientations: parseJsonArray(wish.creator_orientations),
+      creator_roles: parseJsonArray(wish.creator_roles),
+      desired_genders: parseJsonArray(wish.desired_genders),
+      desired_orientations: parseJsonArray(wish.desired_orientations),
+      desired_roles: parseJsonArray(wish.desired_roles),
+      contacts: parseJsonArray(wish.contacts),
+      wishmail_enabled: Boolean(wish.wishmail_enabled),
+      image_id: wish.image_id,
+    }))
+  );
+});
+
+// Bulk import exclusions (when migrating from anonymous localStorage to user database on login)
+// Must be before /:id to avoid param capture
+router.post('/exclusions/import', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids)) {
+    return res.status(400).json({ error: 'List of IDs to exclude must be an array.' });
+  }
+
+  // Cap at 200 items to prevent abuse
+  const cleanIds = ids
+    .map((id) => String(id).trim())
+    .filter(Boolean)
+    .slice(0, 200);
+
+  const now = new Date().toISOString();
+  for (const id of cleanIds) {
+    try {
+      // Check if wish exists
+      const wishExists = await db.prepare('SELECT 1 FROM wishes WHERE id = ?').get(id);
+      if (wishExists) {
+        await db
+          .prepare(
+            'INSERT OR IGNORE INTO wish_exclusions (user_id, wish_id, created_at) VALUES (?, ?, ?)'
+          )
+          .run(userId, id, now);
+      }
+    } catch (err) {
+      logger.warn('Failed to import exclusion', { user_id: userId, wish_id: id, err });
+    }
+  }
+
+  res.json({ success: true });
 });
 
 router.get('/:id', async (req, res) => {
@@ -508,6 +651,7 @@ router.post('/:id/manage', async (req, res) => {
 
   if (action === 'delete') {
     await db.prepare('DELETE FROM wishmails WHERE wish_id = ?').run(id);
+    await db.prepare('DELETE FROM wish_exclusions WHERE wish_id = ?').run(id);
     await db.prepare('DELETE FROM wishes WHERE id = ?').run(id);
     logger.info('Wish deleted by owner', { user_id: user?.id, wish_id: id });
     emitWishDeleted(id);
@@ -621,6 +765,39 @@ router.post('/:id/flag', async (req, res) => {
   emitWishFlagged(flaggedWish);
 
   logger.warn('Wish flagged for moderation', { wish_id: id });
+  res.json({ success: true });
+});
+
+// Exclude a wish (Hide / Not Interested)
+router.post('/:id/exclude', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const now = new Date().toISOString();
+
+  // Verify wish exists
+  const wishExists = await db.prepare('SELECT 1 FROM wishes WHERE id = ?').get(id);
+  if (!wishExists) {
+    return res.status(404).json({ error: 'Wish not found.' });
+  }
+
+  await db
+    .prepare(
+      'INSERT OR IGNORE INTO wish_exclusions (user_id, wish_id, created_at) VALUES (?, ?, ?)'
+    )
+    .run(userId, id, now);
+
+  logger.info('Wish excluded by user', { user_id: userId, wish_id: id });
+  res.json({ success: true });
+});
+
+// Remove exclusion (Un-hide / Undo)
+router.delete('/:id/exclude', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  await db.prepare('DELETE FROM wish_exclusions WHERE user_id = ? AND wish_id = ?').run(userId, id);
+
+  logger.info('Wish exclusion removed by user', { user_id: userId, wish_id: id });
   res.json({ success: true });
 });
 

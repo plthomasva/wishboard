@@ -17,6 +17,10 @@ vi.mock('./commands/kiosk.js', () => ({
   runKiosk: vi.fn(),
 }));
 
+vi.mock('./commands/auth.js', () => ({
+  generateAuthToken: vi.fn(),
+}));
+
 describe('wishboard CLI entrypoint', () => {
   let originalArgv;
   let exitSpy;
@@ -110,12 +114,36 @@ describe('wishboard CLI entrypoint', () => {
     );
   });
 
+  it('handles errors in serverless deploy action', async () => {
+    const mod = await import('./commands/serverless.js');
+    vi.mocked(mod.deployServerless).mockImplementationOnce(() => {
+      throw new Error('Deploy Failed');
+    });
+    await runCLI(['serverless', 'deploy']);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error during deploy: Deploy Failed')
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
   it('routes to serverless destroy command with options', async () => {
     const mod = await import('./commands/serverless.js');
     await runCLI(['serverless', 'destroy', '--force', '--dry-run']);
     expect(mod.destroyServerless).toHaveBeenCalledWith(
       expect.objectContaining({ force: true, dryRun: true })
     );
+  });
+
+  it('handles errors in serverless destroy action', async () => {
+    const mod = await import('./commands/serverless.js');
+    vi.mocked(mod.destroyServerless).mockImplementationOnce(() => {
+      throw new Error('Destroy Failed');
+    });
+    await runCLI(['serverless', 'destroy']);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error during destroy: Destroy Failed')
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   it('routes to kiosk deploy command with options', async () => {
@@ -126,6 +154,18 @@ describe('wishboard CLI entrypoint', () => {
     );
   });
 
+  it('handles errors in kiosk deploy action', async () => {
+    const mod = await import('./commands/kiosk.js');
+    vi.mocked(mod.deployKiosk).mockImplementationOnce(() => {
+      throw new Error('Kiosk Deploy Failed');
+    });
+    await runCLI(['kiosk', 'deploy']);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error during kiosk deploy: Kiosk Deploy Failed')
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
   it('routes to kiosk setup command with options', async () => {
     const mod = await import('./commands/kiosk.js');
     await runCLI(['kiosk', 'setup', '--mode', 'dual', '--dry-run']);
@@ -134,12 +174,36 @@ describe('wishboard CLI entrypoint', () => {
     );
   });
 
+  it('handles errors in kiosk setup action', async () => {
+    const mod = await import('./commands/kiosk.js');
+    vi.mocked(mod.setupKiosk).mockImplementationOnce(() => {
+      throw new Error('Kiosk Setup Failed');
+    });
+    await runCLI(['kiosk', 'setup']);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error during kiosk setup: Kiosk Setup Failed')
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
   it('routes to kiosk run command with options', async () => {
     const mod = await import('./commands/kiosk.js');
     await runCLI(['kiosk', 'run', '--reset-rules', '--dry-run']);
     expect(mod.runKiosk).toHaveBeenCalledWith(
       expect.objectContaining({ resetRules: true, dryRun: true })
     );
+  });
+
+  it('handles errors in kiosk run action', async () => {
+    const mod = await import('./commands/kiosk.js');
+    vi.mocked(mod.runKiosk).mockImplementationOnce(() => {
+      throw new Error('Kiosk Run Failed');
+    });
+    await runCLI(['kiosk', 'run']);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error during kiosk run: Kiosk Run Failed')
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   it('handles db reset-password placeholder', async () => {
@@ -154,5 +218,39 @@ describe('wishboard CLI entrypoint', () => {
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining('This command is not yet migrated')
     );
+  });
+
+  it('routes to auth token command with options', async () => {
+    const authModule = await import('./commands/auth.js');
+    await runCLI([
+      'auth',
+      'token',
+      'adminuser',
+      '--url',
+      'my-url',
+      '--passphrase',
+      'my-passphrase',
+      '--dry-run',
+    ]);
+    expect(authModule.generateAuthToken).toHaveBeenCalledWith(
+      'adminuser',
+      expect.objectContaining({
+        url: 'my-url',
+        passphrase: 'my-passphrase',
+        dryRun: true,
+      })
+    );
+  });
+
+  it('handles errors in auth token action', async () => {
+    const authModule = await import('./commands/auth.js');
+    vi.mocked(authModule.generateAuthToken).mockImplementationOnce(() => {
+      throw new Error('Auth Token Failed');
+    });
+    await runCLI(['auth', 'token', 'adminuser']);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error generating token: Auth Token Failed')
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
   });
 });

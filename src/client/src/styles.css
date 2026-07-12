@@ -435,6 +435,37 @@ button:hover {
   height: 14px;
 }
 
+.exclude-wish-btn {
+  position: absolute;
+  top: 10px;
+  left: 36px;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  color: #4a5568;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
+  z-index: 10;
+}
+
+.exclude-wish-btn:hover {
+  color: #1e3a8a;
+  background-color: #dbeafe;
+  transform: scale(1.05);
+}
+
+.exclude-wish-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 .wish-text {
   font-family: 'Kalam', 'Architects Daughter', 'Georgia', serif;
   font-size: 1em;
@@ -1192,4 +1223,69 @@ textarea.overflowing-textarea {
   to {
     transform: rotate(360deg);
   }
+}
+
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 1000;
+  font-size: 0.9rem;
+  animation: slideUp 0.2s ease-out;
+}
+
+.toast-undo-btn {
+  background: transparent;
+  border: none;
+  color: #38bdf8;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.toast-undo-btn:hover {
+  background: rgba(56, 189, 248, 0.1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translate(-50%, 20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.pill-flag {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.pill-flag-heart {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.pill-svg-icon {
+  display: inline-block;
+  opacity: 0.75;
 }
