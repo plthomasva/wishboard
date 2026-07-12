@@ -42,7 +42,7 @@ function readTomlValue(key) {
  */
 function getOverrideValue(key, overrides) {
   const normalized = overrides.replaceAll('\\', '');
-  const regex = new RegExp(String.raw`${key}="([^"]*)"`);
+  const regex = new RegExp(`${key}="([^"]*)"`);
   const match = regex.exec(normalized);
   return match ? match[1] : '';
 }
@@ -54,7 +54,7 @@ function getOverrideValue(key, overrides) {
  */
 function assertNotSilentlyBlanked(key, resolved, tomlOverrides) {
   const normalized = tomlOverrides.replaceAll('\\', '');
-  const regex = new RegExp(String.raw`${key}="([^"]+)"`);
+  const regex = new RegExp(`${key}="([^"]+)"`);
   const raw = regex.exec(normalized);
   if (raw && !resolved) {
     throw new Error(
