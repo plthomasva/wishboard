@@ -149,7 +149,7 @@ SAM will prompt you for the following parameters:
 
 - **Stack Name**: `wishboard-serverless`
 - **AWS Region**: `us-east-1` (highly recommended for custom domains)
-- **DomainName**: Your custom domain (e.g. `wishboard.yourdomain.com`). Leave empty to use the default CloudFront URL.
+- **DomainName**: Your custom domain (e.g. `wishboard.yourdomain.com`). Leave empty to use the default CloudFront URL. Also passed to the API Lambda as `WISHBOARD_DOMAIN` and served at runtime via `/api/config` (used by the poster); when empty, the client falls back to the host it's viewed on.
 - **HostedZoneId**: The Route 53 Hosted Zone ID for domain verification. Leave empty if not using a custom domain.
 - **AcmCertificateArn**: If you already have an SSL certificate in `us-east-1`, paste its ARN here.
 - **DatabaseUrl**: Your Turso database URL (`libsql://<db>-<org>.aws-us-east-1.turso.io`). Not a secret. See **[Database (Turso)](#database-turso)** below.
