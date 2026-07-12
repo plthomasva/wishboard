@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.15.0...wishboard-v1.15.1) (2026-07-12)
+
+
+### Miscellaneous Chores
+
+* force release v1.15.1 ([#215](https://github.com/plthomasva/wishboard/issues/215)) ([393f4ca](https://github.com/plthomasva/wishboard/commit/393f4ca69a218323ffc85cf5349413b3f16bc76f))
+
 ## [1.15.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.14.1...wishboard-v1.15.0) (2026-07-12)
 
 
