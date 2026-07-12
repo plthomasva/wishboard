@@ -1,11 +1,16 @@
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { describe, beforeEach, afterEach, it, expect, vi } from 'vitest';
 
 const useAuthMock = vi.fn();
+const useExcludedWishesMock = vi.fn();
 
 vi.mock('./AuthContext', () => ({
   useAuth: () => useAuthMock(),
+}));
+
+vi.mock('./hooks/useExcludedWishes', () => ({
+  useExcludedWishes: () => useExcludedWishesMock(),
 }));
 
 import AccountPage from './AccountPage';
@@ -13,6 +18,13 @@ import AccountPage from './AccountPage';
 describe('AccountPage', () => {
   beforeEach(() => {
     useAuthMock.mockReset();
+    useExcludedWishesMock.mockReset();
+    useExcludedWishesMock.mockReturnValue({
+      excludedIds: [],
+      excludeWish: vi.fn(),
+      unexcludeWish: vi.fn(),
+      loading: false,
+    });
     vi.stubGlobal(
       'fetch',
       vi.fn((input) => {
@@ -639,5 +651,225 @@ describe('AccountPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Claim Wish' }));
 
     expect(await screen.findByText('Wish claimed successfully!')).toBeInTheDocument();
+  });
+
+  it('allows logged in user to un-hide a wish and fetches updated list', async () => {
+    const unexcludeWishSpy = vi.fn();
+    useExcludedWishesMock.mockReturnValue({
+      excludedIds: ['wish-id-123'],
+      excludeWish: vi.fn(),
+      unexcludeWish: unexcludeWishSpy,
+      loading: false,
+    });
+
+    useAuthMock.mockReturnValue({
+      user: {
+        id: 'u1',
+        username: 'user1',
+        role: 'user',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    });
+
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/wishes/exclusions') && !url.includes('/list')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{ id: 'wish-id-123', content: 'hidden wish' }]),
+        });
+      }
+      if (url.includes('/api/users/me/wishes')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+      }
+      if (url.includes('/api/wishes/wish-id-123/exclude')) {
+        return Promise.resolve({ ok: true });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<AccountPage />);
+
+    // Click the "Unhide" button
+    const unhideBtn = await screen.findByRole('button', { name: 'Un-hide' });
+    fireEvent.click(unhideBtn);
+
+    // Verify it sent a DELETE request to /api/wishes/wish-id-123/exclude
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/wishes/wish-id-123/exclude',
+        expect.objectContaining({
+          method: 'DELETE',
+        })
+      );
+    });
+
+    expect(await screen.findByText('Wish is now visible again.')).toBeInTheDocument();
+  });
+
+  it('allows guest to un-hide a wish using hook', async () => {
+    const unexcludeWishSpy = vi.fn().mockResolvedValue(undefined);
+    useExcludedWishesMock.mockReturnValue({
+      excludedIds: ['wish-id-123'],
+      excludeWish: vi.fn(),
+      unexcludeWish: unexcludeWishSpy,
+      loading: false,
+    });
+
+    useAuthMock.mockReturnValue({
+      user: null,
+      token: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    });
+
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/exists')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ exists: false }) });
+      }
+      if (url.includes('/api/wishes')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([{ id: 'wish-id-123', content: 'local wish' }]),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<AccountPage />);
+
+    // In guest view, click the unhide button
+    const unhideBtn = await screen.findByRole('button', { name: 'Un-hide' });
+    fireEvent.click(unhideBtn);
+
+    expect(unexcludeWishSpy).toHaveBeenCalledWith('wish-id-123');
+    expect(await screen.findByText('Wish is now visible again.')).toBeInTheDocument();
+  });
+
+  it('allows user to toggle profile status (deactivate/reactivate)', async () => {
+    const refreshUserSpy = vi.fn();
+    useAuthMock.mockReturnValue({
+      user: {
+        id: 'u1',
+        username: 'user1',
+        role: 'user',
+        is_active: true,
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+      },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: refreshUserSpy,
+    });
+
+    const fetchMock = vi.fn((input) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (url.includes('/api/users/me/deactivate')) {
+        return Promise.resolve({ ok: true });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<AccountPage />);
+
+    const toggleBtn = screen.getByRole('button', { name: 'Deactivate Profile' });
+    fireEvent.click(toggleBtn);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/users/me/deactivate',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+    });
+    expect(refreshUserSpy).toHaveBeenCalled();
+    expect(await screen.findByText('Profile deactivated successfully.')).toBeInTheDocument();
+  });
+
+  it('allows user to manage contact methods', async () => {
+    useAuthMock.mockReturnValue({
+      user: {
+        id: 'u1',
+        username: 'user1',
+        role: 'user',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+        contacts: [{ type: 'FetLife', value: 'myhandle' }],
+      },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    });
+
+    render(<AccountPage />);
+
+    // Change contact value
+    const input = screen.getByPlaceholderText('Username, number, etc.');
+    fireEvent.change(input, { target: { value: 'newhandle' } });
+    expect(input).toHaveValue('newhandle');
+
+    // Change contact type
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'Email' } });
+    expect(select).toHaveValue('Email');
+
+    // Add contact method
+    const addBtn = screen.getByRole('button', { name: '+ Add Contact Method' });
+    fireEvent.click(addBtn);
+    const inputs = screen.getAllByPlaceholderText('Username, number, etc.');
+    expect(inputs).toHaveLength(2);
+
+    // Delete contact method
+    const deleteBtns = screen.getAllByRole('button', { name: 'X' });
+    fireEvent.click(deleteBtns[0]);
+    const remainingInputs = screen.getAllByPlaceholderText('Username, number, etc.');
+    expect(remainingInputs).toHaveLength(1);
+  });
+
+  it('allows toggling default wishmail checkbox', async () => {
+    useAuthMock.mockReturnValue({
+      user: {
+        id: 'u1',
+        username: 'user1',
+        role: 'user',
+        identity_genders: [],
+        identity_orientations: [],
+        identity_roles: [],
+        wishmail_enabled: false,
+      },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    });
+
+    render(<AccountPage />);
+
+    const checkbox = screen.getByLabelText('Enable Wishmail by default');
+    expect(checkbox).not.toBeChecked();
+
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
   });
 });

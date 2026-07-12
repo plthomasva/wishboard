@@ -209,6 +209,14 @@ const auth = program.command('auth').description('Manage user authentication and
 auth
   .command('token <username>')
   .description('Generate a session token for a user')
+  .option(
+    '--url <url>',
+    'Base URL of the remote Wishboard instance (e.g. https://demo.wishboards.app)'
+  )
+  .option(
+    '--passphrase <passphrase>',
+    'Passphrase for remote authentication (if not provided, you will be prompted)'
+  )
   .option('--dry-run', 'Preview the action without executing it')
   .action(async (username, options) => {
     try {
