@@ -23,8 +23,9 @@ function logError(msg) {
 function readTomlValue(key) {
   if (!fs.existsSync(SAM_CONFIG)) return '';
   const content = fs.readFileSync(SAM_CONFIG, 'utf8');
+  const regex = new RegExp(String.raw`^\s*${key}\s*=\s*(.+?)\s*$`);
   for (const line of content.split(/\r?\n/)) {
-    const match = line.match(new RegExp(`^\\s*${key}\\s*=\\s*(.+?)\\s*$`));
+    const match = regex.exec(line);
     if (match) {
       return match[1].trim().replace(/^"|"$/g, '');
     }
@@ -40,8 +41,9 @@ function readTomlValue(key) {
  * tears down conditional resources (e.g. the custom domain). See #158.
  */
 function getOverrideValue(key, overrides) {
-  const normalized = overrides.replace(/\\/g, '');
-  const match = normalized.match(new RegExp(`${key}="([^"]*)"`));
+  const normalized = overrides.replaceAll('\\', '');
+  const regex = new RegExp(String.raw`${key}="([^"]*)"`);
+  const match = regex.exec(normalized);
   return match ? match[1] : '';
 }
 
@@ -51,7 +53,9 @@ function getOverrideValue(key, overrides) {
  * than emit `Key=''` and delete the resources that value gates.
  */
 function assertNotSilentlyBlanked(key, resolved, tomlOverrides) {
-  const raw = tomlOverrides.replace(/\\/g, '').match(new RegExp(`${key}="([^"]+)"`));
+  const normalized = tomlOverrides.replaceAll('\\', '');
+  const regex = new RegExp(String.raw`${key}="([^"]+)"`);
+  const raw = regex.exec(normalized);
   if (raw && !resolved) {
     throw new Error(
       `${key} is set in samconfig.toml ("${raw[1]}") but resolved to empty. Refusing to deploy an ` +
@@ -294,6 +298,90 @@ function configureCloudFrontId(stackName, common, distId, dryRun) {
   }
 }
 
+function performPreflightChecks(frontendOnly, common, dryRun) {
+  logStep('Checking prerequisites...');
+  assertCommand('node');
+  assertCommand('npm');
+  assertCommand('aws');
+  if (!frontendOnly) assertCommand('sam');
+  const account = verifyAwsAuth(common, dryRun);
+  logInfo(`Authenticated to AWS account ${account}`);
+}
+
+function performBackendBuild(dryRun) {
+  logStep('[2/6] Bundling backend (sam build)...');
+  const samBuild = execCommand('sam', ['build'], { cwd: SERVERLESS_DIR, dryRun });
+  if (samBuild.status !== 0) throw new Error('sam build failed.');
+
+  logStep('[3/6] Copying libSQL native binary into artifacts (post-build.js)...');
+  const postBuild = execCommand('node', ['post-build.js'], { cwd: SERVERLESS_DIR, dryRun });
+  if (postBuild.status !== 0) throw new Error('post-build.js failed.');
+}
+
+function performStackDeploy(stackName, common, guided, mode, dryRun) {
+  if (guided) {
+    logStep('[4/6] Deploying stack (sam deploy --guided)...');
+    logInfo('No samconfig.toml found or --guided specified; starting interactive setup.');
+  } else {
+    logStep('[4/6] Deploying stack (sam deploy)...');
+  }
+
+  const deployArgs = [
+    'deploy',
+    '--stack-name',
+    stackName,
+    ...(guided
+      ? ['--guided']
+      : [
+          '--no-confirm-changeset',
+          '--no-fail-on-empty-changeset',
+          '--capabilities',
+          'CAPABILITY_IAM',
+          '--resolve-s3',
+        ]),
+    ...common,
+    '--parameter-overrides',
+    buildParameterOverrides(mode),
+    '--tags',
+    'Project=wishboard',
+  ];
+
+  runSamDeploy(deployArgs, guided, dryRun);
+}
+
+function performFrontendUpload(frontendBucket, distId, common, dryRun) {
+  if (!dryRun && !fs.existsSync(DIST_DIR)) {
+    throw new Error(`Build output not found at ${DIST_DIR}.`);
+  }
+  logStep(`[6/6] Uploading frontend to s3://${frontendBucket} ...`);
+  const sync = execCommand(
+    'aws',
+    ['s3', 'sync', DIST_DIR, `s3://${frontendBucket}`, '--delete', ...common],
+    {
+      dryRun,
+    }
+  );
+  if (sync.status !== 0) throw new Error('Frontend upload to S3 failed.');
+
+  if (distId) {
+    logInfo(`Invalidating CloudFront cache (${distId})...`);
+    const inv = execCommand(
+      'aws',
+      [
+        'cloudfront',
+        'create-invalidation',
+        '--distribution-id',
+        distId,
+        '--paths',
+        '/*',
+        ...common,
+      ],
+      { stdio: 'pipe', dryRun }
+    );
+    if (inv.status !== 0) throw new Error('CloudFront invalidation failed.');
+  }
+}
+
 /**
  * Builds and deploys (or updates) the Wishboard AWS serverless stack.
  */
@@ -313,13 +401,7 @@ export function deployServerless(options) {
   console.log('');
 
   // --- Preflight ---
-  logStep('Checking prerequisites...');
-  assertCommand('node');
-  assertCommand('npm');
-  assertCommand('aws');
-  if (!frontendOnly) assertCommand('sam');
-  const account = verifyAwsAuth(common, dryRun);
-  logInfo(`Authenticated to AWS account ${account}`);
+  performPreflightChecks(frontendOnly, common, dryRun);
 
   // --- 1. Frontend build ---
   logStep('[1/6] Building frontend (npm run build)...');
@@ -327,48 +409,14 @@ export function deployServerless(options) {
   if (build.status !== 0) throw new Error('Frontend build failed.');
 
   if (!frontendOnly) {
-    // --- 2. Backend bundle ---
-    logStep('[2/6] Bundling backend (sam build)...');
-    const samBuild = execCommand('sam', ['build'], { cwd: SERVERLESS_DIR, dryRun });
-    if (samBuild.status !== 0) throw new Error('sam build failed.');
-
-    // --- 3. Native binary post-build ---
-    logStep('[3/6] Copying libSQL native binary into artifacts (post-build.js)...');
-    const postBuild = execCommand('node', ['post-build.js'], { cwd: SERVERLESS_DIR, dryRun });
-    if (postBuild.status !== 0) throw new Error('post-build.js failed.');
+    // --- 2 & 3. Bundling & copy native binary ---
+    performBackendBuild(dryRun);
 
     // --- 4. Deploy stack ---
     let guided = options.guided || !fs.existsSync(SAM_CONFIG);
     if (process.env.CI) guided = false;
 
-    if (guided) {
-      logStep('[4/6] Deploying stack (sam deploy --guided)...');
-      logInfo('No samconfig.toml found or --guided specified; starting interactive setup.');
-    } else {
-      logStep('[4/6] Deploying stack (sam deploy)...');
-    }
-
-    const deployArgs = ['deploy', '--stack-name', stackName];
-    if (guided) {
-      deployArgs.push('--guided');
-    } else {
-      deployArgs.push(
-        '--no-confirm-changeset',
-        '--no-fail-on-empty-changeset',
-        '--capabilities',
-        'CAPABILITY_IAM',
-        '--resolve-s3'
-      );
-    }
-    deployArgs.push(...common);
-    deployArgs.push(
-      '--parameter-overrides',
-      buildParameterOverrides(mode),
-      '--tags',
-      'Project=wishboard'
-    );
-
-    runSamDeploy(deployArgs, guided, dryRun);
+    performStackDeploy(stackName, common, guided, mode, dryRun);
 
     // A guided deploy writes/updates samconfig.toml, so pick up the values the
     // user just chose. For a non-guided deploy samconfig is unchanged, and
@@ -403,36 +451,7 @@ export function deployServerless(options) {
   if (skipFrontendUpload) {
     logStep('[6/6] Skipping frontend upload (--skip-frontend-upload).');
   } else {
-    if (!dryRun && !fs.existsSync(DIST_DIR)) {
-      throw new Error(`Build output not found at ${DIST_DIR}.`);
-    }
-    logStep(`[6/6] Uploading frontend to s3://${frontendBucket} ...`);
-    const sync = execCommand(
-      'aws',
-      ['s3', 'sync', DIST_DIR, `s3://${frontendBucket}`, '--delete', ...common],
-      {
-        dryRun,
-      }
-    );
-    if (sync.status !== 0) throw new Error('Frontend upload to S3 failed.');
-
-    if (distId) {
-      logInfo(`Invalidating CloudFront cache (${distId})...`);
-      const inv = execCommand(
-        'aws',
-        [
-          'cloudfront',
-          'create-invalidation',
-          '--distribution-id',
-          distId,
-          '--paths',
-          '/*',
-          ...common,
-        ],
-        { stdio: 'pipe', dryRun }
-      );
-      if (inv.status !== 0) throw new Error('CloudFront invalidation failed.');
-    }
+    performFrontendUpload(frontendBucket, distId, common, dryRun);
   }
 
   console.log('\n\x1b[32mDeployment complete!\x1b[0m');

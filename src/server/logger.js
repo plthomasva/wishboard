@@ -62,8 +62,7 @@ const transports = [
     format: winston.format.combine(
       ...(process.env.NODE_ENV !== 'production' &&
       !process.env.AWS_LAMBDA_FUNCTION_NAME &&
-      process.stdout &&
-      process.stdout.isTTY
+      process.stdout?.isTTY
         ? [winston.format.colorize()]
         : []),
       winston.format.printf(

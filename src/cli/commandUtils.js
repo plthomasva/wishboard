@@ -5,10 +5,10 @@ import { spawnSync } from 'node:child_process';
 // (DEP0190) because arguments are concatenated without escaping. Instead we
 // launch them through `cmd.exe /c`, which resolves the .cmd via PATHEXT while
 // letting Node apply proper Windows argument escaping.
-const WINDOWS_CMD_SHIMS = ['npm', 'npx', 'sam'];
+const WINDOWS_CMD_SHIMS = new Set(['npm', 'npx', 'sam']);
 
 function needsCmdWrapper(command) {
-  return process.platform === 'win32' && WINDOWS_CMD_SHIMS.includes(command);
+  return process.platform === 'win32' && WINDOWS_CMD_SHIMS.has(command);
 }
 
 function spawnCross(command, args, options) {
@@ -16,7 +16,7 @@ function spawnCross(command, args, options) {
     // Invoke the interpreter by a fixed absolute path in the (unwriteable)
     // System32 directory rather than a bare "cmd.exe" resolved via PATH, which
     // a writable PATH entry could shadow.
-    return spawnSync('C:\\Windows\\System32\\cmd.exe', ['/c', command, ...args], options);
+    return spawnSync(String.raw`C:\Windows\System32\cmd.exe`, ['/c', command, ...args], options);
   }
   return spawnSync(command, args, options);
 }
@@ -40,6 +40,8 @@ export function hasCommand(name) {
   }
 }
 
+const GITHUB_REMOTE_REGEX = /github\.com[:/]([^/]+)\/([^/.]+)(?:\.git)?/;
+
 /**
  * Resolves the GitHub organization (owner) and repository name from git remote.
  * @returns {{ org: string, repo: string } | null}
@@ -49,7 +51,7 @@ export function getGitRepoInfo() {
     const res = spawnSync('git', ['remote', 'get-url', 'origin'], { encoding: 'utf8' });
     if (res.status === 0 && res.stdout) {
       const url = res.stdout.trim();
-      const match = url.match(/github\.com[:/]([^/]+)\/([^/.]+)(?:\.git)?/);
+      const match = GITHUB_REMOTE_REGEX.exec(url);
       if (match) {
         return { org: match[1], repo: match[2] };
       }

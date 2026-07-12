@@ -96,14 +96,14 @@ export function deployKiosk(options) {
 
     // 3. Run setup on the Pi (strip CRLF first so uploaded scripts run under bash)
     logStep('[3/4] Running setup-kiosk.sh on the Pi (user, Docker rootless, kiosk, hotspot)...');
-    const setupCmd = `sed -i 's/\\r$//' ${remoteTemp}/setup-kiosk.sh && sudo bash ${remoteTemp}/setup-kiosk.sh ${mode} ${domain} ${remoteTemp}`;
+    const setupCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/setup-kiosk.sh && sudo bash ${remoteTemp}/setup-kiosk.sh ${mode} ${domain} ${remoteTemp}`;
     if (execCommand('ssh', [target, setupCmd], { dryRun }).status !== 0) {
       throw new Error('Remote setup-kiosk.sh failed.');
     }
 
     // 4. Bring up the container + display
     logStep('[4/4] Running build-kiosk.sh on the Pi (docker compose up + display)...');
-    const buildCmd = `sed -i 's/\\r$//' ${remoteTemp}/build-kiosk.sh && sudo bash ${remoteTemp}/build-kiosk.sh ${mode} ${domain} ${deployRules} ${appVersion}`;
+    const buildCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/build-kiosk.sh && sudo bash ${remoteTemp}/build-kiosk.sh ${mode} ${domain} ${deployRules} ${appVersion}`;
     if (execCommand('ssh', [target, buildCmd], { dryRun }).status !== 0) {
       throw new Error('Remote build-kiosk.sh failed.');
     }
