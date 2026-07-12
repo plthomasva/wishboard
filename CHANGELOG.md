@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.15.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.14.1...wishboard-v1.15.0) (2026-07-12)
+
+
+### Features
+
+* implement CLI token, wish exclusions, SVG kiosk icons & suggestion flags ([#212](https://github.com/plthomasva/wishboard/issues/212)) ([57e7ff3](https://github.com/plthomasva/wishboard/commit/57e7ff37a29c19f2c9a82037c72f332c05629cc1))
+
+
+### Bug Fixes
+
+* **cli:** redact secrets from --dry-run echo + shell-lint (S8689) ([#210](https://github.com/plthomasva/wishboard/issues/210)) ([7da4c2c](https://github.com/plthomasva/wishboard/commit/7da4c2cab7d10c2f6bf48629c66f09d8fbc63af8))
+
 ## [1.14.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.14.0...wishboard-v1.14.1) (2026-07-11)
 
 
