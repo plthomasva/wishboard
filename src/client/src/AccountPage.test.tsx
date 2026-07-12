@@ -698,8 +698,8 @@ describe('AccountPage', () => {
 
     render(<AccountPage />);
 
-    // Click the "Unhide" button
-    const unhideBtn = await screen.findByRole('button', { name: 'Un-hide' });
+    // Click the in-card 👁 unhide button (ExcludeToggleButton)
+    const unhideBtn = await screen.findByRole('button', { name: 'Unhide wish' });
     fireEvent.click(unhideBtn);
 
     // Verify it sent a DELETE request to /api/wishes/wish-id-123/exclude
@@ -750,8 +750,8 @@ describe('AccountPage', () => {
 
     render(<AccountPage />);
 
-    // In guest view, click the unhide button
-    const unhideBtn = await screen.findByRole('button', { name: 'Un-hide' });
+    // In guest view, click the in-card 👁 unhide button
+    const unhideBtn = await screen.findByRole('button', { name: 'Unhide wish' });
     fireEvent.click(unhideBtn);
 
     expect(unexcludeWishSpy).toHaveBeenCalledWith('wish-id-123');

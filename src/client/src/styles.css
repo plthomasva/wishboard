@@ -12,6 +12,13 @@
   font-display: swap;
   src: url('/fonts/Kalam-Bold.ttf') format('truetype');
 }
+@font-face {
+  font-family: 'Noto Color Emoji';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/NotoColorEmoji.ttf') format('truetype');
+}
 
 :root {
   color-scheme: light;
@@ -297,7 +304,7 @@ button:hover {
   aspect-ratio: 5 / 3;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 4px;
-  padding: 24px 18px 18px 18px;
+  padding: 16px 18px 18px 18px;
   background: 
     /* Red line at top margin */
     linear-gradient(
@@ -404,10 +411,32 @@ button:hover {
   font-weight: bold;
 }
 
-.flag-wish-btn {
+.card-top-left-actions {
+  float: left;
+  display: flex;
+  gap: 4px;
+  margin-top: -6px; /* Pushed up higher into top padding */
+  margin-bottom: 4px;
+  margin-right: 8px;
+  z-index: 10;
+  position: relative;
+  align-items: center;
+}
+
+.card-has-image .card-top-left-actions {
   position: absolute;
-  top: 10px;
-  left: 12px;
+  top: 4px;
+  left: 4px;
+  float: none;
+  margin: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.flag-wish-btn,
+.exclude-wish-btn,
+.admin-delete-wish-btn {
   background: transparent;
   border: none;
   padding: 4px;
@@ -430,29 +459,10 @@ button:hover {
   transform: scale(1.05);
 }
 
-.flag-wish-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
-.exclude-wish-btn {
-  position: absolute;
-  top: 10px;
-  left: 36px;
-  background: transparent;
-  border: none;
-  padding: 4px;
-  color: #4a5568;
-  cursor: pointer;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease,
-    transform 0.15s ease;
-  z-index: 10;
+.flag-wish-btn .emoji-icon {
+  font-size: 14px;
+  line-height: 1;
+  font-family: 'Noto Color Emoji', sans-serif;
 }
 
 .exclude-wish-btn:hover {
@@ -461,7 +471,14 @@ button:hover {
   transform: scale(1.05);
 }
 
-.exclude-wish-btn svg {
+.admin-delete-wish-btn:hover {
+  color: #b91c1c;
+  background-color: #fee2e2;
+  transform: scale(1.05);
+}
+
+.exclude-wish-btn svg,
+.admin-delete-wish-btn svg {
   width: 14px;
   height: 14px;
 }
@@ -471,7 +488,7 @@ button:hover {
   font-size: 1em;
   line-height: 1.4;
   color: #2c3e50;
-  margin: 18px 0 0 0;
+  margin: 0;
   word-wrap: break-word;
 }
 
@@ -578,7 +595,7 @@ button:hover {
 .wish-card .identity-stickers,
 .display-card .identity-stickers {
   float: right;
-  margin-top: 18px; /* Position below the top red line area */
+  margin-top: -6px; /* Pushed up higher into top padding */
   margin-left: 10px;
   margin-bottom: 6px;
   gap: 6px;
@@ -723,18 +740,23 @@ button:hover {
     top: 18px;
     left: 24px;
   }
-  .display-card .flag-wish-btn {
-    top: 18px;
-    left: 24px;
+  .display-card .card-top-left-actions {
+    margin-top: -12px;
+    margin-right: 16px;
+    gap: 12px;
+  }
+  .display-card .card-top-left-actions button {
     padding: 8px;
   }
-  .display-card .flag-wish-btn svg {
+  .display-card .card-top-left-actions button svg,
+  .display-card .card-top-left-actions button .emoji-icon {
     width: 24px;
     height: 24px;
+    font-size: 24px;
   }
   .display-card .identity-stickers {
     gap: 0.8em;
-    margin-top: 1.2em;
+    margin-top: -12px;
     float: right;
     margin-left: 1em;
     margin-bottom: 0.6em;
@@ -904,9 +926,10 @@ button:hover {
     background 0.2s ease;
 }
 
-.info-toggle-btn svg {
-  width: 18px;
-  height: 18px;
+.info-toggle-btn .emoji-icon {
+  font-size: 18px;
+  line-height: 1;
+  font-family: 'Noto Color Emoji', sans-serif;
 }
 
 .info-toggle-btn:hover,
@@ -953,15 +976,16 @@ button:hover {
   color: #b91717; /* Turn dark red if it overflows at min font size */
 }
 
+/* Wishmail button — always pinned to bottom-right of card */
 .send-mail-icon-btn {
   position: absolute;
-  bottom: 12px;
-  right: 16px;
+  bottom: 2px;
+  right: 4px;
   background: none;
   border: none;
   color: #0d47a1;
   cursor: pointer;
-  padding: 6px;
+  padding: 4px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
@@ -973,27 +997,37 @@ button:hover {
   z-index: 10;
 }
 
+.send-mail-icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 .send-mail-icon-btn:hover {
   transform: scale(1.1);
   color: #1e3a8a;
   background-color: #dbeafe;
 }
 
+/* Contacts — always pinned to bottom-left of card */
 .wish-contacts-list {
-  margin-top: 12px;
+  position: absolute;
+  bottom: 2px;
+  left: 4px;
+  right: 32px; /* Don't underlap the wishmail icon */
+  margin-top: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
   font-family: Inter, sans-serif;
-  font-size: 0.8em; /* Relative to scaled root */
+  font-size: 0.8em;
   color: #556275;
-  border-top: 1px dashed rgba(0, 0, 0, 0.1);
-  padding-top: 8px;
+  border-top: none;
+  padding-top: 0;
 }
 
 .wish-contact-item {
   background: rgba(255, 255, 255, 0.5);
-  padding: 4px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
@@ -1288,4 +1322,8 @@ textarea.overflowing-textarea {
 .pill-svg-icon {
   display: inline-block;
   opacity: 0.75;
+}
+
+.card-has-image .identity-stickers {
+  margin-top: 0;
 }

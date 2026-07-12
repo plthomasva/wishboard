@@ -15,6 +15,10 @@ export const FONTS = [
     url: 'https://fonts.gstatic.com/s/kalam/v18/YA9Qr0Wd4kDdMtDqHQLL.ttf',
     dest: 'Kalam-Bold.ttf',
   },
+  {
+    url: 'https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf',
+    dest: 'NotoColorEmoji.ttf',
+  },
 ];
 
 export const targetDir = path.resolve(__dirname, '../src/client/public/fonts');

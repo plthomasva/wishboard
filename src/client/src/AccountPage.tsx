@@ -549,26 +549,14 @@ export default function AccountPage() {
             </p>
             <div className="wish-grid">
               {hiddenWishes.map((wish) => (
-                <div
+                <WishCard
                   key={wish.id}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
-                >
-                  <div style={{ opacity: 0.7 }}>
-                    <WishCard wish={wish} showFlag={false} />
-                  </div>
-                  <div
-                    className="wish-actions"
-                    style={{ marginTop: 0, justifyContent: 'flex-start' }}
-                  >
-                    <button
-                      className="secondary-button"
-                      onClick={() => unhideWish(wish.id)}
-                      style={{ background: '#e2e8f0', color: '#1e293b' }}
-                    >
-                      Un-hide
-                    </button>
-                  </div>
-                </div>
+                  wish={wish}
+                  showFlag={false}
+                  isExcluded={true}
+                  onExclude={() => {}}
+                  onUnexclude={() => unhideWish(wish.id)}
+                />
               ))}
             </div>
           </div>
@@ -854,23 +842,14 @@ export default function AccountPage() {
           </p>
           <div className="wish-grid">
             {hiddenWishes.map((wish) => (
-              <div key={wish.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ opacity: 0.7 }}>
-                  <WishCard wish={wish} showFlag={false} />
-                </div>
-                <div
-                  className="wish-actions"
-                  style={{ marginTop: 0, justifyContent: 'flex-start' }}
-                >
-                  <button
-                    className="secondary-button"
-                    onClick={() => unhideWish(wish.id)}
-                    style={{ background: '#e2e8f0', color: '#1e293b' }}
-                  >
-                    Un-hide
-                  </button>
-                </div>
-              </div>
+              <WishCard
+                key={wish.id}
+                wish={wish}
+                showFlag={false}
+                isExcluded={true}
+                onExclude={() => {}}
+                onUnexclude={() => unhideWish(wish.id)}
+              />
             ))}
           </div>
         </div>

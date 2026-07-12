@@ -63,4 +63,27 @@ describe('AttributeInput', () => {
     fireEvent.change(input, { target: { value: 'woman, agender' } });
     expect(onChange).toHaveBeenCalledWith('woman, agender');
   });
+
+  it('renders gender icons with correct stroke colors on suggestions', () => {
+    render(
+      <AttributeInput
+        value=""
+        onChange={() => {}}
+        placeholder="Enter gender"
+        suggestions={['woman', 'man']}
+      />
+    );
+
+    const womanPill = screen.getByRole('button', { name: /\bwoman\b/ });
+    const manPill = screen.getByRole('button', { name: /\bman\b/ });
+
+    const womanSvg = womanPill.querySelector('svg');
+    const manSvg = manPill.querySelector('svg');
+
+    expect(womanSvg).toBeInTheDocument();
+    expect(womanSvg).toHaveAttribute('stroke', '#d81b60');
+
+    expect(manSvg).toBeInTheDocument();
+    expect(manSvg).toHaveAttribute('stroke', '#1565c0');
+  });
 });
