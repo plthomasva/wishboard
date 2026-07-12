@@ -527,6 +527,78 @@ router.get('/', async (req, res) => {
   );
 });
 
+// List excluded wish IDs - must be before /:id to avoid param capture
+router.get('/exclusions/list', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const rows = await db
+    .prepare('SELECT wish_id FROM wish_exclusions WHERE user_id = ?')
+    .all(userId);
+
+  res.json(rows.map((row) => row.wish_id));
+});
+
+// List full excluded wishes - must be before /:id to avoid param capture
+router.get('/exclusions', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const rows = await db
+    .prepare(
+      'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wish_exclusions x JOIN wishes w ON x.wish_id = w.id WHERE x.user_id = ?'
+    )
+    .all(userId);
+
+  res.json(
+    rows.map((wish) => ({
+      id: wish.id,
+      content: wish.content,
+      creator_genders: parseJsonArray(wish.creator_genders),
+      creator_orientations: parseJsonArray(wish.creator_orientations),
+      creator_roles: parseJsonArray(wish.creator_roles),
+      desired_genders: parseJsonArray(wish.desired_genders),
+      desired_orientations: parseJsonArray(wish.desired_orientations),
+      desired_roles: parseJsonArray(wish.desired_roles),
+      contacts: parseJsonArray(wish.contacts),
+      wishmail_enabled: Boolean(wish.wishmail_enabled),
+      image_id: wish.image_id,
+    }))
+  );
+});
+
+// Bulk import exclusions (when migrating from anonymous localStorage to user database on login)
+// Must be before /:id to avoid param capture
+router.post('/exclusions/import', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const { ids } = req.body;
+
+  if (!Array.isArray(ids)) {
+    return res.status(400).json({ error: 'List of IDs to exclude must be an array.' });
+  }
+
+  // Cap at 200 items to prevent abuse
+  const cleanIds = ids
+    .map((id) => String(id).trim())
+    .filter(Boolean)
+    .slice(0, 200);
+
+  const now = new Date().toISOString();
+  for (const id of cleanIds) {
+    try {
+      // Check if wish exists
+      const wishExists = await db.prepare('SELECT 1 FROM wishes WHERE id = ?').get(id);
+      if (wishExists) {
+        await db
+          .prepare(
+            'INSERT OR IGNORE INTO wish_exclusions (user_id, wish_id, created_at) VALUES (?, ?, ?)'
+          )
+          .run(userId, id, now);
+      }
+    } catch (err) {
+      logger.warn('Failed to import exclusion', { user_id: userId, wish_id: id, err });
+    }
+  }
+
+  res.json({ success: true });
+});
+
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   const row = await db
@@ -726,79 +798,6 @@ router.delete('/:id/exclude', requireAuth, async (req, res) => {
   await db.prepare('DELETE FROM wish_exclusions WHERE user_id = ? AND wish_id = ?').run(userId, id);
 
   logger.info('Wish exclusion removed by user', { user_id: userId, wish_id: id });
-  res.json({ success: true });
-});
-
-// List excluded wish IDs
-router.get('/exclusions/list', requireAuth, async (req, res) => {
-  const userId = req.user.id;
-  const rows = await db
-    .prepare('SELECT wish_id FROM wish_exclusions WHERE user_id = ?')
-    .all(userId);
-
-  res.json(rows.map((row) => row.wish_id));
-});
-
-// List full excluded wishes
-router.get('/exclusions', requireAuth, async (req, res) => {
-  const userId = req.user.id;
-  const rows = await db
-    .prepare(
-      'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wish_exclusions x JOIN wishes w ON x.wish_id = w.id WHERE x.user_id = ?'
-    )
-    .all(userId);
-
-  res.json(
-    rows.map((wish) => ({
-      id: wish.id,
-      content: wish.content,
-      creator_genders: parseJsonArray(wish.creator_genders),
-      creator_orientations: parseJsonArray(wish.creator_orientations),
-      creator_roles: parseJsonArray(wish.creator_roles),
-      desired_genders: parseJsonArray(wish.desired_genders),
-      desired_orientations: parseJsonArray(wish.desired_orientations),
-      desired_roles: parseJsonArray(wish.desired_roles),
-      contacts: parseJsonArray(wish.contacts),
-      wishmail_enabled: Boolean(wish.wishmail_enabled),
-      image_id: wish.image_id,
-    }))
-  );
-});
-
-// Bulk import exclusions (when migrating from anonymous localStorage to user database on login)
-router.post('/exclusions/import', requireAuth, async (req, res) => {
-  const userId = req.user.id;
-  const { ids } = req.body;
-
-  if (!Array.isArray(ids)) {
-    return res.status(400).json({ error: 'List of IDs to exclude must be an array.' });
-  }
-
-  // Cap at 200 items to prevent abuse
-  const cleanIds = ids
-    .map((id) => String(id).trim())
-    .filter(Boolean)
-    .slice(0, 200);
-
-  const now = new Date().toISOString();
-  for (const id of cleanIds) {
-    try {
-      // Check if wish exists
-      const wishExists = await db.prepare('SELECT 1 FROM wishes WHERE id = ?').get(id);
-      if (wishExists) {
-        await db
-          .prepare(
-            'INSERT OR IGNORE INTO wish_exclusions (user_id, wish_id, created_at) VALUES (?, ?, ?)'
-          )
-          .run(userId, id, now);
-      }
-    } catch (err) {
-      // Log error but continue to avoid breaking bulk import
-      logger.error('Error importing exclusion', { wish_id: id, error: err.message });
-    }
-  }
-
-  logger.info('Bulk exclusions imported for user', { user_id: userId, count: cleanIds.length });
   res.json({ success: true });
 });
 

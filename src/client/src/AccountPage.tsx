@@ -541,8 +541,8 @@ export default function AccountPage() {
           <div style={{ marginTop: '40px', marginBottom: '32px' }}>
             <h2>Hidden Wishes (Not Interested)</h2>
             <p style={{ marginBottom: '16px', fontSize: '0.9rem', color: '#556275' }}>
-              These wishes are hidden from your search results. You can make them visible again at
-              any time.
+              These wishes are hidden from your search results on this device. If you log in, they
+              will be saved to your account so they stay hidden across all your sessions.
             </p>
             <div className="wish-grid">
               {hiddenWishes.map((wish) => (
