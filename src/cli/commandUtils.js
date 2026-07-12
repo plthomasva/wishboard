@@ -60,6 +60,37 @@ export function getGitRepoInfo() {
   return null;
 }
 
+// Flags whose value is a secret and must never be echoed — e.g. in the --dry-run
+// preview, which can end up in CI logs. Covers both "--token VALUE" and
+// "--token=VALUE" forms. See jssecurity:S8689 and the planned auth-token helper.
+const SENSITIVE_FLAG = /^--?(token|secret|password|passphrase|auth-token)$/i;
+const SENSITIVE_FLAG_INLINE = /^(--?(?:token|secret|password|passphrase|auth-token))=/i;
+
+/**
+ * Returns a copy of `args` with the value of any sensitive flag masked, so a
+ * dry-run echo never leaks a token/secret into the terminal or CI logs.
+ * @param {string[]} args
+ * @returns {string[]}
+ */
+export function redactArgs(args) {
+  const redacted = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    const inline = SENSITIVE_FLAG_INLINE.exec(arg);
+    if (inline) {
+      redacted.push(`${inline[1]}=***`);
+      continue;
+    }
+    redacted.push(arg);
+    // "--token VALUE": mask the following value unless it's another flag.
+    if (SENSITIVE_FLAG.test(arg) && i + 1 < args.length && !args[i + 1].startsWith('-')) {
+      redacted.push('***');
+      i += 1;
+    }
+  }
+  return redacted;
+}
+
 /**
  * Helper to run a system command cross-platform.
  * @param {string} command
@@ -70,7 +101,9 @@ export function getGitRepoInfo() {
 export function execCommand(command, args, options = {}) {
   const { stdio = 'inherit', dryRun = false } = options;
   if (dryRun) {
-    const argsString = args.map((arg) => (arg.includes(' ') ? `"${arg}"` : arg)).join(' ');
+    const argsString = redactArgs(args)
+      .map((arg) => (arg.includes(' ') ? `"${arg}"` : arg))
+      .join(' ');
     console.log(`[DRY RUN] Would execute: ${command} ${argsString}`);
     return { status: 0, stdout: '', stderr: '' };
   }

@@ -1,6 +1,6 @@
 # ADR 0004: Kiosk data persistence (bind mount vs. named volume on the Pi)
 
-- **Status:** Proposed
+- **Status:** Accepted — the clobber guard (#193) and the `--reset-rules` fix (#194 via #204) have landed; the DB-volume ownership shape (#145) remains an open follow-up.
 - **Date:** 2026-07
 
 ## Context
@@ -72,9 +72,9 @@ The image's own entrypoint already does `chown -R sqld:sqld` — which works on 
 
 This is low-urgency (the #144 chown works); it is about the cleanest durable shape, not a live outage. Note the pinned image (`libsql-server:v0.24.33`, see `docker-compose.yml`) — a version bump may require recreating `db_data`, which interacts with whichever ownership shape is chosen.
 
-### 4. `--reset-rules` is destructive and misnamed (#194)
+### 4. `--reset-rules` is destructive and misnamed (#194) — fixed in #204
 
-`--reset-rules` maps to `DEPLOY_RULES=reset`, which today does:
+`--reset-rules` maps to `DEPLOY_RULES=reset`, which **used to** do:
 
 ```sh
 $RUN_CMD volume rm wishboard_data db_data || true
@@ -86,12 +86,12 @@ Post-#188, this is **wrong on both counts**:
 - It `rm -rf`s the entire `./data` bind mount, **deleting uploaded images** (`data/images/`) along with the now-vestigial `rules.yaml` — data the flag has no business touching.
 - It does **not actually reset the rules**, because rules now live in the DB (`rules` table in `db_data`), reachable only over `http://db:8080`. Wiping the files leaves the real rules untouched.
 
-So the flag is both destructive (images) and ineffective (rules). **Until fixed, do not pass `--reset-rules` on a kiosk deploy.** The intended fix: `--reset-rules` should clear the DB rules (e.g. `DELETE FROM rules`, so `rulesManager.seedIfEmpty` reseeds the 29 bundled defaults on next boot) and **must not** `rm -rf` the `/app/data` volume where images live.
+So the flag was both destructive (images) and ineffective (rules). **Fixed in #204:** the destructive pre-`compose` block is gone; after the stack is up, `--reset-rules` clears the DB `rules` table via the app's own libSQL client (`DELETE FROM rules`) and restarts the app so `rulesManager.seedIfEmpty` reseeds the bundled defaults on boot. It removes only the vestigial legacy `rules.yaml` (so the reseed uses the bundled defaults, not a stale file) and **never** touches `/app/data`, so uploaded images, users, and wishes are preserved.
 
 ## Consequences
 
 - The kiosk keeps **two persistence surfaces**: `./data` (bind mount — images + vestigial `rules.yaml`) and `db_data` (named volume — the SQLite DB, including the `rules` table). Operators and scripts must target the right one; treating them as interchangeable is what caused #194.
 - The legacy `wishboard_data → ./data` migration is now a **true first-run-only** step; ordinary deploys no longer risk clobbering live images or rule edits.
 - The DB volume still depends on the **post-deploy `chown -R 666:666`** in `build-kiosk.sh` (#144). The durable ownership shape (chown vs. bind mount vs. image-owned) remains an **open decision (#145)** — low urgency, cleanliness not outage.
-- **`--reset-rules` is currently unsafe** and must not be used on the kiosk until #194 lands; the correct behavior clears the DB `rules` table and leaves `/app/data` (images) intact.
+- **`--reset-rules` (fixed in #204)** clears only the DB `rules` table (reseeding the bundled defaults) and leaves `/app/data` — images, and everything else — intact.
 - The serverless target is unaffected: it has no local disk, stores the DB (and rules) in Turso, and never uses either kiosk volume (see [ADR 0002](0002-serverless-database-architecture.md)).

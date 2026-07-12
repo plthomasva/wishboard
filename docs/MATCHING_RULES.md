@@ -114,6 +114,11 @@ Combined with an **Expansion** rule (e.g., "pet" expands to "pup, kitten"), a
 "handler" will automatically match with a "pup" or "kitten" without needing
 explicit rules for every combination!
 
+> The bundled defaults currently seed two role relationships — `handler ↔ pet`
+> (with `pet → pup, kitten`) and `top ↔ bottom`. Expanding this vocabulary
+> (power-exchange, rope, etc.) is tracked in
+> [#206](https://github.com/plthomasva/wishboard/issues/206).
+
 ## 5. Application of Rules in Search
 
 The matching rules outlined above are applied within the Wishboard application as follows:
@@ -123,3 +128,30 @@ The matching rules outlined above are applied within the Wishboard application a
 - **Implicit Rules**: If a wish creator leaves desired traits blank, the matching engine relies on the creator's orientation to determine compatibility (e.g., a straight user implicitly matches only with binary opposite genders).
 - **Broad Search**: Logged-in users can temporarily disable profile-based matching in the UI to perform broad, unrestricted keyword searches.
 - **Anonymous Search**: Users who are not logged in can provide temporary gender, orientation, and role values in the search UI to perform a one-off compatibility query.
+
+## 6. Matching is bidirectional (and a few deliberate edge cases)
+
+A wish and a searcher match only when **both** directions agree: the searcher
+must want the wish creator **and** the creator must want the searcher. The
+following semantics are deliberate (pinned by the regression matrix in
+`src/server/routes/matching.regression.test.js`):
+
+- **Unspecified preference does not mean "wants everyone".** If a party has no
+  explicit desired gender **and** no orientation to infer one from, there is no
+  established preference, so it does **not** match. (This was an over-match:
+  a woman's wish with neither set was shown to a straight man — see
+  [#199](https://github.com/plthomasva/wishboard/issues/199).) To be matched
+  implicitly, set an orientation or an explicit desired gender; or use Broad
+  Search for unfiltered results.
+- **Bisexual vs. pansexual.** By design, **bisexual** matches binary genders
+  (man/woman and their trans/cis forms), while **pansexual/queer** is
+  gender-blind and also matches nonbinary people. A bisexual person who wants a
+  nonbinary match can set an explicit desired gender.
+- **Trans inclusion.** A trans woman is matched as a woman and a trans man as a
+  man (via gender expansion), so e.g. a straight man and a straight trans woman
+  match. This is intentional and inclusive; a searcher who wants to filter such
+  results can hide individual wishes.
+- **Nonbinary + a binary orientation.** Orientations like straight/gay/lesbian
+  are defined against man/woman, so a nonbinary person with one of them has no
+  gender preference the engine can infer and matches nobody implicitly — set an
+  explicit desired gender or use Broad Search.

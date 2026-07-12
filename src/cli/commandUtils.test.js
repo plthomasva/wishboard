@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { hasCommand, getGitRepoInfo, execCommand } from './commandUtils.js';
+import { hasCommand, getGitRepoInfo, execCommand, redactArgs } from './commandUtils.js';
 
 vi.mock('node:child_process', () => {
   const m = {
@@ -101,6 +101,19 @@ describe('commandUtils', () => {
       consoleSpy.mockRestore();
     });
 
+    it('redacts secret flag values in the dryRun echo (never logs a token)', () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      execCommand('wishboard', ['auth', 'token', '--token', 'super-secret-value'], {
+        dryRun: true,
+      });
+
+      const logged = consoleSpy.mock.calls[0][0];
+      expect(logged).toContain('--token ***');
+      expect(logged).not.toContain('super-secret-value');
+
+      consoleSpy.mockRestore();
+    });
+
     it('throws error when command is missing', () => {
       vi.mocked(spawnSync).mockReturnValue({
         error: { code: 'ENOENT' },
@@ -118,6 +131,41 @@ describe('commandUtils', () => {
       });
 
       expect(() => execCommand('err-cmd', [])).toThrow(customError);
+    });
+  });
+
+  describe('redactArgs', () => {
+    it('masks the value after a sensitive flag (space form)', () => {
+      expect(redactArgs(['--token', 'abc123', '--region', 'us-east-1'])).toEqual([
+        '--token',
+        '***',
+        '--region',
+        'us-east-1',
+      ]);
+    });
+
+    it('masks the inline value of a sensitive flag (=value form)', () => {
+      expect(redactArgs(['--secret=hunter2', 'deploy'])).toEqual(['--secret=***', 'deploy']);
+    });
+
+    it('covers all sensitive flag names case-insensitively', () => {
+      expect(redactArgs(['--Password', 'p', '--passphrase', 'q', '--auth-token', 'r'])).toEqual([
+        '--Password',
+        '***',
+        '--passphrase',
+        '***',
+        '--auth-token',
+        '***',
+      ]);
+    });
+
+    it('leaves non-sensitive args untouched', () => {
+      expect(redactArgs(['deploy', '--mode', 'prod'])).toEqual(['deploy', '--mode', 'prod']);
+    });
+
+    it('does not consume a following flag as a secret value, and tolerates a trailing flag', () => {
+      expect(redactArgs(['--token', '--verbose'])).toEqual(['--token', '--verbose']);
+      expect(redactArgs(['--token'])).toEqual(['--token']);
     });
   });
 });

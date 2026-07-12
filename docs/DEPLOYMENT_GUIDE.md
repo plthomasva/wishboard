@@ -54,7 +54,7 @@ From your **local developer machine** (not the Pi), run the unified deployment c
 npx wishboard kiosk deploy --host raspberrypi.local --mode prod --domain wishboard.example.com
 ```
 
-Add `--user <name>` if your Pi login isn't `pi`, and `--dry-run` to preview the exact SSH/scp steps without executing them. `--reset-rules` re-seeds the matching rules from the bundled defaults (`src/server/defaultRules.js`) — rules live in the database `rules` table now, not a file. ⚠️ In its current form `--reset-rules` also clears the whole `/app/data` volume, including uploaded images; omit it for normal deploys (tracked in [#194](https://github.com/plthomasva/wishboard/issues/194)).
+Add `--user <name>` if your Pi login isn't `pi`, and `--dry-run` to preview the exact SSH/scp steps without executing them. `--reset-rules` re-seeds the matching rules from the bundled defaults (`src/server/defaultRules.js`) — rules live in the database `rules` table now, not a file. It clears only the DB `rules` table and preserves uploaded images, users, and wishes (this was corrected in [#194](https://github.com/plthomasva/wishboard/issues/194); it previously wiped the whole `/app/data` volume).
 
 ### Networking Modes
 
@@ -85,9 +85,11 @@ If you need to inject special environment variables (like changing the default a
    ```
 3. Add your custom variables:
    ```env
-   # Pre-populated by deployment script
-   VITE_WISHBOARD_DOMAIN=wishboard.example.com
-   VITE_WISHBOARD_AP_IP=10.42.0.1
+   # Pre-populated by deployment script. WISHBOARD_DOMAIN / WISHBOARD_AP_IP are
+   # read at runtime by the server and served via /api/config to the poster and
+   # the kiosk Wi-Fi popup (a single image works on any domain). See #196/#197.
+   WISHBOARD_DOMAIN=wishboard.example.com
+   WISHBOARD_AP_IP=10.42.0.1:3000
    CORS_ALLOWED_ORIGINS=https://wishboard.example.com
 
    # Add your custom overrides here:
