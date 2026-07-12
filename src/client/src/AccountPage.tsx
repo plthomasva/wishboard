@@ -338,6 +338,9 @@ export default function AccountPage() {
 
   useEffect(() => {
     loadWishes();
+  }, [user]);
+
+  useEffect(() => {
     loadHiddenWishes();
   }, [user, excludedIds]);
 
