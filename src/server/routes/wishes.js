@@ -407,6 +407,54 @@ router.get('/random', async (req, res) => {
   );
 });
 
+/**
+ * Parse a comma-separated list of IDs from a query parameter that may be a
+ * string or an array of strings (express can produce either).
+ * Trims, deduplicates, and caps at 200 entries.
+ * @param {string | string[] | undefined} raw
+ * @returns {string[]}
+ */
+function parseQueryIds(raw) {
+  let str = '';
+  if (typeof raw === 'string') {
+    str = raw;
+  } else if (Array.isArray(raw)) {
+    str = raw.map(String).join(',');
+  }
+  return str
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean)
+    .slice(0, 200);
+}
+
+/**
+ * Append exclusion filter clauses to the SQL query.
+ * @param {object} params
+ * @param {string} params.sql
+ * @param {any[]} params.args
+ * @param {object|null} params.searcher
+ * @param {string | string[] | undefined} params.excludeQuery
+ * @returns {{ sql: string; args: any[] }}
+ */
+function applyExclusionFilter({ sql, args, searcher, excludeQuery }) {
+  let updatedSql = sql;
+  const updatedArgs = [...args];
+  if (searcher) {
+    updatedSql +=
+      ' AND NOT EXISTS (SELECT 1 FROM wish_exclusions x WHERE x.wish_id = w.id AND x.user_id = ?)';
+    updatedArgs.push(searcher.id);
+  } else {
+    const excludeIds = parseQueryIds(excludeQuery);
+    if (excludeIds.length > 0) {
+      const placeholders = excludeIds.map(() => '?').join(', ');
+      updatedSql += ` AND w.id NOT IN (${placeholders})`;
+      updatedArgs.push(...excludeIds);
+    }
+  }
+  return { sql: updatedSql, args: updatedArgs };
+}
+
 router.get('/', async (req, res) => {
   const searcher = await getRequestUser(req);
   const query = (req.query.q || '').trim();
@@ -426,35 +474,32 @@ router.get('/', async (req, res) => {
 
   let sql =
     'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1)';
-  const args = [];
+  let args = [];
 
   if (query) {
     sql += ' AND w.content LIKE ?';
     args.push(`%${query}%`);
   }
 
-  if (searcher) {
-    sql +=
-      ' AND NOT EXISTS (SELECT 1 FROM wish_exclusions x WHERE x.wish_id = w.id AND x.user_id = ?)';
-    args.push(searcher.id);
-  } else if (req.query.exclude) {
-    let excludeRaw = '';
-    if (typeof req.query.exclude === 'string') {
-      excludeRaw = req.query.exclude;
-    } else if (Array.isArray(req.query.exclude)) {
-      excludeRaw = req.query.exclude.map(String).join(',');
+  if (req.query.ids) {
+    const filterIds = parseQueryIds(req.query.ids);
+    if (filterIds.length > 0) {
+      const placeholders = filterIds.map(() => '?').join(', ');
+      sql += ` AND w.id IN (${placeholders})`;
+      args.push(...filterIds);
     }
-    const excludeIds = excludeRaw
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean)
-      .slice(0, 200);
+  }
 
-    if (excludeIds.length > 0) {
-      const placeholders = excludeIds.map(() => '?').join(', ');
-      sql += ` AND w.id NOT IN (${placeholders})`;
-      args.push(...excludeIds);
-    }
+  const includeExcluded =
+    req.query.include_excluded === '1' || req.query.include_excluded === 'true';
+
+  if (!includeExcluded) {
+    ({ sql, args } = applyExclusionFilter({
+      sql,
+      args,
+      searcher,
+      excludeQuery: req.query.exclude,
+    }));
   }
 
   sql += ' ORDER BY w.created_at DESC LIMIT 50';
