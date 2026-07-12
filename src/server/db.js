@@ -130,6 +130,15 @@ await db.executeMultiple(`
     target_attribute TEXT NOT NULL,
     target_value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS wish_exclusions (
+    user_id TEXT NOT NULL,
+    wish_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (user_id, wish_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (wish_id) REFERENCES wishes(id) ON DELETE CASCADE
+  );
 `);
 
 const ensureColumn = async (table, column, type) => {

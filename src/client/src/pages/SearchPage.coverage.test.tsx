@@ -18,10 +18,14 @@ describe('SearchPage Coverage', () => {
 
   it('opens and closes SendWishmailModal', async () => {
     vi.mocked(AuthContext.useAuth).mockReturnValue({ user: null } as any);
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [{ id: 'w1', content: 'Wish content', wishmail_enabled: true }],
+    mockFetch.mockImplementation(async (url) => {
+      if (typeof url === 'string' && url.includes('/exclusions/list')) {
+        return { ok: true, json: async () => [] };
+      }
+      return {
+        ok: true,
+        json: async () => [{ id: 'w1', content: 'Wish content', wishmail_enabled: true }],
+      };
     });
 
     render(<SearchPage />);
@@ -191,9 +195,14 @@ describe('SearchPage Coverage', () => {
       token: 'fake-token',
     } as unknown as ReturnType<typeof AuthContext.useAuth>);
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }],
+    mockFetch.mockImplementation(async (url) => {
+      if (typeof url === 'string' && url.includes('/exclusions/list')) {
+        return { ok: true, json: async () => [] };
+      }
+      return {
+        ok: true,
+        json: async () => [{ id: 'w1', content: 'Test Wish', wishmail_enabled: false }],
+      };
     });
 
     vi.spyOn(globalThis, 'confirm').mockReturnValue(false);

@@ -141,4 +141,102 @@ describe('Wishes: anonymous and authenticated flows', () => {
     const bad = await request(app).post('/api/wishes/notfound/flag');
     expect(bad.status).toBe(404);
   });
+
+  it('allows excluding and un-excluding a wish for an authenticated user', async () => {
+    // Register and login
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: 'user1', passphrase: 'pass' })
+      .set('Accept', 'application/json');
+    const login = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'user1', passphrase: 'pass' })
+      .set('Accept', 'application/json');
+    const token = login.body.token;
+
+    // Create a wish
+    const create = await request(app).post('/api/wishes').send({ content: 'Wish to hide' });
+    const id = create.body.id;
+
+    // Exclude the wish
+    const exclude = await request(app)
+      .post(`/api/wishes/${id}/exclude`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(exclude.status).toBe(200);
+
+    // List exclusions
+    const list = await request(app)
+      .get('/api/wishes/exclusions/list')
+      .set('Authorization', `Bearer ${token}`);
+    expect(list.status).toBe(200);
+    expect(list.body).toContain(id);
+
+    // Search results should filter it out
+    const searchBefore = await request(app)
+      .get('/api/wishes')
+      .set('Authorization', `Bearer ${token}`);
+    expect(searchBefore.body.some((w) => w.id === id)).toBe(false);
+
+    // Un-exclude
+    const unexclude = await request(app)
+      .delete(`/api/wishes/${id}/exclude`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(unexclude.status).toBe(200);
+
+    // Search results should show it again
+    const searchAfter = await request(app)
+      .get('/api/wishes')
+      .set('Authorization', `Bearer ${token}`);
+    expect(searchAfter.body.some((w) => w.id === id)).toBe(true);
+  });
+
+  it('filters out exclusions for anonymous users using the exclude query parameter', async () => {
+    const create1 = await request(app).post('/api/wishes').send({ content: 'w1' });
+    const create2 = await request(app).post('/api/wishes').send({ content: 'w2' });
+    const id1 = create1.body.id;
+    const id2 = create2.body.id;
+
+    // Default search shows both
+    const searchAll = await request(app).get('/api/wishes');
+    expect(searchAll.body.some((w) => w.id === id1)).toBe(true);
+    expect(searchAll.body.some((w) => w.id === id2)).toBe(true);
+
+    // Exclude w1
+    const searchExcl = await request(app).get('/api/wishes').query({ exclude: id1 });
+    expect(searchExcl.body.some((w) => w.id === id1)).toBe(false);
+    expect(searchExcl.body.some((w) => w.id === id2)).toBe(true);
+  });
+
+  it('supports bulk importing exclusions', async () => {
+    // Register and login
+    await request(app)
+      .post('/api/users/register')
+      .send({ username: 'user2', passphrase: 'pass' })
+      .set('Accept', 'application/json');
+    const login = await request(app)
+      .post('/api/users/login')
+      .send({ username: 'user2', passphrase: 'pass' })
+      .set('Accept', 'application/json');
+    const token = login.body.token;
+
+    // Create 3 wishes
+    const c1 = await request(app).post('/api/wishes').send({ content: 'w1' });
+    const c2 = await request(app).post('/api/wishes').send({ content: 'w2' });
+    await request(app).post('/api/wishes').send({ content: 'w3' });
+
+    // Bulk import exclusions for w1 and w2
+    const importRes = await request(app)
+      .post('/api/wishes/exclusions/import')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ids: [c1.body.id, c2.body.id] });
+    expect(importRes.status).toBe(200);
+
+    // List exclusions
+    const list = await request(app)
+      .get('/api/wishes/exclusions/list')
+      .set('Authorization', `Bearer ${token}`);
+    expect(list.body).toHaveLength(2);
+    expect(list.body).toContain(c1.body.id);
+    expect(list.body).toContain(c2.body.id);
+  });
 });

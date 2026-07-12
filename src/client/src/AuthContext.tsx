@@ -50,6 +50,29 @@ const mapToAuthUser = (data: any): AuthUser => ({
   is_active: data.is_active === undefined ? true : Boolean(data.is_active),
 });
 
+const migrateLocalStorageExclusions = async (token: string) => {
+  try {
+    const raw = localStorage.getItem('wishboard.excludedWishes');
+    if (!raw) return;
+    const ids = JSON.parse(raw);
+    if (Array.isArray(ids) && ids.length > 0) {
+      const response = await fetch('/api/wishes/exclusions/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ids }),
+      });
+      if (response.ok) {
+        localStorage.removeItem('wishboard.excludedWishes');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to migrate local storage exclusions:', err);
+  }
+};
+
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(storageKey)); // NOSONAR
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -96,6 +119,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     setToken(data.token);
     localStorage.setItem(storageKey, data.token); // NOSONAR
     setUser(mapToAuthUser(data));
+    await migrateLocalStorageExclusions(data.token);
     return { success: true, role: data.role };
   };
 
@@ -128,6 +152,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     setToken(data.token);
     localStorage.setItem(storageKey, data.token); // NOSONAR
     setUser(mapToAuthUser(data));
+    await migrateLocalStorageExclusions(data.token);
     return { success: true, secret: data.secret, role: data.role };
   };
 

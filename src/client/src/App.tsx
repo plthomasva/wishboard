@@ -199,8 +199,25 @@ function AppContent() {
                   onClick={() => navigate('account')}
                   aria-label="My Account"
                 >
-                  <span aria-hidden="true" style={{ marginRight: '6px' }}>
-                    👤
+                  <span
+                    aria-hidden="true"
+                    style={{ marginRight: '6px', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    {/* 👤 */}
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ display: 'block' }}
+                    >
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
                   </span>
                   {user.username}
                 </button>
@@ -221,8 +238,25 @@ function AppContent() {
                   }}
                   aria-label="Guest Account"
                 >
-                  <span aria-hidden="true" style={{ marginRight: '6px' }}>
-                    👤
+                  <span
+                    aria-hidden="true"
+                    style={{ marginRight: '6px', display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    {/* 👤 */}
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ display: 'block' }}
+                    >
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
                   </span>{' '}
                   Guest
                 </div>
@@ -269,11 +303,85 @@ function AppContent() {
                 onClick={() => navigate(item.id as PageId)}
               >
                 <div className="mobile-tab-icon">
-                  {item.id === 'home' && '🏠'}
-                  {item.id === 'enter' && '✨'}
-                  {item.id === 'search' && '🔍'}
-                  {item.id === 'display' && '📺'}
-                  {item.id === 'account' && '👤'}
+                  {item.id === 'home' && (
+                    /* 🏠 */
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                      <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                  )}
+                  {item.id === 'enter' && (
+                    /* ✨ */
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9Z" />
+                    </svg>
+                  )}
+                  {item.id === 'search' && (
+                    /* 🔍 */
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                  )}
+                  {item.id === 'display' && (
+                    /* 📺 */
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+                      <polyline points="17 2 12 7 7 2" />
+                    </svg>
+                  )}
+                  {item.id === 'account' && (
+                    /* 👤 */
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  )}
                 </div>
                 <span className="mobile-tab-label">{item.label}</span>
               </button>
@@ -283,7 +391,23 @@ function AppContent() {
             className="mobile-tab-button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            <div className="mobile-tab-icon">☰</div>
+            <div className="mobile-tab-icon">
+              {/* ☰ */}
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </div>
             <span className="mobile-tab-label">More</span>
           </button>
         </nav>

@@ -29,16 +29,12 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 - **[#199](https://github.com/plthomasva/wishboard/issues/199)** — Matching over-matches: a "straight man" user was shown a "lesbian woman" wish. Tighten the acceptance/expansion rules and add regression tests for orientation/gender pairings.
 - **[#196](https://github.com/plthomasva/wishboard/issues/196)** — Event poster shows the default domain (`wishboard.painless-computing.com`) instead of the runtime domain (e.g. on `demo.wishboards.app`).
 - **[#197](https://github.com/plthomasva/wishboard/issues/197)** — Kiosk Wi-Fi join popup shows `http://<local-ip>:3000` instead of the https DNS-masqueraded domain.
-- **[#198](https://github.com/plthomasva/wishboard/issues/198)** — Kiosk emoji decorations (e.g. 👤) render as blank rectangles — missing emoji font in the kiosk browser.
 - **[#194](https://github.com/plthomasva/wishboard/issues/194)** — Kiosk `--reset-rules` does `rm -rf` on the whole `/app/data` volume (deletes uploaded images) and no longer resets the DB-stored rules; it should clear the DB `rules` table instead. (Related: `build-kiosk.sh`'s legacy `wishboard_data → ./data` copy runs on every deploy and clobbers live data — fixed alongside #193.)
 
 ### Features & Enhancements
 
-- **[#200](https://github.com/plthomasva/wishboard/issues/200)** — Let a user exclude a wish from their future searches (not-interested / hide). Server-side per-user for logged-in users; open design question for anonymous scoping (localStorage vs anon-session).
 - **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
-- **[#195](https://github.com/plthomasva/wishboard/issues/195)** — Add a `wishboard auth token` CLI helper to mint/print an admin bearer token for scripting/verification.
 - **[#206](https://github.com/plthomasva/wishboard/issues/206)** — Expand the default role rules (power-exchange, activity, pet-play, rope, etc.) with cross-match/expansion, incl. switch/versatile modeling. Follow-up to the initial role defaults added with #199.
-- **[#207](https://github.com/plthomasva/wishboard/issues/207)** — Optional identity flags (SVG) on pills: canonical orientation/gender flags first, then a sparse curated set of role flags where one exists. Presentational only; render as SVG (see #198), admin-editable mapping.
 
 ## Infrastructure & DevOps
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../AuthContext';
 import WishCard from '../components/WishCard';
 import useFlagWish from '../hooks/useFlagWish';
@@ -7,6 +7,7 @@ import AttributeInput from '../components/AttributeInput';
 import SendWishmailModal from '../components/SendWishmailModal';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useExcludedWishes } from '../hooks/useExcludedWishes';
 
 interface Wish {
   id: string;
@@ -17,10 +18,81 @@ interface Wish {
   image_id?: string;
 }
 
+interface SearchParamInput {
+  query: string;
+  user: any;
+  useProfileAttributes: boolean;
+  manualGenders: string;
+  manualOrientations: string;
+  manualRoles: string;
+  excludedIds: string[];
+}
+
+function applyCompatibilityParams(
+  params: URLSearchParams,
+  user: any,
+  useProfileAttributes: boolean,
+  manualGenders: string,
+  manualOrientations: string,
+  manualRoles: string
+) {
+  if (user) {
+    if (!useProfileAttributes) {
+      params.set('ignore_attributes', '1');
+    }
+    return;
+  }
+
+  const gTrim = manualGenders.trim();
+  const oTrim = manualOrientations.trim();
+  const rTrim = manualRoles.trim();
+
+  if (gTrim) params.set('sg', gTrim);
+  if (oTrim) params.set('so', oTrim);
+  if (rTrim) params.set('sr', rTrim);
+
+  if (!gTrim && !oTrim && !rTrim) {
+    params.set('ignore_attributes', '1');
+  }
+}
+
+function buildSearchParams({
+  query,
+  user,
+  useProfileAttributes,
+  manualGenders,
+  manualOrientations,
+  manualRoles,
+  excludedIds,
+}: Readonly<SearchParamInput>): URLSearchParams {
+  const params = new URLSearchParams();
+  const qTrim = query.trim();
+  if (qTrim) {
+    params.set('q', qTrim);
+  }
+
+  applyCompatibilityParams(
+    params,
+    user,
+    useProfileAttributes,
+    manualGenders,
+    manualOrientations,
+    manualRoles
+  );
+
+  if (!user && excludedIds.length > 0) {
+    params.set('exclude', excludedIds.join(','));
+  }
+
+  return params;
+}
+
 export default function SearchPage() {
   const { user, token } = useAuth();
+  const { excludedIds, excludeWish, unexcludeWish } = useExcludedWishes();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Wish[]>([]);
+  const [justExcludedId, setJustExcludedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [useProfileAttributes, setUseProfileAttributes] = useState<boolean>(Boolean(user));
   const [manualGenders, setManualGenders] = useState('');
@@ -30,11 +102,11 @@ export default function SearchPage() {
   const [lastSearchParams, setLastSearchParams] = useState<string | null>(null);
   const { socket } = useWebSocket();
 
-  const prependIfNotPresent = React.useCallback((newWish: Wish) => {
+  const prependIfNotPresent = useCallback((newWish: Wish) => {
     setResults((prev) => (prev.some((w) => w.id === newWish.id) ? prev : [newWish, ...prev]));
   }, []);
 
-  const handleNewWish = React.useCallback(
+  const handleNewWish = useCallback(
     async (newWish: Wish) => {
       if (lastSearchParams === null) return;
       try {
@@ -51,7 +123,7 @@ export default function SearchPage() {
     [lastSearchParams, prependIfNotPresent]
   );
 
-  const handleDeletedWish = React.useCallback((deletedWishId: string) => {
+  const handleDeletedWish = useCallback((deletedWishId: string) => {
     setResults((prev) => prev.filter((w) => w.id !== deletedWishId));
   }, []);
 
@@ -75,29 +147,15 @@ export default function SearchPage() {
     event.preventDefault();
     setError(null);
 
-    const params = new URLSearchParams();
-    if (query.trim()) {
-      params.set('q', query.trim());
-    }
-
-    if (user) {
-      if (!useProfileAttributes) {
-        params.set('ignore_attributes', '1');
-      }
-    } else {
-      if (manualGenders.trim()) {
-        params.set('sg', manualGenders.trim());
-      }
-      if (manualOrientations.trim()) {
-        params.set('so', manualOrientations.trim());
-      }
-      if (manualRoles.trim()) {
-        params.set('sr', manualRoles.trim());
-      }
-      if (!manualGenders.trim() && !manualOrientations.trim() && !manualRoles.trim()) {
-        params.set('ignore_attributes', '1');
-      }
-    }
+    const params = buildSearchParams({
+      query,
+      user,
+      useProfileAttributes,
+      manualGenders,
+      manualOrientations,
+      manualRoles,
+      excludedIds,
+    });
 
     const paramsStr = params.toString();
     setLastSearchParams(paramsStr);
@@ -116,7 +174,7 @@ export default function SearchPage() {
     setResults((prev) => prev.filter((wish) => wish.id !== id))
   );
 
-  const handleAdminDelete = React.useCallback(
+  const handleAdminDelete = useCallback(
     async (id: string) => {
       if (!token) return;
       if (!globalThis.confirm('Are you sure you want to delete this wish as an admin?')) return;
@@ -131,19 +189,45 @@ export default function SearchPage() {
           globalThis.alert('Failed to delete wish.');
         }
       } catch (err) {
-        console.error('Error deleting wish:', err);
+        console.error(err);
         globalThis.alert('Error deleting wish.');
       }
     },
     [token]
   );
 
+  const handleExclude = useCallback(
+    (id: string) => {
+      excludeWish(id);
+      setResults((prev) => prev.filter((w) => w.id !== id));
+      setJustExcludedId(id);
+      setTimeout(() => {
+        setJustExcludedId((current) => (current === id ? null : current));
+      }, 5000);
+    },
+    [excludeWish]
+  );
+
+  const handleUndoExclude = useCallback(() => {
+    if (justExcludedId) {
+      unexcludeWish(justExcludedId);
+      if (lastSearchParams !== null) {
+        fetch(`/api/wishes?${lastSearchParams}`)
+          .then((res) => (res.ok ? res.json() : []))
+          .then((data) => setResults(data))
+          .catch((err) => console.error('Failed to restore search results after undo:', err));
+      }
+      setJustExcludedId(null);
+    }
+  }, [justExcludedId, unexcludeWish, lastSearchParams]);
+
   return (
     <section>
       <h1 style={{ maxWidth: '800px', margin: '0 auto' }}>Search Wishes</h1>
+
       <form
-        className="form-card"
         onSubmit={search}
+        className="form-card"
         style={{ maxWidth: '800px', margin: '18px auto 24px' }}
       >
         <label>
@@ -151,7 +235,7 @@ export default function SearchPage() {
           <input
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search existing wishes"
           />
         </label>
@@ -171,74 +255,98 @@ export default function SearchPage() {
               <input
                 type="checkbox"
                 checked={useProfileAttributes}
-                onChange={(event) => setUseProfileAttributes(event.target.checked)}
+                onChange={(e) => setUseProfileAttributes(e.target.checked)}
               />{' '}
               Filter results by my profile attributes
             </label>
             <InfoToggle>
-              When checked, we use your identity attributes to show only wishes from compatible
-              creators. Uncheck this if you just want to do a broad keyword search across all
-              wishes!
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#556275' }}>
+                When checked, only wishes compatible with your saved gender, orientations, and roles
+                will be displayed.
+              </p>
             </InfoToggle>
           </div>
         ) : (
-          <fieldset className="filter-fieldset">
-            <div className="label-with-info" style={{ marginBottom: '12px' }}>
-              <legend style={{ fontWeight: 'bold' }}>Temporary search attributes</legend>
+          <div style={{ marginTop: '16px' }}>
+            <div className="label-with-info" style={{ marginBottom: '8px' }}>
+              <label htmlFor="search-genders" style={{ fontWeight: 'bold' }}>
+                Your Gender(s)
+              </label>
               <InfoToggle>
-                These let you perform a one-off compatibility search as a specific identity. Leaving
-                these blank will do a broad keyword-only search across all wishes!
+                <p style={{ margin: 0, fontSize: '0.9rem', color: '#556275' }}>
+                  Select or type attributes to filter compatible wishes. Commas separate multiple
+                  options.
+                </p>
               </InfoToggle>
             </div>
-            <label>
-              Searcher genders{' '}
-              <AttributeInput
-                value={manualGenders}
-                onChange={setManualGenders}
-                placeholder="e.g. woman, cisgender man"
-                suggestions={SUGGESTED_GENDERS}
-              />
+            <AttributeInput
+              id="search-genders"
+              value={manualGenders}
+              onChange={setManualGenders}
+              placeholder="e.g. woman, cisgender man"
+              suggestions={SUGGESTED_GENDERS}
+            />
+
+            <label
+              htmlFor="search-orientations"
+              style={{ fontWeight: 'bold', marginTop: '16px', display: 'block' }}
+            >
+              Your Orientation(s)
             </label>
-            <label>
-              Searcher orientations{' '}
-              <AttributeInput
-                value={manualOrientations}
-                onChange={setManualOrientations}
-                placeholder="e.g. lesbian, bisexual"
-                suggestions={SUGGESTED_ORIENTATIONS}
-              />
+            <AttributeInput
+              id="search-orientations"
+              value={manualOrientations}
+              onChange={setManualOrientations}
+              placeholder="e.g. lesbian, bisexual"
+              suggestions={SUGGESTED_ORIENTATIONS}
+            />
+
+            <label
+              htmlFor="search-roles"
+              style={{ fontWeight: 'bold', marginTop: '16px', display: 'block' }}
+            >
+              Your Role(s)
             </label>
-            <label>
-              Searcher roles{' '}
-              <AttributeInput
-                value={manualRoles}
-                onChange={setManualRoles}
-                placeholder="e.g. top, bottom"
-                suggestions={SUGGESTED_ROLES}
-              />
-            </label>
-            <p className="note-box">Leave these blank for keyword-only search across all wishes.</p>
-          </fieldset>
+            <AttributeInput
+              id="search-roles"
+              value={manualRoles}
+              onChange={setManualRoles}
+              placeholder="e.g. top, bottom"
+              suggestions={SUGGESTED_ROLES}
+            />
+          </div>
         )}
+
+        {error && <div className="error-message">{error}</div>}
 
         <button type="submit">Search</button>
       </form>
 
-      {error && <div className="message error">{error}</div>}
-
       <div className="wish-grid">
-        {results.map((wish) => (
-          <WishCard
-            key={wish.id}
-            wish={wish}
-            onFlag={handleFlag}
-            onSendMail={setMailWishId}
-            onAdminDelete={user?.role === 'admin' ? handleAdminDelete : undefined}
-          />
-        ))}
+        {results
+          .filter((wish) => !excludedIds.includes(wish.id))
+          .map((wish) => (
+            <WishCard
+              key={wish.id}
+              wish={wish}
+              onFlag={handleFlag}
+              onSendMail={setMailWishId}
+              onAdminDelete={user?.role === 'admin' ? handleAdminDelete : undefined}
+              onExclude={handleExclude}
+            />
+          ))}
       </div>
 
       {mailWishId && <SendWishmailModal wishId={mailWishId} onClose={() => setMailWishId(null)} />}
+
+      {justExcludedId && (
+        <output className="toast-notification">
+          Wish hidden.{' '}
+          <button type="button" className="toast-undo-btn" onClick={handleUndoExclude}>
+            Undo
+          </button>
+        </output>
+      )}
     </section>
   );
 }
