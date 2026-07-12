@@ -300,11 +300,12 @@ describe('AccountPage', () => {
 
     expect(await screen.findByText('test wish')).toBeInTheDocument();
 
-    // Check Edit link
-    const editLink = screen.getByRole('link', { name: 'Edit Wish' });
-    expect(editLink).toHaveAttribute('href', '#manage-wish?id=wish-1');
+    // Check Edit button
+    const editButton = screen.getByRole('button', { name: 'Edit Wish' });
+    fireEvent.click(editButton);
+    expect(globalThis.location.hash).toBe('#manage-wish?id=wish-1');
 
-    const deleteButton = screen.getByRole('button', { name: 'Delete' });
+    const deleteButton = screen.getByRole('button', { name: 'Delete Wish' });
     fireEvent.click(deleteButton);
 
     await waitFor(() => {
@@ -390,7 +391,7 @@ describe('AccountPage', () => {
     });
 
     render(<AccountPage />);
-    const deleteButton = await screen.findByRole('button', { name: 'Delete' });
+    const deleteButton = await screen.findByRole('button', { name: 'Delete Wish' });
     fireEvent.click(deleteButton);
     expect(await screen.findByText('Delete failed')).toBeInTheDocument();
   });

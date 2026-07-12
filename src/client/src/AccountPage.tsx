@@ -6,6 +6,7 @@ import { generatePassphrase } from './passphrase.js';
 import InfoToggle from './components/InfoToggle';
 import AttributeInput from './components/AttributeInput';
 import WishCard from './components/WishCard';
+import PassphraseInput from './components/PassphraseInput';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from './constants';
 import { QRCodeSVG } from 'qrcode.react';
 import ConfirmDeleteAccountModal from './components/ConfirmDeleteAccountModal';
@@ -108,15 +109,15 @@ function ClaimWishForm({
             placeholder="e.g. abc123xy"
           />
         </label>
-        <label>
-          Passphrase{' '}
-          <input
-            type="text"
+        <div style={{ display: 'grid', gap: '8px' }}>
+          <label htmlFor="claim-passphrase">Passphrase</label>
+          <PassphraseInput
+            id="claim-passphrase"
             value={claimSecret}
-            onChange={(e) => setClaimSecret(e.target.value)}
+            onChange={setClaimSecret}
             placeholder="e.g. CorrectHorseBatteryStaple"
           />
-        </label>
+        </div>
         <button type="submit" className="secondary-button">
           Claim Wish
         </button>
@@ -181,19 +182,19 @@ function UnauthenticatedAccountView({
             placeholder="Choose a username"
           />
         </label>
-        <label>
-          Passphrase{' '}
-          <input
-            type="text"
+        <div style={{ display: 'grid', gap: '8px' }}>
+          <label htmlFor="account-passphrase">Passphrase</label>
+          <PassphraseInput
+            id="account-passphrase"
             value={passphrase}
-            onChange={(event) => setPassphrase(event.target.value)}
+            onChange={setPassphrase}
             placeholder={
               effectiveMode === 'register'
                 ? 'Leave blank to auto-generate when registering'
                 : 'Enter your passphrase'
             }
           />
-        </label>
+        </div>
         {effectiveMode === 'register' && (
           <>
             <div className="label-with-info" style={{ marginTop: '12px', marginBottom: '8px' }}>
@@ -274,6 +275,7 @@ export default function AccountPage() {
       is_active: boolean;
       image_id?: string;
       image_url?: string;
+      unread_wishmail_count?: number;
     }>
   >([]);
   const [hiddenWishes, setHiddenWishes] = useState<Array<any>>([]);
@@ -776,9 +778,20 @@ export default function AccountPage() {
       ) : (
         <div className="wish-grid">
           {wishes.map((wish) => (
-            <div key={wish.id} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div key={wish.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ opacity: wish.is_active ? 1 : 0.6 }}>
-                <WishCard wish={wish} showFlag={false} />
+                <WishCard
+                  wish={wish}
+                  showFlag={false}
+                  onEdit={(id) => {
+                    globalThis.location.hash = `#manage-wish?id=${id}`;
+                  }}
+                  onDelete={deleteWish}
+                  onViewWishmail={(id) => {
+                    globalThis.location.hash = `#wishmail-dashboard?id=${id}`;
+                  }}
+                  unreadWishmailCount={wish.unread_wishmail_count}
+                />
                 {!wish.is_active && (
                   <div
                     style={{
@@ -791,42 +804,6 @@ export default function AccountPage() {
                     Inactive
                   </div>
                 )}
-              </div>
-              <div
-                className="wish-actions"
-                style={{ marginTop: 0, justifyContent: 'flex-start', gap: '12px' }}
-              >
-                <a
-                  href={`#wishmail-dashboard?id=${wish.id}`}
-                  className="button"
-                  style={{
-                    textDecoration: 'none',
-                    background: '#3b82f6',
-                    color: 'white',
-                    padding: '10px 16px',
-                    borderRadius: '14px',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  View Wishmail
-                </a>
-                <a
-                  href={`#manage-wish?id=${wish.id}`}
-                  className="button"
-                  style={{
-                    textDecoration: 'none',
-                    background: '#1a73e8',
-                    color: 'white',
-                    padding: '10px 16px',
-                    borderRadius: '14px',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  Edit Wish
-                </a>
-                <button className="secondary-button" onClick={() => deleteWish(wish.id)}>
-                  Delete
-                </button>
               </div>
             </div>
           ))}

@@ -74,6 +74,10 @@ interface WishCardProps {
   onExclude?: (id: string) => void;
   onUnexclude?: (id: string) => void;
   isExcluded?: boolean;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onViewWishmail?: (id: string) => void;
+  unreadWishmailCount?: number;
 }
 
 function ExcludeToggleButton({
@@ -134,11 +138,17 @@ export default function WishCard({
   onExclude,
   onUnexclude,
   isExcluded = false,
+  onEdit,
+  onDelete,
+  onViewWishmail,
+  unreadWishmailCount,
 }: Readonly<WishCardProps>) {
   const hasBottomActions = Boolean(
-    (wish.contacts && wish.contacts.length > 0) || wish.wishmail_enabled
+    (wish.contacts && wish.contacts.length > 0) || wish.wishmail_enabled || onViewWishmail
   );
-  const showTopActions = Boolean((showFlag && onFlag) || onExclude || onAdminDelete);
+  const showTopActions = Boolean(
+    (showFlag && onFlag) || onExclude || onAdminDelete || onEdit || onDelete
+  );
 
   // Use lower max font size for the card, and minimum 10px so we have enough room to scale down
   const { containerRef, contentRef, isOverflowing } = useTextFit(
@@ -199,6 +209,46 @@ export default function WishCard({
                 onUnexclude={onUnexclude}
               />
             )}
+            {onEdit && (
+              <button
+                type="button"
+                className="owner-edit-wish-btn"
+                onClick={() => onEdit(wish.id)}
+                title="Edit Wish"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z" />
+                </svg>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                className="owner-delete-wish-btn"
+                onClick={() => onDelete(wish.id)}
+                title="Delete Wish"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+            )}
             {onAdminDelete && (
               <button
                 type="button"
@@ -256,16 +306,20 @@ export default function WishCard({
           </div>
         )}
 
-        {wish.wishmail_enabled && (
+        {(wish.wishmail_enabled || onViewWishmail) && (
           <button
             type="button"
             className="send-mail-icon-btn"
             onClick={(e) => {
               e.preventDefault();
-              if (onSendMail) onSendMail(wish.id);
+              if (onViewWishmail) {
+                onViewWishmail(wish.id);
+              } else if (onSendMail) {
+                onSendMail(wish.id);
+              }
             }}
-            title="Send Wishmail"
-            aria-label="Send Wishmail"
+            title={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
+            aria-label={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -281,6 +335,9 @@ export default function WishCard({
               <rect width="20" height="16" x="2" y="4" rx="2" />
               <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
             </svg>
+            {onViewWishmail && unreadWishmailCount !== undefined && unreadWishmailCount > 0 && (
+              <div className="mail-unread-dot" title={`${unreadWishmailCount} unread message(s)`} />
+            )}
           </button>
         )}
       </div>

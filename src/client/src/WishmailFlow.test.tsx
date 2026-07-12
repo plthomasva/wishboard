@@ -119,7 +119,7 @@ describe('Wishmail UI Flow', () => {
     fireEvent.click(accountButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('View Wishmail')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'View Wishmail' })).toBeInTheDocument();
     });
 
     // 4. Simulate receiving a wishmail (by injecting it into our fake backend)
@@ -129,7 +129,7 @@ describe('Wishmail UI Flow', () => {
     });
 
     // 5. Click View Wishmail
-    fireEvent.click(screen.getByText('View Wishmail'));
+    fireEvent.click(screen.getByRole('button', { name: 'View Wishmail' }));
 
     await waitFor(() => {
       expect(screen.getByText('Wishmail')).toBeInTheDocument();

@@ -51,9 +51,12 @@ describe('ManageWishPage Coverage', () => {
     await waitFor(() => expect(screen.getByText('Manage Your Wish')).toBeInTheDocument());
 
     // Enter secret
-    fireEvent.change(screen.getByPlaceholderText('Enter passphrase'), {
-      target: { value: 'mysecret' },
-    });
+    fireEvent.change(
+      screen.getByPlaceholderText('Change passphrase (leave blank to keep current)'),
+      {
+        target: { value: 'mysecret' },
+      }
+    );
 
     // Mock failure for update
     mockFetch.mockResolvedValueOnce({

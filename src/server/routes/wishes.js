@@ -646,7 +646,7 @@ const getAuthorizedWish = async (req, res) => {
 router.post('/:id/manage', async (req, res) => {
   const auth = await getAuthorizedWish(req, res);
   if (!auth) return;
-  const { user, id } = auth;
+  const { user, id, row } = auth;
   const { content, action } = req.body;
 
   if (action === 'delete') {
@@ -659,16 +659,27 @@ router.post('/:id/manage', async (req, res) => {
   }
 
   if (content?.trim()) {
-    const { contacts, wishmail_enabled } = req.body;
+    const { contacts, wishmail_enabled, new_passphrase } = req.body;
     const parsedContacts = Array.isArray(contacts) ? contacts : [];
     const wme = wishmail_enabled ? 1 : 0;
     const now = new Date().toISOString();
+
+    let secretHashToUpdate = row.secret_hash;
+    let newSecret = null;
+    if (row.secret_hash && new_passphrase?.trim()) {
+      const salt = createSalt();
+      const hash = hashPassphrase(new_passphrase.trim(), salt);
+      secretHashToUpdate = `${salt}:${hash}`;
+      newSecret = new_passphrase.trim();
+    }
+
     await db
       .prepare(
-        'UPDATE wishes SET content = ?, contacts = ?, wishmail_enabled = ?, updated_at = ? WHERE id = ?'
+        'UPDATE wishes SET content = ?, contacts = ?, wishmail_enabled = ?, secret_hash = ?, updated_at = ? WHERE id = ?'
       )
-      .run(content.trim(), JSON.stringify(parsedContacts), wme, now, id);
-    return res.json({ success: true });
+      .run(content.trim(), JSON.stringify(parsedContacts), wme, secretHashToUpdate, now, id);
+
+    return res.json({ success: true, newSecret });
   }
 
   res.status(400).json({ error: 'Invalid update payload.' });

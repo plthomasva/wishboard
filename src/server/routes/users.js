@@ -269,7 +269,7 @@ router.get('/me/wishes', async (req, res) => {
 
   const rows = await db
     .prepare(
-      'SELECT id, content, contacts, wishmail_enabled, creator_genders, creator_orientations, flagged, created_at, updated_at, is_active, image_id FROM wishes WHERE user_id = ? ORDER BY created_at DESC'
+      'SELECT id, content, contacts, wishmail_enabled, creator_genders, creator_orientations, flagged, created_at, updated_at, is_active, image_id, (SELECT COUNT(*) FROM wishmails wm WHERE wm.wish_id = wishes.id AND wm.read = 0) AS unread_wishmail_count FROM wishes WHERE user_id = ? ORDER BY created_at DESC'
     )
     .all(user.id);
 
@@ -281,6 +281,7 @@ router.get('/me/wishes', async (req, res) => {
     wishmail_enabled: Boolean(row.wishmail_enabled),
     is_active: Boolean(row.is_active),
     image_id: row.image_id,
+    unread_wishmail_count: Number(row.unread_wishmail_count || 0),
   }));
 
   res.json(formattedRows);

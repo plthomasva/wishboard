@@ -86,6 +86,7 @@ describe('ManageWishPage', () => {
             content: 'New content',
             contacts: [],
             wishmail_enabled: false,
+            new_passphrase: 'sec',
             action: 'update',
           }),
         })

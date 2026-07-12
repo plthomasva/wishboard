@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../AuthContext';
+import PassphraseInput from '../components/PassphraseInput';
 import MatchingRulesSection from '../components/admin/MatchingRulesSection';
 import FlaggedWishesSection from '../components/admin/FlaggedWishesSection';
 import SystemOverviewSection from '../components/admin/SystemOverviewSection';
@@ -162,14 +163,10 @@ export default function AdminPage() {
             Admin username{' '}
             <input value={username} onChange={(event) => setUsername(event.target.value)} />
           </label>
-          <label>
-            Admin passphrase{' '}
-            <input
-              type="password"
-              value={passphrase}
-              onChange={(event) => setPassphrase(event.target.value)}
-            />
-          </label>
+          <div style={{ display: 'grid', gap: '8px', marginBottom: '12px' }}>
+            <label htmlFor="admin-passphrase">Admin passphrase</label>
+            <PassphraseInput id="admin-passphrase" value={passphrase} onChange={setPassphrase} />
+          </div>
           <button type="submit">Login as Admin</button>
         </form>
       )}
