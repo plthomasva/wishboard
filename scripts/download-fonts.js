@@ -8,14 +8,6 @@ const __dirname = path.dirname(__filename);
 
 export const FONTS = [
   {
-    url: 'https://fonts.gstatic.com/s/kalam/v18/YA9dr0Wd4kDdMuhW.ttf',
-    dest: 'Kalam-Regular.ttf',
-  },
-  {
-    url: 'https://fonts.gstatic.com/s/kalam/v18/YA9Qr0Wd4kDdMtDqHQLL.ttf',
-    dest: 'Kalam-Bold.ttf',
-  },
-  {
     url: 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/fonts/NotoColorEmoji.ttf',
     dest: 'NotoColorEmoji.ttf',
   },

@@ -1,18 +1,4 @@
 @font-face {
-  font-family: 'Kalam';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/Kalam-Regular.ttf') format('truetype');
-}
-@font-face {
-  font-family: 'Kalam';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/Kalam-Bold.ttf') format('truetype');
-}
-@font-face {
   font-family: 'Noto Color Emoji';
   font-style: normal;
   font-weight: 400;
@@ -502,7 +488,7 @@ button:hover {
 }
 
 .wish-text {
-  font-family: 'Kalam', 'Architects Daughter', 'Georgia', serif;
+  font-family: Inter, system-ui, sans-serif;
   font-size: 1em;
   line-height: 1.4;
   color: #2c3e50;
