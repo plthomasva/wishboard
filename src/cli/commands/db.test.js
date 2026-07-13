@@ -1,7 +1,12 @@
 /** @vitest-environment node */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { resetPassword } from './db.js';
+import { promptPassphrase } from './auth.js';
 import db from '../../server/db.js';
+
+vi.mock('./auth.js', () => ({
+  promptPassphrase: vi.fn(),
+}));
 
 describe('reset-password script', () => {
   beforeEach(async () => {
@@ -109,5 +114,115 @@ describe('reset-password script', () => {
 
     expect(success).toBe(false);
     expect(errorOutput).toContain("Error: User 'non-existent-user' not found in the database.");
+  });
+
+  it('returns true and logs dryRun locally', async () => {
+    let output = '';
+    const success = await resetPassword(
+      'testuser',
+      'pass',
+      { dryRun: true },
+      (msg) => (output += msg + '\n'),
+      () => {}
+    );
+    expect(success).toBe(true);
+    expect(output).toContain("Would have reset password for 'testuser' locally.");
+  });
+
+  it('returns true and logs dryRun remotely', async () => {
+    let output = '';
+    const success = await resetPassword(
+      'testuser',
+      'pass',
+      { dryRun: true, url: 'http://remote' },
+      (msg) => (output += msg + '\n'),
+      () => {}
+    );
+    expect(success).toBe(true);
+    expect(output).toContain("Would have reset password for 'testuser' remotely at http://remote.");
+  });
+
+  describe('remote password reset', () => {
+    const origFetch = globalThis.fetch;
+    beforeEach(() => {
+      globalThis.fetch = vi.fn();
+    });
+    afterEach(() => {
+      globalThis.fetch = origFetch;
+      vi.clearAllMocks();
+    });
+
+    it('successfully resets remotely', async () => {
+      vi.mocked(promptPassphrase).mockResolvedValue('admin-pass');
+
+      // Mock login fetch
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'mock-token' }),
+      });
+      // Mock reset fetch
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ new_passphrase: 'new-remote-pass' }),
+      });
+
+      let output = '';
+      const success = await resetPassword(
+        'testuser',
+        'pass',
+        { url: 'http://remote', admin: 'admin' },
+        (msg) => (output += msg + '\n'),
+        () => {}
+      );
+
+      expect(success).toBe(true);
+      expect(promptPassphrase).toHaveBeenCalledWith('Enter passphrase for admin: ');
+      expect(output).toContain("Success! Passphrase for 'testuser' has been reset remotely.");
+      expect(output).toContain('New Passphrase: new-remote-pass');
+    });
+
+    it('handles remote login failure', async () => {
+      vi.mocked(promptPassphrase).mockResolvedValue('admin-pass');
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: false,
+        statusText: 'Unauthorized',
+      });
+
+      let errOutput = '';
+      const success = await resetPassword(
+        'testuser',
+        'pass',
+        { url: 'http://remote' },
+        () => {},
+        (msg) => (errOutput += msg + '\n')
+      );
+
+      expect(success).toBe(false);
+      expect(errOutput).toContain('Error logging in as admin: Unauthorized');
+    });
+
+    it('handles remote reset failure', async () => {
+      vi.mocked(promptPassphrase).mockResolvedValue('admin-pass');
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'mock-token' }),
+      });
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: false,
+        statusText: 'Bad Request',
+      });
+
+      let errOutput = '';
+      const success = await resetPassword(
+        'testuser',
+        'pass',
+        { url: 'http://remote' },
+        () => {},
+        (msg) => (errOutput += msg + '\n')
+      );
+
+      expect(success).toBe(false);
+      expect(errOutput).toContain('Error resetting password remotely: Bad Request');
+    });
   });
 });

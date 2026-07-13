@@ -89,6 +89,47 @@ describe('download-fonts', () => {
       await expect(promise).rejects.toThrow('Network Error');
       expect(fs.unlink).toHaveBeenCalledWith('test.ttf', expect.any(Function));
     });
+
+    it('follows redirects', async () => {
+      const redirectResponse = new EventEmitter();
+      redirectResponse.statusCode = 302;
+      redirectResponse.headers = { location: 'https://example.com/font-redirected.ttf' };
+
+      const mockResponse = new EventEmitter();
+      mockResponse.statusCode = 200;
+      mockResponse.pipe = vi.fn();
+
+      https.get.mockImplementation((url, cb) => {
+        if (url === 'https://example.com/font.ttf') {
+          cb(redirectResponse);
+        } else {
+          cb(mockResponse);
+          setTimeout(() => {
+            mockWriteStream.emit('finish');
+          }, 10);
+        }
+        return new EventEmitter();
+      });
+
+      const promise = downloadFile('https://example.com/font.ttf', 'test.ttf');
+      await expect(promise).resolves.toBeUndefined();
+      expect(https.get).toHaveBeenCalledTimes(2);
+      expect(fs.unlink).toHaveBeenCalledWith('test.ttf', expect.any(Function));
+    });
+
+    it('rejects on too many redirects', async () => {
+      const redirectResponse = new EventEmitter();
+      redirectResponse.statusCode = 302;
+      redirectResponse.headers = { location: 'https://example.com/font.ttf' };
+
+      https.get.mockImplementation((url, cb) => {
+        cb(redirectResponse);
+        return new EventEmitter();
+      });
+
+      const promise = downloadFile('https://example.com/font.ttf', 'test.ttf');
+      await expect(promise).rejects.toThrow('Too many redirects');
+    });
   });
 
   describe('main', () => {
@@ -109,6 +150,16 @@ describe('download-fonts', () => {
 
       expect(fs.mkdirSync).toHaveBeenCalledWith(targetDir, { recursive: true });
       expect(https.get).toHaveBeenCalledTimes(FONTS.length);
+    });
+
+    it('returns early when dryRun is true', async () => {
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      await downloadFonts({ dryRun: true });
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Would have downloaded fallback fonts to: ' + targetDir
+      );
+      expect(fs.mkdirSync).not.toHaveBeenCalled();
+      expect(https.get).not.toHaveBeenCalled();
     });
 
     it('logs warning and uses cached files when download fails but they exist', async () => {

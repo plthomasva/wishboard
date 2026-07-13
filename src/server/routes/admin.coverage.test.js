@@ -42,6 +42,36 @@ describe('Admin routes coverage', () => {
     expect(response.body.error).toBe('Wish not found.');
   });
 
+  it('handles CloudWatch errors during logs read in serverless mode', async () => {
+    const originalEnv = process.env.AWS_LAMBDA_FUNCTION_NAME;
+    process.env.AWS_LAMBDA_FUNCTION_NAME = 'test-function';
+
+    const mockCloudWatchLogsClient = {
+      send: vi.fn().mockRejectedValue(new Error('Mock CloudWatch Error')),
+    };
+
+    // We have to mock the client before it's imported in the route, but since it's lazy-loaded:
+    vi.doMock('@aws-sdk/client-cloudwatch-logs', () => ({
+      CloudWatchLogsClient: vi.fn(() => mockCloudWatchLogsClient),
+      GetLogEventsCommand: vi.fn(),
+    }));
+
+    const token = await loginAsAdmin();
+    const response = await request(app)
+      .get('/api/admin/logs')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(500);
+    expect(response.body.error).toContain('Failed to read CloudWatch logs');
+
+    if (originalEnv === undefined) {
+      delete process.env.AWS_LAMBDA_FUNCTION_NAME;
+    } else {
+      process.env.AWS_LAMBDA_FUNCTION_NAME = originalEnv;
+    }
+    vi.doUnmock('@aws-sdk/client-cloudwatch-logs');
+  });
+
   it('handles errors during reset-password and calls next(error)', async () => {
     const token = await loginAsAdmin();
 
@@ -66,6 +96,51 @@ describe('Admin routes coverage', () => {
     expect(response.status).toBe(500);
 
     spy.mockRestore();
+  });
+
+  describe('reset-password API', () => {
+    it('generates a new passphrase if omitted', async () => {
+      const token = await loginAsAdmin();
+      const registerRes = await request(app)
+        .post('/api/users/register')
+        .send({ username: 'reset-api-user-1', passphrase: 'pwd' });
+
+      const response = await request(app)
+        .post(`/api/admin/users/reset-api-user-1/reset-password`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.new_passphrase).toBeDefined();
+    });
+
+    it('uses provided passphrase if given', async () => {
+      const token = await loginAsAdmin();
+      const registerRes = await request(app)
+        .post('/api/users/register')
+        .send({ username: 'reset-api-user-2', passphrase: 'pwd' });
+
+      const response = await request(app)
+        .post(`/api/admin/users/reset-api-user-2/reset-password`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ passphrase: 'new-custom-pass' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.new_passphrase).toBe('new-custom-pass');
+    });
+
+    it('returns 404 for non-existent user', async () => {
+      const token = await loginAsAdmin();
+      const response = await request(app)
+        .post(`/api/admin/users/non-existent-id/reset-password`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({});
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('User not found.');
+    });
   });
 
   it('returns delete preview stats correctly', async () => {
@@ -154,6 +229,8 @@ describe('Admin routes coverage', () => {
     ].join('\n');
 
     fs.writeFileSync(testLogFile, logsContent, 'utf-8');
+    const futureTime = new Date(Date.now() + 1000000);
+    fs.utimesSync(testLogFile, futureTime, futureTime);
 
     try {
       const token = await loginAsAdmin();
@@ -171,6 +248,70 @@ describe('Admin routes coverage', () => {
       if (fs.existsSync(testLogFile)) {
         fs.unlinkSync(testLogFile);
       }
+    }
+  });
+
+  it('sorts multiple log files and reads the newest one', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const logsDir = path.join(process.cwd(), 'data/logs');
+
+    fs.mkdirSync(logsDir, { recursive: true });
+
+    const log1 = path.join(logsDir, 'test1.log');
+    const log2 = path.join(logsDir, 'test2.log');
+
+    fs.writeFileSync(log1, 'log1 content', 'utf-8');
+    fs.writeFileSync(log2, 'log2 content', 'utf-8');
+
+    // Ensure log2 is the newest file overall by giving it a future date
+    const futureTime = new Date(Date.now() + 1000000);
+    fs.utimesSync(log2, futureTime, futureTime);
+
+    // Make log2 newer
+    const now = new Date();
+    fs.utimesSync(log1, now, now);
+    const later = new Date(now.getTime() + 1000);
+    fs.utimesSync(log2, later, later);
+
+    try {
+      const token = await loginAsAdmin();
+      const response = await request(app)
+        .get('/api/admin/logs')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.logs).toContain('log2 content');
+    } finally {
+      if (fs.existsSync(log1)) fs.unlinkSync(log1);
+      if (fs.existsSync(log2)) fs.unlinkSync(log2);
+    }
+  });
+
+  it('handles fs errors during logs read', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const logsDir = path.join(process.cwd(), 'data/logs');
+    fs.mkdirSync(logsDir, { recursive: true });
+
+    const badLog = path.join(logsDir, 'bad.log');
+    // Make it a directory so readFileSync throws EISDIR
+    fs.mkdirSync(badLog, { recursive: true });
+
+    // Ensure badLog is the newest file
+    const futureTime = new Date(Date.now() + 1000000);
+    fs.utimesSync(badLog, futureTime, futureTime);
+
+    try {
+      const token = await loginAsAdmin();
+      const response = await request(app)
+        .get('/api/admin/logs')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe('Failed to read logs');
+    } finally {
+      fs.rmdirSync(badLog);
     }
   });
 

@@ -62,33 +62,35 @@ router.post('/wishes/clear-all-flags', requireAdmin, async (req, res) => {
   res.json({ success: true });
 });
 
-router.post('/users/:username/reset-password', requireAdmin, async (req, res) => {
+router.post('/users/:username/reset-password', requireAdmin, async (req, res, next) => {
   try {
     const { username } = req.params;
+    let passphrase = req.body?.passphrase;
+
     const user = await db.prepare('SELECT id FROM users WHERE username = ?').get(username);
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
     }
+    const id = user.id;
 
-    const providedPassphrase =
-      typeof req.body?.passphrase === 'string' ? req.body.passphrase.trim() : '';
-    const secret = providedPassphrase || generatePassphrase();
+    if (!passphrase) {
+      const { generatePassphrase } = await import('../../client/src/passphrase.js');
+      passphrase = generatePassphrase();
+    }
+
+    const { createSalt, hashPassphrase } = await import('../auth.js');
     const salt = createSalt();
-    const hash = hashPassphrase(secret, salt);
+    const hash = hashPassphrase(passphrase, salt);
 
     await db
       .prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?')
-      .run(hash, salt, user.id);
-    await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+      .run(hash, salt, id);
+    await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
 
-    logger.info('Admin reset user password', {
-      admin_user_id: req.user.id,
-      target_user_id: user.id,
-    });
-    res.json({ success: true, new_passphrase: secret });
-  } catch (err) {
-    console.error('Reset password error:', err);
-    res.status(500).json({ error: 'Internal error' });
+    logger.info('Admin reset user passphrase', { admin_user_id: req.user.id, target_user_id: id });
+    res.json({ success: true, new_passphrase: passphrase });
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -149,38 +151,6 @@ router.post('/users/:id/delete', requireAdmin, async (req, res) => {
   const result = await db.prepare('DELETE FROM users WHERE id = ?').run(id);
   logger.info('Admin deleted user', { admin_user_id: req.user.id, target_user_id: id });
   checkResult(result, res, 'User');
-});
-
-// POST /api/admin/users/:id/reset-password
-router.post('/users/:id/reset-password', requireAdmin, async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    let passphrase = req.body?.passphrase;
-
-    const user = await db.prepare('SELECT id, username FROM users WHERE id = ?').get(id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    if (!passphrase) {
-      const { generatePassphrase } = await import('../../client/src/passphrase.js');
-      passphrase = generatePassphrase();
-    }
-
-    const { createSalt, hashPassphrase } = await import('../auth.js');
-    const salt = createSalt();
-    const hash = hashPassphrase(passphrase, salt);
-
-    await db
-      .prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?')
-      .run(hash, salt, id);
-    await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
-
-    logger.info('Admin reset user passphrase', { admin_user_id: req.user.id, target_user_id: id });
-    res.json({ success: true, newPassphrase: passphrase });
-  } catch (error) {
-    next(error);
-  }
 });
 
 // POST /api/admin/reset-demo
