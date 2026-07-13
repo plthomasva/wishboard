@@ -187,13 +187,91 @@ export default function WishCard({
             ? { position: 'relative', height: '100%', padding: 0 }
             : {
                 position: 'relative',
-                minHeight: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
+                paddingBottom: hasBottomActions ? '2.2em' : undefined,
               }
         }
       >
+        {!hasImage && (
+          <IdentityStickers
+            genders={wish.creator_genders}
+            orientations={wish.creator_orientations}
+          />
+        )}
+
+        {showTopActions && (
+          <div className="card-top-left-actions">
+            {showFlag && onFlag && <FlagButton onFlag={() => onFlag(wish.id)} />}
+            {onExclude && (
+              <ExcludeToggleButton
+                wishId={wish.id}
+                isExcluded={isExcluded}
+                onExclude={onExclude}
+                onUnexclude={onUnexclude}
+              />
+            )}
+            {onEdit && (
+              <button
+                type="button"
+                className="owner-edit-wish-btn"
+                onClick={() => onEdit(wish.id)}
+                title="Edit Wish"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z" />
+                </svg>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                className="owner-delete-wish-btn"
+                onClick={() => onDelete(wish.id)}
+                title="Delete Wish"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+            )}
+            {onAdminDelete && (
+              <button
+                type="button"
+                className="admin-delete-wish-btn"
+                onClick={() => onAdminDelete(wish.id)}
+                title="Admin Delete Wish"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+
         {hasImage ? (
           <div style={{ width: '100%', height: '100%', position: 'relative' }}>
             <img
@@ -215,142 +293,52 @@ export default function WishCard({
             </p>
           </div>
         ) : (
-          <div className="wish-card-top-content">
-            <IdentityStickers
-              genders={wish.creator_genders}
-              orientations={wish.creator_orientations}
-            />
+          <p className="wish-text">{wish.content}</p>
+        )}
 
-            {showTopActions && (
-              <div className="card-top-left-actions">
-                {showFlag && onFlag && <FlagButton onFlag={() => onFlag(wish.id)} />}
-                {onExclude && (
-                  <ExcludeToggleButton
-                    wishId={wish.id}
-                    isExcluded={isExcluded}
-                    onExclude={onExclude}
-                    onUnexclude={onUnexclude}
-                  />
-                )}
-                {onEdit && (
-                  <button
-                    type="button"
-                    className="owner-edit-wish-btn"
-                    onClick={() => onEdit(wish.id)}
-                    title="Edit Wish"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z" />
-                    </svg>
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    type="button"
-                    className="owner-delete-wish-btn"
-                    onClick={() => onDelete(wish.id)}
-                    title="Delete Wish"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  </button>
-                )}
-                {onAdminDelete && (
-                  <button
-                    type="button"
-                    className="admin-delete-wish-btn"
-                    onClick={() => onAdminDelete(wish.id)}
-                    title="Admin Delete Wish"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            )}
-
-            <p className="wish-text">{wish.content}</p>
+        {wish.contacts && wish.contacts.length > 0 && (
+          <div className="wish-contacts-list">
+            {wish.contacts.map((c, i) => (
+              <span key={`${c.type}-${i}`} className="wish-contact-item">
+                <strong>{c.type}:</strong> {c.value}
+              </span>
+            ))}
           </div>
         )}
 
-        {!hasImage && hasBottomActions && (
-          <div className="wish-card-bottom-row">
-            {wish.contacts && wish.contacts.length > 0 ? (
-              <div className="wish-contacts-list">
-                {wish.contacts.map((c, i) => (
-                  <span key={`${c.type}-${i}`} className="wish-contact-item">
-                    <strong>{c.type}:</strong> {c.value}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <div />
+        {(wish.wishmail_enabled || onViewWishmail) && (
+          <button
+            type="button"
+            className="send-mail-icon-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onViewWishmail) {
+                onViewWishmail(wish.id);
+              } else if (onSendMail) {
+                onSendMail(wish.id);
+              }
+            }}
+            title={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
+            aria-label={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect width="20" height="16" x="2" y="4" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+            {onViewWishmail && unreadWishmailCount !== undefined && unreadWishmailCount > 0 && (
+              <div className="mail-unread-dot" title={`${unreadWishmailCount} unread message(s)`} />
             )}
-
-            {(wish.wishmail_enabled || onViewWishmail) && (
-              <button
-                type="button"
-                className="send-mail-icon-btn"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (onViewWishmail) {
-                    onViewWishmail(wish.id);
-                  } else if (onSendMail) {
-                    onSendMail(wish.id);
-                  }
-                }}
-                title={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
-                aria-label={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect width="20" height="16" x="2" y="4" rx="2" />
-                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                </svg>
-                {onViewWishmail && unreadWishmailCount !== undefined && unreadWishmailCount > 0 && (
-                  <div
-                    className="mail-unread-dot"
-                    title={`${unreadWishmailCount} unread message(s)`}
-                  />
-                )}
-              </button>
-            )}
-          </div>
+          </button>
         )}
       </div>
     </article>
