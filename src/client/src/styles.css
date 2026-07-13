@@ -798,17 +798,28 @@ button:hover {
 .kiosk-mode {
   height: 100vh;
   overflow: hidden;
-  background-color: #d7ccc8;
+  background-color: #d7ccc8; /* Warm corkboard base */
+  background-image:
+    radial-gradient(rgba(0, 0, 0, 0.08) 15%, transparent 16%),
+    radial-gradient(rgba(0, 0, 0, 0.08) 15%, transparent 16%);
+  background-size: 30px 30px;
+  background-position:
+    0 0,
+    15px 15px;
 }
 
 .kiosk-mode .kiosk-content {
   width: 100%;
   height: 100vh;
-  padding: 24px;
+  padding: 12px; /* Reduced from 24px to maximize layout space */
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.kiosk-mode .display-header-bar {
+  display: none; /* Hide empty header entirely to reclaim vertical space */
 }
 
 .kiosk-mode .kiosk-content section.display-section {
@@ -826,6 +837,11 @@ button:hover {
   flex: 1;
   overflow: hidden;
   align-content: start;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+  margin-top: 0;
 }
 
 .kiosk-mode .kiosk-content section.display-section p:not(.wish-text) {

@@ -96,12 +96,14 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
       const gap = isLargeScreen ? 40 : 24;
       const cardWidth = isLargeScreen ? 500 : 240;
 
-      // Cards have aspect-ratio: 5 / 3
-      const cardHeight = cardWidth * (3 / 5);
-
       const cols = Math.max(1, Math.floor((width + gap) / (cardWidth + gap)));
+
+      // Account for 1fr flex-stretching on CSS Grid: calculate actual width and height dynamically
+      const actualCardWidth = (width - (cols - 1) * gap) / cols;
+      const actualCardHeight = actualCardWidth * (3 / 5);
+
       // Subtract a little buffer from height to ensure we don't clip the bottom row
-      const rows = Math.max(1, Math.floor((height + gap - 10) / (cardHeight + gap)));
+      const rows = Math.max(1, Math.floor((height + gap - 10) / (actualCardHeight + gap)));
 
       setCapacity(cols * rows);
     };
