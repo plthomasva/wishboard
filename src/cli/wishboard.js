@@ -19,7 +19,8 @@ const program = new Command();
 program
   .name('wishboard')
   .description('Unified deployment and administration CLI for Wishboard')
-  .version(packageJson.version);
+  .version(packageJson.version)
+  .option('--dry-run', 'Preview the action without executing it');
 
 // 1. OIDC Command Group
 const oidc = program
@@ -32,10 +33,9 @@ oidc
   .option('--org <name>', 'GitHub organization or username')
   .option('--repo <name>', 'GitHub repository name')
   .option('--region <name>', 'AWS region', 'us-east-1')
-  .option('--dry-run', 'Preview the commands without executing them')
-  .action((options) => {
+  .action((options, command) => {
     try {
-      setupOidc(options);
+      setupOidc(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during setup: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -48,10 +48,9 @@ oidc
   .option('--org <name>', 'GitHub organization or username')
   .option('--repo <name>', 'GitHub repository name')
   .option('--region <name>', 'AWS region', 'us-east-1')
-  .option('--dry-run', 'Preview the commands without executing them')
-  .action((options) => {
+  .action((options, command) => {
     try {
-      destroyOidc(options);
+      destroyOidc(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during destroy: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -81,10 +80,9 @@ serverless
     '--skip-frontend-upload',
     'Deploy the backend only; skip the S3 upload and CloudFront invalidation'
   )
-  .option('--dry-run', 'Preview the commands without executing them')
-  .action((options) => {
+  .action((options, command) => {
     try {
-      deployServerless(options);
+      deployServerless(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during deploy: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -98,10 +96,9 @@ serverless
   .option('--stack-name <name>', 'CloudFormation stack name (falls back to samconfig.toml)')
   .option('--region <name>', 'AWS region (falls back to samconfig.toml)')
   .option('--force', 'Required to delete a non-dev (production) stack')
-  .option('--dry-run', 'Preview the commands without executing them')
-  .action((options) => {
+  .action((options, command) => {
     try {
-      destroyServerless(options);
+      destroyServerless(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during destroy: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -126,10 +123,9 @@ kiosk
     '--app-version <version>',
     'Container image tag to deploy (default: package.json version)'
   )
-  .option('--dry-run', 'Preview the commands without executing them')
-  .action((options) => {
+  .action((options, command) => {
     try {
-      deployKiosk(options);
+      deployKiosk(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during kiosk deploy: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -145,10 +141,9 @@ kiosk
     'Public domain (used in prod mode)',
     'wishboard.painless-computing.com'
   )
-  .option('--dry-run', 'Preview the commands without executing them')
-  .action((options) => {
+  .action((options, command) => {
     try {
-      setupKiosk(options);
+      setupKiosk(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during kiosk setup: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -166,42 +161,48 @@ kiosk
   )
   .option('--reset-rules', 'Re-seed matching rules from bundled defaults (default: keep existing)')
   .option('--app-version <version>', 'Container image tag to run (default: package.json version)')
-  .option('--dry-run', 'Preview the commands without executing them')
-  .action((options) => {
+  .action((options, command) => {
     try {
-      runKiosk(options);
+      runKiosk(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during kiosk run: ${err.message}\x1b[0m`);
       process.exit(1);
     }
   });
 
-const dbGroup = program
-  .command('db')
-  .description('Manage wishboard databases (Not yet ported - use scripts/*)');
+const dbGroup = program.command('db').description('Manage wishboard databases');
 
 dbGroup
-  .command('reset-password')
-  .description('Reset user passphrase in the database (Legacy script: scripts/reset-password.js)')
-  .action(() => {
-    console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
-    console.log('Please run the legacy script instead:');
-    console.log('  node scripts/reset-password.js <username> [new_passphrase]\n');
+  .command('reset-password <username> [new_passphrase]')
+  .description('Reset user passphrase in the database')
+  .option('--url <url>', 'Remote Wishboard instance URL')
+  .option('--admin <username>', 'Admin username for remote execution', 'admin')
+  .action(async (username, newPassphrase, options, command) => {
+    try {
+      const opts = command.optsWithGlobals();
+      const { resetPassword } = await import('./commands/db.js');
+      const success = await resetPassword(username, newPassphrase, opts);
+      if (!success) process.exit(1);
+    } catch (err) {
+      console.error(`\x1b[31mError resetting password: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
   });
 
-const buildGroup = program
-  .command('build')
-  .description('Manage wishboard build tasks (Not yet ported - use scripts/*)');
+const buildGroup = program.command('build').description('Manage wishboard build tasks');
 
 buildGroup
   .command('download-fonts')
-  .description(
-    'Download fallback fonts for offline execution (Legacy script: scripts/download-fonts.js)'
-  )
-  .action(() => {
-    console.log('\n\x1b[33mThis command is not yet migrated to the unified CLI.\x1b[0m');
-    console.log('Please run the legacy script instead:');
-    console.log('  node scripts/download-fonts.js\n');
+  .description('Download fallback fonts for offline execution')
+  .action(async (options, command) => {
+    try {
+      const opts = command.optsWithGlobals();
+      const { downloadFonts } = await import('./commands/build.js');
+      await downloadFonts(opts);
+    } catch (err) {
+      console.error(`\x1b[31mError downloading fonts: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
   });
 
 const auth = program.command('auth').description('Manage user authentication and tokens');
@@ -217,14 +218,13 @@ auth
     '--passphrase <passphrase>',
     'Passphrase for remote authentication (if not provided, you will be prompted)'
   )
-  .option('--dry-run', 'Preview the action without executing it')
-  .action(async (username, options) => {
+  .action(async (username, options, command) => {
     try {
-      await generateAuthToken(username, options);
+      await generateAuthToken(username, command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError generating token: ${err.message}\x1b[0m`);
       process.exit(1);
     }
   });
 
-program.parse(process.argv);
+await program.parseAsync(process.argv);

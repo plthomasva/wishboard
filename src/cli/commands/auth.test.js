@@ -310,5 +310,31 @@ describe('auth token command', () => {
         generateAuthToken('admin', { url: 'demo.wishboards.app', passphrase: 'pass' })
       ).rejects.toThrow('Remote server response did not include a session token.');
     });
+    it('rejects gracefully if remote server returns non-JSON error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 502,
+          statusText: 'Bad Gateway',
+          json: () => Promise.reject(new Error('Invalid JSON')),
+        })
+      );
+
+      await expect(
+        generateAuthToken('admin', { url: 'https://demo.wishboards.app', passphrase: 'pass' })
+      ).rejects.toThrow('Remote auth failed: 502 Bad Gateway');
+    });
+
+    it('strips trailing slashes from URL and generates remote session token', async () => {
+      let output = '';
+      vi.spyOn(console, 'log').mockImplementation((msg) => {
+        output += msg + '\n';
+      });
+      await generateAuthToken('admin', { url: 'https://demo.wishboards.app//', dryRun: true });
+      expect(output).toContain(
+        '[DRY RUN] Would generate remote session token for user: admin at https://demo.wishboards.app'
+      );
+    });
   });
 });

@@ -297,6 +297,55 @@ describe('Admin routes', () => {
     expect(response.body.error).toBe('User not found.');
   });
 
+  describe('reset password', () => {
+    it('rejects non-admin users', async () => {
+      const res = await request(app).post('/api/admin/users/testuser/reset-password').send({});
+      expect(res.status).toBe(401);
+    });
+
+    it('returns 404 for unknown user', async () => {
+      const adminToken = await loginAsAdmin();
+      const res = await request(app)
+        .post('/api/admin/users/unknown/reset-password')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({});
+      expect(res.status).toBe(404);
+    });
+
+    it('resets a password with a generated passphrase', async () => {
+      await request(app)
+        .post('/api/users/register')
+        .send({ username: 'resetme', passphrase: 'pw' });
+
+      const adminToken = await loginAsAdmin();
+      const res = await request(app)
+        .post('/api/admin/users/resetme/reset-password')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({});
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.new_passphrase).toBeDefined();
+      expect(res.body.new_passphrase).not.toBe('pw');
+    });
+
+    it('resets a password with a provided passphrase', async () => {
+      await request(app)
+        .post('/api/users/register')
+        .send({ username: 'resetme2', passphrase: 'pw' });
+
+      const adminToken = await loginAsAdmin();
+      const res = await request(app)
+        .post('/api/admin/users/resetme2/reset-password')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ passphrase: 'new-password-123' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.new_passphrase).toBe('new-password-123');
+    });
+  });
+
   it('refuses to delete the account the admin is signed in as', async () => {
     const token = await loginAsAdmin();
     const admin = await db
@@ -368,13 +417,14 @@ describe('Admin routes', () => {
 
     // 4. Reset password as admin
     const resetResponse = await request(app)
-      .post(`/api/admin/users/${testUserId}/reset-password`)
+      .post(`/api/admin/users/test-reset-user/reset-password`)
       .set('Authorization', `Bearer ${adminToken}`);
 
+    if (resetResponse.status !== 200) console.log(resetResponse.body);
     expect(resetResponse.status).toBe(200);
     expect(resetResponse.body.success).toBe(true);
-    expect(typeof resetResponse.body.newPassphrase).toBe('string');
-    expect(resetResponse.body.newPassphrase.length).toBeGreaterThan(0);
+    expect(typeof resetResponse.body.new_passphrase).toBe('string');
+    expect(resetResponse.body.new_passphrase.length).toBeGreaterThan(0);
 
     // 5. Verify sessions were deleted
     const activeSessionsAfter = (
@@ -392,7 +442,7 @@ describe('Admin routes', () => {
     // 7. Verify new password works
     const newLoginResponse = await request(app)
       .post('/api/users/login')
-      .send({ username: 'test-reset-user', passphrase: resetResponse.body.newPassphrase })
+      .send({ username: 'test-reset-user', passphrase: resetResponse.body.new_passphrase })
       .set('Accept', 'application/json');
     expect(newLoginResponse.status).toBe(200);
   });
