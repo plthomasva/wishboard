@@ -382,6 +382,31 @@ function performFrontendUpload(frontendBucket, distId, common, dryRun) {
   }
 }
 
+function runBackendPipeline(options, stackName, region, profile, mode, common, dryRun) {
+  // --- 2 & 3. Bundling & copy native binary ---
+  performBackendBuild(dryRun);
+
+  // --- 4. Deploy stack ---
+  let guided = options.guided || !fs.existsSync(SAM_CONFIG);
+  if (process.env.CI) guided = false;
+
+  performStackDeploy(stackName, common, guided, mode, dryRun);
+
+  // A guided deploy writes/updates samconfig.toml, so pick up the values the
+  // user just chose. For a non-guided deploy samconfig is unchanged, and
+  // re-reading it here would clobber an explicit --stack-name/--region/--profile
+  // (deploying to one stack but reading outputs from another).
+  if (guided) {
+    if (!region) region = readTomlValue('region');
+    if (!profile) profile = readTomlValue('profile');
+    const tomlStack = readTomlValue('stack_name');
+    if (tomlStack) stackName = tomlStack;
+    common = awsCommonArgs(profile, region);
+  }
+
+  return { stackName, common };
+}
+
 /**
  * Builds and deploys (or updates) the Wishboard AWS serverless stack.
  */
@@ -409,26 +434,9 @@ export function deployServerless(options) {
   if (build.status !== 0) throw new Error('Frontend build failed.');
 
   if (!frontendOnly) {
-    // --- 2 & 3. Bundling & copy native binary ---
-    performBackendBuild(dryRun);
-
-    // --- 4. Deploy stack ---
-    let guided = options.guided || !fs.existsSync(SAM_CONFIG);
-    if (process.env.CI) guided = false;
-
-    performStackDeploy(stackName, common, guided, mode, dryRun);
-
-    // A guided deploy writes/updates samconfig.toml, so pick up the values the
-    // user just chose. For a non-guided deploy samconfig is unchanged, and
-    // re-reading it here would clobber an explicit --stack-name/--region/--profile
-    // (deploying to one stack but reading outputs from another).
-    if (guided) {
-      if (!region) region = readTomlValue('region');
-      if (!profile) profile = readTomlValue('profile');
-      const tomlStack = readTomlValue('stack_name');
-      if (tomlStack) stackName = tomlStack;
-      common = awsCommonArgs(profile, region);
-    }
+    const updated = runBackendPipeline(options, stackName, region, profile, mode, common, dryRun);
+    stackName = updated.stackName;
+    common = updated.common;
   }
 
   // --- 5. Read stack outputs ---
