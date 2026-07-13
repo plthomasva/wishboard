@@ -187,6 +187,8 @@ export default function WishCard({
             ? { position: 'relative', height: '100%', padding: 0 }
             : {
                 position: 'relative',
+                height: '100%',
+                boxSizing: 'border-box',
                 paddingBottom: hasBottomActions ? '2.2em' : undefined,
               }
         }
