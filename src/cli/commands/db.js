@@ -67,7 +67,7 @@ export async function resetPassword(
   }
 
   const salt = createSalt();
-  const hash = hashPassphrase(passphrase, salt);
+  const hash = await hashPassphrase(passphrase, salt);
 
   await db
     .prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?')

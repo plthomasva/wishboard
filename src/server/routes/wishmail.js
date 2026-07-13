@@ -36,7 +36,7 @@ const authorizeWishmailManagement = async (req, res, next) => {
 
   if (!authorized && secret && wish.secret_hash) {
     const [salt, hash] = wish.secret_hash.split(':');
-    if (verifyPassphrase(secret.trim(), salt, hash)) {
+    if (await verifyPassphrase(secret.trim(), salt, hash)) {
       authorized = true;
     }
   }

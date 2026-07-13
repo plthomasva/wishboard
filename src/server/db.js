@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
+import { promisify } from 'node:util';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -187,8 +188,10 @@ const ensureDefaultAdmin = async () => {
 
   const scryptOptions = process.env.NODE_ENV === 'test' ? { N: 16, r: 1, p: 1 } : undefined;
 
+  const scrypt = promisify(crypto.scrypt);
   const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.scryptSync(defaultAdminSecret, salt, 64, scryptOptions).toString('hex');
+  const derivedKey = await scrypt(defaultAdminSecret, salt, 64, scryptOptions);
+  const hash = derivedKey.toString('hex');
   const adminId = `admin-${crypto.randomBytes(4).toString('hex')}`;
   const now = new Date().toISOString();
 

@@ -134,7 +134,7 @@ async function generateDemoUsers() {
     const id = idGenerator();
     const username = `demo_user_${i}`;
     const salt = createSalt();
-    const hash = hashPassphrase('demo-password', salt);
+    const hash = await hashPassphrase('demo-password', salt);
 
     // Generate random identities
     const genders = JSON.stringify(getRandomGenders());

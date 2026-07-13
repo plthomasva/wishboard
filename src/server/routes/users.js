@@ -53,7 +53,7 @@ router.post('/register', async (req, res) => {
   const providedPassphrase = typeof passphrase === 'string' ? passphrase.trim() : '';
   const secret = providedPassphrase || generatePassphrase();
   const salt = createSalt();
-  const hash = hashPassphrase(secret, salt);
+  const hash = await hashPassphrase(secret, salt);
   const userId = idGenerator();
   const now = new Date().toISOString();
 
@@ -153,7 +153,10 @@ router.post('/login', async (req, res) => {
       'SELECT id, username, role, is_active, passphrase_hash, passphrase_salt, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled FROM users WHERE username = ?'
     )
     .get(username.trim());
-  if (!user || !verifyPassphrase(passphrase.trim(), user.passphrase_salt, user.passphrase_hash)) {
+  if (
+    !user ||
+    !(await verifyPassphrase(passphrase.trim(), user.passphrase_salt, user.passphrase_hash))
+  ) {
     logger.warn('Failed login attempt', { username: username.trim(), ip: req.ip });
     return res.status(401).json({ error: 'Invalid username or passphrase.' });
   }
