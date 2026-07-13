@@ -3,9 +3,10 @@ import InfoToggle from '../components/InfoToggle';
 import WishPreview from '../components/WishPreview';
 import WishFormFields from '../components/WishFormFields';
 import { useAuth } from '../AuthContext';
+import PassphraseInput from '../components/PassphraseInput';
 
 export default function ManageWishPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [wish, setWish] = useState<{
     id: string;
     content: string;
@@ -15,12 +16,15 @@ export default function ManageWishPage() {
     creator_genders?: string[];
     creator_orientations?: string[];
     is_active: boolean;
+    image_url?: string;
+    image_id?: string;
   } | null>(null);
   const [content, setContent] = useState('');
   const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [secret, setSecret] = useState('');
+  const [newPassphrase, setNewPassphrase] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -41,6 +45,7 @@ export default function ManageWishPage() {
         return;
       }
       setSecret(wishSecret);
+      setNewPassphrase(wishSecret);
     }
 
     if (!wishId) {
@@ -88,13 +93,20 @@ export default function ManageWishPage() {
         content,
         contacts,
         wishmail_enabled: wishmailEnabled,
+        new_passphrase: newPassphrase,
         action: 'update',
       }),
     });
 
     if (response.ok) {
+      const data = await response.json();
       setMessage('Wish updated successfully!');
       setWish({ ...wish, content, contacts, wishmail_enabled: wishmailEnabled });
+      if (data.newSecret) {
+        setSecret(data.newSecret);
+        setNewPassphrase('');
+        globalThis.location.hash = `#manage-wish?id=${wish.id}&secret=${encodeURIComponent(data.newSecret)}`;
+      }
     } else {
       const data = await response.json();
       setError(data.error || 'Failed to update wish.');
@@ -184,6 +196,8 @@ export default function ManageWishPage() {
     creator_orientations: wish.creator_orientations,
     contacts: contacts.filter((c) => c.value.trim()),
     wishmail_enabled: wishmailEnabled,
+    image_url: wish.image_url,
+    image_id: wish.image_id,
   };
 
   return (
@@ -236,22 +250,22 @@ export default function ManageWishPage() {
             isOverflowing={isOverflowing}
           />
 
-          <div style={{ display: 'grid', gap: '8px' }}>
-            <div className="label-with-info">
-              <label htmlFor="passphrase-input">Passphrase (if anonymous)</label>
-              <InfoToggle>
-                If you created this wish anonymously, the passphrase is required to save changes. If
-                you are logged into your account, this isn't needed.
-              </InfoToggle>
+          {!user && (
+            <div style={{ display: 'grid', gap: '8px' }}>
+              <div className="label-with-info">
+                <label htmlFor="passphrase-input">Change passphrase</label>
+                <InfoToggle>
+                  If you created this wish anonymously, you can change its passphrase here.
+                </InfoToggle>
+              </div>
+              <PassphraseInput
+                id="passphrase-input"
+                value={newPassphrase}
+                onChange={setNewPassphrase}
+                placeholder="Change passphrase (leave blank to keep current)"
+              />
             </div>
-            <input
-              id="passphrase-input"
-              type="text"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              placeholder="Enter passphrase"
-            />
-          </div>
+          )}
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap' }}>
             <button type="submit">Save Changes</button>

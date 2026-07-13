@@ -131,7 +131,7 @@ describe('download-fonts', () => {
 
       expect(consoleWarnSpy).toHaveBeenCalledTimes(FONTS.length);
       expect(consoleLogSpy).toHaveBeenCalledWith('Checking for font updates...');
-      expect(consoleLogSpy).toHaveBeenCalledWith('Using cached version of Kalam-Regular.ttf');
+      expect(consoleLogSpy).toHaveBeenCalledWith('Using cached version of NotoColorEmoji.ttf');
     });
 
     it('exits with code 1 when download fails and cache does not exist', async () => {

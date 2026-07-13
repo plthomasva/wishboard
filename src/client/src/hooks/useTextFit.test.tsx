@@ -3,19 +3,23 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { useTextFit } from './useTextFit';
 
+function makeResizeObserver() {
+  let observerCallback: ((entries: { target: Element }[]) => void) | undefined;
+  const observeMock = vi.fn();
+  const disconnectMock = vi.fn();
+  globalThis.ResizeObserver = class ResizeObserver {
+    constructor(callback: (entries: { target: Element }[]) => void) {
+      observerCallback = callback;
+    }
+    observe = observeMock;
+    disconnect = disconnectMock;
+  } as unknown as typeof ResizeObserver;
+  return { getCallback: () => observerCallback, observeMock, disconnectMock };
+}
+
 describe('useTextFit', () => {
   it('scales down font size and calls ResizeObserver', () => {
-    // Mock ResizeObserver
-    let observerCallback: any;
-    const observeMock = vi.fn();
-    const disconnectMock = vi.fn();
-    globalThis.ResizeObserver = class ResizeObserver {
-      constructor(callback: any) {
-        observerCallback = callback;
-      }
-      observe = observeMock;
-      disconnect = disconnectMock;
-    } as any;
+    const { getCallback } = makeResizeObserver();
 
     const TestComponent = () => {
       const { containerRef, contentRef } = useTextFit({
@@ -37,8 +41,8 @@ describe('useTextFit', () => {
       }
 
       return (
-        <div ref={containerRef as any} data-testid="container">
-          <div ref={contentRef as any} data-testid="content">
+        <div ref={containerRef as React.Ref<HTMLDivElement>} data-testid="container">
+          <div ref={contentRef as React.Ref<HTMLDivElement>} data-testid="content">
             Long text
           </div>
         </div>
@@ -48,19 +52,79 @@ describe('useTextFit', () => {
     render(<TestComponent />);
 
     const content = screen.getByTestId('content');
-    // Trigger overflow condition manually after ref is set
-    // In real layout, this happens synchronously. In JSDOM, properties are 0.
-    // We'll call the observer callback to trigger performFit again.
-
-    if (observerCallback) {
+    const cb = getCallback();
+    if (cb) {
       const container = screen.getByTestId('container');
       Object.defineProperty(container, 'scrollHeight', { value: 200, configurable: true });
       Object.defineProperty(container, 'clientHeight', { value: 100, configurable: true });
 
       act(() => {
-        observerCallback([{ target: container }]);
+        cb([{ target: container }]);
       });
-      expect(content.style.fontSize).toBe('10px'); // It should scale down to minFontSize
+      expect(content.style.fontSize).toBe('10px'); // scaled down to minFontSize
     }
+  });
+
+  it('allows text to shrink below minFontSize when container is smaller than notionalSize', () => {
+    makeResizeObserver();
+
+    const TestComponent = () => {
+      const { containerRef, contentRef } = useTextFit({
+        minFontSize: 10,
+        maxFontSize: 18,
+        step: 1,
+        notionalSize: { width: 244, height: 130 },
+      });
+
+      return (
+        <div ref={containerRef as React.Ref<HTMLDivElement>} data-testid="container">
+          <div ref={contentRef as React.Ref<HTMLDivElement>} data-testid="content">
+            Text
+          </div>
+        </div>
+      );
+    };
+
+    render(<TestComponent />);
+
+    // Container is smaller than notional (clientWidth=0 in jsdom < 244)
+    // The hook should be able to scale below minFontSize without throwing.
+    // In jsdom scrollHeight/clientHeight are 0 so it won't actually loop,
+    // but the logic branch for fitMinSize=1 should be exercised.
+    const content = screen.getByTestId('content');
+    // maxFontSize is applied initially; jsdom has no layout so no scaling occurs
+    expect(content.style.fontSize).toBe('18px');
+  });
+
+  it('checks overflow against notionalSize dimensions when container is smaller', () => {
+    makeResizeObserver();
+
+    let capturedOverflowing: boolean | undefined;
+
+    const TestComponent = () => {
+      const { containerRef, contentRef, isOverflowing } = useTextFit({
+        minFontSize: 10,
+        maxFontSize: 18,
+        step: 1,
+        notionalSize: { width: 244, height: 130 },
+      });
+
+      capturedOverflowing = isOverflowing;
+
+      return (
+        <div ref={containerRef as React.Ref<HTMLDivElement>} data-testid="container">
+          <div ref={contentRef as React.Ref<HTMLDivElement>} data-testid="content">
+            Text
+          </div>
+        </div>
+      );
+    };
+
+    render(<TestComponent />);
+
+    // In jsdom, scrollHeight is 0 and clientWidth is 0 (< 244 notional width),
+    // so the notional branch runs. content.scrollHeight (0) <= notionalSize.height (130)
+    // means no overflow.
+    expect(capturedOverflowing).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
 import WishPreview from '../components/WishPreview';
 import WishFormFields from '../components/WishFormFields';
+import PassphraseInput from '../components/PassphraseInput';
 const WishScanner = React.lazy(() => import('../components/WishScanner'));
 // cardProcessor pulls in the ~15.6 MB @techstark/opencv-js blob. Import it
 // dynamically at the point of use (card upload / scan) so it is not fetched
@@ -299,11 +300,10 @@ export default function EnterWishPage() {
                     automatically generate a secure, memorable code phrase for you!
                   </InfoToggle>
                 </div>
-                <input
+                <PassphraseInput
                   id="passphrase"
-                  type="text"
                   value={passphrase}
-                  onChange={(event) => setPassphrase(event.target.value)}
+                  onChange={setPassphrase}
                   placeholder="Leave blank for automatic code phrase"
                 />
               </div>

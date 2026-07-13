@@ -9,6 +9,10 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 ### Testing & Quality
 
 - **[#134](https://github.com/plthomasva/wishboard/issues/134)** — Add a Playwright client E2E smoke test (deferred from #121) to catch real-browser bundling/runtime breakage that jsdom can't.
+  - **Pending Rendering/Layout Tests**: When E2E testing is implemented, include visual regression or explicit bounding box checks for the `.wish-card` / `.display-card` layout fiddling we did:
+    - Text must wrap naturally around floated elements (`.card-top-left-actions` and `.identity-stickers`) without escaping the bottom of the inner scale wrapper.
+    - Negative margins on floats interact poorly with `overflow: hidden` on their parent (clips the floats). Floats must sit purely inside the `overflow: hidden` container (no negative top margins) so they don't appear chopped off in Kiosk Mode.
+    - Inline flex containers like `.identity-stickers` need `display: flex;` so their bounding box hugs the SVG graphics tightly, otherwise the parent block's `line-height` creates a huge invisible descent below the SVG images that ruins text wrapping.
 - **[#180](https://github.com/plthomasva/wishboard/issues/180)** — Upgrade to ESLint 10 once `eslint-plugin-react` supports it (currently pinned to 9.x; Dependabot 10.x updates ignored). A weekly CI watcher (#181) pings this issue when the upstream peers unblock.
 - **[#165](https://github.com/plthomasva/wishboard/issues/165)** — Un-exclude `WishScanner.tsx` from Stryker `mutate` and give it a real component test suite (split from #120; its `cardProcessor.ts` delegate is now hardened to ~80%).
 - **[#168](https://github.com/plthomasva/wishboard/issues/168)** — Harden `demoSeeder.js` mutation coverage (240 LOC behind a single happy-path assertion, ~24%; split from #120).

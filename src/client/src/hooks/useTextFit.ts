@@ -4,10 +4,21 @@ interface UseTextFitProps {
   minFontSize?: number;
   maxFontSize?: number;
   step?: number;
+  /**
+   * When provided and the actual container is *smaller* than this size,
+   * `isOverflowing` is determined by whether the text would overflow the
+   * notional dimensions at `minFontSize` — not the tiny preview container.
+   *
+   * This lets the editor preview "smoosh" text freely while still warning
+   * the user if the text wouldn't fit on a real search-result card.
+   *
+   * Units are CSS pixels (content area, excluding card padding).
+   */
+  notionalSize?: { width: number; height: number };
 }
 
 export function useTextFit<T extends HTMLElement = any, U extends HTMLElement = any>(
-  { minFontSize = 12, maxFontSize = 24, step = 1 }: UseTextFitProps = {},
+  { minFontSize = 12, maxFontSize = 24, step = 1, notionalSize }: UseTextFitProps = {},
   deps: React.DependencyList = []
 ) {
   const containerRef = useRef<T>(null);
@@ -25,10 +36,15 @@ export function useTextFit<T extends HTMLElement = any, U extends HTMLElement = 
       let currentFontSize = maxFontSize;
       content.style.fontSize = `${currentFontSize}px`;
 
-      // Synchronously scale down until it fits
+      // Synchronously scale down until it fits the actual container.
+      // When notionalSize is provided and the container is smaller, we
+      // allow scaling all the way to 1px so the preview "smooshes" rather
+      // than falsely triggering overflow at the tiny preview size.
+      const fitMinSize =
+        notionalSize && container.clientWidth < notionalSize.width ? 1 : minFontSize;
       while (
         // NOSONAR
-        currentFontSize > minFontSize &&
+        currentFontSize > fitMinSize &&
         (container.scrollHeight > container.clientHeight ||
           container.scrollWidth > container.clientWidth)
       ) {
@@ -36,10 +52,32 @@ export function useTextFit<T extends HTMLElement = any, U extends HTMLElement = 
         content.style.fontSize = `${currentFontSize}px`;
       }
 
-      // Check if it still overflows at minFontSize
-      const isStillOverflowing =
-        container.scrollHeight > container.clientHeight ||
-        container.scrollWidth > container.clientWidth;
+      let isStillOverflowing: boolean;
+
+      if (notionalSize && container.clientWidth < notionalSize.width) {
+        // The preview is smaller than a real card. Check overflow against the
+        // notional card content area at the real minimum font size, so the
+        // warning reflects whether the wish would fit on an actual search result.
+        const prevFontSize = content.style.fontSize;
+        const prevWidth = content.style.width;
+        const prevWhiteSpace = content.style.whiteSpace;
+
+        content.style.fontSize = `${minFontSize}px`;
+        content.style.width = `${notionalSize.width}px`;
+        content.style.whiteSpace = 'normal'; // ensure word-wrap at notional width
+
+        isStillOverflowing = content.scrollHeight > notionalSize.height;
+
+        // Restore visual state
+        content.style.fontSize = prevFontSize;
+        content.style.width = prevWidth;
+        content.style.whiteSpace = prevWhiteSpace;
+      } else {
+        // Normal case: check overflow against the actual container.
+        isStillOverflowing =
+          container.scrollHeight > container.clientHeight ||
+          container.scrollWidth > container.clientWidth;
+      }
 
       setIsOverflowing(isStillOverflowing);
       setFontSize(currentFontSize);
@@ -62,7 +100,7 @@ export function useTextFit<T extends HTMLElement = any, U extends HTMLElement = 
     return () => {
       observer.disconnect();
     };
-  }, [minFontSize, maxFontSize, step, ...deps]);
+  }, [minFontSize, maxFontSize, step, notionalSize, ...deps]);
 
   return { containerRef, contentRef, fontSize, isOverflowing };
 }
