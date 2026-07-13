@@ -417,7 +417,7 @@ button:hover {
   float: left;
   display: flex;
   gap: 4px;
-  margin-top: -6px; /* Pushed up higher into top padding */
+  margin-top: 0;
   margin-bottom: 4px;
   margin-right: 8px;
   z-index: 10;
@@ -613,7 +613,9 @@ button:hover {
 .wish-card .identity-stickers,
 .display-card .identity-stickers {
   float: right;
-  margin-top: -6px; /* Pushed up higher into top padding */
+  display: flex;
+  align-items: center;
+  margin-top: 0;
   margin-left: 10px;
   margin-bottom: 6px;
   gap: 6px;
@@ -759,7 +761,7 @@ button:hover {
     left: 24px;
   }
   .display-card .card-top-left-actions {
-    margin-top: -12px;
+    margin-top: 0;
     margin-right: 16px;
     gap: 12px;
   }
@@ -774,7 +776,7 @@ button:hover {
   }
   .display-card .identity-stickers {
     gap: 0.8em;
-    margin-top: -12px;
+    margin-top: 0;
     float: right;
     margin-left: 1em;
     margin-bottom: 0.6em;
