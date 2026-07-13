@@ -380,6 +380,20 @@ Resources:
                   - sts:GetCallerIdentity
                 Resource: '*'
 
+              # 12. SSM Parameter & KMS Decryption (to resolve DB auth token dynamically in CI)
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    kms:ViaService: !Sub 'ssm.${AWS::Region}.amazonaws.com'
+
 Outputs:
   RoleArn:
     Value: !GetAtt GithubDeployerRole.Arn
