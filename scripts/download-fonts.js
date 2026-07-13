@@ -16,22 +16,36 @@ export const FONTS = [
     dest: 'Kalam-Bold.ttf',
   },
   {
-    url: 'https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf',
+    url: 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/fonts/NotoColorEmoji.ttf',
     dest: 'NotoColorEmoji.ttf',
   },
 ];
 
 export const targetDir = path.resolve(__dirname, '../src/client/public/fonts');
 
-export function downloadFile(url, destPath) {
+export function downloadFile(url, destPath, redirectCount = 0) {
+  if (redirectCount > 5) {
+    return Promise.reject(new Error('Too many redirects'));
+  }
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(destPath);
     https
       .get(url, (response) => {
+        // Handle HTTP redirection (e.g. 301, 302 status codes)
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          file.close();
+          fs.unlink(destPath, () => {}); // Clean up the empty file
+          downloadFile(response.headers.location, destPath, redirectCount + 1)
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+
         if (response.statusCode !== 200) {
           reject(new Error(`Failed to download: Status ${response.statusCode}`));
           return;
         }
+
         response.pipe(file);
         file.on('finish', () => {
           file.close(resolve);
