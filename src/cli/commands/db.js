@@ -11,7 +11,9 @@ export async function resetPassword(
 ) {
   if (opts.dryRun) {
     consoleLog(
-      `Would have reset password for '${username}' ${opts.url ? `remotely at ${opts.url}` : 'locally'}.`
+      `Would have reset password for '${username}' ` +
+        (opts.url ? `remotely at ${opts.url}` : 'locally') +
+        '.'
     );
     return true;
   }
