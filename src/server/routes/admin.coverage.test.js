@@ -101,7 +101,7 @@ describe('Admin routes coverage', () => {
   describe('reset-password API', () => {
     it('generates a new passphrase if omitted', async () => {
       const token = await loginAsAdmin();
-      const registerRes = await request(app)
+      await request(app)
         .post('/api/users/register')
         .send({ username: 'reset-api-user-1', passphrase: 'pwd' });
 
@@ -117,7 +117,7 @@ describe('Admin routes coverage', () => {
 
     it('uses provided passphrase if given', async () => {
       const token = await loginAsAdmin();
-      const registerRes = await request(app)
+      await request(app)
         .post('/api/users/register')
         .send({ username: 'reset-api-user-2', passphrase: 'pwd' });
 
