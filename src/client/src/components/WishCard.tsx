@@ -172,24 +172,76 @@ export default function WishCard({
   }, [isOverflowing, onOverflowChange]);
 
   const hasImage = Boolean(wish.image_url || wish.image_id);
+
+  const renderBottomActions = () => {
+    if (!hasBottomActions) return null;
+    return (
+      <>
+        {wish.contacts && wish.contacts.length > 0 && (
+          <div className="wish-contacts-list">
+            {wish.contacts.map((c, i) => (
+              <span key={`${c.type}-${i}`} className="wish-contact-item">
+                <strong>{c.type}:</strong> {c.value}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {(wish.wishmail_enabled || onViewWishmail) && (
+          <button
+            type="button"
+            className="send-mail-icon-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onViewWishmail) {
+                onViewWishmail(wish.id);
+              } else if (onSendMail) {
+                onSendMail(wish.id);
+              }
+            }}
+            title={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
+            aria-label={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect width="20" height="16" x="2" y="4" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+            {onViewWishmail && unreadWishmailCount !== undefined && unreadWishmailCount > 0 && (
+              <div className="mail-unread-dot" title={`${unreadWishmailCount} unread message(s)`} />
+            )}
+          </button>
+        )}
+      </>
+    );
+  };
+
   return (
     <article
       className={`${cardClass} ${hasImage ? 'card-has-image' : ''} ${isExcluded ? 'is-excluded' : ''} ${isOverflowing && isEditorPreview ? 'text-overflow-hint' : ''}`}
       key={wish.id}
-      ref={containerRef}
       style={isExcluded ? { opacity: 0.6 } : {}}
     >
       <div
         className={`wish-card-inner-scale ${hasImage ? 'has-image' : ''}`}
-        ref={contentRef}
+        ref={containerRef}
         style={
           hasImage
             ? { position: 'relative', height: '100%', padding: 0 }
             : {
                 position: 'relative',
-                height: '100%',
-                boxSizing: 'border-box',
-                paddingBottom: hasBottomActions ? '2.2em' : undefined,
+                flex: '1 1 auto',
+                minHeight: 0,
+                overflow: 'hidden',
               }
         }
       >
@@ -293,56 +345,20 @@ export default function WishCard({
             <p className="sr-only" style={{ display: 'none' }}>
               {wish.content}
             </p>
+            {renderBottomActions()}
           </div>
         ) : (
-          <p className="wish-text">{wish.content}</p>
-        )}
-
-        {wish.contacts && wish.contacts.length > 0 && (
-          <div className="wish-contacts-list">
-            {wish.contacts.map((c, i) => (
-              <span key={`${c.type}-${i}`} className="wish-contact-item">
-                <strong>{c.type}:</strong> {c.value}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {(wish.wishmail_enabled || onViewWishmail) && (
-          <button
-            type="button"
-            className="send-mail-icon-btn"
-            onClick={(e) => {
-              e.preventDefault();
-              if (onViewWishmail) {
-                onViewWishmail(wish.id);
-              } else if (onSendMail) {
-                onSendMail(wish.id);
-              }
-            }}
-            title={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
-            aria-label={onViewWishmail ? 'View Wishmail' : 'Send Wishmail'}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect width="20" height="16" x="2" y="4" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-            </svg>
-            {onViewWishmail && unreadWishmailCount !== undefined && unreadWishmailCount > 0 && (
-              <div className="mail-unread-dot" title={`${unreadWishmailCount} unread message(s)`} />
-            )}
-          </button>
+          <p className="wish-text" ref={contentRef}>
+            {wish.content}
+          </p>
         )}
       </div>
+
+      {!hasImage && hasBottomActions && (
+        <div style={{ position: 'relative', flex: '0 0 2.2em', marginTop: '4px' }}>
+          {renderBottomActions()}
+        </div>
+      )}
     </article>
   );
 }
