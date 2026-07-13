@@ -9,7 +9,7 @@ const TOKEN_EXPIRY_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
  * @param {string} query
  * @returns {Promise<string>}
  */
-function promptPassphrase(query) {
+export function promptPassphrase(query) {
   return new Promise((resolve) => {
     if (!process.stdin.isTTY) {
       // Fallback to standard readline in non-TTY (e.g. testing or redirected input)

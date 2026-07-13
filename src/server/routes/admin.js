@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import db from '../db.js';
-import { requireAdmin } from '../auth.js';
+import { requireAdmin, createSalt, hashPassphrase } from '../auth.js';
+import { generatePassphrase } from '../../client/src/passphrase.js';
 import { generateDemoData } from '../demoSeeder.js';
 import logger from '../logger.js';
 import { emitWishDeleted } from '../socket.js';
@@ -59,6 +60,36 @@ router.post('/wishes/clear-all-flags', requireAdmin, async (req, res) => {
   await db.prepare('UPDATE wishes SET flagged = 0').run();
   logger.info('Admin cleared all flags', { admin_user_id: req.user.id });
   res.json({ success: true });
+});
+
+router.post('/users/:username/reset-password', requireAdmin, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const providedPassphrase =
+      typeof req.body?.passphrase === 'string' ? req.body.passphrase.trim() : '';
+    const secret = providedPassphrase || generatePassphrase();
+    const salt = createSalt();
+    const hash = hashPassphrase(secret, salt);
+
+    await db
+      .prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?')
+      .run(hash, salt, user.id);
+    await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+
+    logger.info('Admin reset user password', {
+      admin_user_id: req.user.id,
+      target_user_id: user.id,
+    });
+    res.json({ success: true, new_passphrase: secret });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Internal error' });
+  }
 });
 
 router.get('/users', requireAdmin, async (req, res) => {

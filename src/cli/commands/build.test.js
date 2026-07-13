@@ -32,7 +32,7 @@ vi.mock('https', () => {
   };
 });
 
-import { downloadFile, main, FONTS, targetDir } from './download-fonts.js';
+import { downloadFile, downloadFonts, FONTS, targetDir } from './build.js';
 
 describe('download-fonts', () => {
   let mockWriteStream;
@@ -105,7 +105,7 @@ describe('download-fonts', () => {
         return new EventEmitter();
       });
 
-      await main();
+      await downloadFonts();
 
       expect(fs.mkdirSync).toHaveBeenCalledWith(targetDir, { recursive: true });
       expect(https.get).toHaveBeenCalledTimes(FONTS.length);
@@ -127,7 +127,7 @@ describe('download-fonts', () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      await main();
+      await downloadFonts();
 
       expect(consoleWarnSpy).toHaveBeenCalledTimes(FONTS.length);
       expect(consoleLogSpy).toHaveBeenCalledWith('Checking for font updates...');
@@ -150,7 +150,7 @@ describe('download-fonts', () => {
       const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {});
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      await main();
+      await downloadFonts();
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });

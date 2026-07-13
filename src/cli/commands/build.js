@@ -13,7 +13,7 @@ export const FONTS = [
   },
 ];
 
-export const targetDir = path.resolve(__dirname, '../src/client/public/fonts');
+export const targetDir = path.resolve(__dirname, '../../client/public/fonts');
 
 export function downloadFile(url, destPath, redirectCount = 0) {
   if (redirectCount > 5) {
@@ -50,7 +50,12 @@ export function downloadFile(url, destPath, redirectCount = 0) {
   });
 }
 
-export async function main() {
+export async function downloadFonts(opts = {}) {
+  if (opts.dryRun) {
+    console.log('Would have downloaded fallback fonts to: ' + targetDir);
+    return;
+  }
+
   // Ensure directory exists
   fs.mkdirSync(targetDir, { recursive: true });
 
@@ -70,8 +75,4 @@ export async function main() {
       }
     }
   }
-}
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  await main();
 }

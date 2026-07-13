@@ -1,7 +1,7 @@
 /** @vitest-environment node */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { resetPassword } from './reset-password.js';
-import db from '../src/server/db.js';
+import { resetPassword } from './db.js';
+import db from '../../server/db.js';
 
 describe('reset-password script', () => {
   beforeEach(async () => {
@@ -46,13 +46,15 @@ describe('reset-password script', () => {
   it('resets the password when providing a username and a new passphrase', async () => {
     let output = '';
     const success = await resetPassword(
-      ['testuser', 'new-secure-pass'],
+      'testuser',
+      'new-secure-pass',
+      {},
       (msg) => (output += msg + '\n'),
       () => {}
     );
 
     expect(success).toBe(true);
-    expect(output).toContain("Success! Passphrase for 'testuser' has been reset.");
+    expect(output).toContain("Success! Passphrase for 'testuser' has been reset locally.");
     expect(output).toContain('New Passphrase: new-secure-pass');
 
     const user = await db
@@ -70,13 +72,15 @@ describe('reset-password script', () => {
   it('generates a new passphrase if omitted', async () => {
     let output = '';
     const success = await resetPassword(
-      ['testuser'],
+      'testuser',
+      undefined,
+      {},
       (msg) => (output += msg + '\n'),
       () => {}
     );
 
     expect(success).toBe(true);
-    expect(output).toContain("Success! Passphrase for 'testuser' has been reset.");
+    expect(output).toContain("Success! Passphrase for 'testuser' has been reset locally.");
     expect(output).toContain('New Passphrase: ');
 
     const match = /New Passphrase: (\S+-\S+-\S+)/.exec(output);
@@ -96,24 +100,14 @@ describe('reset-password script', () => {
   it('fails and returns false if user does not exist', async () => {
     let errorOutput = '';
     const success = await resetPassword(
-      ['non-existent-user'],
+      'non-existent-user',
+      undefined,
+      {},
       () => {},
       (msg) => (errorOutput += msg + '\n')
     );
 
     expect(success).toBe(false);
     expect(errorOutput).toContain("Error: User 'non-existent-user' not found in the database.");
-  });
-
-  it('fails and prints usage if no arguments are provided', async () => {
-    let errorOutput = '';
-    const success = await resetPassword(
-      [],
-      () => {},
-      (msg) => (errorOutput += msg + '\n')
-    );
-
-    expect(success).toBe(false);
-    expect(errorOutput).toContain('Usage: node reset-password.js <username> [new_passphrase]');
   });
 });

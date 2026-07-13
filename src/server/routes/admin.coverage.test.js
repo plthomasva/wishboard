@@ -60,7 +60,7 @@ describe('Admin routes coverage', () => {
     });
 
     const response = await request(app)
-      .post(`/api/admin/users/${userId}/reset-password`)
+      .post(`/api/admin/users/reset-error-user/reset-password`)
       .set('Authorization', `Bearer ${token}`);
 
     // next(error) in Express will usually render a 500 HTML page or error JSON depending on the handler

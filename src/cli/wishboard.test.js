@@ -21,6 +21,14 @@ vi.mock('./commands/auth.js', () => ({
   generateAuthToken: vi.fn(),
 }));
 
+vi.mock('./commands/db.js', () => ({
+  resetPassword: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock('./commands/build.js', () => ({
+  downloadFonts: vi.fn().mockResolvedValue(),
+}));
+
 describe('wishboard CLI entrypoint', () => {
   let originalArgv;
   let exitSpy;
@@ -206,18 +214,20 @@ describe('wishboard CLI entrypoint', () => {
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
-  it('handles db reset-password placeholder', async () => {
-    await runCLI(['db', 'reset-password']);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('This command is not yet migrated')
+  it('routes to db reset-password command', async () => {
+    const dbModule = await import('./commands/db.js');
+    await runCLI(['db', 'reset-password', 'testuser', 'newpass123']);
+    expect(dbModule.resetPassword).toHaveBeenCalledWith(
+      'testuser',
+      'newpass123',
+      expect.anything()
     );
   });
 
-  it('handles build download-fonts placeholder', async () => {
+  it('routes to build download-fonts command', async () => {
+    const buildModule = await import('./commands/build.js');
     await runCLI(['build', 'download-fonts']);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('This command is not yet migrated')
-    );
+    expect(buildModule.downloadFonts).toHaveBeenCalled();
   });
 
   it('routes to auth token command with options', async () => {

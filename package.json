@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"node --watch ./src/server/index.js\"",
-    "prebuild": "node ./scripts/download-fonts.js",
+    "prebuild": "node ./src/cli/wishboard.js build download-fonts",
     "build": "vite build",
     "build:cli": "esbuild src/cli/wishboard.js --bundle --platform=node --format=esm --outfile=dist/wishboard.js",
     "preview": "vite preview",

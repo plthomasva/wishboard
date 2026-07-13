@@ -39,6 +39,7 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 - **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
 - **[#206](https://github.com/plthomasva/wishboard/issues/206)** — Expand the default role rules (power-exchange, activity, pet-play, rope, etc.) with cross-match/expansion, incl. switch/versatile modeling. Follow-up to the initial role defaults added with #199.
+- **Serverless WiFi Popup Toggle** — For serverless deployments, there is no local hardware AP/WiFi available. Investigate hiding the Wi-Fi connect pop-up on serverless stacks entirely, unless explicitly enabled for demonstration purposes.
 
 ## Infrastructure & DevOps
 
@@ -46,39 +47,3 @@ Enhancement and technical-debt work tracked as issues, for traceability:
   - **Description**: Implement a backup procedure to periodically snapshot the SQLite database (and optionally user-uploaded images in S3) to prevent data loss in the event of accidental stack deletion or corruption.
   - **Environment**: Production serverless deployments.
   - **Notes**: The serverless DB is now hosted **Turso** (libSQL) — evaluate its point-in-time restore vs. scheduling periodic `turso db dump` exports to a backup S3 bucket. The Pi keeps its embedded file DB (back up the `wishboard_data` volume). User-uploaded images live in S3 either way.
-
-## Unified CLI Migration Roadmap
-
-The GitHub Actions OIDC Setup/Destroy scripts and the AWS serverless deploy/destroy
-scripts have been migrated to the unified Node.js CLI under `src/cli/`. The remaining
-scripts are planned to be ported in subsequent iterations:
-
-### Phase 1: Build & DB Utilities
-
-- **`wishboard build download-fonts`**
-  - **Source**: `scripts/download-fonts.js`
-  - **Status**: Pending migration.
-- **`wishboard db reset-password <username> [new_passphrase]`**
-  - **Source**: `scripts/reset-password.js`
-  - **Status**: Pending migration.
-
-### Phase 2: Serverless Operations ✅
-
-- **`wishboard serverless deploy`**
-  - **Source**: `scripts/deploy-serverless.ps1` & `scripts/deploy-serverless.sh`
-  - **Status**: Migrated to `src/cli/commands/serverless.js`; legacy scripts removed.
-- **`wishboard serverless destroy`**
-  - **Source**: `scripts/destroy-serverless.ps1` & `scripts/destroy-serverless.sh`
-  - **Status**: Migrated to `src/cli/commands/serverless.js`; legacy scripts removed.
-
-### Phase 3: Kiosk Operations ✅
-
-- **`wishboard kiosk deploy`**
-  - **Source**: `scripts/deploy-kiosk.ps1` & `scripts/deploy-kiosk.sh`
-  - **Status**: Migrated to `src/cli/commands/kiosk.js` (cross-platform SSH/scp orchestration); legacy `.ps1`/`.sh` pair removed.
-- **`wishboard kiosk setup`**
-  - **Source**: `scripts/setup-kiosk.sh`
-  - **Status**: Migrated — CLI wrapper runs the Pi-only bash script, which stays as the system-admin source of truth (apt/systemd/rootless-docker/hotspot; no Windows twin to unify).
-- **`wishboard kiosk run`**
-  - **Source**: `scripts/build-kiosk.sh`
-  - **Status**: Migrated — CLI wrapper runs the Pi-only bash script (kept as source of truth).
