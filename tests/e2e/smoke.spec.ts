@@ -52,6 +52,37 @@ test.describe('Wishboard E2E Smoke Tests', () => {
     const wishCard = page.locator('.wish-card', { hasText: wishText });
     await expect(wishCard).toBeVisible();
 
+    // --- Layout & Rendering Checks (Resolving #134 backlog criteria) ---
+    const innerScale = wishCard.locator('.wish-card-inner-scale');
+    const wishTextEl = wishCard.locator('.wish-text');
+    const stickers = wishCard.locator('.identity-stickers');
+    const topActions = wishCard.locator('.card-top-left-actions');
+
+    const innerScaleBox = await innerScale.boundingBox();
+    const wishTextBox = await wishTextEl.boundingBox();
+    const stickersBox = await stickers.boundingBox();
+    const topActionsBox = await topActions.boundingBox();
+
+    expect(innerScaleBox).not.toBeNull();
+    expect(wishTextBox).not.toBeNull();
+    expect(stickersBox).not.toBeNull();
+    expect(topActionsBox).not.toBeNull();
+
+    if (innerScaleBox && wishTextBox && stickersBox && topActionsBox) {
+      // 1. Text fits within the scale wrapper (doesn't escape bottom)
+      expect(wishTextBox.y + wishTextBox.height).toBeLessThanOrEqual(
+        innerScaleBox.y + innerScaleBox.height + 1 // allow 1px rounding offset
+      );
+
+      // 2. Floats do not have negative top margins that push them above the card boundaries (no clipping by overflow: hidden)
+      expect(stickersBox.y).toBeGreaterThanOrEqual(innerScaleBox.y - 1);
+      expect(topActionsBox.y).toBeGreaterThanOrEqual(innerScaleBox.y - 1);
+
+      // 3. Stickers container is display: flex/inline-flex to tightly wrap its content (not block inline-height descent)
+      const displayValue = await stickers.evaluate((el) => getComputedStyle(el).display);
+      expect(['flex', 'inline-flex']).toContain(displayValue);
+    }
+
     // 5. Navigate to Admin Panel and login
     await page.click('button:has-text("Admin")');
     await expect(page.locator('h1')).toHaveText('Admin Panel');
