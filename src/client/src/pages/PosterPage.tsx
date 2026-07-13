@@ -3,12 +3,16 @@ import { QRCodeSVG } from 'qrcode.react';
 import { getServerConfig } from '../serverConfig';
 
 export default function PosterPage() {
-  // Resolve the domain at runtime: the server's configured public domain wins,
-  // else the host the poster is actually being viewed on (a browser is already at
-  // the right public URL), else the build-time env, else a last-resort default.
+  // Resolve the domain at runtime. If the poster is being viewed on a real domain
+  // (e.g. demo.wishboards.app), use that exact domain. If viewed on the Kiosk's local
+  // display (localhost), fall back to the server's explicitly configured public domain.
+  const config = getServerConfig();
+  const browserHost = globalThis.location?.host;
+  const isKioskDisplay =
+    browserHost?.startsWith('localhost') || browserHost?.startsWith('127.0.0.1');
   const domain =
-    getServerConfig().domain ||
-    globalThis.location?.host ||
+    (!isKioskDisplay ? browserHost : null) ||
+    config.domain ||
     import.meta.env.VITE_WISHBOARD_DOMAIN ||
     'wishboard.painless-computing.com';
   const url = `https://${domain}`;
@@ -81,27 +85,33 @@ export default function PosterPage() {
       <div style={styles.card}>
         <h1 style={styles.title}>Wishboard</h1>
         <p style={styles.subtitle}>
-          Welcome! Follow the two steps below to connect to the Wishboard and start making matches.
+          {config.isServerless
+            ? 'Welcome! Scan the QR code below to connect to the Wishboard and start making matches.'
+            : 'Welcome! Follow the two steps below to connect to the Wishboard and start making matches.'}
         </p>
 
         <div style={styles.stepsContainer}>
           {/* Step 1: WiFi */}
-          <div style={styles.stepCol}>
-            <h2 style={styles.stepTitle}>Step 1: Join Wi-Fi</h2>
-            <div style={styles.qrWrapper}>
-              <QRCodeSVG value={wifiString} size={240} level="H" />
+          {!config.isServerless && (
+            <div style={styles.stepCol}>
+              <h2 style={styles.stepTitle}>Step 1: Join Wi-Fi</h2>
+              <div style={styles.qrWrapper}>
+                <QRCodeSVG value={wifiString} size={240} level="H" />
+              </div>
+              <p style={{ fontSize: '1.2rem', margin: '0.5rem 0' }}>
+                <strong>Network:</strong> Wishboard_WiFi
+              </p>
+              <p style={{ fontSize: '1.2rem', margin: '0' }}>
+                <strong>Password:</strong> {wifiPass}
+              </p>
             </div>
-            <p style={{ fontSize: '1.2rem', margin: '0.5rem 0' }}>
-              <strong>Network:</strong> Wishboard_WiFi
-            </p>
-            <p style={{ fontSize: '1.2rem', margin: '0' }}>
-              <strong>Password:</strong> {wifiPass}
-            </p>
-          </div>
+          )}
 
           {/* Step 2: URL */}
           <div style={styles.stepCol}>
-            <h2 style={styles.stepTitle}>Step 2: Scan to Visit</h2>
+            <h2 style={styles.stepTitle}>
+              {config.isServerless ? 'Scan to Visit' : 'Step 2: Scan to Visit'}
+            </h2>
             <div style={styles.qrWrapper}>
               <QRCodeSVG value={url} size={240} level="H" />
             </div>

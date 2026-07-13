@@ -29,10 +29,17 @@ describe('PosterPage', () => {
     expect(screen.getByText('demo.wishboards.app')).toBeInTheDocument();
   });
 
-  it('falls back to the current host when no domain is configured', () => {
+  it('falls back to the default domain when viewed on localhost without a config', () => {
     setConfig(undefined);
     render(<PosterPage />);
-    // jsdom serves the page at localhost — the browser is already at the right host.
-    expect(screen.getByText(globalThis.location.host)).toBeInTheDocument();
+    // Since jsdom serves at localhost, the Kiosk logic skips it and falls back to the default.
+    expect(screen.getByText('wishboard.painless-computing.com')).toBeInTheDocument();
+  });
+
+  it('hides Wi-Fi instructions when in serverless mode', () => {
+    setConfig({ isServerless: true });
+    render(<PosterPage />);
+    expect(screen.queryByText('Step 1: Join Wi-Fi')).not.toBeInTheDocument();
+    expect(screen.getByText('Scan to Visit')).toBeInTheDocument();
   });
 });

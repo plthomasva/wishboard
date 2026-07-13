@@ -104,6 +104,7 @@ app.get('/api/config', (req, res) => {
     // kiosk Wi-Fi popup read these. Empty when unset; the client falls back sensibly.
     domain: process.env.WISHBOARD_DOMAIN || '',
     apIp: process.env.WISHBOARD_AP_IP || '',
+    isServerless: !!process.env.AWS_EXECUTION_ENV,
   });
 });
 
