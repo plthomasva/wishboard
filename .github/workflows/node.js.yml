@@ -71,7 +71,7 @@ jobs:
       - name: Get Playwright Version
         if: matrix.node-version == '24.x'
         id: playwright-version
-        run: echo "version=$(npm val @playwright/test version)" >> $GITHUB_OUTPUT
+        run: echo "version=$(npm view @playwright/test version)" >> $GITHUB_OUTPUT
       - name: Cache Playwright Browsers
         if: matrix.node-version == '24.x'
         uses: actions/cache@v6
