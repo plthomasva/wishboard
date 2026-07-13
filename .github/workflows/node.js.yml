@@ -68,6 +68,33 @@ jobs:
       - name: Integration tests (real DB / SAM / dependency contracts)
         if: matrix.node-version == '24.x'
         run: npm run test:integration
+      - name: Get Playwright Version
+        if: matrix.node-version == '24.x'
+        id: playwright-version
+        run: echo "version=$(npm val @playwright/test version)" >> $GITHUB_OUTPUT
+      - name: Cache Playwright Browsers
+        if: matrix.node-version == '24.x'
+        uses: actions/cache@v6
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      - name: Install Playwright Browsers
+        if: matrix.node-version == '24.x' && steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps
+      - name: Install Playwright System Deps
+        if: matrix.node-version == '24.x' && steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps
+      - name: Run Playwright E2E Smoke Tests
+        if: matrix.node-version == '24.x'
+        run: npm run test:e2e
+        env:
+          WISHBOARD_ADMIN_SECRET: e2e-admin-password
+      - name: Clean up E2E Test DB
+        if: always() && matrix.node-version == '24.x'
+        run: rm -f data/e2e-test.db data/e2e-test.db-shm data/e2e-test.db-wal
       - name: Ensure tests leave no artifacts in the working tree
         if: matrix.node-version == '24.x'
         run: |

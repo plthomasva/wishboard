@@ -17,6 +17,8 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "type-check": "tsc -p tsconfig.build.json --noEmit",
@@ -56,6 +58,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.61.1",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@techstark/opencv-js": "^5.0.0-release.1",
