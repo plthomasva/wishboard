@@ -26,20 +26,15 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 ### Performance
 
 - **[#156](https://github.com/plthomasva/wishboard/issues/156)** — Serve static assets gzip/brotli-compressed with long-lived, immutable `Cache-Control` headers on the Pi's nginx (follow-up to #140).
-- **[#157](https://github.com/plthomasva/wishboard/issues/157)** — Move password hashing off the event loop (`crypto.scryptSync` → async `crypto.scrypt`) so it doesn't block under concurrency (follow-up to #140).
 
 ### Bugs
 
-- **[#199](https://github.com/plthomasva/wishboard/issues/199)** — Matching over-matches: a "straight man" user was shown a "lesbian woman" wish. Tighten the acceptance/expansion rules and add regression tests for orientation/gender pairings.
-- **[#196](https://github.com/plthomasva/wishboard/issues/196)** — Event poster shows the default domain (`wishboard.painless-computing.com`) instead of the runtime domain (e.g. on `demo.wishboards.app`).
-- **[#197](https://github.com/plthomasva/wishboard/issues/197)** — Kiosk Wi-Fi join popup shows `http://<local-ip>:3000` instead of the https DNS-masqueraded domain.
 - **[#194](https://github.com/plthomasva/wishboard/issues/194)** — Kiosk `--reset-rules` does `rm -rf` on the whole `/app/data` volume (deletes uploaded images) and no longer resets the DB-stored rules; it should clear the DB `rules` table instead. (Related: `build-kiosk.sh`'s legacy `wishboard_data → ./data` copy runs on every deploy and clobbers live data — fixed alongside #193.)
 
 ### Features & Enhancements
 
 - **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
 - **[#206](https://github.com/plthomasva/wishboard/issues/206)** — Expand the default role rules (power-exchange, activity, pet-play, rope, etc.) with cross-match/expansion, incl. switch/versatile modeling. Follow-up to the initial role defaults added with #199.
-- **Serverless WiFi Popup Toggle** — For serverless deployments, there is no local hardware AP/WiFi available. Investigate hiding the Wi-Fi connect pop-up on serverless stacks entirely, unless explicitly enabled for demonstration purposes.
 
 ## Infrastructure & DevOps
 
