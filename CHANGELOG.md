@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.16.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.15.1...wishboard-v1.16.0) (2026-07-13)
+
+
+### Features
+
+* migrate SVG icons to Noto emoji font and optimize card layouts ([453b53e](https://github.com/plthomasva/wishboard/commit/453b53ebe90ecd9f111ae52843fd49469bb56c53))
+* superimpose card action overlays, add unread wishmail badges, and mask passphrase inputs ([453b53e](https://github.com/plthomasva/wishboard/commit/453b53ebe90ecd9f111ae52843fd49469bb56c53))
+
+
+### Bug Fixes
+
+* resolve kiosk and serverless visual popup/URL bugs ([#221](https://github.com/plthomasva/wishboard/issues/221)) ([ddfa5e5](https://github.com/plthomasva/wishboard/commit/ddfa5e50092554f0045add730d6f5445b6ee0a76)), closes [#196](https://github.com/plthomasva/wishboard/issues/196) [#197](https://github.com/plthomasva/wishboard/issues/197)
+
+
+### Performance Improvements
+
+* move password hashing off the event loop ([#157](https://github.com/plthomasva/wishboard/issues/157)) ([#223](https://github.com/plthomasva/wishboard/issues/223)) ([f6e299e](https://github.com/plthomasva/wishboard/commit/f6e299ec46d84b0e98aea8da90a9655dff511f73))
+
 ## [1.15.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.15.0...wishboard-v1.15.1) (2026-07-12)
 
 
