@@ -4,11 +4,17 @@
   "vitest": {
     "configFile": "stryker.vite.config.ts"
   },
-  "reporters": ["progress", "clear-text", "html", "json"],
+  "reporters": ["progress", "clear-text", "html", "json", "dashboard"],
   "htmlReporter": {
     "fileName": "reports/mutation/index.html"
   },
-  "coverageAnalysis": "off",
+  "dashboard": {
+    "project": "github.com/plthomasva/wishboard",
+    "version": "main",
+    "reportType": "full"
+  },
+  "coverageAnalysis": "perTest",
+  "ignoreStatic": true,
   "thresholds": {
     "high": 80,
     "low": 60,
@@ -27,11 +33,7 @@
     "!src/server/**/*.test.js",
     "!src/server/**/*.test.ts",
     "!src/cli/**/*.test.js",
-    "!src/client/src/components/WishScanner.tsx",
-    "!src/client/src/constants.ts",
-    "!src/client/src/pages/AboutPage.tsx",
-    "!src/client/src/pages/PosterPage.tsx",
-    "!src/client/src/components/WishPreview.tsx"
+    "!src/client/src/components/WishScanner.tsx"
   ],
   "ignorePatterns": ["!dist/**/*"]
 }

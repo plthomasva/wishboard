@@ -33,7 +33,13 @@ jobs:
 
       - name: Run Stryker Mutation Tests
         run: npx --no-install stryker run --concurrency 2
+        env:
+          STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
         continue-on-error: true # Keep deploying the report even if mutants survive and the process exits with an error code
+
+      - name: Generate Mutation Summary
+        if: always()
+        run: node scripts/generate-mutation-summary.js
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v6

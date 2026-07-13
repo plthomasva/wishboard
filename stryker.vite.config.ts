@@ -2,6 +2,7 @@ import base from './vite.config.ts';
 
 // Exclude index.test.js during Stryker runs to completely avoid sandbox file path collisions
 if (base.test) {
+  base.test.reporters = ['default'];
   base.test.exclude = [
     ...(base.test.exclude || [
       '**/node_modules/**',
