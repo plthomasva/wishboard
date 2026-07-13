@@ -2,6 +2,59 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+function calculateFileMetrics(fileData) {
+  let killed = 0;
+  let survived = 0;
+  let timeout = 0;
+  let noCoverage = 0;
+  let compileError = 0;
+  let runtimeError = 0;
+  let ignored = 0;
+
+  for (const mutant of fileData.mutants) {
+    switch (mutant.status) {
+      case 'Killed':
+        killed++;
+        break;
+      case 'Survived':
+        survived++;
+        break;
+      case 'Timeout':
+        timeout++;
+        break;
+      case 'NoCoverage':
+        noCoverage++;
+        break;
+      case 'CompileError':
+        compileError++;
+        break;
+      case 'RuntimeError':
+        runtimeError++;
+        break;
+      case 'Ignored':
+        ignored++;
+        break;
+      default:
+        survived++;
+    }
+  }
+
+  const total = killed + survived + timeout + noCoverage;
+  const score = total > 0 ? (((killed + timeout) / total) * 100).toFixed(2) : '100.00';
+
+  return {
+    score,
+    total,
+    killed,
+    survived,
+    timeout,
+    noCoverage,
+    compileError,
+    runtimeError,
+    ignored,
+  };
+}
+
 export function generateSummary(reportPath, summaryPath) {
   if (!summaryPath) {
     console.log('No summaryPath provided. Exiting.');
@@ -29,65 +82,19 @@ export function generateSummary(reportPath, summaryPath) {
     const fileSummaries = [];
 
     for (const [filePath, fileData] of Object.entries(data.files)) {
-      let killed = 0;
-      let survived = 0;
-      let timeout = 0;
-      let noCoverage = 0;
-      let compileError = 0;
-      let runtimeError = 0;
-      let ignored = 0;
+      const metrics = calculateFileMetrics(fileData);
 
-      for (const mutant of fileData.mutants) {
-        switch (mutant.status) {
-          case 'Killed':
-            killed++;
-            break;
-          case 'Survived':
-            survived++;
-            break;
-          case 'Timeout':
-            timeout++;
-            break;
-          case 'NoCoverage':
-            noCoverage++;
-            break;
-          case 'CompileError':
-            compileError++;
-            break;
-          case 'RuntimeError':
-            runtimeError++;
-            break;
-          case 'Ignored':
-            ignored++;
-            break;
-          default:
-            survived++; // fallback
-        }
-      }
-
-      totalKilled += killed;
-      totalSurvived += survived;
-      totalTimeout += timeout;
-      totalNoCoverage += noCoverage;
-      totalCompileError += compileError;
-      totalRuntimeError += runtimeError;
-      totalIgnored += ignored;
-
-      const fileTotal = killed + survived + timeout + noCoverage;
-      const fileScore =
-        fileTotal > 0 ? (((killed + timeout) / fileTotal) * 100).toFixed(2) : '100.00';
+      totalKilled += metrics.killed;
+      totalSurvived += metrics.survived;
+      totalTimeout += metrics.timeout;
+      totalNoCoverage += metrics.noCoverage;
+      totalCompileError += metrics.compileError;
+      totalRuntimeError += metrics.runtimeError;
+      totalIgnored += metrics.ignored;
 
       fileSummaries.push({
         path: filePath,
-        score: fileScore,
-        total: fileTotal,
-        killed,
-        survived,
-        timeout,
-        noCoverage,
-        compileError,
-        runtimeError,
-        ignored,
+        ...metrics,
       });
     }
 
@@ -114,11 +121,16 @@ export function generateSummary(reportPath, summaryPath) {
     markdown += `| --- | --- | --- | --- | --- | --- |\n`;
 
     // Sort files by score ascending (lowest score/highest risk first)
-    fileSummaries.sort((a, b) => parseFloat(a.score) - parseFloat(b.score));
+    fileSummaries.sort((a, b) => Number.parseFloat(a.score) - Number.parseFloat(b.score));
 
     for (const f of fileSummaries) {
-      const statusEmoji =
-        parseFloat(f.score) >= 80 ? '🟢' : parseFloat(f.score) >= 60 ? '🟡' : '🔴';
+      const scoreNum = Number.parseFloat(f.score);
+      let statusEmoji = '🔴';
+      if (scoreNum >= 80) {
+        statusEmoji = '🟢';
+      } else if (scoreNum >= 60) {
+        statusEmoji = '🟡';
+      }
       markdown += `| ${statusEmoji} \`${f.path}\` | **${f.score}%** | ${f.total} | ${f.killed} | ${f.survived} | ${f.timeout} |\n`;
     }
 
