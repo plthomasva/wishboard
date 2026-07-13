@@ -4,11 +4,16 @@
   "vitest": {
     "configFile": "stryker.vite.config.ts"
   },
-  "reporters": ["progress", "clear-text", "html", "json"],
+  "reporters": ["progress", "clear-text", "html", "json", "dashboard"],
   "htmlReporter": {
     "fileName": "reports/mutation/index.html"
   },
-  "coverageAnalysis": "off",
+  "dashboard": {
+    "project": "github.com/plthomasva/wishboard",
+    "version": "main",
+    "reportType": "full"
+  },
+  "coverageAnalysis": "perTest",
   "thresholds": {
     "high": 80,
     "low": 60,
