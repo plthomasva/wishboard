@@ -41,6 +41,7 @@ export default tseslint.config(
       '**/.aws-sam/**',
       '**/node_modules/**',
       'src/client/public',
+      'scratch/**',
     ],
   },
 

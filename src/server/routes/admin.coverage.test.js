@@ -46,10 +46,9 @@ describe('Admin routes coverage', () => {
     const token = await loginAsAdmin();
 
     // Register a user to trigger reset
-    const registerRes = await request(app)
+    await request(app)
       .post('/api/users/register')
       .send({ username: 'reset-error-user', passphrase: 'pwd' });
-    const userId = registerRes.body.id;
 
     const originalPrepare = await db.prepare.bind(db);
     const spy = vi.spyOn(db, 'prepare').mockImplementation((sql) => {

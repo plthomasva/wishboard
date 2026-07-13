@@ -32,13 +32,12 @@ vi.mock('./commands/build.js', () => ({
 describe('wishboard CLI entrypoint', () => {
   let originalArgv;
   let exitSpy;
-  let logSpy;
   let errorSpy;
 
   beforeEach(() => {
     originalArgv = process.argv;
     exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {});
-    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
