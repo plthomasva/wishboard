@@ -506,6 +506,8 @@ button:hover {
   color: #2c3e50;
   margin: 0;
   word-wrap: break-word;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .wish-actions {
