@@ -28,7 +28,7 @@ WISHBOARD_HOME=$(getent passwd wishboard | cut -d: -f6 || echo "/home/wishboard"
 sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard
 
 echo "Configuring environment variables..."
-if [[ "$MODE" = "prod" ]]; then
+if [[ "$MODE" = "prod" || "$MODE" = "dual" ]]; then
     # Runtime env (read by the server, served via /api/config). The old VITE_* names
     # were baked at image-build time in CI, so a value written here never reached the
     # already-built client bundle — the poster/Wi-Fi popup showed the wrong domain.

@@ -8,6 +8,7 @@ export interface ServerConfig {
   realtimeProvider?: string;
   domain?: string;
   apIp?: string;
+  isServerless?: boolean;
 }
 
 export function getServerConfig(): ServerConfig {

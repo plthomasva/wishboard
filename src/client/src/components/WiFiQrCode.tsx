@@ -46,7 +46,8 @@ export default function WiFiQrCode() {
     return () => clearTimeout(timeoutId);
   }, []);
 
-  if (!isVisible) return null;
+  const config = getServerConfig();
+  if (!isVisible || config.isServerless) return null;
 
   // Use dynamic string construction to prevent SonarCloud hardcoded credentials false-positive
   const wifiPass = import.meta.env.VITE_WIFI_PASSWORD || ['wishboard', '2026'].join('');
@@ -56,7 +57,6 @@ export default function WiFiQrCode() {
   // popup must show the address a *phone* uses. Prefer the server's configured
   // public domain (internet-facing → https); otherwise fall back to the local AP
   // IP served over http. Resolved at runtime so one image works on any domain.
-  const config = getServerConfig();
   const publicDomain = config.domain || import.meta.env.VITE_WISHBOARD_DOMAIN;
   const apIp = config.apIp || import.meta.env.VITE_WISHBOARD_AP_IP || '10.42.0.1:3000';
   const url = publicDomain ? `https://${publicDomain}` : `http://${apIp}`;
