@@ -328,7 +328,7 @@ router.post('/', upload.single('image'), async (req, res) => {
   if (!userId) {
     secret = passphrase?.trim() || generatePassphrase();
     const salt = createSalt();
-    const hash = hashPassphrase(secret, salt);
+    const hash = await hashPassphrase(secret, salt);
     secretHash = `${salt}:${hash}`;
   }
 
@@ -629,7 +629,9 @@ const getAuthorizedWish = async (req, res) => {
   const isOwner = user?.id === row.user_id;
   const isAuthorized =
     isOwner ||
-    (secret && row.secret_hash && verifyPassphrase(secret.trim(), ...row.secret_hash.split(':')));
+    (secret &&
+      row.secret_hash &&
+      (await verifyPassphrase(secret.trim(), ...row.secret_hash.split(':'))));
 
   if (!isAuthorized) {
     if (!secret && !isOwner && row.secret_hash) {
@@ -668,7 +670,7 @@ router.post('/:id/manage', async (req, res) => {
     let newSecret = null;
     if (row.secret_hash && new_passphrase?.trim()) {
       const salt = createSalt();
-      const hash = hashPassphrase(new_passphrase.trim(), salt);
+      const hash = await hashPassphrase(new_passphrase.trim(), salt);
       secretHashToUpdate = `${salt}:${hash}`;
       newSecret = new_passphrase.trim();
     }
@@ -749,7 +751,7 @@ router.post('/:id/claim', async (req, res) => {
   }
 
   const [salt, hash] = row.secret_hash.split(':');
-  if (!verifyPassphrase(secret.trim(), salt, hash)) {
+  if (!(await verifyPassphrase(secret.trim(), salt, hash))) {
     return res.status(403).json({ error: 'Invalid passphrase.' });
   }
 

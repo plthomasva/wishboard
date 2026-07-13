@@ -26,12 +26,12 @@ describe('Server Auth Helper Functions', () => {
       expect(salt.length).toBe(32);
 
       const passphrase = 'my-super-secret-passphrase';
-      const hash = hashPassphrase(passphrase, salt);
+      const hash = await hashPassphrase(passphrase, salt);
       expect(hash).toBeDefined();
       expect(typeof hash).toBe('string');
 
-      expect(verifyPassphrase(passphrase, salt, hash)).toBe(true);
-      expect(verifyPassphrase('wrong-passphrase', salt, hash)).toBe(false);
+      expect(await verifyPassphrase(passphrase, salt, hash)).toBe(true);
+      expect(await verifyPassphrase('wrong-passphrase', salt, hash)).toBe(false);
     });
   });
 

@@ -79,7 +79,7 @@ router.post('/users/:username/reset-password', requireAdmin, async (req, res, ne
 
     const { createSalt, hashPassphrase } = await import('../auth.js');
     const salt = createSalt();
-    const hash = hashPassphrase(passphrase, salt);
+    const hash = await hashPassphrase(passphrase, salt);
 
     await db
       .prepare('UPDATE users SET passphrase_hash = ?, passphrase_salt = ? WHERE id = ?')

@@ -1,3 +1,4 @@
+import { promisify } from 'node:util';
 import crypto from 'node:crypto';
 import db from './db.js';
 
@@ -15,11 +16,17 @@ export const createSalt = () => crypto.randomBytes(16).toString('hex');
 
 const scryptOptions = process.env.NODE_ENV === 'test' ? { N: 16, r: 1, p: 1 } : undefined;
 
-export const hashPassphrase = (passphrase, salt) =>
-  crypto.scryptSync(passphrase, salt, 64, scryptOptions).toString('hex');
+const scrypt = promisify(crypto.scrypt);
 
-export const verifyPassphrase = (passphrase, salt, hash) =>
-  hashPassphrase(passphrase, salt) === hash;
+export const hashPassphrase = async (passphrase, salt) => {
+  const derivedKey = await scrypt(passphrase, salt, 64, scryptOptions);
+  return derivedKey.toString('hex');
+};
+
+export const verifyPassphrase = async (passphrase, salt, hash) => {
+  const computedHash = await hashPassphrase(passphrase, salt);
+  return computedHash === hash;
+};
 
 export const createSessionToken = async (userId) => {
   const token = crypto.randomBytes(24).toString('hex');
