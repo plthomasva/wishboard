@@ -300,6 +300,8 @@ button:hover {
 
 .wish-card,
 .display-card {
+  display: flex;
+  flex-direction: column;
   position: relative;
   aspect-ratio: 5 / 3;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -1001,7 +1003,7 @@ button:hover {
 .wish-card-inner-scale {
   /* This container handles the scaling for all content inside the card */
   width: 100%;
-  height: max-content;
+  height: 100%;
   display: block;
 }
 
