@@ -170,9 +170,32 @@ npx wishboard serverless destroy --stack-name <stack> --force
 
 Options fall back to `aws-serverless/samconfig.toml`, then to your AWS config. Add `--dry-run` to preview the commands, or `--guided` to force the interactive first-time `sam deploy` setup.
 
-#### Roadmap Placeholders
+#### Database Administration
 
-The remaining `db` and `build` commands are still under active migration. Run `npx wishboard --help` to view instructions on running their legacy scripts.
+Reset passphrases in the Wishboard database:
+
+```bash
+# Reset a user passphrase (remote URLs optionally supported via --url and --admin)
+npx wishboard db reset-password <username> [new_passphrase]
+```
+
+#### Build Management
+
+Manage build and offline fallback assets:
+
+```bash
+# Download fallback Google fonts for offline kiosk execution
+npx wishboard build download-fonts
+```
+
+#### User Authentication & Tokens
+
+Generate session tokens:
+
+```bash
+# Generate an authenticated session token for a user
+npx wishboard auth token <username> --url <base_url>
+```
 
 ## Notes
 

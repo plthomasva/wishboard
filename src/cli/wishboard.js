@@ -16,6 +16,10 @@ const packageJson = JSON.parse(
 
 const program = new Command();
 
+program.configureHelp({
+  showGlobalOptions: true,
+});
+
 program
   .name('wishboard')
   .description('Unified deployment and administration CLI for Wishboard')
