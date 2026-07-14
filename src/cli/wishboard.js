@@ -193,6 +193,24 @@ dbGroup
     }
   });
 
+dbGroup
+  .command('reset-rules')
+  .description('Reset matching rules to bundled defaults (local or remote)')
+  .option('--url <url>', 'Remote Wishboard instance URL (kiosk or serverless)')
+  .option('--admin <username>', 'Admin username for remote execution', 'admin')
+  .option('--force', 'Skip production safety prompt')
+  .action(async (options, command) => {
+    try {
+      const opts = command.optsWithGlobals();
+      const { resetRules } = await import('./commands/db.js');
+      const success = await resetRules(opts);
+      if (!success) process.exit(1);
+    } catch (err) {
+      console.error(`\x1b[31mError resetting rules: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
+  });
+
 const buildGroup = program.command('build').description('Manage wishboard build tasks');
 
 buildGroup
