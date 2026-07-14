@@ -17,10 +17,6 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 - **[#145](https://github.com/plthomasva/wishboard/issues/145)** — Decide the durable shape for the Pi's libSQL data volume: keep the `build-kiosk.sh` chown, switch to a bind mount, or rely on the image's own chown (rootless-Docker ownership).
 - **[#162](https://github.com/plthomasva/wishboard/issues/162)** — Adopt S3 account-regional namespaces for buckets (squat-proof names; drops the hand-coded `${AWS::AccountId}` scheme). Surfaced during the #158 custom-domain incident.
 
-### Performance
-
-- **[#156](https://github.com/plthomasva/wishboard/issues/156)** — Serve static assets gzip/brotli-compressed with long-lived, immutable `Cache-Control` headers on the Pi's nginx (follow-up to #140).
-
 ### Features & Enhancements
 
 - **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
