@@ -17,6 +17,8 @@ This document outlines the core coding conventions, architectural patterns, envi
 
 - **Global Accessors:** In TypeScript files, always prefer `globalThis` over `window`, `self`, or `global` to align with SonarQube quality gate conventions and maintain environment-agnostic execution.
 - **Conventional Commits:** Always use conventional commit structures (e.g., `feat:`, `fix:`, `refactor:`, `test:`, `docs:`) for git commits and Pull Request titles. These are used to generate release change logs automatically.
+- **Shell conditionals:** Use `[[` instead of `[` in `#!/bin/bash` scripts. The `[[` construct is safer and more feature-rich. (POSIX `#!/bin/sh` scripts must keep `[`.)
+- **Code quality:** Prefer extracting reusable helpers over duplicating logic; avoid data clumps (pass structured objects, not long parameter lists).
 
 ---
 

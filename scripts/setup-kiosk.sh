@@ -36,6 +36,8 @@ sudo chown -R wishboard:wishboard $WISHBOARD_HOME
 echo "Installing graphical kiosk and network dependencies..."
 sudo apt-get update
 sudo apt-get install -y swaybg chromium network-manager iw nginx
+# Attempt to install brotli modules, but do not fail if unavailable
+sudo apt-get install -y libnginx-mod-http-brotli-filter libnginx-mod-http-brotli-static || echo "Warning: Brotli Nginx modules could not be installed."
 
 echo "Checking for Docker CE Rootless dependencies..."
 # We unconditionally ensure Docker CE, rootless-extras, uidmap and systemd-container are installed.
@@ -114,13 +116,13 @@ EOF
   sudo tee /etc/NetworkManager/dispatcher.d/90-wishboard-ap-channel.sh > /dev/null << 'EOF'
 #!/bin/bash
 IFACE="$1"; ACTION="$2"
-[ "$IFACE" = "wlan0" ] || exit 0
+[[ "$IFACE" = "wlan0" ]] || exit 0
 case "$ACTION" in up|dhcp4-change|connectivity-change) ;; *) exit 0 ;; esac
 ch=$(iw dev wlan0 info 2>/dev/null | awk '/channel/ {print $2; exit}')
-[ -n "$ch" ] || exit 0
-if [ "$ch" -gt 14 ]; then band=a; else band=bg; fi
+[[ -n "$ch" ]] || exit 0
+if [[ "$ch" -gt 14 ]]; then band=a; else band=bg; fi
 cur=$(nmcli -g 802-11-wireless.channel con show Hotspot 2>/dev/null)
-if [ "$cur" != "$ch" ]; then
+if [[ "$cur" != "$ch" ]]; then
   logger -t wishboard-ap "pinning ap0 hotspot to wlan0 channel $ch (band $band)"
   nmcli con modify Hotspot 802-11-wireless.band "$band" 802-11-wireless.channel "$ch"
   nmcli device set ap0 managed yes 2>/dev/null || true
@@ -192,6 +194,15 @@ if [[ ! -d "$CERT_DIR" ]]; then
 fi
 
 NGINX_CONF="/etc/nginx/sites-available/wishboard"
+
+# Check if Brotli Nginx module is installed
+ENABLE_BROTLI=""
+if [[ -d /etc/nginx/modules-enabled ]] && ls /etc/nginx/modules-enabled/*brotli* >/dev/null 2>&1; then
+    ENABLE_BROTLI="    brotli on;
+    brotli_comp_level 6;
+    brotli_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/wasm;"
+fi
+
 sudo tee "$NGINX_CONF" > /dev/null <<EOF
 map \$http_upgrade \$connection_upgrade {
     default upgrade;
@@ -214,6 +225,36 @@ server {
     ssl_certificate_key $CERT_DIR/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Gzip settings
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_buffers 16 8k;
+    gzip_http_version 1.1;
+    gzip_min_length 256;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/wasm;
+
+    # Brotli settings
+$ENABLE_BROTLI
+
+    location /assets/ {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \$connection_upgrade;
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
 
     location / {
         proxy_pass http://localhost:3000;

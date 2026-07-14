@@ -354,14 +354,43 @@ function performFrontendUpload(frontendBucket, distId, common, dryRun) {
     throw new Error(`Build output not found at ${DIST_DIR}.`);
   }
   logStep(`[6/6] Uploading frontend to s3://${frontendBucket} ...`);
-  const sync = execCommand(
+
+  // First, upload all root files with no-cache and remove stale files (excluding assets)
+  logInfo('Syncing root files (no-cache)...');
+  const syncRoot = execCommand(
     'aws',
-    ['s3', 'sync', DIST_DIR, `s3://${frontendBucket}`, '--delete', ...common],
-    {
-      dryRun,
-    }
+    [
+      's3',
+      'sync',
+      DIST_DIR,
+      `s3://${frontendBucket}`,
+      '--exclude',
+      'assets/*',
+      '--delete',
+      '--cache-control',
+      'no-cache, no-store, must-revalidate',
+      ...common,
+    ],
+    { dryRun }
   );
-  if (sync.status !== 0) throw new Error('Frontend upload to S3 failed.');
+  if (syncRoot.status !== 0) throw new Error('Frontend root files upload to S3 failed.');
+
+  // Second, upload assets/ with long-lived immutable cache control
+  logInfo('Syncing assets (immutable cache)...');
+  const syncAssets = execCommand(
+    'aws',
+    [
+      's3',
+      'sync',
+      path.join(DIST_DIR, 'assets'),
+      `s3://${frontendBucket}/assets`,
+      '--cache-control',
+      'public, max-age=31536000, immutable',
+      ...common,
+    ],
+    { dryRun }
+  );
+  if (syncAssets.status !== 0) throw new Error('Frontend assets upload to S3 failed.');
 
   if (distId) {
     logInfo(`Invalidating CloudFront cache (${distId})...`);
