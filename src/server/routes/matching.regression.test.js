@@ -171,10 +171,13 @@ describe('matching: roles (cross-match + expansion)', () => {
   const straightWomanWanting = (dr) => wish({ g: 'woman', o: 'straight', dr });
   const straightManWithRole = (r) => searcher({ g: 'man', o: 'straight', r });
 
-  it('a wish desiring a handler matches a pet (and pup/kitten via expansion)', () => {
+  it('a wish desiring a handler matches a pet (and pup/kitten/puppy/kitty/pony via expansion)', () => {
     expect(match(straightWomanWanting('handler'), straightManWithRole('pet'))).toBe(true);
     expect(match(straightWomanWanting('handler'), straightManWithRole('pup'))).toBe(true);
     expect(match(straightWomanWanting('handler'), straightManWithRole('kitten'))).toBe(true);
+    expect(match(straightWomanWanting('handler'), straightManWithRole('puppy'))).toBe(true);
+    expect(match(straightWomanWanting('handler'), straightManWithRole('kitty'))).toBe(true);
+    expect(match(straightWomanWanting('handler'), straightManWithRole('pony'))).toBe(true);
   });
 
   it('a wish desiring a pet matches a handler (cross-match is bidirectional)', () => {
@@ -192,5 +195,120 @@ describe('matching: roles (cross-match + expansion)', () => {
 
   it('no desired role means the role dimension does not constrain the match', () => {
     expect(match(straightWomanWanting([]), straightManWithRole('pet'))).toBe(true);
+  });
+});
+
+describe('matching: roles — switch cross-match (top ↔ switch ↔ bottom)', () => {
+  const straightWomanWanting = (dr) => wish({ g: 'woman', o: 'straight', dr });
+  const straightManWithRole = (r) => searcher({ g: 'man', o: 'straight', r });
+
+  it('a switch searcher matches a wish desiring a top', () => {
+    expect(match(straightWomanWanting('top'), straightManWithRole('switch'))).toBe(true);
+  });
+
+  it('a switch searcher matches a wish desiring a bottom', () => {
+    expect(match(straightWomanWanting('bottom'), straightManWithRole('switch'))).toBe(true);
+  });
+
+  it('a top searcher matches a wish desiring a switch', () => {
+    expect(match(straightWomanWanting('switch'), straightManWithRole('top'))).toBe(true);
+  });
+
+  it('a bottom searcher matches a wish desiring a switch', () => {
+    expect(match(straightWomanWanting('switch'), straightManWithRole('bottom'))).toBe(true);
+  });
+
+  it('switch does not match an unrelated role like handler', () => {
+    expect(match(straightWomanWanting('handler'), straightManWithRole('switch'))).toBe(false);
+  });
+});
+
+describe('matching: roles — D/s (dominant ↔ submissive) with synonym expansions', () => {
+  const straightWomanWanting = (dr) => wish({ g: 'woman', o: 'straight', dr });
+  const straightManWithRole = (r) => searcher({ g: 'man', o: 'straight', r });
+
+  it('dominant ↔ submissive cross-match both ways', () => {
+    expect(match(straightWomanWanting('dominant'), straightManWithRole('submissive'))).toBe(true);
+    expect(match(straightWomanWanting('submissive'), straightManWithRole('dominant'))).toBe(true);
+  });
+
+  it('wish desiring dominant also matches dom, domme, master, mistress', () => {
+    expect(match(straightWomanWanting('dominant'), straightManWithRole('dom'))).toBe(true);
+    expect(match(straightWomanWanting('dominant'), straightManWithRole('domme'))).toBe(true);
+    expect(match(straightWomanWanting('dominant'), straightManWithRole('master'))).toBe(true);
+    expect(match(straightWomanWanting('dominant'), straightManWithRole('mistress'))).toBe(true);
+  });
+
+  it('wish desiring submissive also matches sub, slave, service-sub, little', () => {
+    expect(match(straightWomanWanting('submissive'), straightManWithRole('sub'))).toBe(true);
+    expect(match(straightWomanWanting('submissive'), straightManWithRole('slave'))).toBe(true);
+    expect(match(straightWomanWanting('submissive'), straightManWithRole('service-sub'))).toBe(true);
+    expect(match(straightWomanWanting('submissive'), straightManWithRole('little'))).toBe(true);
+  });
+
+  it('wish desiring sub (synonym) also expands to the full submissive set', () => {
+    expect(match(straightWomanWanting('sub'), straightManWithRole('submissive'))).toBe(true);
+    expect(match(straightWomanWanting('sub'), straightManWithRole('slave'))).toBe(true);
+  });
+
+  it('wish desiring dom (synonym) also expands to the full dominant set', () => {
+    expect(match(straightWomanWanting('dom'), straightManWithRole('dominant'))).toBe(true);
+    expect(match(straightWomanWanting('dom'), straightManWithRole('domme'))).toBe(true);
+  });
+});
+
+describe('matching: roles — complementary pairs (master/slave, owner/property, rigger/rope-bunny, sadist/masochist, caregiver/little, brat-tamer/brat)', () => {
+  const straightWomanWanting = (dr) => wish({ g: 'woman', o: 'straight', dr });
+  const straightManWithRole = (r) => searcher({ g: 'man', o: 'straight', r });
+
+  it('master ↔ slave cross-match both ways', () => {
+    expect(match(straightWomanWanting('master'), straightManWithRole('slave'))).toBe(true);
+    expect(match(straightWomanWanting('slave'), straightManWithRole('master'))).toBe(true);
+  });
+
+  it('owner ↔ property cross-match both ways', () => {
+    expect(match(straightWomanWanting('owner'), straightManWithRole('property'))).toBe(true);
+    expect(match(straightWomanWanting('property'), straightManWithRole('owner'))).toBe(true);
+  });
+
+  it('rigger ↔ rope-bunny cross-match both ways', () => {
+    expect(match(straightWomanWanting('rigger'), straightManWithRole('rope-bunny'))).toBe(true);
+    expect(match(straightWomanWanting('rope-bunny'), straightManWithRole('rigger'))).toBe(true);
+  });
+
+  it('sadist ↔ masochist cross-match both ways', () => {
+    expect(match(straightWomanWanting('sadist'), straightManWithRole('masochist'))).toBe(true);
+    expect(match(straightWomanWanting('masochist'), straightManWithRole('sadist'))).toBe(true);
+  });
+
+  it('caregiver ↔ little cross-match both ways', () => {
+    expect(match(straightWomanWanting('caregiver'), straightManWithRole('little'))).toBe(true);
+    expect(match(straightWomanWanting('little'), straightManWithRole('caregiver'))).toBe(true);
+  });
+
+  it('wish desiring caregiver also matches daddy, mommy, mummy', () => {
+    expect(match(straightWomanWanting('caregiver'), straightManWithRole('daddy'))).toBe(true);
+    expect(match(straightWomanWanting('caregiver'), straightManWithRole('mommy'))).toBe(true);
+    expect(match(straightWomanWanting('caregiver'), straightManWithRole('mummy'))).toBe(true);
+  });
+
+  it('brat-tamer ↔ brat cross-match both ways', () => {
+    expect(match(straightWomanWanting('brat-tamer'), straightManWithRole('brat'))).toBe(true);
+    expect(match(straightWomanWanting('brat'), straightManWithRole('brat-tamer'))).toBe(true);
+  });
+
+  it('unrelated role pairs do not cross-match', () => {
+    expect(match(straightWomanWanting('rigger'), straightManWithRole('sadist'))).toBe(false);
+    expect(match(straightWomanWanting('owner'), straightManWithRole('slave'))).toBe(false);
+  });
+});
+
+describe('matching: roles — vers/versatile synonym expansion', () => {
+  const straightWomanWanting = (dr) => wish({ g: 'woman', o: 'straight', dr });
+  const straightManWithRole = (r) => searcher({ g: 'man', o: 'straight', r });
+
+  it('vers and versatile are synonyms and match each other', () => {
+    expect(match(straightWomanWanting('vers'), straightManWithRole('versatile'))).toBe(true);
+    expect(match(straightWomanWanting('versatile'), straightManWithRole('vers'))).toBe(true);
   });
 });
