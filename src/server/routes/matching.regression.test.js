@@ -242,7 +242,9 @@ describe('matching: roles — D/s (dominant ↔ submissive) with synonym expansi
   it('wish desiring submissive also matches sub, slave, service-sub, little', () => {
     expect(match(straightWomanWanting('submissive'), straightManWithRole('sub'))).toBe(true);
     expect(match(straightWomanWanting('submissive'), straightManWithRole('slave'))).toBe(true);
-    expect(match(straightWomanWanting('submissive'), straightManWithRole('service-sub'))).toBe(true);
+    expect(match(straightWomanWanting('submissive'), straightManWithRole('service-sub'))).toBe(
+      true
+    );
     expect(match(straightWomanWanting('submissive'), straightManWithRole('little'))).toBe(true);
   });
 
