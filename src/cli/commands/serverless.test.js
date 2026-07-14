@@ -131,10 +131,34 @@ describe('serverless commands', () => {
       expect(povValue).toContain("DomainName=''");
 
       // frontend upload + invalidation
-      const syncCall = vi
+      const syncCalls = vi
         .mocked(commandUtils.execCommand)
-        .mock.calls.find((c) => c[0] === 'aws' && c[1].includes('sync'));
-      expect(syncCall[1]).toEqual(expect.arrayContaining(['s3', 'sync', '--delete']));
+        .mock.calls.filter((c) => c[0] === 'aws' && c[1].includes('sync'));
+      expect(syncCalls.length).toBe(2);
+
+      // First sync (root files excluding assets)
+      expect(syncCalls[0][1]).toEqual(
+        expect.arrayContaining([
+          's3',
+          'sync',
+          '--exclude',
+          'assets/*',
+          '--delete',
+          '--cache-control',
+          'no-cache, no-store, must-revalidate',
+        ])
+      );
+
+      // Second sync (assets)
+      expect(syncCalls[1][1]).toEqual(
+        expect.arrayContaining([
+          's3',
+          'sync',
+          '--cache-control',
+          'public, max-age=31536000, immutable',
+        ])
+      );
+
       expect(commandUtils.execCommand).toHaveBeenCalledWith(
         'aws',
         expect.arrayContaining([
@@ -343,13 +367,29 @@ describe('serverless commands', () => {
       );
     });
 
-    it('throws if the S3 sync fails', () => {
+    it('throws if the first S3 sync (root files) fails', () => {
       vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
         if (cmd === 'aws' && args.includes('sync')) return { status: 1, stdout: '', stderr: 'x' };
         return defaultExec(cmd, args);
       });
       expect(() => deployServerless({ stackName: 'wishboard-serverless-dev' })).toThrow(
-        'Frontend upload to S3 failed.'
+        'Frontend root files upload to S3 failed.'
+      );
+    });
+
+    it('throws if the second S3 sync (assets) fails', () => {
+      let syncCount = 0;
+      vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
+        if (cmd === 'aws' && args.includes('sync')) {
+          syncCount++;
+          if (syncCount === 2) {
+            return { status: 1, stdout: '', stderr: 'x' };
+          }
+        }
+        return defaultExec(cmd, args);
+      });
+      expect(() => deployServerless({ stackName: 'wishboard-serverless-dev' })).toThrow(
+        'Frontend assets upload to S3 failed.'
       );
     });
 
