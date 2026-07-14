@@ -8,6 +8,7 @@ import { generateDemoData } from '../demoSeeder.js';
 import logger from '../logger.js';
 import { emitWishDeleted } from '../socket.js';
 import defaultRules from '../defaultRules.js';
+import { reloadRules } from '../rulesManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -214,6 +215,9 @@ router.post('/reset-rules', requireAdmin, async (req, res) => {
           rule.target_value
         );
     }
+
+    // Synchronize the memory cache
+    await reloadRules();
 
     logger.info('Admin reset matching rules to defaults', {
       admin_user_id: req.user.id,

@@ -1,6 +1,6 @@
 /** @vitest-environment node */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { resetPassword } from './db.js';
+import { resetPassword, resetRules } from './db.js';
 import { promptPassphrase } from './auth.js';
 import db from '../../server/db.js';
 
@@ -223,6 +223,202 @@ describe('reset-password script', () => {
 
       expect(success).toBe(false);
       expect(errOutput).toContain('Error resetting password remotely: Bad Request');
+    });
+  });
+
+  describe('reset-rules script', () => {
+    const origFetch = globalThis.fetch;
+    beforeEach(async () => {
+      // Recreate the rules table for local tests
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS rules (
+          id TEXT PRIMARY KEY,
+          rule_type TEXT NOT NULL,
+          trigger_attribute TEXT NOT NULL,
+          trigger_value TEXT NOT NULL,
+          context_attribute TEXT,
+          context_value TEXT,
+          target_attribute TEXT NOT NULL,
+          target_value TEXT NOT NULL
+        );
+      `);
+      globalThis.fetch = vi.fn();
+    });
+
+    afterEach(async () => {
+      globalThis.fetch = origFetch;
+      await db.exec('DELETE FROM rules;');
+      vi.clearAllMocks();
+    });
+
+    it('resets rules locally successfully', async () => {
+      // Insert a dummy rule
+      await db
+        .prepare(
+          `
+        INSERT INTO rules (id, rule_type, trigger_attribute, trigger_value, target_attribute, target_value)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+        )
+        .run('dummy-rule', 'expansion', 'gender', 'dummy', 'gender', 'dummy-val');
+
+      let output = '';
+      const success = await resetRules(
+        {},
+        (msg) => (output += msg + '\n'),
+        () => {}
+      );
+
+      expect(success).toBe(true);
+      expect(output).toContain('Cleared existing rules.');
+      expect(output).toContain('Success! Matching rules have been reset to defaults.');
+
+      const rulesCount = (await db.prepare('SELECT COUNT(*) AS count FROM rules').get()).count;
+      expect(rulesCount).toBeGreaterThan(0);
+
+      const dummy = await db.prepare('SELECT id FROM rules WHERE id = ?').get('dummy-rule');
+      expect(dummy).toBeUndefined();
+    });
+
+    it('logs dryRun locally without changing DB', async () => {
+      // Insert a dummy rule
+      await db
+        .prepare(
+          `
+        INSERT INTO rules (id, rule_type, trigger_attribute, trigger_value, target_attribute, target_value)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+        )
+        .run('dummy-rule', 'expansion', 'gender', 'dummy', 'gender', 'dummy-val');
+
+      let output = '';
+      const success = await resetRules(
+        { dryRun: true },
+        (msg) => (output += msg + '\n'),
+        () => {}
+      );
+
+      expect(success).toBe(true);
+      expect(output).toContain('Would have reset matching rules to bundled defaults locally.');
+
+      const dummy = await db.prepare('SELECT id FROM rules WHERE id = ?').get('dummy-rule');
+      expect(dummy).toBeDefined();
+      expect(dummy.id).toBe('dummy-rule');
+    });
+
+    it('logs dryRun remotely without making calls', async () => {
+      let output = '';
+      const success = await resetRules(
+        { dryRun: true, url: 'http://remote-url' },
+        (msg) => (output += msg + '\n'),
+        () => {}
+      );
+
+      expect(success).toBe(true);
+      expect(output).toContain(
+        'Would have reset matching rules to bundled defaults remotely at http://remote-url.'
+      );
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('resets rules remotely successfully', async () => {
+      vi.mocked(promptPassphrase).mockResolvedValue('admin-pass');
+
+      // Mock login fetch
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'mock-token' }),
+      });
+      // Mock reset-rules fetch
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ rules_count: 49 }),
+      });
+
+      let output = '';
+      const success = await resetRules(
+        { url: 'http://remote-url', admin: 'admin', force: true },
+        (msg) => (output += msg + '\n'),
+        () => {}
+      );
+
+      expect(success).toBe(true);
+      expect(promptPassphrase).toHaveBeenCalledWith('Enter passphrase for admin: ');
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+
+      // Verify reset rules call arguments
+      const resetCallArgs = globalThis.fetch.mock.calls[1];
+      expect(resetCallArgs[0]).toBe('http://remote-url/api/admin/reset-rules');
+      expect(JSON.parse(resetCallArgs[1].body)).toEqual({ force: true });
+
+      expect(output).toContain('Success! Matching rules have been reset to defaults.');
+      expect(output).toContain('Rules re-seeded: 49');
+    });
+
+    it('handles remote login failure', async () => {
+      vi.mocked(promptPassphrase).mockResolvedValue('admin-pass');
+
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: false,
+        statusText: 'Unauthorized',
+      });
+
+      let errOutput = '';
+      const success = await resetRules(
+        { url: 'http://remote-url' },
+        () => {},
+        (msg) => (errOutput += msg + '\n')
+      );
+
+      expect(success).toBe(false);
+      expect(errOutput).toContain('Error logging in as admin: Unauthorized');
+    });
+
+    it('handles remote reset rules failure', async () => {
+      vi.mocked(promptPassphrase).mockResolvedValue('admin-pass');
+
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ token: 'mock-token' }),
+      });
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: false,
+        statusText: 'Forbidden',
+        json: async () => ({ error: 'Explicit force required' }),
+      });
+
+      let errOutput = '';
+      const success = await resetRules(
+        { url: 'http://remote-url' },
+        () => {},
+        (msg) => (errOutput += msg + '\n')
+      );
+
+      expect(success).toBe(false);
+      expect(errOutput).toContain(
+        'Error resetting rules remotely: Forbidden — Explicit force required'
+      );
+    });
+
+    it('handles local DB failure gracefully', async () => {
+      const originalPrepare = await db.prepare.bind(db);
+      const spy = vi.spyOn(db, 'prepare').mockImplementation((sql) => {
+        if (typeof sql === 'string' && sql.includes('DELETE FROM rules')) {
+          throw new Error('Mock local DB failure');
+        }
+        return originalPrepare(sql);
+      });
+
+      let errOutput = '';
+      const success = await resetRules(
+        {},
+        () => {},
+        (msg) => (errOutput += msg + '\n')
+      );
+
+      expect(success).toBe(false);
+      expect(errOutput).toContain('Error resetting rules: Mock local DB failure');
+      spy.mockRestore();
     });
   });
 });

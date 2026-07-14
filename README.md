@@ -172,11 +172,14 @@ Options fall back to `aws-serverless/samconfig.toml`, then to your AWS config. A
 
 #### Database Administration
 
-Reset passphrases in the Wishboard database:
+Reset passwords or matching rules in the Wishboard database:
 
 ```bash
 # Reset a user passphrase (remote URLs optionally supported via --url and --admin)
 npx wishboard db reset-password <username> [new_passphrase]
+
+# Reset matching rules to bundled defaults (remote URLs optionally supported via --url and --admin)
+npx wishboard db reset-rules
 ```
 
 #### Build Management

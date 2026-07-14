@@ -323,4 +323,111 @@ describe('Admin routes coverage', () => {
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('isProduction');
   });
+
+  describe('reset-rules API', () => {
+    it('rejects requests from non-admin users (401)', async () => {
+      const response = await request(app).post('/api/admin/reset-rules').send({});
+      expect(response.status).toBe(401);
+    });
+
+    it('rejects requests in production mode unless force is set (403)', async () => {
+      const token = await loginAsAdmin();
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
+      try {
+        const response = await request(app)
+          .post('/api/admin/reset-rules')
+          .set('Authorization', `Bearer ${token}`)
+          .send({});
+        expect(response.status).toBe(403);
+        expect(response.body.error).toContain('force is explicitly requested');
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
+    });
+
+    it('allows resetting in production mode when force is true', async () => {
+      const token = await loginAsAdmin();
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
+      try {
+        const response = await request(app)
+          .post('/api/admin/reset-rules')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ force: true });
+        expect(response.status).toBe(200);
+        expect(response.body.message).toContain('Matching rules successfully reset');
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
+    });
+
+    it('resets rules in non-production successfully and syncs cache', async () => {
+      const token = await loginAsAdmin();
+
+      // Insert a dummy rule first to verify it gets cleared
+      await db
+        .prepare(
+          `
+        INSERT INTO rules (id, rule_type, trigger_attribute, trigger_value, target_attribute, target_value)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `
+        )
+        .run('temp-rule-id', 'expansion', 'gender', 'dummy', 'gender', 'dummy-target');
+
+      // Verify dummy rule is in the DB
+      let count = (
+        await db.prepare('SELECT COUNT(*) AS count FROM rules WHERE id = ?').get('temp-rule-id')
+      ).count;
+      expect(count).toBe(1);
+
+      // Perform reset-rules request
+      const response = await request(app)
+        .post('/api/admin/reset-rules')
+        .set('Authorization', `Bearer ${token}`)
+        .send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.rules_count).toBeGreaterThan(0);
+
+      // Verify dummy rule is cleared and default rules exist in DB
+      count = (
+        await db.prepare('SELECT COUNT(*) AS count FROM rules WHERE id = ?').get('temp-rule-id')
+      ).count;
+      expect(count).toBe(0);
+
+      const rulesCount = (await db.prepare('SELECT COUNT(*) AS count FROM rules').get()).count;
+      expect(rulesCount).toBe(response.body.rules_count);
+
+      // Verify cache reloading by checking if the loaded rules are exposed synchronously via rulesManager
+      const { getRules } = await import('../rulesManager.js');
+      const cachedRules = getRules();
+      expect(cachedRules.length).toBe(rulesCount);
+      expect(cachedRules.some((r) => r.id === 'temp-rule-id')).toBe(false);
+    });
+
+    it('handles database errors gracefully and returns 500', async () => {
+      const token = await loginAsAdmin();
+      const originalPrepare = await db.prepare.bind(db);
+      const spy = vi.spyOn(db, 'prepare').mockImplementation((sql) => {
+        if (typeof sql === 'string' && sql.includes('DELETE FROM rules')) {
+          throw new Error('Mock DB delete error');
+        }
+        return originalPrepare(sql);
+      });
+
+      try {
+        const response = await request(app)
+          .post('/api/admin/reset-rules')
+          .set('Authorization', `Bearer ${token}`)
+          .send({});
+        expect(response.status).toBe(500);
+        expect(response.body.error).toBe('Internal Server Error during rules reset');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
 });
