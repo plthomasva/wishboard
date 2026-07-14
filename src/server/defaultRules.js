@@ -19,7 +19,7 @@ const FIELDS = [
 const rows = [
   ['enrich_lesb_woman', 'enrichment', 'orientation', 'lesbian', null, null, 'gender', 'woman'],
   [
-    'enrich_gay_lesb',
+    'enrich_gay_lesbian',
     'enrichment',
     'orientation',
     'gay',
@@ -29,7 +29,7 @@ const rows = [
     'lesbian',
   ],
   [
-    'enrich_homo_lesb',
+    'enrich_homosexual_lesbian',
     'enrichment',
     'orientation',
     'homosexual',
@@ -79,7 +79,7 @@ const rows = [
     'man, woman, cis-man, cis-woman, men, women',
   ],
   [
-    'acc_lesb',
+    'acc_lesbian',
     'acceptance',
     'orientation',
     'lesbian',
@@ -90,7 +90,7 @@ const rows = [
   ],
   ['acc_gay_man', 'acceptance', 'orientation', 'gay', null, null, 'gender', 'man, cis-man, men'],
   [
-    'acc_homo_man',
+    'acc_homosexual_man',
     'acceptance',
     'orientation',
     'homosexual',
@@ -110,7 +110,7 @@ const rows = [
     'woman, cis-woman, women',
   ],
   [
-    'acc_homo_woman',
+    'acc_homosexual_woman',
     'acceptance',
     'orientation',
     'homosexual',
@@ -292,9 +292,123 @@ const rows = [
   // Role rules (see docs/MATCHING_RULES.md). Cross-match makes complementary roles
   // find each other bidirectionally; expansion broadens a role to its sub-kinds so
   // a "handler" wish also reaches a "pup"/"kitten" without enumerating every pair.
-  ['exp_pet', 'expansion', 'role', 'pet', null, null, 'role', 'pet, pup, kitten'],
+  //
+  // Note: expansion rules are single-pass (not recursive), so synonym redirects
+  // (e.g. sub → submissive) must repeat the full target list — this is intentional
+  // data redundancy, not a code smell. See #232 for context-gated expansion work.
+
+  // Pet/handler
+  [
+    'exp_role_pet',
+    'expansion',
+    'role',
+    'pet',
+    null,
+    null,
+    'role',
+    'pet, pup, puppy, kitten, kitty, pony',
+  ],
   ['cross_handler_pet', 'cross_match', 'role', 'handler', null, null, 'role', 'pet'],
+
+  // Top/bottom and switch
   ['cross_top_bottom', 'cross_match', 'role', 'top', null, null, 'role', 'bottom'],
+  ['cross_switch_top', 'cross_match', 'role', 'switch', null, null, 'role', 'top'],
+  ['cross_switch_bottom', 'cross_match', 'role', 'switch', null, null, 'role', 'bottom'],
+
+  // D/s (dominant / submissive) — note: expansion rules are flat so sub and dom
+  // each carry their own full synonym list
+  [
+    'cross_dominant_submissive',
+    'cross_match',
+    'role',
+    'dominant',
+    null,
+    null,
+    'role',
+    'submissive',
+  ],
+  [
+    'exp_role_submissive',
+    'expansion',
+    'role',
+    'submissive',
+    null,
+    null,
+    'role',
+    'submissive, sub, slave, service-sub, little',
+  ],
+  [
+    'exp_role_sub',
+    'expansion',
+    'role',
+    'sub',
+    null,
+    null,
+    'role',
+    'submissive, sub, slave, service-sub, little',
+  ],
+  [
+    'exp_role_dominant',
+    'expansion',
+    'role',
+    'dominant',
+    null,
+    null,
+    'role',
+    'dominant, dom, domme, master, mistress',
+  ],
+  [
+    'exp_role_dom',
+    'expansion',
+    'role',
+    'dom',
+    null,
+    null,
+    'role',
+    'dominant, dom, domme, master, mistress',
+  ],
+  [
+    'exp_role_domme',
+    'expansion',
+    'role',
+    'domme',
+    null,
+    null,
+    'role',
+    'dominant, dom, domme, master, mistress',
+  ],
+
+  // M/s (master / slave)
+  ['cross_master_slave', 'cross_match', 'role', 'master', null, null, 'role', 'slave'],
+
+  // Owner / property
+  ['cross_owner_property', 'cross_match', 'role', 'owner', null, null, 'role', 'property'],
+
+  // Rope bondage (rigger / rope-bunny)
+  ['cross_rigger_rope_bunny', 'cross_match', 'role', 'rigger', null, null, 'role', 'rope-bunny'],
+
+  // Sadist / masochist
+  ['cross_sadist_masochist', 'cross_match', 'role', 'sadist', null, null, 'role', 'masochist'],
+
+  // Caregiver / little (age-play adjacent; consensual adult dynamic)
+  ['cross_caregiver_little', 'cross_match', 'role', 'caregiver', null, null, 'role', 'little'],
+  [
+    'exp_role_caregiver',
+    'expansion',
+    'role',
+    'caregiver',
+    null,
+    null,
+    'role',
+    'caregiver, daddy, mommy, mummy',
+  ],
+
+  // Brat-tamer / brat
+  ['cross_brat_tamer_brat', 'cross_match', 'role', 'brat-tamer', null, null, 'role', 'brat'],
+
+  // Vers / versatile (queer sexual & BDSM versatile — synonym pair)
+  ['exp_role_vers', 'expansion', 'role', 'vers', null, null, 'role', 'vers, versatile'],
+  ['exp_role_versatile', 'expansion', 'role', 'versatile', null, null, 'role', 'vers, versatile'],
 ];
 
 export default rows.map((row) => Object.fromEntries(FIELDS.map((f, i) => [f, row[i]])));

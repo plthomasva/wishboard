@@ -41,20 +41,20 @@ describe('rulesManager (DB-backed)', () => {
     delete process.env.RULES_CACHE_TTL_MS;
   });
 
-  it('seeds the 32 bundled default rules into a fresh database on boot', () => {
-    expect(rm.getRules().length).toBe(32);
+  it('seeds the 49 bundled default rules into a fresh database on boot', () => {
+    expect(rm.getRules().length).toBe(49);
   });
 
   it('seedIfEmpty is a no-op when rules already exist', async () => {
     await rm.seedIfEmpty();
-    expect(rm.getRules().length).toBe(32); // not doubled
+    expect(rm.getRules().length).toBe(49); // not doubled
   });
 
   it('seedIfEmpty repopulates an empty table with the defaults', async () => {
     await db.execute('DELETE FROM rules');
     await rm.seedIfEmpty();
     await rm.reloadRules();
-    expect(rm.getRules().length).toBe(32);
+    expect(rm.getRules().length).toBe(49);
   });
 
   describe('CRUD against an empty table', () => {
