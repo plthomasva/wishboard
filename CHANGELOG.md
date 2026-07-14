@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.16.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.16.0...wishboard-v1.16.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* **aws:** grant SSM parameter read permission to GitHub OIDC role ([#226](https://github.com/plthomasva/wishboard/issues/226)) ([84145f2](https://github.com/plthomasva/wishboard/commit/84145f28fed87607fc17770b98b0812fbc01bb51))
+* expand default role rules ([#233](https://github.com/plthomasva/wishboard/issues/233)) ([3d68e7b](https://github.com/plthomasva/wishboard/commit/3d68e7b2efcc8551c31cddd773b73e4db24b5697))
+* wrap loadWishes and loadHiddenWishes in useCallback to resolve stale-closure risk ([#231](https://github.com/plthomasva/wishboard/issues/231)) ([8a2af08](https://github.com/plthomasva/wishboard/commit/8a2af085aaece151cde356feabae168fd259e1bc))
+
+
+### Performance Improvements
+
+* compress and cache static assets on Pi Nginx and S3 ([#229](https://github.com/plthomasva/wishboard/issues/229)) ([6dce355](https://github.com/plthomasva/wishboard/commit/6dce3550a8c930d4b7115211e039fb5df4ac269b))
+
 ## [1.16.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.15.1...wishboard-v1.16.0) (2026-07-13)
 
 
