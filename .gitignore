@@ -22,6 +22,8 @@ samconfig.toml
 response.json
 pr_body.md
 scratch/
+playwright-report/
+test-results/
 
 # Local SonarQube MCP server config (contains a SonarCloud token)
 .sonarqube.env
