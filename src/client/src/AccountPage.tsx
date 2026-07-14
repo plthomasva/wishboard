@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useExcludedWishes } from './hooks/useExcludedWishes';
 // @ts-ignore
@@ -290,7 +290,7 @@ export default function AccountPage() {
 
   const effectiveMode = existingUsername ? 'login' : mode;
 
-  const loadWishes = async () => {
+  const loadWishes = useCallback(async () => {
     setError(null);
     if (!user) {
       return;
@@ -304,9 +304,9 @@ export default function AccountPage() {
     }
     const data = await response.json();
     setWishes(data);
-  };
+  }, [user, token]);
 
-  const loadHiddenWishes = async () => {
+  const loadHiddenWishes = useCallback(async () => {
     if (user) {
       try {
         const response = await fetch('/api/wishes/exclusions', {
@@ -336,15 +336,15 @@ export default function AccountPage() {
         console.error('Failed to load local hidden wishes:', err);
       }
     }
-  };
+  }, [user, token, excludedIds]);
 
   useEffect(() => {
     loadWishes();
-  }, [user]);
+  }, [loadWishes]);
 
   useEffect(() => {
     loadHiddenWishes();
-  }, [user, excludedIds]);
+  }, [loadHiddenWishes]);
 
   useEffect(() => {
     if (!user) {
