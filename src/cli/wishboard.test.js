@@ -262,4 +262,14 @@ describe('wishboard CLI entrypoint', () => {
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
+
+  it('includes global options in subcommand help output', async () => {
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    await runCLI(['serverless', 'deploy', '--help']);
+    expect(exitSpy).toHaveBeenCalledWith(0);
+    const output = writeSpy.mock.calls.map((call) => call[0]).join('');
+    expect(output).toContain('Global Options:');
+    expect(output).toContain('--dry-run');
+    writeSpy.mockRestore();
+  });
 });
