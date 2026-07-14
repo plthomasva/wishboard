@@ -20,22 +20,10 @@ export async function resetPassword(
   }
 
   if (opts.url) {
-    const adminUser = opts.admin || 'admin';
-    const adminPass = await promptPassphrase(`Enter passphrase for ${adminUser}: `);
-
-    const loginRes = await fetch(`${opts.url}/api/users/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: adminUser, passphrase: adminPass }),
-    });
-
-    if (!loginRes.ok) {
-      consoleError(`Error logging in as admin: ${loginRes.statusText}`);
+    const token = await getAdminToken(opts.url, opts, consoleError);
+    if (!token) {
       return false;
     }
-
-    const loginData = await loginRes.json();
-    const token = loginData.token;
 
     const resetRes = await fetch(`${opts.url}/api/admin/users/${username}/reset-password`, {
       method: 'POST',
@@ -100,22 +88,10 @@ export async function resetRules(
   }
 
   if (opts.url) {
-    const adminUser = opts.admin || 'admin';
-    const adminPass = await promptPassphrase(`Enter passphrase for ${adminUser}: `);
-
-    const loginRes = await fetch(`${opts.url}/api/users/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: adminUser, passphrase: adminPass }),
-    });
-
-    if (!loginRes.ok) {
-      consoleError(`Error logging in as admin: ${loginRes.statusText}`);
+    const token = await getAdminToken(opts.url, opts, consoleError);
+    if (!token) {
       return false;
     }
-
-    const loginData = await loginRes.json();
-    const token = loginData.token;
 
     const resetRes = await fetch(`${opts.url}/api/admin/reset-rules`, {
       method: 'POST',
@@ -167,4 +143,27 @@ export async function resetRules(
     consoleError(`Error resetting rules: ${err.message}`);
     return false;
   }
+}
+
+/**
+ * Log in to the remote admin API and return the session token.
+ * Returns null if the login fails.
+ */
+async function getAdminToken(url, opts, consoleError) {
+  const adminUser = opts.admin || 'admin';
+  const adminPass = await promptPassphrase(`Enter passphrase for ${adminUser}: `);
+
+  const loginRes = await fetch(`${url}/api/users/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: adminUser, passphrase: adminPass }),
+  });
+
+  if (!loginRes.ok) {
+    consoleError(`Error logging in as admin: ${loginRes.statusText}`);
+    return null;
+  }
+
+  const loginData = await loginRes.json();
+  return loginData.token;
 }
