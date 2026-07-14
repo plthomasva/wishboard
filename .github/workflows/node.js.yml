@@ -64,10 +64,14 @@ jobs:
       - name: Build
         run: npm run build --if-present
       - name: Test and Coverage
-        run: npm run test:coverage
+        run: |
+          echo "## Unit Tests & Coverage" >> $GITHUB_STEP_SUMMARY
+          npm run test:coverage
       - name: Integration tests (real DB / SAM / dependency contracts)
         if: matrix.node-version == '24.x'
-        run: npm run test:integration
+        run: |
+          echo "## Integration Tests" >> $GITHUB_STEP_SUMMARY
+          npm run test:integration
       - name: Get Playwright Version
         if: matrix.node-version == '24.x'
         id: playwright-version
