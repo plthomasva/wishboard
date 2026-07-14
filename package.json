@@ -1,6 +1,6 @@
 {
   "name": "wishboard",
-  "version": "1.16.0",
+  "version": "1.16.1",
   "private": true,
   "bin": {
     "wishboard": "./src/cli/wishboard.js"
