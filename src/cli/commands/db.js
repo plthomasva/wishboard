@@ -1,6 +1,7 @@
 import db from '../../server/db.js';
 import { createSalt, hashPassphrase } from '../../server/auth.js';
 import { promptPassphrase } from './auth.js';
+import defaultRules from '../../server/defaultRules.js';
 
 export async function resetPassword(
   username,
@@ -19,22 +20,10 @@ export async function resetPassword(
   }
 
   if (opts.url) {
-    const adminUser = opts.admin || 'admin';
-    const adminPass = await promptPassphrase(`Enter passphrase for ${adminUser}: `);
-
-    const loginRes = await fetch(`${opts.url}/api/users/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: adminUser, passphrase: adminPass }),
-    });
-
-    if (!loginRes.ok) {
-      consoleError(`Error logging in as admin: ${loginRes.statusText}`);
+    const token = await getAdminToken(opts.url, opts, consoleError);
+    if (!token) {
       return false;
     }
-
-    const loginData = await loginRes.json();
-    const token = loginData.token;
 
     const resetRes = await fetch(`${opts.url}/api/admin/users/${username}/reset-password`, {
       method: 'POST',
@@ -77,4 +66,104 @@ export async function resetPassword(
   consoleLog(`\nSuccess! Passphrase for '${username}' has been reset locally.`);
   consoleLog(`New Passphrase: ${passphrase}\n`);
   return true;
+}
+
+/**
+ * Resets the rules table to the bundled defaults by clearing and re-seeding.
+ * Preserves all other tables (users, wishes, images, etc.).
+ * Supports both local and remote (--url) execution via API.
+ */
+export async function resetRules(
+  opts = {},
+  consoleLog = console.log,
+  consoleError = console.error
+) {
+  if (opts.dryRun) {
+    consoleLog(
+      `Would have reset matching rules to bundled defaults ` +
+        (opts.url ? `remotely at ${opts.url}` : 'locally') +
+        '.'
+    );
+    return true;
+  }
+
+  if (opts.url) {
+    const token = await getAdminToken(opts.url, opts, consoleError);
+    if (!token) {
+      return false;
+    }
+
+    const resetRes = await fetch(`${opts.url}/api/admin/reset-rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(opts.force ? { force: true } : {}),
+    });
+
+    if (!resetRes.ok) {
+      const errorData = await resetRes.json();
+      consoleError(
+        `Error resetting rules remotely: ${resetRes.statusText}${errorData.error ? ' — ' + errorData.error : ''}`
+      );
+      return false;
+    }
+
+    const resetData = await resetRes.json();
+    consoleLog(`\nSuccess! Matching rules have been reset to defaults.`);
+    consoleLog(`Rules re-seeded: ${resetData.rules_count}\n`);
+    return true;
+  }
+
+  try {
+    // Clear existing rules
+    await db.prepare('DELETE FROM rules').run();
+    consoleLog('Cleared existing rules.');
+
+    // Re-seed default rules
+    for (const rule of defaultRules) {
+      await db
+        .prepare(
+          `INSERT INTO rules (id, rule_type, trigger_attribute, trigger_value, context_attribute, context_value, target_attribute, target_value)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          rule.id,
+          rule.rule_type,
+          rule.trigger_attribute,
+          rule.trigger_value,
+          rule.context_attribute,
+          rule.context_value,
+          rule.target_attribute,
+          rule.target_value
+        );
+    }
+    consoleLog(`\nSuccess! Matching rules have been reset to defaults.`);
+    consoleLog(`Rules re-seeded: ${defaultRules.length}\n`);
+    return true;
+  } catch (err) {
+    consoleError(`Error resetting rules: ${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * Log in to the remote admin API and return the session token.
+ * Returns null if the login fails.
+ */
+async function getAdminToken(url, opts, consoleError) {
+  const adminUser = opts.admin || 'admin';
+  const adminPass = await promptPassphrase(`Enter passphrase for ${adminUser}: `);
+
+  const loginRes = await fetch(`${url}/api/users/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: adminUser, passphrase: adminPass }),
+  });
+
+  if (!loginRes.ok) {
+    consoleError(`Error logging in as admin: ${loginRes.statusText}`);
+    return null;
+  }
+
+  const loginData = await loginRes.json();
+  return loginData.token;
 }

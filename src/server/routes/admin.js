@@ -7,6 +7,8 @@ import { requireAdmin } from '../auth.js';
 import { generateDemoData } from '../demoSeeder.js';
 import logger from '../logger.js';
 import { emitWishDeleted } from '../socket.js';
+import defaultRules from '../defaultRules.js';
+import { reloadRules } from '../rulesManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -174,6 +176,60 @@ router.post('/reset-demo', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Failed to seed demo data:', error);
     res.status(500).json({ error: 'Internal Server Error during seeding' });
+  }
+});
+
+// POST /api/admin/reset-rules
+// Clears and re-seeds the matching rules table with bundled defaults.
+// Protected by requireAdmin; force-gated in production to prevent accidental resets.
+router.post('/reset-rules', requireAdmin, async (req, res) => {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    req.query.force !== 'true' &&
+    req.body?.force !== true
+  ) {
+    return res.status(403).json({
+      error: 'Matching rules reset is disabled in production unless force is explicitly requested.',
+    });
+  }
+
+  try {
+    // Clear existing rules
+    await db.prepare('DELETE FROM rules').run();
+
+    // Re-seed default rules
+    for (const rule of defaultRules) {
+      await db
+        .prepare(
+          `INSERT INTO rules (id, rule_type, trigger_attribute, trigger_value, context_attribute, context_value, target_attribute, target_value)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          rule.id,
+          rule.rule_type,
+          rule.trigger_attribute,
+          rule.trigger_value,
+          rule.context_attribute,
+          rule.context_value,
+          rule.target_attribute,
+          rule.target_value
+        );
+    }
+
+    // Synchronize the memory cache
+    await reloadRules();
+
+    logger.info('Admin reset matching rules to defaults', {
+      admin_user_id: req.user.id,
+      rules_count: defaultRules.length,
+    });
+    res.status(200).json({
+      message: 'Matching rules successfully reset to defaults.',
+      rules_count: defaultRules.length,
+    });
+  } catch (error) {
+    logger.error('Failed to reset rules:', { error: error.message, admin_user_id: req.user.id });
+    res.status(500).json({ error: 'Internal Server Error during rules reset' });
   }
 });
 
