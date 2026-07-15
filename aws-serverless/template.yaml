@@ -51,7 +51,8 @@ Resources:
   FrontendBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${ProjectName}-frontend-${AWS::AccountId}'
+      BucketNamePrefix: !Sub '${ProjectName}-frontend'
+      BucketNamespace: account-regional
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -64,7 +65,8 @@ Resources:
   ImagesBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${ProjectName}-images-${AWS::AccountId}'
+      BucketNamePrefix: !Sub '${ProjectName}-images'
+      BucketNamespace: account-regional
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true

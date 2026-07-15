@@ -21,6 +21,9 @@ function defaultExec(cmd, args = []) {
   if (cmd === 'aws' && has('get-caller-identity')) {
     return { status: 0, stdout: '123456789012\n', stderr: '' };
   }
+  if (cmd === 'aws' && has('s3') && has('ls')) {
+    return { status: 1, stdout: '', stderr: 'NoSuchBucket\n' };
+  }
   if (cmd === 'aws' && has('describe-stacks')) {
     if (has('FrontendBucketName')) return { status: 0, stdout: 'frontend-bucket\n', stderr: '' };
     if (has('CloudFrontDistributionId')) return { status: 0, stdout: 'DIST123\n', stderr: '' };
@@ -469,6 +472,65 @@ describe('serverless commands', () => {
           (c) => c[1].includes('update-function-configuration') && c[1].includes('--environment')
         );
       expect(update).toBeUndefined();
+    });
+
+    it('performs coordinated S3 migration when old-format buckets exist', () => {
+      // Mock s3 ls to return status 0 (buckets exist)
+      vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
+        const has = (s) => args.some((a) => String(a).includes(s));
+        if (cmd === 'aws' && has('s3') && has('ls')) {
+          return { status: 0, stdout: 'bucket exists\n', stderr: '' };
+        }
+        return defaultExec(cmd, args);
+      });
+
+      deployServerless({ stackName: 'wishboard-serverless-dev', region: 'us-east-1', mode: 'dev' });
+
+      // Verify that the images sync was called from oldImagesBucket to new imagesBucket
+      expect(commandUtils.execCommand).toHaveBeenCalledWith(
+        'aws',
+        expect.arrayContaining([
+          's3',
+          'sync',
+          's3://wishboard-dev-images-123456789012',
+          's3://images-bucket',
+        ]),
+        expect.any(Object)
+      );
+
+      // Verify that old buckets were emptied (rm)
+      expect(commandUtils.execCommand).toHaveBeenCalledWith(
+        'aws',
+        expect.arrayContaining([
+          's3',
+          'rm',
+          's3://wishboard-dev-images-123456789012',
+          '--recursive',
+        ]),
+        expect.any(Object)
+      );
+      expect(commandUtils.execCommand).toHaveBeenCalledWith(
+        'aws',
+        expect.arrayContaining([
+          's3',
+          'rm',
+          's3://wishboard-dev-frontend-123456789012',
+          '--recursive',
+        ]),
+        expect.any(Object)
+      );
+
+      // Verify that old buckets were deleted (rb)
+      expect(commandUtils.execCommand).toHaveBeenCalledWith(
+        'aws',
+        expect.arrayContaining(['s3', 'rb', 's3://wishboard-dev-images-123456789012']),
+        expect.any(Object)
+      );
+      expect(commandUtils.execCommand).toHaveBeenCalledWith(
+        'aws',
+        expect.arrayContaining(['s3', 'rb', 's3://wishboard-dev-frontend-123456789012']),
+        expect.any(Object)
+      );
     });
   });
 

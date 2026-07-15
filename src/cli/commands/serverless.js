@@ -471,6 +471,7 @@ export function deployServerless(options) {
   // --- 5. Read stack outputs ---
   logStep('[5/6] Reading stack outputs...');
   const frontendBucket = getStackOutput(stackName, common, 'FrontendBucketName', dryRun);
+  const imagesBucket = getStackOutput(stackName, common, 'ImagesBucketName', dryRun);
   const distId = getStackOutput(stackName, common, 'CloudFrontDistributionId', dryRun);
   const cfUrl = getStackOutput(stackName, common, 'CloudFrontUrl', dryRun);
   const customUrl = getStackOutput(stackName, common, 'CustomDomainUrl', dryRun);
@@ -478,7 +479,97 @@ export function deployServerless(options) {
   if (!frontendBucket) {
     throw new Error('FrontendBucketName output not found. Did the stack deploy successfully?');
   }
+  if (!imagesBucket) {
+    throw new Error('ImagesBucketName output not found. Did the stack deploy successfully?');
+  }
   logInfo(`Frontend bucket: ${frontendBucket}`);
+  logInfo(`Images bucket:   ${imagesBucket}`);
+
+  // --- Coordinated S3 migration check ---
+  let accountId = '';
+  try {
+    accountId = verifyAwsAuth(common, dryRun);
+  } catch (err) {
+    logInfo(`Warning: Unable to resolve AWS Account ID for S3 migration: ${err.message}`);
+  }
+
+  if (accountId) {
+    const tomlOverrides = readTomlValue('parameter_overrides');
+    let projectName = process.env.PROJECT_NAME || getOverrideValue('ProjectName', tomlOverrides);
+    if (!projectName) projectName = 'wishboard';
+    if (mode === 'dev' && projectName === 'wishboard') projectName = 'wishboard-dev';
+
+    const oldFrontendBucket = `${projectName}-frontend-${accountId}`;
+    const oldImagesBucket = `${projectName}-images-${accountId}`;
+
+    // Migrate ImagesBucket
+    if (oldImagesBucket !== imagesBucket) {
+      logStep(`Checking if old images bucket s3://${oldImagesBucket} exists...`);
+      const checkOldImages = execCommand(
+        'aws',
+        ['s3', 'ls', `s3://${oldImagesBucket}`, ...common],
+        {
+          stdio: 'pipe',
+          dryRun,
+        }
+      );
+      if (dryRun || checkOldImages.status === 0) {
+        logStep(
+          `[Migration] Copying user images from s3://${oldImagesBucket} to s3://${imagesBucket}...`
+        );
+        execCommand(
+          'aws',
+          ['s3', 'sync', `s3://${oldImagesBucket}`, `s3://${imagesBucket}`, ...common],
+          {
+            stdio: 'inherit',
+            dryRun,
+          }
+        );
+
+        logStep(`[Migration] Emptying old images bucket s3://${oldImagesBucket}...`);
+        execCommand('aws', ['s3', 'rm', `s3://${oldImagesBucket}`, '--recursive', ...common], {
+          stdio: 'pipe',
+          dryRun,
+        });
+
+        logStep(`[Migration] Deleting old images bucket s3://${oldImagesBucket}...`);
+        execCommand('aws', ['s3', 'rb', `s3://${oldImagesBucket}`, ...common], {
+          stdio: 'pipe',
+          dryRun,
+        });
+      } else {
+        logInfo('Old images bucket not found or already migrated.');
+      }
+    }
+
+    // Clean up FrontendBucket (static assets, no sync needed as Step 6 uploads fresh files)
+    if (oldFrontendBucket !== frontendBucket) {
+      logStep(`Checking if old frontend bucket s3://${oldFrontendBucket} exists...`);
+      const checkOldFrontend = execCommand(
+        'aws',
+        ['s3', 'ls', `s3://${oldFrontendBucket}`, ...common],
+        {
+          stdio: 'pipe',
+          dryRun,
+        }
+      );
+      if (dryRun || checkOldFrontend.status === 0) {
+        logStep(`[Migration] Emptying old frontend bucket s3://${oldFrontendBucket}...`);
+        execCommand('aws', ['s3', 'rm', `s3://${oldFrontendBucket}`, '--recursive', ...common], {
+          stdio: 'pipe',
+          dryRun,
+        });
+
+        logStep(`[Migration] Deleting old frontend bucket s3://${oldFrontendBucket}...`);
+        execCommand('aws', ['s3', 'rb', `s3://${oldFrontendBucket}`, ...common], {
+          stdio: 'pipe',
+          dryRun,
+        });
+      } else {
+        logInfo('Old frontend bucket not found or already migrated.');
+      }
+    }
+  }
 
   if (distId) {
     configureCloudFrontId(stackName, common, distId, dryRun);
