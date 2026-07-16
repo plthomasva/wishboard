@@ -437,55 +437,9 @@ function runBackendPipeline(options, stackName, region, profile, mode, common, d
 }
 
 /**
- * Builds and deploys (or updates) the Wishboard AWS serverless stack.
+ * Performs coordinated S3 migration when old-format regional buckets exist.
  */
-export function deployServerless(options) {
-  const dryRun = !!options.dryRun;
-  const mode = options.mode === 'dev' ? 'dev' : 'prod';
-  const frontendOnly = !!options.frontendOnly;
-  const skipFrontendUpload = !!options.skipFrontendUpload;
-
-  let { stackName, region, profile } = resolveConfig(options);
-  let common = awsCommonArgs(profile, region);
-
-  console.log('\n\x1b[32mWishboard serverless deployment\x1b[0m');
-  logInfo(`Stack:   ${stackName}`);
-  logInfo(`Profile: ${profile || '(default credentials)'}`);
-  logInfo(`Region:  ${region || '(from AWS config)'}`);
-  console.log('');
-
-  // --- Preflight ---
-  performPreflightChecks(frontendOnly, common, dryRun);
-
-  // --- 1. Frontend build ---
-  logStep('[1/6] Building frontend (npm run build)...');
-  const build = execCommand('npm', ['run', 'build'], { cwd: PROJECT_ROOT, dryRun });
-  if (build.status !== 0) throw new Error('Frontend build failed.');
-
-  if (!frontendOnly) {
-    const updated = runBackendPipeline(options, stackName, region, profile, mode, common, dryRun);
-    stackName = updated.stackName;
-    common = updated.common;
-  }
-
-  // --- 5. Read stack outputs ---
-  logStep('[5/6] Reading stack outputs...');
-  const frontendBucket = getStackOutput(stackName, common, 'FrontendBucketName', dryRun);
-  const imagesBucket = getStackOutput(stackName, common, 'ImagesBucketName', dryRun);
-  const distId = getStackOutput(stackName, common, 'CloudFrontDistributionId', dryRun);
-  const cfUrl = getStackOutput(stackName, common, 'CloudFrontUrl', dryRun);
-  const customUrl = getStackOutput(stackName, common, 'CustomDomainUrl', dryRun);
-
-  if (!frontendBucket) {
-    throw new Error('FrontendBucketName output not found. Did the stack deploy successfully?');
-  }
-  if (!imagesBucket) {
-    throw new Error('ImagesBucketName output not found. Did the stack deploy successfully?');
-  }
-  logInfo(`Frontend bucket: ${frontendBucket}`);
-  logInfo(`Images bucket:   ${imagesBucket}`);
-
-  // --- Coordinated S3 migration check ---
+function performCoordinatedS3Migration(common, mode, dryRun, imagesBucket, frontendBucket) {
   let accountId = '';
   try {
     accountId = verifyAwsAuth(common, dryRun);
@@ -570,6 +524,59 @@ export function deployServerless(options) {
       }
     }
   }
+}
+
+/**
+ * Builds and deploys (or updates) the Wishboard AWS serverless stack.
+ */
+export function deployServerless(options) {
+  const dryRun = !!options.dryRun;
+  const mode = options.mode === 'dev' ? 'dev' : 'prod';
+  const frontendOnly = !!options.frontendOnly;
+  const skipFrontendUpload = !!options.skipFrontendUpload;
+
+  let { stackName, region, profile } = resolveConfig(options);
+  let common = awsCommonArgs(profile, region);
+
+  console.log('\n\x1b[32mWishboard serverless deployment\x1b[0m');
+  logInfo(`Stack:   ${stackName}`);
+  logInfo(`Profile: ${profile || '(default credentials)'}`);
+  logInfo(`Region:  ${region || '(from AWS config)'}`);
+  console.log('');
+
+  // --- Preflight ---
+  performPreflightChecks(frontendOnly, common, dryRun);
+
+  // --- 1. Frontend build ---
+  logStep('[1/6] Building frontend (npm run build)...');
+  const build = execCommand('npm', ['run', 'build'], { cwd: PROJECT_ROOT, dryRun });
+  if (build.status !== 0) throw new Error('Frontend build failed.');
+
+  if (!frontendOnly) {
+    const updated = runBackendPipeline(options, stackName, region, profile, mode, common, dryRun);
+    stackName = updated.stackName;
+    common = updated.common;
+  }
+
+  // --- 5. Read stack outputs ---
+  logStep('[5/6] Reading stack outputs...');
+  const frontendBucket = getStackOutput(stackName, common, 'FrontendBucketName', dryRun);
+  const imagesBucket = getStackOutput(stackName, common, 'ImagesBucketName', dryRun);
+  const distId = getStackOutput(stackName, common, 'CloudFrontDistributionId', dryRun);
+  const cfUrl = getStackOutput(stackName, common, 'CloudFrontUrl', dryRun);
+  const customUrl = getStackOutput(stackName, common, 'CustomDomainUrl', dryRun);
+
+  if (!frontendBucket) {
+    throw new Error('FrontendBucketName output not found. Did the stack deploy successfully?');
+  }
+  if (!imagesBucket) {
+    throw new Error('ImagesBucketName output not found. Did the stack deploy successfully?');
+  }
+  logInfo(`Frontend bucket: ${frontendBucket}`);
+  logInfo(`Images bucket:   ${imagesBucket}`);
+
+  // --- Coordinated S3 migration check ---
+  performCoordinatedS3Migration(common, mode, dryRun, imagesBucket, frontendBucket);
 
   if (distId) {
     configureCloudFrontId(stackName, common, distId, dryRun);
