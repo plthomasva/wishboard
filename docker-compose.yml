@@ -6,9 +6,9 @@ services:
     # Changing this minor/major may require recreating the db_data volume.
     image: ghcr.io/tursodatabase/libsql-server:v0.24.33
     container_name: wishboard-db
-    user: '0:0'
+    user: "${WISHBOARD_UID:-1000}:${WISHBOARD_GID:-1000}"
     volumes:
-      - db_data:/var/lib/sqld
+      - ./data/db:/var/lib/sqld
     restart: unless-stopped
     environment:
       - RUST_LOG=info
@@ -37,6 +37,3 @@ services:
       # - WISHBOARD_ADMIN_USERNAME=admin
       # - WISHBOARD_ADMIN_SECRET=admin-board
       # - CORS_ALLOWED_ORIGINS=http://your-domain.com
-
-volumes:
-  db_data:
