@@ -10,6 +10,7 @@ APP_VERSION="${4:-latest}"
 
 # Configure the Docker command to securely execute as the wishboard service user using their isolated rootless daemon
 WISHBOARD_UID=$(id -u wishboard)
+WISHBOARD_GID=$(id -g wishboard)
 RUN_CMD="sudo -u wishboard DOCKER_HOST=unix:///run/user/$WISHBOARD_UID/docker.sock docker"
 
 echo "Deployment Mode: $MODE, Domain: $DOMAIN_NAME, Rules: $DEPLOY_RULES, Version: $APP_VERSION"
@@ -40,34 +41,19 @@ else
 fi
 sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> $WISHBOARD_HOME/wishboard/.env"
 sudo -u wishboard bash -c "echo 'APP_VERSION=$APP_VERSION' >> $WISHBOARD_HOME/wishboard/.env"
+sudo -u wishboard bash -c "echo 'WISHBOARD_UID=$WISHBOARD_UID' >> $WISHBOARD_HOME/wishboard/.env"
+sudo -u wishboard bash -c "echo 'WISHBOARD_GID=$WISHBOARD_GID' >> $WISHBOARD_HOME/wishboard/.env"
 
-echo "Checking for legacy standalone container..."
-if $RUN_CMD ps -a --format '{{.Names}}' | grep -Eq '^wishboard$'; then
-    echo "Stopping legacy wishboard container..."
-    $RUN_CMD stop wishboard || true
-    
-    # One-time migration of the legacy wishboard_data named volume INTO the bind
-    # mount — ONLY when the bind mount has no data yet. This guard is critical: the
-    # container is named `wishboard` even under compose, so without it this cp -a ran
-    # on every deploy and clobbered live data (rules edits, uploaded images) with the
-    # stale, orphaned wishboard_data volume.
-    if [[ "$DEPLOY_RULES" != "reset" ]] \
-        && [[ ! -f "$WISHBOARD_HOME/wishboard/data/rules.yaml" ]] \
-        && [[ ! -f "$WISHBOARD_HOME/wishboard/data/wishboard.db" ]]; then
-        echo "First run: migrating legacy wishboard_data volume into the bind mount..."
-        sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard/data
-        $RUN_CMD run --rm -v wishboard_data:/from -v $WISHBOARD_HOME/wishboard/data:/to alpine sh -c 'cp -a /from/. /to/ 2>/dev/null || true'
-    fi
-
-    echo "Removing legacy wishboard container..."
-    $RUN_CMD rm wishboard || true
+# One-time migration from the legacy db_data named volume to the new ./data/db host bind mount
+if $RUN_CMD volume inspect db_data &>/dev/null && { [ ! -d "$WISHBOARD_HOME/wishboard/data/db" ] || [ -z "$(ls -A $WISHBOARD_HOME/wishboard/data/db 2>/dev/null)" ]; }; then
+    echo "One-time migration: copying existing database from db_data named volume to ./data/db..."
+    sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard/data/db
+    # Temporary alpine container to copy files (runs under rootless docker, so files will be owned by wishboard user)
+    $RUN_CMD run --rm -v db_data:/from -v $WISHBOARD_HOME/wishboard/data/db:/to alpine sh -c 'cp -a /from/. /to/ 2>/dev/null || true'
+    sudo -u wishboard chmod -R 700 $WISHBOARD_HOME/wishboard/data/db
+    echo "Removing migrated db_data named volume..."
+    $RUN_CMD volume rm db_data || true
 fi
-
-# NOTE: --reset-rules (DEPLOY_RULES=reset) is handled AFTER the stack is up (see
-# below). It used to `volume rm db_data` + `rm -rf data/*` here, which nuked the
-# ENTIRE database (users, wishes, sessions) and DELETED UPLOADED IMAGES — far more
-# than "reset rules", and it no longer even reset the DB-backed rules correctly.
-# See #194 and docs/adr/0004-kiosk-data-persistence.md.
 
 # Navigate to the application directory where docker-compose.yml is uploaded
 cd $WISHBOARD_HOME/wishboard
@@ -88,20 +74,8 @@ fi
 echo "Docker image pull policy: $PULL_POLICY (mode: $MODE)"
 $RUN_CMD compose --env-file .env up -d --pull "$PULL_POLICY"
 
-# libsql-server's entrypoint starts as root, leaves /var/lib/sqld root-owned, then
-# runs the sqld daemon as uid 666. Under rootless Docker sqld (666) then can't
-# write its database ("SQLITE_READONLY") or its stats file ("Permission denied").
-# Wait for the data dir to appear, chown it to the sqld uid, then restart the app
-# so its schema init runs against a now-writable DB. See #144.
-echo "Aligning libsql-server data ownership to the sqld uid (666)..."
-for _ in $(seq 1 20); do
-    if [[ -n "$($RUN_CMD exec -u 0 wishboard-db sh -c 'ls -A /var/lib/sqld 2>/dev/null')" ]]; then
-        break
-    fi
-    sleep 1
-done
-$RUN_CMD exec -u 0 wishboard-db chown -R 666:666 /var/lib/sqld || true
-$RUN_CMD compose --env-file .env restart wishboard
+# Note: libsql-server data ownership alignment is no longer needed as the database container
+# runs directly under the wishboard user's host UID/GID on the ./data/db host bind mount.
 
 if [[ "$DEPLOY_RULES" = "reset" ]]; then
     # #194: reset matching rules ONLY — do not touch users, wishes, or images.
