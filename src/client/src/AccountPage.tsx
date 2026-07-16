@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useExcludedWishes } from './hooks/useExcludedWishes';
-// @ts-ignore
 import { generatePassphrase } from './passphrase.js';
 import InfoToggle from './components/InfoToggle';
 import AttributeInput from './components/AttributeInput';
@@ -136,6 +135,26 @@ function ClaimWishForm({
   );
 }
 
+interface UnauthenticatedAccountViewProps {
+  mode: 'login' | 'register';
+  setMode: (mode: 'login' | 'register') => void;
+  effectiveMode: 'login' | 'register';
+  onLogin: (event: React.SyntheticEvent<HTMLFormElement>) => Promise<void>;
+  onRegister: (event: React.SyntheticEvent<HTMLFormElement>) => Promise<void>;
+  username: string;
+  setUsername: (username: string) => void;
+  passphrase: string;
+  setPassphrase: (passphrase: string) => void;
+  identityGenders: string;
+  setIdentityGenders: (genders: string) => void;
+  identityOrientations: string;
+  setIdentityOrientations: (orientations: string) => void;
+  identityRoles: string;
+  setIdentityRoles: (roles: string) => void;
+  message: string | null;
+  error: string | null;
+}
+
 function UnauthenticatedAccountView({
   mode,
   setMode,
@@ -154,7 +173,7 @@ function UnauthenticatedAccountView({
   setIdentityRoles,
   message,
   error,
-}: Readonly<any>) {
+}: Readonly<UnauthenticatedAccountViewProps>) {
   return (
     <section>
       <h1>My Account</h1>
@@ -248,6 +267,20 @@ function UnauthenticatedAccountView({
   );
 }
 
+interface Wish {
+  id: string;
+  content: string;
+  flagged: number;
+  contacts: Array<{ type: string; value: string }>;
+  wishmail_enabled: boolean;
+  creator_genders: string[];
+  creator_orientations: string[];
+  is_active: boolean;
+  image_id?: string;
+  image_url?: string;
+  unread_wishmail_count?: number;
+}
+
 export default function AccountPage() {
   const { user, token, login, register, logout, refreshUser } = useAuth();
   const { excludedIds, unexcludeWish } = useExcludedWishes();
@@ -263,22 +296,8 @@ export default function AccountPage() {
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [wishes, setWishes] = useState<
-    Array<{
-      id: string;
-      content: string;
-      flagged: number;
-      contacts: any[];
-      wishmail_enabled: boolean;
-      creator_genders: string[];
-      creator_orientations: string[];
-      is_active: boolean;
-      image_id?: string;
-      image_url?: string;
-      unread_wishmail_count?: number;
-    }>
-  >([]);
-  const [hiddenWishes, setHiddenWishes] = useState<Array<any>>([]);
+  const [wishes, setWishes] = useState<Wish[]>([]);
+  const [hiddenWishes, setHiddenWishes] = useState<Wish[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePreview, setDeletePreview] = useState<{
     wishesCount: number;
