@@ -1,52 +1,49 @@
-# Wishboard Triage Report
+# Wishboard Triage Report & Action Plan
 
-Based on a review of `BACKLOG.md`, the `docs/adr/` directory, and the open GitHub issues, here is a summary of the current landscape to help us prioritize our next task.
+This report provides an updated assessment of the open backlog items in `BACKLOG.md` and active GitHub issues.
 
-## 1. Pending ADRs
+## 1. Recently Resolved & Cleaned Up
 
-All four documented ADRs are currently **Accepted** and implemented, with one minor follow-up:
+The following items from the previous triage run have been successfully resolved, verified, and merged:
 
-- **ADR-0004 (Kiosk Data Persistence)**: The core implementation is complete, but [Issue #145] remains as a follow-up to evaluate switching the Pi's Docker volume from a named volume with manual `chown` to a bind mount.
-
-## 2. High-Priority Bugs & Functional Gaps
-
-These items directly impact the user experience or current system correctness:
-
-- **[#199] Matching Over-Matches**: A bug where straight users are seeing lesbian wishes. Requires tightening the acceptance/expansion rules and adding regression tests. _(Listed in BACKLOG, though no active issue returned in the recent API call, may be closed or tracked differently)._
-- **[#197] Kiosk Wi-Fi Popup URL**: The join popup shows the local IP `http://<local-ip>:3000` instead of the DNS-masqueraded `https://...` domain.
-- **[#196] Event Poster URL**: The poster displays the default domain instead of the actual runtime domain (e.g., `demo.wishboards.app`).
-- **Serverless WiFi Popup Toggle**: (No issue number) Serverless deployments don't have local AP hardware, so the Wi-Fi connect popup should be disabled entirely by default.
-
-## 3. Tech Debt & Refactoring (Quality Gates)
-
-These issues improve the maintainability and testability of the codebase:
-
-- **[#209] Reduce Serverless Deploy Cognitive Complexity**: SonarCloud flagged `serverless.js:~300` as CRITICAL for maintainability. Refactoring the deploy function into smaller steps will resolve this.
-- **[#169] Refactor `runSamDeploy`**: Injectable sleep to allow testing the retry loop without real 5s waits.
-- **[#168] & [#165] Mutation Testing Gaps**: Harden `demoSeeder.js` and `WishScanner.tsx` against Stryker mutation tests to hit the ~80% target.
-- **[#134] Playwright E2E Test**: Implement a basic smoke test to catch runtime/bundling breakages that `jsdom` misses.
-
-## 4. Performance & Infrastructure
-
-- **[#157] Async Password Hashing**: Move `crypto.scryptSync` off the event loop to prevent blocking during concurrent logins.
-- **[#156] Pi Nginx Compression**: Serve static assets with gzip/brotli and long-lived cache headers.
-- **[#162] S3 Account-Regional Namespaces**: Drop the hand-coded AWS Account ID from bucket names in favor of squat-proof account-regional namespaces.
-- **Automated Database Backups**: (From Backlog) Implement periodic Turso dumps to S3 for serverless setups.
-
-## 5. Features & Enhancements
-
-- **[#217] New Rule Type**: Add new rule type for wish/user creation. _(Just opened yesterday)._
-- **[#206] Expand Default Roles**: Expand cross-matching/expansion rules for power-exchange/activity roles (e.g., top/bottom/switch).
-- **[#191] Granular WebSocket Subscriptions**: Move from a global `wish:*` firehose to per-view topic subscriptions for efficiency.
+- **[#145] Switch libSQL Volume to Bind Mount:** Switched database named volume to host bind mount, aligned UID/GID namespaces under rootless Docker, and deleted the legacy wait-and-chown loops.
+- **[#209] Reduce Serverless Deploy Cognitive Complexity:** Refactored `serverless.js` deployment script blocks and resolved SonarCloud complexity flags.
+- **[#169] Refactor runSamDeploy retry loop:** Added mockable sleep injections to allow robust testing of the deployment retry logic.
+- **[#247] Cache static fonts during serverless deploy:** Excluded fonts from the root `no-cache` sync and configured dedicated S3 sync caching (`public, max-age=31536000`).
 
 ---
 
-### Suggested Next Priorities
+## 2. Active Backlog Triage
 
-Given the state of the project, I'd recommend tackling one of the following next:
+Here is the triage of the 7 active issues currently tracked in the backlog and GitHub, evaluated by **Impact**, **Level of Effort (LOE)**, and **Priority**:
 
-1. **The Bug Fixes (#196, #197, or the Serverless WiFi Popup Toggle)**: These directly affect the visual polish and correctness of what users see when interacting with the board. We previously discussed the Serverless WiFi Popup toggle right before the CLI work.
-2. **Cognitive Complexity (#209)**: If we want to clear the SonarCloud critical warning on the `serverless.js` deployment script.
-3. **Async Password Hashing (#157)**: A relatively straightforward architectural win that improves the responsiveness of the Node.js event loop under load.
+| Issue    | Title                                    | Impact     | LOE        | Priority | Rationale / Recommendation                                                                                                                                                                                |
+| :------- | :--------------------------------------- | :--------- | :--------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **#217** | Add new rule type for wish/user creation | **High**   | **Medium** | **P1**   | **(Recommended Next)** Prevents contradictory states (e.g. `orientation: [gay, straight]`, `gender: man + orientation: lesbian`) at registration and wish creation. Directly protects matching integrity. |
+| **#239** | Evaluate enabling WAL mode locally       | **Medium** | **Low**    | **P1**   | Allows concurrent reads (searches, display updates) to execute without being blocked by wish writes. Very low effort, high return.                                                                        |
+| **#232** | Context-gated matching expansions        | **High**   | **High**   | **P2**   | Crucial for cross-community vocabulary handling (e.g. separating BDSM terms from general role expansions). Requires matching engine refactoring.                                                          |
+| **#191** | Per-view WebSocket subscriptions         | **Medium** | **Medium** | **P2**   | Generalizes socket channel filtering so that idle admin pages don't receive the raw `wish:*` firehose. Good network optimization.                                                                         |
+| **#238** | Automated database/media backups         | **High**   | **Medium** | **P2**   | Critical for operational resilience, especially for serverless Turso/S3. Low priority for local dev setups.                                                                                               |
+| **#165** | `WishScanner.tsx` Stryker mutation       | **Low**    | **High**   | **P3**   | Requires heavy mocking of OpenCV, Canvas 2D contexts, and rAF loops. High testing debt but low functional impact.                                                                                         |
+| **#180** | Upgrade to ESLint 10                     | **Low**    | **Low**    | **P3**   | **Blocked** upstream by `eslint-plugin-react` compatibility and `typescript-eslint` TS 7 peer dependencies. Pinned for now.                                                                               |
 
-What looks most valuable to tackle next?
+---
+
+## 3. Recommended Next Phase Action Plan
+
+### **P1 Phase (Immediate Focus)**
+
+1. **Enable SQLite WAL Mode (#239):**
+   - Introduce an environment flag `WISHBOARD_DB_WAL=1`.
+   - Modify `src/server/db.js` to execute `PRAGMA journal_mode=WAL` on initialization only if WAL is enabled.
+   - Add checks to prevent WAL execution on serverless Turso targets.
+2. **Implement Conflict Rules (#217):**
+   - Add support for `exclusion` rules in the matching/rules schema.
+   - Implement backend write-time validation in `POST /api/wishes` and `/api/users/profile`.
+   - Wire up UI inline warnings in `AttributeInput` to flag conflicts before submission.
+
+### **P2 Phase (Optimization & Engine Refinement)**
+
+3. **WebSocket Subscriptions (#191):** Clean up connection channels.
+4. **Context-Gated Expansion Rules (#232):** Refine semantic matching accuracy.
+5. **Backups (#238):** Establish standard database exports.

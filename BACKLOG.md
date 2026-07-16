@@ -13,7 +13,6 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 ### Database & Deployment
 
-- **[#145](https://github.com/plthomasva/wishboard/issues/145)** — Decide the durable shape for the Pi's libSQL data volume: keep the `build-kiosk.sh` chown, switch to a bind mount, or rely on the image's own chown (rootless-Docker ownership).
 - **[#239](https://github.com/plthomasva/wishboard/issues/239)** — Evaluate enabling WAL (Write-Ahead Logging) mode on local single-node deployments to prevent read operations from blocking during write bursts.
 
 ### Features & Enhancements
