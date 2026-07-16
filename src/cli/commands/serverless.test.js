@@ -137,15 +137,17 @@ describe('serverless commands', () => {
       const syncCalls = vi
         .mocked(commandUtils.execCommand)
         .mock.calls.filter((c) => c[0] === 'aws' && c[1].includes('sync'));
-      expect(syncCalls.length).toBe(2);
+      expect(syncCalls.length).toBe(3);
 
-      // First sync (root files excluding assets)
+      // First sync (root files excluding assets and fonts)
       expect(syncCalls[0][1]).toEqual(
         expect.arrayContaining([
           's3',
           'sync',
           '--exclude',
           'assets/*',
+          '--exclude',
+          'fonts/*',
           '--delete',
           '--cache-control',
           'no-cache, no-store, must-revalidate',
@@ -157,8 +159,20 @@ describe('serverless commands', () => {
         expect.arrayContaining([
           's3',
           'sync',
+          '--delete',
           '--cache-control',
           'public, max-age=31536000, immutable',
+        ])
+      );
+
+      // Third sync (fonts)
+      expect(syncCalls[2][1]).toEqual(
+        expect.arrayContaining([
+          's3',
+          'sync',
+          '--delete',
+          '--cache-control',
+          'public, max-age=31536000',
         ])
       );
 

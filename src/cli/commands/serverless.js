@@ -355,7 +355,7 @@ function performFrontendUpload(frontendBucket, distId, common, dryRun) {
   }
   logStep(`[6/6] Uploading frontend to s3://${frontendBucket} ...`);
 
-  // First, upload all root files with no-cache and remove stale files (excluding assets)
+  // First, upload all root files with no-cache and remove stale files (excluding assets and fonts)
   logInfo('Syncing root files (no-cache)...');
   const syncRoot = execCommand(
     'aws',
@@ -366,6 +366,8 @@ function performFrontendUpload(frontendBucket, distId, common, dryRun) {
       `s3://${frontendBucket}`,
       '--exclude',
       'assets/*',
+      '--exclude',
+      'fonts/*',
       '--delete',
       '--cache-control',
       'no-cache, no-store, must-revalidate',
@@ -384,6 +386,7 @@ function performFrontendUpload(frontendBucket, distId, common, dryRun) {
       'sync',
       path.join(DIST_DIR, 'assets'),
       `s3://${frontendBucket}/assets`,
+      '--delete',
       '--cache-control',
       'public, max-age=31536000, immutable',
       ...common,
@@ -391,6 +394,27 @@ function performFrontendUpload(frontendBucket, distId, common, dryRun) {
     { dryRun }
   );
   if (syncAssets.status !== 0) throw new Error('Frontend assets upload to S3 failed.');
+
+  // Third, upload fonts/ with long-lived cache control
+  const fontsDir = path.join(DIST_DIR, 'fonts');
+  if (fs.existsSync(fontsDir)) {
+    logInfo('Syncing fonts (cacheable)...');
+    const syncFonts = execCommand(
+      'aws',
+      [
+        's3',
+        'sync',
+        fontsDir,
+        `s3://${frontendBucket}/fonts`,
+        '--delete',
+        '--cache-control',
+        'public, max-age=31536000',
+        ...common,
+      ],
+      { dryRun }
+    );
+    if (syncFonts.status !== 0) throw new Error('Frontend fonts upload to S3 failed.');
+  }
 
   if (distId) {
     logInfo(`Invalidating CloudFront cache (${distId})...`);
