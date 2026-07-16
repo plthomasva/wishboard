@@ -114,10 +114,18 @@ Combined with an **Expansion** rule (e.g., "pet" expands to "pup, kitten"), a
 "handler" will automatically match with a "pup" or "kitten" without needing
 explicit rules for every combination!
 
-> The bundled defaults currently seed two role relationships — `handler ↔ pet`
-> (with `pet → pup, kitten`) and `top ↔ bottom`. Expanding this vocabulary
-> (power-exchange, rope, etc.) is tracked in
-> [#206](https://github.com/plthomasva/wishboard/issues/206).
+> The bundled defaults seed multiple role relationships and their respective expansions:
+>
+> - **Pet / Handler**: `handler ↔ pet` (with `pet` expanding to `pup, puppy, kitten, kitty, pony`)
+> - **Top / Bottom**: `top ↔ bottom` (along with `switch ↔ top` and `switch ↔ bottom`)
+> - **Dominant / Submissive**: `dominant ↔ submissive` (with `submissive` and `sub` expanding to `submissive, sub, slave, service-sub, little`; `dominant`, `dom`, and `domme` expanding to `dominant, dom, domme, master, mistress`)
+> - **Master / Slave**: `master ↔ slave`
+> - **Owner / Property**: `owner ↔ property`
+> - **Rigger / Rope-bunny**: `rigger ↔ rope-bunny` (rope bondage)
+> - **Sadist / Masochist**: `sadist ↔ masochist`
+> - **Caregiver / Little**: `caregiver ↔ little` (with `caregiver` expanding to `caregiver, daddy, mommy, mummy`)
+> - **Brat-tamer / Brat**: `brat-tamer ↔ brat`
+> - **Versatile / Vers**: `vers ↔ versatile` (synonyms)
 
 ## 5. Application of Rules in Search
 
