@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.17.1...wishboard-v1.18.0) (2026-07-16)
+
+
+### Features
+
+* **kiosk:** switch database named volume to host bind mount ([#145](https://github.com/plthomasva/wishboard/issues/145)) ([#245](https://github.com/plthomasva/wishboard/issues/245)) ([48b90b6](https://github.com/plthomasva/wishboard/commit/48b90b61da1b255bb16a6825c616d6f98e5ef620))
+
 ## [1.17.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.17.0...wishboard-v1.17.1) (2026-07-16)
 
 
