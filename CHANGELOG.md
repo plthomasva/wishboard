@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.18.0...wishboard-v1.18.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **serverless:** cache static fonts with long-lived max-age ([7ac353d](https://github.com/plthomasva/wishboard/commit/7ac353ded94660e89c1fb725910785a3a77592d0))
+
 ## [1.18.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.17.1...wishboard-v1.18.0) (2026-07-16)
 
 
