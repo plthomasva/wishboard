@@ -6,7 +6,7 @@ services:
     # Changing this minor/major may require recreating the db_data volume.
     image: ghcr.io/tursodatabase/libsql-server:v0.24.33
     container_name: wishboard-db
-    user: "${WISHBOARD_UID:-1000}:${WISHBOARD_GID:-1000}"
+    user: '${WISHBOARD_UID:-1000}:${WISHBOARD_GID:-1000}'
     volumes:
       - ./data/db:/var/lib/sqld
     restart: unless-stopped
