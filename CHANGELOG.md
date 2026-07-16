@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.17.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.17.0...wishboard-v1.17.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **lint:** resolve unexpected any and redundant ts-ignore warnings ([#242](https://github.com/plthomasva/wishboard/issues/242)) ([a78b278](https://github.com/plthomasva/wishboard/commit/a78b2782aa0b77a682fc2030bb89d97ca75e4db1))
+* **lint:** resolve warnings and any types in passphrase.test.ts ([#244](https://github.com/plthomasva/wishboard/issues/244)) ([8e7f807](https://github.com/plthomasva/wishboard/commit/8e7f807c34cbeb2e53423aeb9ad4d892643a4684))
+
 ## [1.17.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.16.1...wishboard-v1.17.0) (2026-07-16)
 
 
