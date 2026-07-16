@@ -354,6 +354,113 @@ describe('serverless commands', () => {
       expect(() => deployServerless({ stackName: 'wishboard-serverless-dev' })).toThrow(message);
     });
 
+    it('retries sam deploy up to 4 times and succeeds if a retry succeeds', () => {
+      let attempts = 0;
+      vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
+        if (cmd === 'sam' && args[0] === 'deploy') {
+          attempts++;
+          if (attempts < 3) {
+            return { status: 1, stdout: '', stderr: 'flaky upload error' };
+          }
+          return { status: 0, stdout: 'success', stderr: '' };
+        }
+        return defaultExec(cmd, args);
+      });
+
+      const sleepMock = vi.fn();
+      deployServerless({
+        stackName: 'wishboard-serverless-dev',
+        region: 'us-east-1',
+        mode: 'dev',
+        skipFrontendUpload: true,
+        sleep: sleepMock,
+      });
+
+      expect(attempts).toBe(3);
+      expect(sleepMock).toHaveBeenCalledTimes(2);
+      expect(sleepMock).toHaveBeenLastCalledWith(5000);
+    });
+
+    it('throws after 4 failed attempts of sam deploy', () => {
+      let attempts = 0;
+      vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
+        if (cmd === 'sam' && args[0] === 'deploy') {
+          attempts++;
+          return { status: 1, stdout: '', stderr: 'flaky upload error' };
+        }
+        return defaultExec(cmd, args);
+      });
+
+      const sleepMock = vi.fn();
+      expect(() =>
+        deployServerless({
+          stackName: 'wishboard-serverless-dev',
+          region: 'us-east-1',
+          mode: 'dev',
+          skipFrontendUpload: true,
+          sleep: sleepMock,
+        })
+      ).toThrow('sam deploy failed after 4 attempt(s).');
+
+      expect(attempts).toBe(4);
+      expect(sleepMock).toHaveBeenCalledTimes(3);
+    });
+
+    it('never retries sam deploy in guided mode', () => {
+      let attempts = 0;
+      vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
+        if (cmd === 'sam' && args[0] === 'deploy') {
+          attempts++;
+          return { status: 1, stdout: '', stderr: 'guided mode fail' };
+        }
+        return defaultExec(cmd, args);
+      });
+
+      const sleepMock = vi.fn();
+      // guided is triggered if samconfig.toml does not exist (existsSync returns false)
+      vi.mocked(fs.existsSync).mockImplementation((p) => !String(p).includes('samconfig.toml'));
+
+      expect(() =>
+        deployServerless({
+          stackName: 'wishboard-serverless-dev',
+          region: 'us-east-1',
+          mode: 'dev',
+          skipFrontendUpload: true,
+          sleep: sleepMock,
+          guided: true,
+        })
+      ).toThrow('sam deploy failed after 1 attempt(s).');
+
+      expect(attempts).toBe(1);
+      expect(sleepMock).not.toHaveBeenCalled();
+    });
+
+    it('never retries sam deploy in dry-run mode', () => {
+      let attempts = 0;
+      vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
+        if (cmd === 'sam' && args[0] === 'deploy') {
+          attempts++;
+          return { status: 1, stdout: '', stderr: 'dryrun fail' };
+        }
+        return defaultExec(cmd, args);
+      });
+
+      const sleepMock = vi.fn();
+      expect(() =>
+        deployServerless({
+          stackName: 'wishboard-serverless-dev',
+          region: 'us-east-1',
+          mode: 'dev',
+          skipFrontendUpload: true,
+          sleep: sleepMock,
+          dryRun: true,
+        })
+      ).toThrow('sam deploy failed after 1 attempt(s).');
+
+      expect(attempts).toBe(1);
+      expect(sleepMock).not.toHaveBeenCalled();
+    });
+
     it('throws if the FrontendBucketName stack output is missing', () => {
       vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
         if (

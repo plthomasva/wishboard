@@ -205,7 +205,7 @@ function buildParameterOverrides(mode) {
 }
 
 /** Runs sam deploy, retrying transient upload failures for non-guided deploys. */
-function runSamDeploy(deployArgs, guided, dryRun) {
+function runSamDeploy(deployArgs, guided, dryRun, sleepFn = sleepSync) {
   // Let boto retry transient S3/network errors while uploading artifacts.
   process.env.AWS_MAX_ATTEMPTS = '6';
   process.env.AWS_RETRY_MODE = 'adaptive';
@@ -223,7 +223,7 @@ function runSamDeploy(deployArgs, guided, dryRun) {
     logInfo(
       `sam deploy attempt ${attempt} failed (exit ${res.status}); likely a transient upload error. Retrying in 5s...`
     );
-    sleepSync(5000);
+    sleepFn(5000);
   }
 }
 
@@ -318,7 +318,7 @@ function performBackendBuild(dryRun) {
   if (postBuild.status !== 0) throw new Error('post-build.js failed.');
 }
 
-function performStackDeploy(stackName, common, guided, mode, dryRun) {
+function performStackDeploy(stackName, common, guided, mode, dryRun, sleepFn = sleepSync) {
   if (guided) {
     logStep('[4/6] Deploying stack (sam deploy --guided)...');
     logInfo('No samconfig.toml found or --guided specified; starting interactive setup.');
@@ -346,7 +346,7 @@ function performStackDeploy(stackName, common, guided, mode, dryRun) {
     'Project=wishboard',
   ];
 
-  runSamDeploy(deployArgs, guided, dryRun);
+  runSamDeploy(deployArgs, guided, dryRun, sleepFn);
 }
 
 function performFrontendUpload(frontendBucket, distId, common, dryRun) {
@@ -419,7 +419,7 @@ function runBackendPipeline(options, stackName, region, profile, mode, common, d
   let guided = options.guided || !fs.existsSync(SAM_CONFIG);
   if (process.env.CI) guided = false;
 
-  performStackDeploy(stackName, common, guided, mode, dryRun);
+  performStackDeploy(stackName, common, guided, mode, dryRun, options.sleep);
 
   // A guided deploy writes/updates samconfig.toml, so pick up the values the
   // user just chose. For a non-guided deploy samconfig is unchanged, and
