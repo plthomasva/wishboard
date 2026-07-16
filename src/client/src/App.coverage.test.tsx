@@ -5,7 +5,7 @@ import React from 'react';
 
 vi.mock('./pages/HomePage', () => ({ default: () => <div>HomePage Mock</div> }));
 vi.mock('./pages/DisplayPage', () => ({
-  default: ({ onEnterKiosk, isKiosk }: any) => (
+  default: ({ onEnterKiosk, isKiosk }: { onEnterKiosk: () => void; isKiosk: boolean }) => (
     <div>
       <div>DisplayPage Mock</div>
       <div>Is Kiosk: {isKiosk ? 'Yes' : 'No'}</div>
@@ -20,7 +20,7 @@ const mockLogin = vi.fn();
 const mockSetTokenExternally = vi.fn();
 
 vi.mock('./AuthContext', () => ({
-  AuthProvider: ({ children }: any) => <div>{children}</div>,
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   useAuth: () => ({
     user: { username: 'testuser' },
     login: mockLogin,
@@ -44,9 +44,8 @@ describe('App Coverage', () => {
 
   it('handles window undefined in getHashPage and checkIsKioskParam', () => {
     const originalWindow = globalThis.window;
-    // @ts-ignore
-    delete (globalThis as any).window;
-    (globalThis as any).window = originalWindow;
+    delete (globalThis as Record<string, unknown>).window;
+    (globalThis as Record<string, unknown>).window = originalWindow;
   });
 
   it('navigates to account when clicking user link', async () => {

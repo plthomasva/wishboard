@@ -1,13 +1,14 @@
 import '@testing-library/jest-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { ReactNode } from 'react';
 import App from './App';
 
 const useAuthMock = vi.fn();
 const loginMock = vi.fn();
 
 vi.mock('./AuthContext', () => ({
-  AuthProvider: ({ children }: any) => <div>{children}</div>,
+  AuthProvider: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   useAuth: () => useAuthMock(),
 }));
 
@@ -16,7 +17,7 @@ vi.mock('./pages/EnterWishPage', () => ({ default: () => <div>EnterWishPage Mock
 vi.mock('./pages/SearchPage', () => ({ default: () => <div>SearchPage Mock</div> }));
 vi.mock('./pages/AboutPage', () => ({ default: () => <div>AboutPage Mock</div> }));
 vi.mock('./pages/DisplayPage', () => ({
-  default: ({ onEnterKiosk, isKiosk }: any) => (
+  default: ({ onEnterKiosk, isKiosk }: { onEnterKiosk: () => void; isKiosk: boolean }) => (
     <div>
       <div>DisplayPage Mock</div>
       <div>Is Kiosk: {isKiosk ? 'Yes' : 'No'}</div>
