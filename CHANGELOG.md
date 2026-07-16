@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.17.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.16.1...wishboard-v1.17.0) (2026-07-16)
+
+
+### Features
+
+* add reset-rules support for serverless and kiosk deployments ([#235](https://github.com/plthomasva/wishboard/issues/235)) ([c01cfac](https://github.com/plthomasva/wishboard/commit/c01cfacee2b740965056635cb82a3de49a7a6bd7))
+* **aws:** adopt S3 account-regional namespaces and automate bucket migration ([#237](https://github.com/plthomasva/wishboard/issues/237)) ([537359d](https://github.com/plthomasva/wishboard/commit/537359decca5a464da6ad7669d70408728498047))
+
 ## [1.16.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.16.0...wishboard-v1.16.1) (2026-07-14)
 
 
