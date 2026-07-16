@@ -517,6 +517,22 @@ describe('serverless commands', () => {
       );
     });
 
+    it('throws if the third S3 sync (fonts) fails', () => {
+      let syncCount = 0;
+      vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
+        if (cmd === 'aws' && args.includes('sync')) {
+          syncCount++;
+          if (syncCount === 3) {
+            return { status: 1, stdout: '', stderr: 'x' };
+          }
+        }
+        return defaultExec(cmd, args);
+      });
+      expect(() => deployServerless({ stackName: 'wishboard-serverless-dev' })).toThrow(
+        'Frontend fonts upload to S3 failed.'
+      );
+    });
+
     it('throws if the CloudFront invalidation fails', () => {
       vi.mocked(commandUtils.execCommand).mockImplementation((cmd, args = []) => {
         if (cmd === 'aws' && args.includes('create-invalidation')) {
