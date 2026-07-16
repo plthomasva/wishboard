@@ -1,6 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-// @ts-ignore
-// @ts-ignore
 import { generatePassphrase } from './passphrase.js';
 
 describe('generatePassphrase', () => {
@@ -26,11 +24,10 @@ describe('generatePassphrase', () => {
 
   it('uses node crypto if globalThis.crypto is undefined', async () => {
     const originalCrypto = globalThis.crypto;
-    // @ts-ignore
-    delete (globalThis as any).crypto;
+    delete (globalThis as Record<string, unknown>).crypto;
 
     vi.resetModules();
-    // @ts-ignore
+    // @ts-expect-error - cache-busting query parameter is not in declarations
     const { generatePassphrase } = await import('./passphrase.js?node-fallback');
     expect(generatePassphrase()).toBeTypeOf('string');
 
@@ -39,17 +36,15 @@ describe('generatePassphrase', () => {
 
   it('throws an error if no crypto is available', async () => {
     const originalCrypto = globalThis.crypto;
-    // @ts-ignore
-    delete (globalThis as any).crypto;
+    delete (globalThis as Record<string, unknown>).crypto;
 
     const originalNodeVersion = process.versions?.node;
     if (process.versions) {
-      // @ts-ignore
-      delete (process.versions as any).node;
+      delete (process.versions as Record<string, unknown>).node;
     }
 
     vi.resetModules();
-    // @ts-ignore
+    // @ts-expect-error - cache-busting query parameter is not in declarations
     await expect(import('./passphrase.js?error-fallback')).rejects.toThrow(
       'No secure crypto available in this environment.'
     );
@@ -63,7 +58,7 @@ describe('generatePassphrase', () => {
 
 describe('randomIndex', () => {
   it('returns 0 if max is <= 1', async () => {
-    const { randomIndex } = await import('./passphrase.js'); // @ts-ignore;
+    const { randomIndex } = await import('./passphrase.js');
     expect(randomIndex(1)).toBe(0);
     expect(randomIndex(0)).toBe(0);
     expect(randomIndex(-5)).toBe(0);
@@ -83,7 +78,7 @@ describe('randomIndex', () => {
       },
     });
 
-    // @ts-ignore
+    // @ts-expect-error - cache-busting query parameter is not in declarations
     const { randomIndex } = await import('./passphrase.js?test=retry');
 
     expect(randomIndex(3)).toBe(0);
