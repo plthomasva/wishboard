@@ -3,6 +3,8 @@ import { customAlphabet } from 'nanoid';
 import db from './db.js';
 import { createSalt, hashPassphrase } from './auth.js';
 import logger from './logger.js';
+import { getExclusionConflicts } from './routes/wishes.js';
+import { getRules, reloadRules } from './rulesManager.js';
 
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
@@ -95,8 +97,8 @@ function generateRandomContacts() {
   }));
 }
 
-function randomListStr(arr, chanceEmpty) {
-  return crypto.randomInt(0, 100) > chanceEmpty ? '[]' : JSON.stringify(getRandom(arr, 2));
+function randomList(arr, chanceEmpty) {
+  return crypto.randomInt(0, 100) > chanceEmpty ? [] : getRandom(arr, 2);
 }
 
 // Helper to generate a random Mad Libs wish
@@ -137,9 +139,23 @@ async function generateDemoUsers() {
     const hash = await hashPassphrase('demo-password', salt);
 
     // Generate random identities
-    const genders = JSON.stringify(getRandomGenders());
-    const orientations = JSON.stringify(getRandom(mockOrientations));
-    const roles = JSON.stringify(getRandom(mockRoles));
+    let gendersArr, orientationsArr, rolesArr;
+    let attempts = 0;
+    while (true) {
+      gendersArr = getRandomGenders();
+      orientationsArr = getRandom(mockOrientations);
+      rolesArr = getRandom(mockRoles);
+      const conflicts = getExclusionConflicts(
+        { gender: gendersArr, orientation: orientationsArr, role: rolesArr },
+        getRules()
+      );
+      if (conflicts.length === 0 || attempts > 10) break;
+      attempts++;
+    }
+
+    const genders = JSON.stringify(gendersArr);
+    const orientations = JSON.stringify(orientationsArr);
+    const roles = JSON.stringify(rolesArr);
     const contacts = generateRandomContacts();
     const wishmailEnabledInt = crypto.randomInt(0, 100) > 50 ? 1 : 0;
     const createdAt = new Date().toISOString();
@@ -175,9 +191,23 @@ function createSingleWish(insertWish, randomUser) {
   const id = idGenerator();
   const content = generateMadLibsWish();
 
-  const desiredGenders = randomListStr(mockGenders, 40);
-  const desiredOrientations = randomListStr(mockOrientations, 60);
-  const desiredRoles = randomListStr(mockRoles, 70);
+  let desiredGendersArr, desiredOrientationsArr, desiredRolesArr;
+  let attempts = 0;
+  while (true) {
+    desiredGendersArr = randomList(mockGenders, 40);
+    desiredOrientationsArr = randomList(mockOrientations, 60);
+    desiredRolesArr = randomList(mockRoles, 70);
+    const conflicts = getExclusionConflicts(
+      { gender: desiredGendersArr, orientation: desiredOrientationsArr, role: desiredRolesArr },
+      getRules()
+    );
+    if (conflicts.length === 0 || attempts > 10) break;
+    attempts++;
+  }
+
+  const desiredGenders = JSON.stringify(desiredGendersArr);
+  const desiredOrientations = JSON.stringify(desiredOrientationsArr);
+  const desiredRoles = JSON.stringify(desiredRolesArr);
 
   const timeOffset = crypto.randomInt(0, 30 * 24 * 60 * 60 * 1000);
   const date = new Date(Date.now() - timeOffset).toISOString();
@@ -231,6 +261,7 @@ async function generateDemoWishes(users) {
 
 export async function generateDemoData() {
   logger.info('Clearing old demo data for seeder');
+  await reloadRules(); // Ensure rules are loaded for exclusion checks
   await clearDemoData();
   const users = await generateDemoUsers();
   await generateDemoWishes(users);

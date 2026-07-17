@@ -4,10 +4,39 @@ import { requireAdmin } from '../auth.js';
 import logger from '../logger.js';
 import { getRules, addRule, updateRule, deleteRule } from '../rulesManager.js';
 
+import { getExclusionConflicts } from './wishes.js';
+
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
 
-// All routes require admin
+// Public conflict validation endpoint (runs before admin authorization check)
+router.post('/check-conflicts', async (req, res) => {
+  const { attributes } = req.body;
+  if (!attributes || typeof attributes !== 'object') {
+    return res.status(400).json({ error: 'Attributes object is required.' });
+  }
+
+  const normalized = {};
+  for (const key of ['gender', 'orientation', 'role']) {
+    const rawVal = attributes[key];
+    if (typeof rawVal === 'string') {
+      normalized[key] = rawVal
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    } else if (Array.isArray(rawVal)) {
+      normalized[key] = rawVal.map((s) => String(s).trim()).filter(Boolean);
+    } else {
+      normalized[key] = [];
+    }
+  }
+
+  const rules = getRules();
+  const conflicts = getExclusionConflicts(normalized, rules);
+  res.json({ conflicts });
+});
+
+// All other routes require admin
 router.use(requireAdmin);
 
 router.get('/', async (req, res) => {

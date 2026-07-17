@@ -1,18 +1,64 @@
 /** @vitest-environment node */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Define top-level mock functions
+const mockLogger = {
+  info: vi.fn(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn(),
+};
+
+const mockServer = vi.fn();
+const mockGetUserFromToken = vi.fn();
+const mockDbPrepare = vi.fn();
+const mockSend = vi.fn();
 
 vi.mock('./logger.js', () => ({
+  default: mockLogger,
+}));
+
+vi.mock('socket.io', () => ({
+  Server: function MockServer(...args) {
+    return mockServer(...args);
+  },
+}));
+
+vi.mock('./auth.js', async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    ...original,
+    getUserFromToken: mockGetUserFromToken,
+  };
+});
+
+vi.mock('./db.js', () => ({
   default: {
-    info: vi.fn(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
+    prepare: (...args) => mockDbPrepare(...args),
+    execute: vi.fn(),
+    exec: vi.fn(),
+  },
+}));
+
+vi.mock('@aws-sdk/client-apigatewaymanagementapi', () => ({
+  ApiGatewayManagementApiClient: function () {
+    return { send: mockSend };
+  },
+  PostToConnectionCommand: function (args) {
+    this.ConnectionId = args.ConnectionId;
+    this.Data = args.Data;
   },
 }));
 
 describe('socket.js', () => {
   beforeEach(async () => {
     vi.resetModules();
+    vi.clearAllMocks();
+    // Default implementations
+    mockServer.mockReset();
+    mockGetUserFromToken.mockReset();
+    mockDbPrepare.mockReset();
+    mockSend.mockReset();
   });
 
   it('initSocket creates and returns io instance, handles connect/disconnect events', async () => {
@@ -24,11 +70,7 @@ describe('socket.js', () => {
       emit: vi.fn(),
     };
 
-    vi.doMock('socket.io', () => ({
-      Server: function MockServer() {
-        return mockIo;
-      },
-    }));
+    mockServer.mockImplementation(() => mockIo);
 
     const { initSocket, getIO } = await import('./socket.js');
 
@@ -51,14 +93,14 @@ describe('socket.js', () => {
   });
 
   it('getIO throws if not initialized', async () => {
-    vi.doMock('socket.io', () => ({ Server: vi.fn(() => null) }));
+    mockServer.mockImplementation(() => null);
 
     const { getIO } = await import('./socket.js');
     expect(() => getIO()).toThrow('Socket.io not initialized!');
   });
 
   it('emit helpers silently no-op when io is not initialized', async () => {
-    vi.doMock('socket.io', () => ({ Server: vi.fn(() => null) }));
+    mockServer.mockImplementation(() => null);
 
     const { emitNewWish, emitWishFlagged, emitWishDeleted, emitSystemLog } =
       await import('./socket.js');
@@ -77,11 +119,7 @@ describe('socket.js', () => {
       emit: vi.fn(),
       to: vi.fn(() => ({ emit: roomEmit })),
     };
-    vi.doMock('socket.io', () => ({
-      Server: function MockServer() {
-        return mockIo;
-      },
-    }));
+    mockServer.mockImplementation(() => mockIo);
 
     const { initSocket, emitNewWish, emitWishFlagged, emitWishDeleted, emitSystemLog } =
       await import('./socket.js');
@@ -114,16 +152,11 @@ describe('socket.js', () => {
       emit: vi.fn(),
       to: vi.fn(() => ({ emit: vi.fn() })),
     };
-    vi.doMock('socket.io', () => ({
-      Server: function MockServer() {
-        return mockIo;
-      },
-    }));
-    vi.doMock('./auth.js', () => ({
-      getUserFromToken: vi.fn(async (token) =>
-        token === 'admin-token' ? { id: 'a1', role: 'admin' } : { id: 'u1', role: 'user' }
-      ),
-    }));
+    mockServer.mockImplementation(() => mockIo);
+
+    mockGetUserFromToken.mockImplementation(async (token) =>
+      token === 'admin-token' ? { id: 'a1', role: 'admin' } : { id: 'u1', role: 'user' }
+    );
 
     const { initSocket } = await import('./socket.js');
     const socket = { on: vi.fn(), join: vi.fn(), leave: vi.fn(), id: 's1' };
@@ -170,13 +203,9 @@ describe('socket.js', () => {
 
     it('broadcastToApiGateway handles empty connections', async () => {
       const mockAll = vi.fn().mockResolvedValue([]);
-      vi.doMock('./db.js', () => ({
-        default: {
-          prepare: () => ({
-            all: mockAll,
-            run: vi.fn(),
-          }),
-        },
+      mockDbPrepare.mockImplementation(() => ({
+        all: mockAll,
+        run: vi.fn(),
       }));
 
       const { emitNewWish } = await import('./socket.js');
@@ -186,7 +215,7 @@ describe('socket.js', () => {
     });
 
     it('broadcastToApiGateway sends messages and handles GoneException (410)', async () => {
-      const mockSend = vi.fn().mockImplementation((command) => {
+      mockSend.mockImplementation((command) => {
         if (command.ConnectionId === 'conn-gone') {
           const goneErr = new Error('Gone');
           goneErr.name = 'GoneException';
@@ -198,30 +227,14 @@ describe('socket.js', () => {
         return Promise.resolve({});
       });
 
-      vi.doMock('@aws-sdk/client-apigatewaymanagementapi', () => {
-        return {
-          ApiGatewayManagementApiClient: function () {
-            return { send: mockSend };
-          },
-          PostToConnectionCommand: function (args) {
-            this.ConnectionId = args.ConnectionId;
-            this.Data = args.Data;
-          },
-        };
-      });
-
       const mockRun = vi.fn().mockResolvedValue({ changes: 1 });
-      vi.doMock('./db.js', () => ({
-        default: {
-          prepare: () => ({
-            all: () => [
-              { connection_id: 'conn-active' },
-              { connection_id: 'conn-gone' },
-              { connection_id: 'conn-err' },
-            ],
-            run: mockRun,
-          }),
-        },
+      mockDbPrepare.mockImplementation(() => ({
+        all: () => [
+          { connection_id: 'conn-active' },
+          { connection_id: 'conn-gone' },
+          { connection_id: 'conn-err' },
+        ],
+        run: mockRun,
       }));
 
       const { emitNewWish, emitWishFlagged, emitWishDeleted, emitWishReactivated, emitSystemLog } =
@@ -243,13 +256,9 @@ describe('socket.js', () => {
     });
 
     it('broadcastToApiGateway handles db error gracefully', async () => {
-      vi.doMock('./db.js', () => ({
-        default: {
-          prepare: () => ({
-            all: () => {
-              throw new Error('DB Error');
-            },
-          }),
+      mockDbPrepare.mockImplementation(() => ({
+        all: () => {
+          throw new Error('DB Error');
         },
       }));
 
@@ -261,21 +270,21 @@ describe('socket.js', () => {
     });
 
     it('sys:log broadcast queries only subscribed connections; wish:* queries all', async () => {
-      const prepareSpy = vi.fn(() => ({ all: vi.fn().mockResolvedValue([]), run: vi.fn() }));
-      vi.doMock('./db.js', () => ({ default: { prepare: prepareSpy } }));
+      const mockAll = vi.fn().mockResolvedValue([]);
+      mockDbPrepare.mockImplementation(() => ({ all: mockAll, run: vi.fn() }));
 
       const { emitSystemLog, emitNewWish } = await import('./socket.js');
 
       emitSystemLog('log line');
       await new Promise((resolve) => setTimeout(resolve, 50));
-      expect(prepareSpy).toHaveBeenCalledWith(
+      expect(mockDbPrepare).toHaveBeenCalledWith(
         'SELECT connection_id FROM websocket_connections WHERE sub_syslog = 1'
       );
 
       emitNewWish({ id: 'w1' });
       await new Promise((resolve) => setTimeout(resolve, 50));
       // Public board events broadcast to every connection (no sub_syslog filter).
-      expect(prepareSpy).toHaveBeenCalledWith('SELECT connection_id FROM websocket_connections');
+      expect(mockDbPrepare).toHaveBeenCalledWith('SELECT connection_id FROM websocket_connections');
     });
   });
 });

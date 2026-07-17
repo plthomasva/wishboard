@@ -6,6 +6,7 @@ interface AttributeInputProps {
   onChange: (val: string) => void;
   placeholder?: string;
   suggestions: string[];
+  warning?: string;
 }
 
 const getPillIcon = (opt: string) => {
@@ -88,6 +89,7 @@ export default function AttributeInput({
   onChange,
   placeholder,
   suggestions,
+  warning,
 }: Readonly<AttributeInputProps>) {
   const currentItems = value
     .split(',')
@@ -117,7 +119,29 @@ export default function AttributeInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        style={
+          warning
+            ? { borderColor: '#e53935', boxShadow: '0 0 4px rgba(229, 57, 53, 0.4)' }
+            : undefined
+        }
       />
+      {warning && (
+        <div
+          className="attribute-input-warning"
+          style={{
+            color: '#e53935',
+            fontSize: '13px',
+            marginTop: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 'bold',
+          }}
+        >
+          <span>⚠️</span>
+          <span>{warning}</span>
+        </div>
+      )}
       <div className="suggestion-pills">
         {suggestions.map((opt) => {
           const isSelected = currentItems.includes(opt.toLowerCase());

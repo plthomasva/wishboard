@@ -67,21 +67,21 @@ const getRequestUser = async (req) => {
   return await getUserFromToken(token);
 };
 
-const normalizeToken = (value) =>
+export const normalizeToken = (value) =>
   String(value || '')
     .trim()
     .toLowerCase();
 
-const escapeRegExp = (string) => {
+export const escapeRegExp = (string) => {
   return string.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 };
 
-const hasToken = (str, token) => {
+export const hasToken = (str, token) => {
   const escapedToken = escapeRegExp(token);
   return new RegExp(String.raw`\b${escapedToken}\b`, 'i').test(normalizeToken(str));
 };
 
-const getExpandedDesired = (desiredVals, category, rules) => {
+export const getExpandedDesired = (desiredVals, category, rules) => {
   const result = new Set(desiredVals.map(normalizeToken));
   const expandRules = rules.filter(
     (r) =>
@@ -99,6 +99,62 @@ const getExpandedDesired = (desiredVals, category, rules) => {
     }
   }
   return Array.from(result);
+};
+
+export const getExclusionConflicts = (attributes, rules) => {
+  const conflicts = [];
+  const expandedAttrs = {};
+  for (const key of ['gender', 'orientation', 'role']) {
+    const vals = attributes[key] || [];
+    expandedAttrs[key] = getExpandedDesired(vals, key, rules);
+  }
+
+  const exclusionRules = rules.filter((r) => r.rule_type === 'exclusion');
+
+  for (const rule of exclusionRules) {
+    const triggerTokens = rule.trigger_value
+      .split(',')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+    const targetTokens = rule.target_value
+      .split(',')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+
+    const hasTrigger = triggerTokens.some((token) =>
+      expandedAttrs[rule.trigger_attribute]?.some((attrVal) => hasToken(attrVal, token))
+    );
+
+    let hasContext = true;
+    if (rule.context_attribute && rule.context_value) {
+      const contextTokens = rule.context_value
+        .split(',')
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean);
+      hasContext = contextTokens.some((token) =>
+        expandedAttrs[rule.context_attribute]?.some((attrVal) => hasToken(attrVal, token))
+      );
+    }
+
+    const hasTarget = targetTokens.some((token) =>
+      expandedAttrs[rule.target_attribute]?.some((attrVal) => hasToken(attrVal, token))
+    );
+
+    if (hasTrigger && hasContext && hasTarget) {
+      conflicts.push({
+        rule_id: rule.id,
+        trigger_attribute: rule.trigger_attribute,
+        trigger_value: rule.trigger_value,
+        context_attribute: rule.context_attribute || null,
+        context_value: rule.context_value || null,
+        target_attribute: rule.target_attribute,
+        target_value: rule.target_value,
+        message: `"${rule.trigger_value}" and "${rule.target_value}" are mutually exclusive.`,
+      });
+    }
+  }
+
+  return conflicts;
 };
 
 const evaluateRuleConditions = (rule, userAttributes, rules = []) => {
@@ -339,6 +395,35 @@ router.post('/', upload.single('image'), async (req, res) => {
   const desiredGenders = normalizeArrayInput(desired_genders);
   const desiredOrientations = normalizeArrayInput(desired_orientations);
   const desiredRoles = normalizeArrayInput(desired_roles);
+
+  const rules = getRules();
+  const creatorConflicts = getExclusionConflicts(
+    {
+      gender: creatorGenders,
+      orientation: creatorOrientations,
+      role: creatorRoles,
+    },
+    rules
+  );
+  if (creatorConflicts.length > 0) {
+    return res.status(400).json({
+      error: `Validation failed: Creator attributes conflict. ${creatorConflicts.map((c) => c.message).join(' ')}`,
+    });
+  }
+
+  const desiredConflicts = getExclusionConflicts(
+    {
+      gender: desiredGenders,
+      orientation: desiredOrientations,
+      role: desiredRoles,
+    },
+    rules
+  );
+  if (desiredConflicts.length > 0) {
+    return res.status(400).json({
+      error: `Validation failed: Desired criteria conflict. ${desiredConflicts.map((c) => c.message).join(' ')}`,
+    });
+  }
 
   const parsedContacts = Array.isArray(contacts) ? contacts : [];
   const wme = wishmail_enabled ? 1 : 0;

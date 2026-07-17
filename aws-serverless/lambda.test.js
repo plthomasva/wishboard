@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+process.env.WISHBOARD_DB_PATH = ':memory:';
+process.env.NODE_ENV = 'test';
+
 vi.mock('@codegenie/serverless-express', () => {
   const mockInstance = vi.fn().mockResolvedValue('mocked-response');
   return { default: vi.fn(() => mockInstance) };

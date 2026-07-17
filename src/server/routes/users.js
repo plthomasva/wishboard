@@ -13,6 +13,8 @@ import {
 } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
 import logger from '../logger.js';
+import { getRules } from '../rulesManager.js';
+import { getExclusionConflicts } from './wishes.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
@@ -28,6 +30,31 @@ router.get('/exists', async (req, res) => {
     .get(username.trim());
   res.json({ exists: Boolean(existingUser) });
 });
+
+const validateProfile = ({ identity_genders, identity_orientations, identity_roles }) => {
+  const genders = normalizeArrayInput(identity_genders);
+  const orientations = normalizeArrayInput(identity_orientations);
+  const roles = normalizeArrayInput(identity_roles);
+
+  const rules = getRules();
+  const conflicts = getExclusionConflicts(
+    {
+      gender: genders,
+      orientation: orientations,
+      role: roles,
+    },
+    rules
+  );
+  return {
+    genders,
+    orientations,
+    roles,
+    error:
+      conflicts.length > 0
+        ? `Validation failed: Profile attributes conflict. ${conflicts.map((c) => c.message).join(' ')}`
+        : null,
+  };
+};
 
 router.post('/register', async (req, res) => {
   const {
@@ -57,9 +84,14 @@ router.post('/register', async (req, res) => {
   const userId = idGenerator();
   const now = new Date().toISOString();
 
-  const genders = normalizeArrayInput(identity_genders);
-  const orientations = normalizeArrayInput(identity_orientations);
-  const roles = normalizeArrayInput(identity_roles);
+  const { genders, orientations, roles, error } = validateProfile({
+    identity_genders,
+    identity_orientations,
+    identity_roles,
+  });
+  if (error) {
+    return res.status(400).json({ error });
+  }
 
   const wishmailEnabledInt = wishmail_enabled ? 1 : 0;
 
@@ -112,9 +144,15 @@ router.put('/me', async (req, res) => {
 
   const { identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled } =
     req.body;
-  const genders = normalizeArrayInput(identity_genders);
-  const orientations = normalizeArrayInput(identity_orientations);
-  const roles = normalizeArrayInput(identity_roles);
+  const { genders, orientations, roles, error } = validateProfile({
+    identity_genders,
+    identity_orientations,
+    identity_roles,
+  });
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
   const wishmailEnabledInt = wishmail_enabled ? 1 : 0;
 
   await db

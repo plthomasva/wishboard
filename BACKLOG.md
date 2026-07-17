@@ -18,7 +18,6 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 ### Features & Enhancements
 
 - **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
-- **[#217](https://github.com/plthomasva/wishboard/issues/217)** — Add new rule type for wish creation and user creation to prevent contradiction states.
 - **[#232](https://github.com/plthomasva/wishboard/issues/232)** — Support context-gated expansion rules in the matching engine to allow orientation-specific role/attribute mapping.
 
 ## Infrastructure & DevOps
