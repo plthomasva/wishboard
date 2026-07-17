@@ -41,20 +41,20 @@ describe('rulesManager (DB-backed)', () => {
     delete process.env.RULES_CACHE_TTL_MS;
   });
 
-  it('seeds the 49 bundled default rules into a fresh database on boot', () => {
-    expect(rm.getRules().length).toBe(49);
+  it('seeds the 51 bundled default rules into a fresh database on boot', () => {
+    expect(rm.getRules()).toHaveLength(51);
   });
 
   it('seedIfEmpty is a no-op when rules already exist', async () => {
     await rm.seedIfEmpty();
-    expect(rm.getRules().length).toBe(49); // not doubled
+    expect(rm.getRules()).toHaveLength(51); // not doubled
   });
 
   it('seedIfEmpty repopulates an empty table with the defaults', async () => {
     await db.execute('DELETE FROM rules');
     await rm.seedIfEmpty();
     await rm.reloadRules();
-    expect(rm.getRules().length).toBe(49);
+    expect(rm.getRules()).toHaveLength(51);
   });
 
   describe('CRUD against an empty table', () => {
@@ -66,7 +66,7 @@ describe('rulesManager (DB-backed)', () => {
 
     it('addRule inserts and updates the cache + DB', async () => {
       await rm.addRule(fullRule());
-      expect(rm.getRules().length).toBe(1);
+      expect(rm.getRules()).toHaveLength(1);
       await rm.reloadRules();
       expect(rm.getRules()[0].id).toBe('rule-1');
     });
@@ -106,7 +106,7 @@ describe('rulesManager (DB-backed)', () => {
     ({ db, rm } = await importFresh({ RULES_CACHE_TTL_MS: '0' }));
     await db.execute('DELETE FROM rules');
     await rm.reloadRules();
-    expect(rm.getRules().length).toBe(0);
+    expect(rm.getRules()).toHaveLength(0);
 
     // Another instance writes a rule straight to the shared DB.
     await insertDirect(db, 'ext-2');
@@ -144,7 +144,7 @@ describe('rulesManager (DB-backed)', () => {
 
     ({ db, rm } = await importFresh({ RULES_PATH: yamlPath }));
 
-    // Seeded from the legacy file, not the 32 bundled defaults.
+    // Seeded from the legacy file, not the 51 bundled defaults.
     expect(rm.getRules()).toHaveLength(1);
     expect(rm.getRules().map((r) => r.id)).toContain('custom_pet');
 

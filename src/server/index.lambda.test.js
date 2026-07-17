@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 
+process.env.WISHBOARD_DB_PATH = ':memory:';
+
 describe('Server index.js - Lambda Mode', () => {
   let originalEnv;
 

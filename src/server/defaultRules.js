@@ -409,6 +409,10 @@ const rows = [
   // Vers / versatile (queer sexual & BDSM versatile — synonym pair)
   ['exp_role_vers', 'expansion', 'role', 'vers', null, null, 'role', 'vers, versatile'],
   ['exp_role_versatile', 'expansion', 'role', 'versatile', null, null, 'role', 'vers, versatile'],
+
+  // Write-time exclusion/contradiction rules (mutually exclusive pairings)
+  ['excl_gay_straight', 'exclusion', 'orientation', 'gay', null, null, 'orientation', 'straight'],
+  ['excl_lesbian_man', 'exclusion', 'orientation', 'lesbian', 'gender', 'man', 'gender', 'man'],
 ];
 
 export default rows.map((row) => Object.fromEntries(FIELDS.map((f, i) => [f, row[i]])));

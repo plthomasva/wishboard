@@ -9,6 +9,7 @@ import PassphraseInput from './components/PassphraseInput';
 import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from './constants';
 import { QRCodeSVG } from 'qrcode.react';
 import ConfirmDeleteAccountModal from './components/ConfirmDeleteAccountModal';
+import { parseAttributesString, fetchConflicts, getConflictWarning } from './utils/conflicts';
 
 function useUsernameExistence(username: string) {
   const [existingUsername, setExistingUsername] = useState(false);
@@ -153,6 +154,10 @@ interface UnauthenticatedAccountViewProps {
   setIdentityRoles: (roles: string) => void;
   message: string | null;
   error: string | null;
+  gendersWarning?: string;
+  orientationsWarning?: string;
+  rolesWarning?: string;
+  isSubmitDisabled?: boolean;
 }
 
 function UnauthenticatedAccountView({
@@ -173,6 +178,10 @@ function UnauthenticatedAccountView({
   setIdentityRoles,
   message,
   error,
+  gendersWarning,
+  orientationsWarning,
+  rolesWarning,
+  isSubmitDisabled,
 }: Readonly<UnauthenticatedAccountViewProps>) {
   return (
     <section>
@@ -230,6 +239,7 @@ function UnauthenticatedAccountView({
                 onChange={setIdentityGenders}
                 placeholder="e.g. woman, non-binary"
                 suggestions={SUGGESTED_GENDERS}
+                warning={gendersWarning}
               />
             </label>
             <label>
@@ -239,6 +249,7 @@ function UnauthenticatedAccountView({
                 onChange={setIdentityOrientations}
                 placeholder="e.g. queer, straight"
                 suggestions={SUGGESTED_ORIENTATIONS}
+                warning={orientationsWarning}
               />
             </label>
             <label>
@@ -248,12 +259,20 @@ function UnauthenticatedAccountView({
                 onChange={setIdentityRoles}
                 placeholder="e.g. speaker, volunteer"
                 suggestions={SUGGESTED_ROLES}
+                warning={rolesWarning}
               />
             </label>
           </>
         )}
-        <button type="submit">{effectiveMode === 'login' ? 'Login' : 'Register'}</button>
+        <button type="submit" disabled={effectiveMode === 'register' && isSubmitDisabled}>
+          {effectiveMode === 'login' ? 'Login' : 'Register'}
+        </button>
       </form>
+      {effectiveMode === 'register' && isSubmitDisabled && (
+        <div className="message error" style={{ marginTop: '12px' }}>
+          Please resolve the attribute conflicts before registering.
+        </div>
+      )}
       {message && <div className="message success">{message}</div>}
       {error && <div className="message error">{error}</div>}
       {effectiveMode === 'register' && (
@@ -305,9 +324,43 @@ export default function AccountPage() {
   } | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  const [regConflicts, setRegConflicts] = useState<
+    Array<{ message: string; target_attribute: string }>
+  >([]);
+  const [editConflicts, setEditConflicts] = useState<
+    Array<{ message: string; target_attribute: string }>
+  >([]);
+
   const { existingUsername, mode, setMode } = useUsernameExistence(username);
 
   const effectiveMode = existingUsername ? 'login' : mode;
+
+  // Debounced conflict check for registration form
+  useEffect(() => {
+    if (effectiveMode !== 'register') return;
+    const timer = globalThis.setTimeout(async () => {
+      const conflicts = await fetchConflicts({
+        gender: parseAttributesString(identityGenders),
+        orientation: parseAttributesString(identityOrientations),
+        role: parseAttributesString(identityRoles),
+      });
+      setRegConflicts(conflicts);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [identityGenders, identityOrientations, identityRoles, effectiveMode]);
+
+  // Debounced conflict check for profile edit form
+  useEffect(() => {
+    const timer = globalThis.setTimeout(async () => {
+      const conflicts = await fetchConflicts({
+        gender: parseAttributesString(editIdentityGenders),
+        orientation: parseAttributesString(editIdentityOrientations),
+        role: parseAttributesString(editIdentityRoles),
+      });
+      setEditConflicts(conflicts);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [editIdentityGenders, editIdentityOrientations, editIdentityRoles]);
 
   const loadWishes = useCallback(async () => {
     setError(null);
@@ -560,6 +613,10 @@ export default function AccountPage() {
           setIdentityRoles={setIdentityRoles}
           message={message}
           error={error}
+          gendersWarning={getConflictWarning(regConflicts, 'gender')}
+          orientationsWarning={getConflictWarning(regConflicts, 'orientation')}
+          rolesWarning={getConflictWarning(regConflicts, 'role')}
+          isSubmitDisabled={regConflicts.length > 0}
         />
         {hiddenWishes.length > 0 && (
           <div style={{ marginTop: '40px', marginBottom: '32px' }}>
@@ -646,6 +703,7 @@ export default function AccountPage() {
             onChange={setEditIdentityGenders}
             placeholder="e.g. woman, non-binary"
             suggestions={SUGGESTED_GENDERS}
+            warning={getConflictWarning(editConflicts, 'gender')}
           />
         </label>
         <label>
@@ -655,6 +713,7 @@ export default function AccountPage() {
             onChange={setEditIdentityOrientations}
             placeholder="e.g. queer, straight"
             suggestions={SUGGESTED_ORIENTATIONS}
+            warning={getConflictWarning(editConflicts, 'orientation')}
           />
         </label>
         <label>
@@ -664,6 +723,7 @@ export default function AccountPage() {
             onChange={setEditIdentityRoles}
             placeholder="e.g. speaker, volunteer"
             suggestions={SUGGESTED_ROLES}
+            warning={getConflictWarning(editConflicts, 'role')}
           />
         </label>
 
@@ -754,7 +814,17 @@ export default function AccountPage() {
           </button>
         </div>
 
-        <button className="secondary-button" onClick={saveProfile} type="button">
+        {editConflicts.length > 0 && (
+          <div className="message error" style={{ marginTop: '12px' }}>
+            Please resolve the attribute conflicts before saving.
+          </div>
+        )}
+        <button
+          className="secondary-button"
+          onClick={saveProfile}
+          type="button"
+          disabled={editConflicts.length > 0}
+        >
           Save attributes
         </button>
       </div>

@@ -3,6 +3,7 @@ import { useAuth } from '../AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
 import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
+import { parseAttributesString, fetchConflicts, getConflictWarning } from '../utils/conflicts';
 import WishPreview from '../components/WishPreview';
 import WishFormFields from '../components/WishFormFields';
 import PassphraseInput from '../components/PassphraseInput';
@@ -57,6 +58,41 @@ export default function EnterWishPage() {
 
   const [result, setResult] = useState<{ id: string; secret?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [creatorConflicts, setCreatorConflicts] = useState<
+    Array<{ message: string; target_attribute: string }>
+  >([]);
+  const [desiredConflicts, setDesiredConflicts] = useState<
+    Array<{ message: string; target_attribute: string }>
+  >([]);
+
+  // Debounced conflict checks for creator attributes
+  useEffect(() => {
+    if (user) return; // logged-in users: creator attrs taken from profile
+    const timer = globalThis.setTimeout(async () => {
+      const conflicts = await fetchConflicts({
+        gender: parseAttributesString(creatorGenders),
+        orientation: parseAttributesString(creatorOrientations),
+        role: parseAttributesString(creatorRoles),
+      });
+      setCreatorConflicts(conflicts);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [creatorGenders, creatorOrientations, creatorRoles, user]);
+
+  // Debounced conflict checks for desired attributes
+  useEffect(() => {
+    const timer = globalThis.setTimeout(async () => {
+      const conflicts = await fetchConflicts({
+        gender: parseAttributesString(desiredGenders),
+        orientation: parseAttributesString(desiredOrientations),
+        role: parseAttributesString(desiredRoles),
+      });
+      setDesiredConflicts(conflicts);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [desiredGenders, desiredOrientations, desiredRoles]);
+
+  const hasConflicts = creatorConflicts.length > 0 || desiredConflicts.length > 0;
 
   const submitWish = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -314,6 +350,7 @@ export default function EnterWishPage() {
                   onChange={setCreatorGenders}
                   placeholder="e.g. woman, non-binary"
                   suggestions={SUGGESTED_GENDERS}
+                  warning={getConflictWarning(creatorConflicts, 'gender')}
                 />
               </label>
               <label>
@@ -323,6 +360,7 @@ export default function EnterWishPage() {
                   onChange={setCreatorOrientations}
                   placeholder="e.g. queer, straight"
                   suggestions={SUGGESTED_ORIENTATIONS}
+                  warning={getConflictWarning(creatorConflicts, 'orientation')}
                 />
               </label>
               <label>
@@ -332,6 +370,7 @@ export default function EnterWishPage() {
                   onChange={setCreatorRoles}
                   placeholder="e.g. speaker, volunteer"
                   suggestions={SUGGESTED_ROLES}
+                  warning={getConflictWarning(creatorConflicts, 'role')}
                 />
               </label>
             </>
@@ -391,6 +430,7 @@ export default function EnterWishPage() {
                   onChange={setDesiredGenders}
                   placeholder="e.g. woman, non-binary"
                   suggestions={SUGGESTED_GENDERS}
+                  warning={getConflictWarning(desiredConflicts, 'gender')}
                 />
               </div>
               <div style={{ display: 'grid', gap: '8px', marginTop: '12px' }}>
@@ -406,6 +446,7 @@ export default function EnterWishPage() {
                   onChange={setDesiredOrientations}
                   placeholder="e.g. queer, straight"
                   suggestions={SUGGESTED_ORIENTATIONS}
+                  warning={getConflictWarning(desiredConflicts, 'orientation')}
                 />
               </div>
               <div style={{ display: 'grid', gap: '8px', marginTop: '12px' }}>
@@ -421,11 +462,19 @@ export default function EnterWishPage() {
                   onChange={setDesiredRoles}
                   placeholder="e.g. speaker, vendor"
                   suggestions={SUGGESTED_ROLES}
+                  warning={getConflictWarning(desiredConflicts, 'role')}
                 />
               </div>
             </fieldset>
           )}
-          <button type="submit">Submit Wish</button>
+          {hasConflicts && (
+            <div className="message error" style={{ marginBottom: '12px' }}>
+              Please resolve the attribute conflicts highlighted above before submitting.
+            </div>
+          )}
+          <button type="submit" disabled={hasConflicts}>
+            Submit Wish
+          </button>
         </form>
 
         <WishPreview wish={previewWish} onOverflowChange={setIsOverflowing} />

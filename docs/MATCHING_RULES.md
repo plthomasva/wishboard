@@ -127,7 +127,58 @@ explicit rules for every combination!
 > - **Brat-tamer / Brat**: `brat-tamer ↔ brat`
 > - **Versatile / Vers**: `vers ↔ versatile` (synonyms)
 
-## 5. Application of Rules in Search
+---
+
+## 5. Exclusion (Write-time Contradiction Prevention)
+
+**Purpose**: To detect and block contradictory attribute combinations at the
+point of wish or profile submission, keeping stored data logically consistent.
+
+Unlike the other rule types which operate at _search time_ to produce match
+results, `exclusion` rules run _before_ data is written to the database. If
+the submitted attributes violate an exclusion rule, the API returns a `400`
+error and the submission is rejected. The frontend also evaluates conflicts
+live (via `POST /api/rules/check-conflicts`) and shows inline warnings before
+the user can submit.
+
+**Applies to**: `POST /api/wishes`, `POST /api/users/register`, `PUT /api/users/me`.
+
+**Format**:
+
+- `trigger_attribute` & `trigger_value`: The first (triggering) attribute value.
+- `context_attribute` & `context_value` (Optional): An additional condition that
+  must also be present for the conflict to fire (e.g. "only flag `lesbian` as
+  conflicting if the person also identifies as `man`").
+- `target_attribute` & `target_value`: The second attribute value that is
+  incompatible with the trigger.
+
+Both directions are checked symmetrically — if `gay` conflicts with `straight`,
+the rule fires whether the user lists them as `gay, straight` or `straight, gay`.
+Expansion rules are applied first, so synonyms (e.g. `enby` → `nonbinary`) are
+resolved before the conflict check runs.
+
+**Example**:
+
+An exclusion rule with `trigger = orientation:gay` and `target = orientation:straight`
+blocks a user from registering with both orientations at the same time. A
+context-scoped rule with `trigger = orientation:lesbian`, `context = gender:man`,
+`target = gender:man` blocks a user who identifies as both a man and lesbian,
+since that is a biological contradiction for most users.
+
+**Seeded defaults** (editable via the admin Rules page):
+
+| Rule ID             | Trigger                | Context       | Target                  | Meaning                                                              |
+| :------------------ | :--------------------- | :------------ | :---------------------- | :------------------------------------------------------------------- |
+| `excl_gay_straight` | `orientation: gay`     | —             | `orientation: straight` | Gay and straight are mutually exclusive orientations                 |
+| `excl_lesbian_man`  | `orientation: lesbian` | `gender: man` | `gender: man`           | Identifies as both lesbian and man (contradictory for most contexts) |
+
+> Additional `exclusion` rules can be added and removed at runtime via the admin UI
+> without restarting the server. The live rule set is evaluated within the same
+> in-process cache TTL (`RULES_CACHE_TTL_MS`, default 60 s) as all other rule types.
+
+---
+
+## 6. Application of Rules in Search
 
 The matching rules outlined above are applied within the Wishboard application as follows:
 
@@ -137,7 +188,7 @@ The matching rules outlined above are applied within the Wishboard application a
 - **Broad Search**: Logged-in users can temporarily disable profile-based matching in the UI to perform broad, unrestricted keyword searches.
 - **Anonymous Search**: Users who are not logged in can provide temporary gender, orientation, and role values in the search UI to perform a one-off compatibility query.
 
-## 6. Matching is bidirectional (and a few deliberate edge cases)
+## 7. Matching is bidirectional (and a few deliberate edge cases)
 
 A wish and a searcher match only when **both** directions agree: the searcher
 must want the wish creator **and** the creator must want the searcher. The

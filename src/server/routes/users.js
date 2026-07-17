@@ -13,6 +13,8 @@ import {
 } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
 import logger from '../logger.js';
+import { getRules } from '../rulesManager.js';
+import { getExclusionConflicts } from './wishes.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
@@ -60,6 +62,21 @@ router.post('/register', async (req, res) => {
   const genders = normalizeArrayInput(identity_genders);
   const orientations = normalizeArrayInput(identity_orientations);
   const roles = normalizeArrayInput(identity_roles);
+
+  const rules = getRules();
+  const conflicts = getExclusionConflicts(
+    {
+      gender: genders,
+      orientation: orientations,
+      role: roles,
+    },
+    rules
+  );
+  if (conflicts.length > 0) {
+    return res.status(400).json({
+      error: `Validation failed: Profile attributes conflict. ${conflicts.map((c) => c.message).join(' ')}`,
+    });
+  }
 
   const wishmailEnabledInt = wishmail_enabled ? 1 : 0;
 
@@ -115,6 +132,22 @@ router.put('/me', async (req, res) => {
   const genders = normalizeArrayInput(identity_genders);
   const orientations = normalizeArrayInput(identity_orientations);
   const roles = normalizeArrayInput(identity_roles);
+
+  const rules = getRules();
+  const conflicts = getExclusionConflicts(
+    {
+      gender: genders,
+      orientation: orientations,
+      role: roles,
+    },
+    rules
+  );
+  if (conflicts.length > 0) {
+    return res.status(400).json({
+      error: `Validation failed: Profile attributes conflict. ${conflicts.map((c) => c.message).join(' ')}`,
+    });
+  }
+
   const wishmailEnabledInt = wishmail_enabled ? 1 : 0;
 
   await db
