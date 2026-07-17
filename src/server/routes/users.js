@@ -31,6 +31,31 @@ router.get('/exists', async (req, res) => {
   res.json({ exists: Boolean(existingUser) });
 });
 
+const validateProfile = ({ identity_genders, identity_orientations, identity_roles }) => {
+  const genders = normalizeArrayInput(identity_genders);
+  const orientations = normalizeArrayInput(identity_orientations);
+  const roles = normalizeArrayInput(identity_roles);
+
+  const rules = getRules();
+  const conflicts = getExclusionConflicts(
+    {
+      gender: genders,
+      orientation: orientations,
+      role: roles,
+    },
+    rules
+  );
+  return {
+    genders,
+    orientations,
+    roles,
+    error:
+      conflicts.length > 0
+        ? `Validation failed: Profile attributes conflict. ${conflicts.map((c) => c.message).join(' ')}`
+        : null,
+  };
+};
+
 router.post('/register', async (req, res) => {
   const {
     username,
@@ -59,23 +84,13 @@ router.post('/register', async (req, res) => {
   const userId = idGenerator();
   const now = new Date().toISOString();
 
-  const genders = normalizeArrayInput(identity_genders);
-  const orientations = normalizeArrayInput(identity_orientations);
-  const roles = normalizeArrayInput(identity_roles);
-
-  const rules = getRules();
-  const conflicts = getExclusionConflicts(
-    {
-      gender: genders,
-      orientation: orientations,
-      role: roles,
-    },
-    rules
-  );
-  if (conflicts.length > 0) {
-    return res.status(400).json({
-      error: `Validation failed: Profile attributes conflict. ${conflicts.map((c) => c.message).join(' ')}`,
-    });
+  const { genders, orientations, roles, error } = validateProfile({
+    identity_genders,
+    identity_orientations,
+    identity_roles,
+  });
+  if (error) {
+    return res.status(400).json({ error });
   }
 
   const wishmailEnabledInt = wishmail_enabled ? 1 : 0;
@@ -129,23 +144,13 @@ router.put('/me', async (req, res) => {
 
   const { identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled } =
     req.body;
-  const genders = normalizeArrayInput(identity_genders);
-  const orientations = normalizeArrayInput(identity_orientations);
-  const roles = normalizeArrayInput(identity_roles);
-
-  const rules = getRules();
-  const conflicts = getExclusionConflicts(
-    {
-      gender: genders,
-      orientation: orientations,
-      role: roles,
-    },
-    rules
-  );
-  if (conflicts.length > 0) {
-    return res.status(400).json({
-      error: `Validation failed: Profile attributes conflict. ${conflicts.map((c) => c.message).join(' ')}`,
-    });
+  const { genders, orientations, roles, error } = validateProfile({
+    identity_genders,
+    identity_orientations,
+    identity_roles,
+  });
+  if (error) {
+    return res.status(400).json({ error });
   }
 
   const wishmailEnabledInt = wishmail_enabled ? 1 : 0;
