@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.18.1...wishboard-v1.19.0) (2026-07-18)
+
+
+### Features
+
+* **rules:** add exclusion rule type for write-time conflict prevention ([#217](https://github.com/plthomasva/wishboard/issues/217)) ([#258](https://github.com/plthomasva/wishboard/issues/258)) ([2ff6207](https://github.com/plthomasva/wishboard/commit/2ff6207d6d7c7bffbc27ba03d0c55d57a156d989))
+
 ## [1.18.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.18.0...wishboard-v1.18.1) (2026-07-16)
 
 
