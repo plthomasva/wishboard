@@ -114,7 +114,7 @@ jobs:
         # dependabot events), so Sonar is scoped to human PRs / pushes — which
         # are also the ones auto-merge can race. See #164.
         if: github.actor != 'dependabot[bot]' && matrix.node-version == '22.x'
-        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         with:
           # Block this job until SonarCloud finishes computing the Quality Gate
           # and fail if it's red, so "CI Success" (and auto-merge) can't go green
