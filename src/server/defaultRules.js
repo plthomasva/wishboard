@@ -295,7 +295,7 @@ const rows = [
   //
   // Note: expansion rules are single-pass (not recursive), so synonym redirects
   // (e.g. sub → submissive) must repeat the full target list — this is intentional
-  // data redundancy, not a code smell. See #232 for context-gated expansion work.
+  // data redundancy, not a code smell. See #232 / ADR 0005 for context-gated expansion work.
 
   // Pet/handler
   [

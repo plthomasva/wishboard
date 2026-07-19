@@ -18,13 +18,13 @@ The following items from the previous triage run have been successfully resolved
 
 Here is the triage of the 5 active issues currently tracked in the backlog and GitHub, evaluated by **Impact**, **Level of Effort (LOE)**, and **Priority**:
 
-| Issue    | Title                              | Impact     | LOE        | Priority | Rationale / Recommendation                                                                                                                                              |
-| :------- | :--------------------------------- | :--------- | :--------- | :------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **#232** | Context-gated matching expansions  | **High**   | **High**   | **P1**   | **(Recommended Next)** Crucial for cross-community vocabulary handling (e.g. separating BDSM terms from general role expansions). Requires matching engine refactoring. |
-| **#191** | Per-view WebSocket subscriptions   | **Medium** | **Medium** | **P2**   | Generalizes socket channel filtering so that idle admin pages don't receive the raw `wish:*` firehose. Good network optimization.                                       |
-| **#238** | Automated database/media backups   | **High**   | **Medium** | **P2**   | Critical for operational resilience, especially for serverless Turso/S3. Low priority for local dev setups.                                                             |
-| **#165** | `WishScanner.tsx` Stryker mutation | **Low**    | **High**   | **P3**   | Requires heavy mocking of OpenCV, Canvas 2D contexts, and rAF loops. High testing debt but low functional impact.                                                       |
-| **#180** | Upgrade to ESLint 10               | **Low**    | **Low**    | **P3**   | **Blocked** upstream by `eslint-plugin-react` compatibility and `typescript-eslint` TS 7 peer dependencies. Pinned for now.                                             |
+| Issue    | Title                              | Impact     | LOE        | Priority | Rationale / Recommendation                                                                                                                                                                                            |
+| :------- | :--------------------------------- | :--------- | :--------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **#232** | Context-gated matching expansions  | **High**   | **High**   | **P1**   | **(ADR Drafted)** Crucial for cross-community vocabulary handling (e.g. separating BDSM terms from general role expansions). Proposed design detailed in [ADR 0005](docs/adr/0005-matching-engine-generalization.md). |
+| **#191** | Per-view WebSocket subscriptions   | **Medium** | **Medium** | **P2**   | Generalizes socket channel filtering so that idle admin pages don't receive the raw `wish:*` firehose. Good network optimization.                                                                                     |
+| **#238** | Automated database/media backups   | **High**   | **Medium** | **P2**   | Critical for operational resilience, especially for serverless Turso/S3. Low priority for local dev setups.                                                                                                           |
+| **#165** | `WishScanner.tsx` Stryker mutation | **Low**    | **High**   | **P3**   | Requires heavy mocking of OpenCV, Canvas 2D contexts, and rAF loops. High testing debt but low functional impact.                                                                                                     |
+| **#180** | Upgrade to ESLint 10               | **Low**    | **Low**    | **P3**   | **Blocked** upstream by `eslint-plugin-react` compatibility and `typescript-eslint` TS 7 peer dependencies. Pinned for now.                                                                                           |
 
 ---
 
@@ -32,7 +32,7 @@ Here is the triage of the 5 active issues currently tracked in the backlog and G
 
 ### **P1 Phase (Immediate Focus)**
 
-1. **Context-Gated Expansion Rules (#232):** Refine semantic matching accuracy by scoping expansion rules to specific contexts (e.g. BDSM role terms not bleeding into general orientation expansions). Requires matching engine refactoring.
+1. **Context-Gated Expansion Rules (#232):** Refine semantic matching accuracy by scoping expansion rules to specific contexts. The architectural design is drafted and proposed in [ADR 0005](docs/adr/0005-matching-engine-generalization.md).
 
 ### **P2 Phase (Optimization & Infrastructure)**
 

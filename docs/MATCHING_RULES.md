@@ -88,6 +88,8 @@ when creating a wish or searching.
 If a wish desires a "pet", an expansion rule will automatically expand that
 requirement to also match with users identifying as a "pup" or "kitten".
 
+_(Note: Expansion rules are evaluated without context by default. A proposal to support context-gating on expansion rules is outlined in [ADR 0005](adr/0005-matching-engine-generalization.md).)_
+
 ---
 
 ## 4. Cross-Match (Complementary Roles)
@@ -113,6 +115,8 @@ A cross-match rule between "handler" and "pet" means:
 Combined with an **Expansion** rule (e.g., "pet" expands to "pup, kitten"), a
 "handler" will automatically match with a "pup" or "kitten" without needing
 explicit rules for every combination!
+
+_(Note: Cross-match rules are evaluated without context by default. A proposal to support context-gating on cross-match rules is outlined in [ADR 0005](adr/0005-matching-engine-generalization.md).)_
 
 > The bundled defaults seed multiple role relationships and their respective expansions:
 >

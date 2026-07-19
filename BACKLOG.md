@@ -18,7 +18,7 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 ### Features & Enhancements
 
 - **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
-- **[#232](https://github.com/plthomasva/wishboard/issues/232)** — Support context-gated expansion rules in the matching engine to allow orientation-specific role/attribute mapping.
+- **[#232](https://github.com/plthomasva/wishboard/issues/232)** — Support context-gated expansion rules in the matching engine to allow orientation-specific role/attribute mapping (Proposed in [ADR 0005](docs/adr/0005-matching-engine-generalization.md)).
 
 ## Infrastructure & DevOps
 
