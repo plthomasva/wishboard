@@ -78,6 +78,16 @@ serverless
   .option('--stack-name <name>', 'CloudFormation stack name (falls back to samconfig.toml)')
   .option('--region <name>', 'AWS region (falls back to samconfig.toml, then AWS config)')
   .option('--mode <mode>', 'Deployment mode: prod or dev', 'prod')
+  .option('--domain <name>', 'Custom domain name (e.g., wishboard.example.com)')
+  .option(
+    '--cert-domain <name>',
+    'Custom domain name for the ACM Certificate (e.g., wishboards.app for a wildcard)'
+  )
+  .option(
+    '--hosted-zone-id <id>',
+    'Route 53 Hosted Zone ID for custom domain aliases and SSL validation'
+  )
+  .option('--acm-cert-arn <arn>', 'Existing ACM Certificate ARN in us-east-1')
   .option('--guided', 'Force interactive sam deploy --guided (first-time setup)')
   .option('--frontend-only', 'Rebuild and upload only the frontend; skip the backend build/deploy')
   .option(

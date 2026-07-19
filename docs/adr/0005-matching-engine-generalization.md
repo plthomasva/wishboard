@@ -1,6 +1,6 @@
 # ADR 0005: Matching Engine Generalization and Context-Aware Rules
 
-- **Status:** Proposed
+- **Status:** Implemented
 - **Date:** 2026-07
 - **Context Date:** 2026-07
 
@@ -91,3 +91,13 @@ To support clean multi-domain deployments without code forks, we propose introdu
 - **Cons**:
   - Slightly increases complexity of matching engine function signatures by threading the context profile.
   - Requires care to prevent infinite loops in recursive expansions (mitigated by passing `null` for the nested context profile).
+
+---
+
+## Implementation Notes
+
+During the implementation of this ADR, we went beyond fixing the context-gated expansions. We completely eliminated hardcoded `gender`, `orientation`, and `role` references across both the frontend and backend.
+
+- **Frontend:** Adopted a `DomainContext` system, where attribute inputs are dynamically generated from a configuration YAML file (e.g., `defaultDomain.yaml`).
+- **Backend/API:** Refactored the `/api/wishes` endpoint to accept a unified `attributes` JSON payload, falling back to legacy query parameters only when necessary.
+- **Infrastructure:** Updated the AWS serverless template and `wishboard` CLI to support deploying parallel stacks to multiple domains, utilizing wildcard certificates (primary `wishboards.app`, SAN `*.wishboards.app`) and isolated Turso databases to support alternate community implementations (like a conference setup vs. the default demo).

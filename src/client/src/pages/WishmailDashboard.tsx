@@ -197,6 +197,7 @@ export default function WishmailDashboard() {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {!mail.read && (
                     <button
+                      type="button"
                       onClick={() => markRead(mail.id)}
                       style={{
                         padding: '6px 12px',
@@ -209,6 +210,7 @@ export default function WishmailDashboard() {
                     </button>
                   )}
                   <button
+                    type="button"
                     onClick={() => deleteMail(mail.id)}
                     className="secondary-button"
                     style={{

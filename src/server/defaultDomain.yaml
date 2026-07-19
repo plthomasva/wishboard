@@ -1,0 +1,61 @@
+domain: default
+categories:
+  - id: gender
+    label: Gender
+    suggestions:
+      - Cis Man
+      - Cis Woman
+      - Trans Man
+      - Trans Woman
+      - Nonbinary
+      - Genderqueer
+      - Agender
+      - Bigender
+      - Genderfluid
+      - Two-Spirit
+  - id: orientation
+    label: Orientation
+    suggestions:
+      - Straight
+      - Gay
+      - Lesbian
+      - Bisexual
+      - Pansexual
+      - Asexual
+      - Queer
+      - Demisexual
+  - id: role
+    label: Role
+    suggestions:
+      - Top
+      - Bottom
+      - Versatile
+      - Dominant
+      - Submissive
+      - Switch
+      - Sadist
+      - Masochist
+      - Rigger
+      - Rope Bunny
+      - Handler
+      - Pup
+stickers:
+  orientation:
+    straight: { type: heart, class: flag-straight }
+    gay: { type: heart, class: flag-rainbow }
+    lesbian: { type: heart, class: flag-lesbian }
+    bi: { type: heart, class: flag-bisexual }
+    pan: { type: heart, class: flag-pansexual }
+    asexual: { type: heart, class: flag-asexual }
+    ace: { type: heart, class: flag-asexual }
+    queer: { type: heart, class: flag-rainbow }
+  gender:
+    trans: { type: flag, class: flag-trans }
+    nonbinary: { type: flag, class: flag-nonbinary }
+    enby: { type: flag, class: flag-nonbinary }
+    genderqueer: { type: flag, class: flag-genderqueer }
+    agender: { type: flag, class: flag-nonbinary }
+    woman: { type: icon, class: female-icon, iconType: female }
+    female: { type: icon, class: female-icon, iconType: female }
+    man: { type: icon, class: male-icon, iconType: male }
+    male: { type: icon, class: male-icon, iconType: male }

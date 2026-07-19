@@ -1,6 +1,86 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+const originalFetch = globalThis.fetch;
+globalThis.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+  if (url === '/api/config' || url.toString().endsWith('/api/config')) {
+    return {
+      ok: true,
+      json: async () => ({
+        domain: 'default',
+        categories: [
+          { id: 'gender', label: 'Gender', suggestions: [] },
+          { id: 'orientation', label: 'Orientation', suggestions: [] },
+          { id: 'role', label: 'Role', suggestions: [] },
+        ],
+        stickers: {
+          orientation: {
+            straight: { type: 'heart', class: 'flag-straight' },
+            gay: { type: 'heart', class: 'flag-rainbow' },
+            lesbian: { type: 'heart', class: 'flag-lesbian' },
+            bi: { type: 'heart', class: 'flag-bisexual' },
+            pan: { type: 'heart', class: 'flag-pansexual' },
+            asexual: { type: 'heart', class: 'flag-asexual' },
+            queer: { type: 'heart', class: 'flag-rainbow' },
+          },
+          gender: {
+            trans: { type: 'flag', class: 'flag-trans' },
+            nonbinary: { type: 'flag', class: 'flag-nonbinary' },
+            woman: { type: 'icon', class: 'female-icon', iconType: 'female' },
+            man: { type: 'icon', class: 'male-icon', iconType: 'male' },
+          },
+        },
+        realtimeProvider: 'socketio',
+        apIp: '',
+        isServerless: false,
+      }),
+    } as Response;
+  }
+  if (originalFetch) {
+    return originalFetch(url, init);
+  }
+  return { ok: true, json: async () => ({}) } as Response;
+});
+
+const MOCK_DOMAIN = {
+  domain: 'default',
+  categories: [
+    { id: 'gender', label: 'Gender', suggestions: [] },
+    { id: 'orientation', label: 'Orientation', suggestions: [] },
+    { id: 'role', label: 'Role', suggestions: [] },
+  ],
+  stickers: {
+    orientation: {
+      straight: { type: 'heart', class: 'flag-straight' },
+      gay: { type: 'heart', class: 'flag-rainbow' },
+      lesbian: { type: 'heart', class: 'flag-lesbian' },
+      bi: { type: 'heart', class: 'flag-bisexual' },
+      pan: { type: 'heart', class: 'flag-pansexual' },
+      asexual: { type: 'heart', class: 'flag-asexual' },
+      queer: { type: 'heart', class: 'flag-rainbow' },
+    },
+    gender: {
+      trans: { type: 'flag', class: 'flag-trans' },
+      nonbinary: { type: 'flag', class: 'flag-nonbinary' },
+      woman: { type: 'icon', class: 'female-icon', iconType: 'female' },
+      man: { type: 'icon', class: 'male-icon', iconType: 'male' },
+    },
+  },
+  realtimeProvider: 'socketio',
+  apIp: '',
+  isServerless: false,
+};
+
+// Mock DomainContext so it renders children immediately without waiting for fetch in tests
+vi.mock('./DomainContext', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as any),
+    DomainProvider: ({ children }: any) => children,
+    useDomain: vi.fn(() => MOCK_DOMAIN),
+  };
+});
+
 vi.mock('@techstark/opencv-js', () => ({
   default: {
     Mat: vi.fn().mockImplementation(() => ({

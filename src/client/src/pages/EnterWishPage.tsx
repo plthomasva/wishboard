@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { useDomain } from '../DomainContext';
 import { QRCodeSVG } from 'qrcode.react';
 import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
@@ -11,7 +12,6 @@ const WishScanner = React.lazy(() => import('../components/WishScanner'));
 // cardProcessor pulls in the ~15.6 MB @techstark/opencv-js blob. Import it
 // dynamically at the point of use (card upload / scan) so it is not fetched
 // on page load — mirrors the React.lazy(WishScanner) above. See issue #140.
-import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -33,12 +33,9 @@ export default function EnterWishPage() {
   const { token, user } = useAuth();
   const [content, setContent] = useState('');
   const [passphrase, setPassphrase] = useState('');
-  const [creatorGenders, setCreatorGenders] = useState('');
-  const [creatorOrientations, setCreatorOrientations] = useState('');
-  const [creatorRoles, setCreatorRoles] = useState('');
-  const [desiredGenders, setDesiredGenders] = useState('');
-  const [desiredOrientations, setDesiredOrientations] = useState('');
-  const [desiredRoles, setDesiredRoles] = useState('');
+  const { categories = [], stickers = {} } = useDomain();
+  const [creatorAttributes, setCreatorAttributes] = useState<Record<string, string>>({});
+  const [desiredAttributes, setDesiredAttributes] = useState<Record<string, string>>({});
 
   const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
@@ -67,30 +64,30 @@ export default function EnterWishPage() {
 
   // Debounced conflict checks for creator attributes
   useEffect(() => {
-    if (user) return; // logged-in users: creator attrs taken from profile
+    if (user) return;
     const timer = globalThis.setTimeout(async () => {
-      const conflicts = await fetchConflicts({
-        gender: parseAttributesString(creatorGenders),
-        orientation: parseAttributesString(creatorOrientations),
-        role: parseAttributesString(creatorRoles),
-      });
+      const parsed: Record<string, string[]> = {};
+      categories.forEach(
+        (cat) => (parsed[cat.id] = parseAttributesString(creatorAttributes[cat.id] || ''))
+      );
+      const conflicts = await fetchConflicts(parsed);
       setCreatorConflicts(conflicts);
     }, 300);
     return () => clearTimeout(timer);
-  }, [creatorGenders, creatorOrientations, creatorRoles, user]);
+  }, [creatorAttributes, user, categories]);
 
   // Debounced conflict checks for desired attributes
   useEffect(() => {
     const timer = globalThis.setTimeout(async () => {
-      const conflicts = await fetchConflicts({
-        gender: parseAttributesString(desiredGenders),
-        orientation: parseAttributesString(desiredOrientations),
-        role: parseAttributesString(desiredRoles),
-      });
+      const parsed: Record<string, string[]> = {};
+      categories.forEach(
+        (cat) => (parsed[cat.id] = parseAttributesString(desiredAttributes[cat.id] || ''))
+      );
+      const conflicts = await fetchConflicts(parsed);
       setDesiredConflicts(conflicts);
     }, 300);
     return () => clearTimeout(timer);
-  }, [desiredGenders, desiredOrientations, desiredRoles]);
+  }, [desiredAttributes, categories]);
 
   const hasConflicts = creatorConflicts.length > 0 || desiredConflicts.length > 0;
 
@@ -110,12 +107,8 @@ export default function EnterWishPage() {
       const formData = new FormData();
       formData.append('content', content);
       if (passphrase) formData.append('passphrase', passphrase);
-      formData.append('creator_genders', creatorGenders);
-      formData.append('creator_orientations', creatorOrientations);
-      formData.append('creator_roles', creatorRoles);
-      formData.append('desired_genders', desiredGenders);
-      formData.append('desired_orientations', desiredOrientations);
-      formData.append('desired_roles', desiredRoles);
+      formData.append('creator_attributes', JSON.stringify(creatorAttributes));
+      formData.append('desired_attributes', JSON.stringify(desiredAttributes));
       formData.append('contacts', JSON.stringify(contacts));
       formData.append('wishmail_enabled', wishmailEnabled ? 'true' : '');
       formData.append('image', imageBlob, 'wish.jpg');
@@ -124,12 +117,8 @@ export default function EnterWishPage() {
       body = JSON.stringify({
         content,
         passphrase: passphrase || undefined,
-        creator_genders: creatorGenders,
-        creator_orientations: creatorOrientations,
-        creator_roles: creatorRoles,
-        desired_genders: desiredGenders,
-        desired_orientations: desiredOrientations,
-        desired_roles: desiredRoles,
+        creator_attributes: creatorAttributes,
+        desired_attributes: desiredAttributes,
         contacts,
         wishmail_enabled: wishmailEnabled,
       });
@@ -164,30 +153,27 @@ export default function EnterWishPage() {
     setResult({ id: data.id ?? '', secret: data.secret });
     setContent('');
     setPassphrase('');
-    setCreatorGenders('');
-    setCreatorOrientations('');
-    setCreatorRoles('');
-    setDesiredGenders('');
-    setDesiredOrientations('');
-    setDesiredRoles('');
+    setCreatorAttributes({});
+    setDesiredAttributes({});
     setContacts([]);
     setWishmailEnabled(false);
     setIsOverflowing(false);
     setImageBlob(null);
   };
 
-  const parsedCreatorGenders = creatorGenders
-    ? creatorGenders.split(',').map((s) => s.trim())
-    : undefined;
-  const parsedCreatorOrientations = creatorOrientations
-    ? creatorOrientations.split(',').map((s) => s.trim())
-    : undefined;
+  const parsedCreatorAttributes: Record<string, string[]> = {};
+  categories.forEach((cat) => {
+    if (creatorAttributes[cat.id]) {
+      parsedCreatorAttributes[cat.id] = creatorAttributes[cat.id]
+        .split(',')
+        .map((s: string) => s.trim());
+    }
+  });
 
   const previewWish = {
     id: 'preview',
     content: content || 'Your wish text will appear here',
-    creator_genders: user ? user.identity_genders : parsedCreatorGenders,
-    creator_orientations: user ? user.identity_orientations : parsedCreatorOrientations,
+    creator_attributes: user ? user.attributes : parsedCreatorAttributes,
     contacts: contacts.filter((c) => c.value.trim()),
     wishmail_enabled: wishmailEnabled,
     image_url: imageBlob ? URL.createObjectURL(imageBlob) : undefined,
@@ -343,36 +329,23 @@ export default function EnterWishPage() {
                   placeholder="Leave blank for automatic code phrase"
                 />
               </div>
-              <label>
-                Creator genders (anonymous only)
-                <AttributeInput
-                  value={creatorGenders}
-                  onChange={setCreatorGenders}
-                  placeholder="e.g. woman, non-binary"
-                  suggestions={SUGGESTED_GENDERS}
-                  warning={getConflictWarning(creatorConflicts, 'gender')}
-                />
-              </label>
-              <label>
-                Creator orientations (anonymous only)
-                <AttributeInput
-                  value={creatorOrientations}
-                  onChange={setCreatorOrientations}
-                  placeholder="e.g. queer, straight"
-                  suggestions={SUGGESTED_ORIENTATIONS}
-                  warning={getConflictWarning(creatorConflicts, 'orientation')}
-                />
-              </label>
-              <label>
-                Creator roles (anonymous only)
-                <AttributeInput
-                  value={creatorRoles}
-                  onChange={setCreatorRoles}
-                  placeholder="e.g. speaker, volunteer"
-                  suggestions={SUGGESTED_ROLES}
-                  warning={getConflictWarning(creatorConflicts, 'role')}
-                />
-              </label>
+              {categories.map((cat) => {
+                const suggs = Object.keys(stickers[cat.id] || {});
+                return (
+                  <label key={cat.id}>
+                    Creator {cat.label}s (anonymous only)
+                    <AttributeInput
+                      value={creatorAttributes[cat.id] || ''}
+                      onChange={(val) =>
+                        setCreatorAttributes((prev) => ({ ...prev, [cat.id]: val }))
+                      }
+                      placeholder={suggs.length > 0 ? `e.g. ${suggs.slice(0, 2).join(', ')}` : ''}
+                      suggestions={suggs}
+                      warning={getConflictWarning(creatorConflicts, cat.id)}
+                    />
+                  </label>
+                );
+              })}
             </>
           )}
           <div className="advanced-criteria-toggle" style={{ margin: '24px 0 16px 0' }}>
@@ -416,54 +389,33 @@ export default function EnterWishPage() {
               }}
             >
               <legend style={{ fontWeight: 600, padding: '0 8px' }}>Advanced Match Criteria</legend>
-              <div style={{ display: 'grid', gap: '8px' }}>
-                <div className="label-with-info">
-                  <label htmlFor="desiredGenders">Strictly required genders</label>
-                  <InfoToggle>
-                    Only users with these genders will be able to see this wish. If you leave this
-                    blank, we'll smartly fall back to guessing based on your own orientation!
-                  </InfoToggle>
-                </div>
-                <AttributeInput
-                  id="desiredGenders"
-                  value={desiredGenders}
-                  onChange={setDesiredGenders}
-                  placeholder="e.g. woman, non-binary"
-                  suggestions={SUGGESTED_GENDERS}
-                  warning={getConflictWarning(desiredConflicts, 'gender')}
-                />
-              </div>
-              <div style={{ display: 'grid', gap: '8px', marginTop: '12px' }}>
-                <div className="label-with-info">
-                  <label htmlFor="desiredOrientations">Strictly required orientations</label>
-                  <InfoToggle>
-                    Only users with these orientations will be able to see this wish.
-                  </InfoToggle>
-                </div>
-                <AttributeInput
-                  id="desiredOrientations"
-                  value={desiredOrientations}
-                  onChange={setDesiredOrientations}
-                  placeholder="e.g. queer, straight"
-                  suggestions={SUGGESTED_ORIENTATIONS}
-                  warning={getConflictWarning(desiredConflicts, 'orientation')}
-                />
-              </div>
-              <div style={{ display: 'grid', gap: '8px', marginTop: '12px' }}>
-                <div className="label-with-info">
-                  <label htmlFor="desiredRoles">Strictly required roles</label>
-                  <InfoToggle>
-                    Only users with these roles will be able to see this wish.
-                  </InfoToggle>
-                </div>
-                <AttributeInput
-                  id="desiredRoles"
-                  value={desiredRoles}
-                  onChange={setDesiredRoles}
-                  placeholder="e.g. speaker, vendor"
-                  suggestions={SUGGESTED_ROLES}
-                  warning={getConflictWarning(desiredConflicts, 'role')}
-                />
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {categories.map((cat, idx) => {
+                  const suggs = Object.keys(stickers[cat.id] || {});
+                  return (
+                    <div
+                      key={cat.id}
+                      style={{ display: 'grid', gap: '8px', marginTop: idx > 0 ? '12px' : '0' }}
+                    >
+                      <div className="label-with-info">
+                        <label htmlFor={`desired-${cat.id}`}>Strictly required {cat.label}s</label>
+                        <InfoToggle>
+                          Only users with these {cat.label}s will be able to see this wish.
+                        </InfoToggle>
+                      </div>
+                      <AttributeInput
+                        id={`desired-${cat.id}`}
+                        value={desiredAttributes[cat.id] || ''}
+                        onChange={(val) =>
+                          setDesiredAttributes((prev) => ({ ...prev, [cat.id]: val }))
+                        }
+                        placeholder={suggs.length > 0 ? `e.g. ${suggs.slice(0, 2).join(', ')}` : ''}
+                        suggestions={suggs}
+                        warning={getConflictWarning(desiredConflicts, cat.id)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </fieldset>
           )}

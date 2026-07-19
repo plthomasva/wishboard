@@ -41,22 +41,28 @@ describe('SearchPage', () => {
     fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
       target: { value: 'hello' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/e.g. woman, cisgender man/i), {
+    fireEvent.change(screen.getByLabelText(/Your Gender\(s\)/i), {
       target: { value: 'woman' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/e.g. lesbian, bisexual/i), {
+    fireEvent.change(screen.getByLabelText(/Your Orientation\(s\)/i), {
       target: { value: 'queer' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/e.g. top, bottom/i), {
+    fireEvent.change(screen.getByLabelText(/Your Role\(s\)/i), {
       target: { value: 'top' },
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Search/i }));
 
     await waitFor(() => expect(screen.getByText('Hello world')).toBeInTheDocument());
-    expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('sg=woman'));
-    expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('so=queer'));
-    expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('sr=top'));
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('%22gender%22%3A%22woman%22')
+    );
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('%22orientation%22%3A%22queer%22')
+    );
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('%22role%22%3A%22top%22')
+    );
   });
 
   it('handles empty results', async () => {

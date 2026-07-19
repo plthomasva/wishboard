@@ -144,16 +144,16 @@ function getStackOutput(stackName, common, key, dryRun) {
  * these are normally developer-supplied config.
  */
 function assertSafeParam(name, value) {
-  if (value && !/^[A-Za-z0-9._:/-]+$/.test(value)) {
+  if (value && !/^[A-Za-z0-9._:/*-]+$/.test(value)) {
     throw new Error(
-      `Invalid value for ${name}: only letters, digits, and ". _ : / -" are allowed.`
+      `Invalid value for ${name}: only letters, digits, and ". _ : / * -" are allowed.`
     );
   }
   return value;
 }
 
 /** Assembles the CloudFormation parameter override tokens for sam deploy. */
-function buildParameterOverrides(mode) {
+function buildParameterOverrides(options, mode) {
   const nodeEnv = mode === 'dev' ? 'development' : 'production';
   const tomlOverrides = readTomlValue('parameter_overrides');
 
@@ -161,11 +161,20 @@ function buildParameterOverrides(mode) {
   if (!projectName) projectName = 'wishboard';
   if (mode === 'dev' && projectName === 'wishboard') projectName = 'wishboard-dev';
 
-  const domainName = process.env.DOMAIN_NAME || getOverrideValue('DomainName', tomlOverrides);
+  const domainName =
+    options.domain || process.env.DOMAIN_NAME || getOverrideValue('DomainName', tomlOverrides);
+  const certDomain =
+    options.certDomain ||
+    process.env.CERTIFICATE_DOMAIN_NAME ||
+    getOverrideValue('CertificateDomainName', tomlOverrides);
   const hostedZoneId =
-    process.env.HOSTED_ZONE_ID || getOverrideValue('HostedZoneId', tomlOverrides);
+    options.hostedZoneId ||
+    process.env.HOSTED_ZONE_ID ||
+    getOverrideValue('HostedZoneId', tomlOverrides);
   const acmCertificateArn =
-    process.env.ACM_CERTIFICATE_ARN || getOverrideValue('AcmCertificateArn', tomlOverrides);
+    options.acmCertArn ||
+    process.env.ACM_CERTIFICATE_ARN ||
+    getOverrideValue('AcmCertificateArn', tomlOverrides);
 
   // DatabaseUrl is the (non-secret) libSQL/Turso endpoint; DatabaseAuthTokenSsm
   // names the SSM SecureString the Lambda reads the token from at runtime. The
@@ -176,6 +185,7 @@ function buildParameterOverrides(mode) {
 
   assertSafeParam('ProjectName', projectName);
   assertSafeParam('DomainName', domainName);
+  assertSafeParam('CertificateDomainName', certDomain);
   assertSafeParam('HostedZoneId', hostedZoneId);
   assertSafeParam('AcmCertificateArn', acmCertificateArn);
   assertSafeParam('DatabaseUrl', databaseUrl);
@@ -183,10 +193,13 @@ function buildParameterOverrides(mode) {
 
   // Never silently blank a param that samconfig explicitly sets (would delete the
   // custom domain / cert). An env override still wins; this only guards accidents.
-  if (!process.env.DOMAIN_NAME) assertNotSilentlyBlanked('DomainName', domainName, tomlOverrides);
-  if (!process.env.HOSTED_ZONE_ID)
+  if (!options.domain && !process.env.DOMAIN_NAME)
+    assertNotSilentlyBlanked('DomainName', domainName, tomlOverrides);
+  if (!options.certDomain && !process.env.CERTIFICATE_DOMAIN_NAME)
+    assertNotSilentlyBlanked('CertificateDomainName', certDomain, tomlOverrides);
+  if (!options.hostedZoneId && !process.env.HOSTED_ZONE_ID)
     assertNotSilentlyBlanked('HostedZoneId', hostedZoneId, tomlOverrides);
-  if (!process.env.ACM_CERTIFICATE_ARN)
+  if (!options.acmCertArn && !process.env.ACM_CERTIFICATE_ARN)
     assertNotSilentlyBlanked('AcmCertificateArn', acmCertificateArn, tomlOverrides);
   // Blanking DatabaseUrl would silently fall the Lambda back to a (read-only)
   // local file path and crash the app, so guard it like the domain params.
@@ -198,6 +211,7 @@ function buildParameterOverrides(mode) {
   // quoted (`DomainName=''`) — CloudFormation then applies their empty defaults.
   return (
     `ProjectName='${projectName}' DomainName='${domainName}' ` +
+    `CertificateDomainName='${certDomain}' ` +
     `HostedZoneId='${hostedZoneId}' AcmCertificateArn='${acmCertificateArn}' ` +
     `NodeEnv='${nodeEnv}' DatabaseUrl='${databaseUrl}' ` +
     `DatabaseAuthTokenSsm='${databaseAuthTokenSsm}'`
@@ -318,7 +332,7 @@ function performBackendBuild(dryRun) {
   if (postBuild.status !== 0) throw new Error('post-build.js failed.');
 }
 
-function performStackDeploy(stackName, common, guided, mode, dryRun, sleepFn = sleepSync) {
+function performStackDeploy(options, stackName, common, guided, mode, dryRun, sleepFn = sleepSync) {
   if (guided) {
     logStep('[4/6] Deploying stack (sam deploy --guided)...');
     logInfo('No samconfig.toml found or --guided specified; starting interactive setup.');
@@ -341,7 +355,7 @@ function performStackDeploy(stackName, common, guided, mode, dryRun, sleepFn = s
         ]),
     ...common,
     '--parameter-overrides',
-    buildParameterOverrides(mode),
+    buildParameterOverrides(options, mode),
     '--tags',
     'Project=wishboard',
   ];
@@ -443,7 +457,7 @@ function runBackendPipeline(options, stackName, region, profile, mode, common, d
   let guided = options.guided || !fs.existsSync(SAM_CONFIG);
   if (process.env.CI) guided = false;
 
-  performStackDeploy(stackName, common, guided, mode, dryRun, options.sleep);
+  performStackDeploy(options, stackName, common, guided, mode, dryRun, options.sleep);
 
   // A guided deploy writes/updates samconfig.toml, so pick up the values the
   // user just chose. For a non-guided deploy samconfig is unchanged, and
@@ -460,6 +474,67 @@ function runBackendPipeline(options, stackName, region, profile, mode, common, d
   return { stackName, common };
 }
 
+function migrateImagesBucket(oldImagesBucket, imagesBucket, common, dryRun) {
+  if (oldImagesBucket === imagesBucket) return;
+  logStep(`Checking if old images bucket s3://${oldImagesBucket} exists...`);
+  const checkOldImages = execCommand('aws', ['s3', 'ls', `s3://${oldImagesBucket}`, ...common], {
+    stdio: 'pipe',
+    dryRun,
+  });
+  if (dryRun || checkOldImages.status === 0) {
+    logStep(
+      `[Migration] Copying user images from s3://${oldImagesBucket} to s3://${imagesBucket}...`
+    );
+    execCommand(
+      'aws',
+      ['s3', 'sync', `s3://${oldImagesBucket}`, `s3://${imagesBucket}`, ...common],
+      {
+        stdio: 'inherit',
+        dryRun,
+      }
+    );
+    logStep(`[Migration] Emptying old images bucket s3://${oldImagesBucket}...`);
+    execCommand('aws', ['s3', 'rm', `s3://${oldImagesBucket}`, '--recursive', ...common], {
+      stdio: 'pipe',
+      dryRun,
+    });
+    logStep(`[Migration] Deleting old images bucket s3://${oldImagesBucket}...`);
+    execCommand('aws', ['s3', 'rb', `s3://${oldImagesBucket}`, ...common], {
+      stdio: 'pipe',
+      dryRun,
+    });
+  } else {
+    logInfo('Old images bucket not found or already migrated.');
+  }
+}
+
+function cleanupFrontendBucket(oldFrontendBucket, frontendBucket, common, dryRun) {
+  if (oldFrontendBucket === frontendBucket) return;
+  logStep(`Checking if old frontend bucket s3://${oldFrontendBucket} exists...`);
+  const checkOldFrontend = execCommand(
+    'aws',
+    ['s3', 'ls', `s3://${oldFrontendBucket}`, ...common],
+    {
+      stdio: 'pipe',
+      dryRun,
+    }
+  );
+  if (dryRun || checkOldFrontend.status === 0) {
+    logStep(`[Migration] Emptying old frontend bucket s3://${oldFrontendBucket}...`);
+    execCommand('aws', ['s3', 'rm', `s3://${oldFrontendBucket}`, '--recursive', ...common], {
+      stdio: 'pipe',
+      dryRun,
+    });
+    logStep(`[Migration] Deleting old frontend bucket s3://${oldFrontendBucket}...`);
+    execCommand('aws', ['s3', 'rb', `s3://${oldFrontendBucket}`, ...common], {
+      stdio: 'pipe',
+      dryRun,
+    });
+  } else {
+    logInfo('Old frontend bucket not found or already migrated.');
+  }
+}
+
 /**
  * Performs coordinated S3 migration when old-format regional buckets exist.
  */
@@ -473,80 +548,15 @@ function performCoordinatedS3Migration(common, mode, dryRun, imagesBucket, front
 
   if (accountId) {
     const tomlOverrides = readTomlValue('parameter_overrides');
-    let projectName = process.env.PROJECT_NAME || getOverrideValue('ProjectName', tomlOverrides);
-    if (!projectName) projectName = 'wishboard';
+    let projectName =
+      process.env.PROJECT_NAME || getOverrideValue('ProjectName', tomlOverrides) || 'wishboard';
     if (mode === 'dev' && projectName === 'wishboard') projectName = 'wishboard-dev';
 
     const oldFrontendBucket = `${projectName}-frontend-${accountId}`;
     const oldImagesBucket = `${projectName}-images-${accountId}`;
 
-    // Migrate ImagesBucket
-    if (oldImagesBucket !== imagesBucket) {
-      logStep(`Checking if old images bucket s3://${oldImagesBucket} exists...`);
-      const checkOldImages = execCommand(
-        'aws',
-        ['s3', 'ls', `s3://${oldImagesBucket}`, ...common],
-        {
-          stdio: 'pipe',
-          dryRun,
-        }
-      );
-      if (dryRun || checkOldImages.status === 0) {
-        logStep(
-          `[Migration] Copying user images from s3://${oldImagesBucket} to s3://${imagesBucket}...`
-        );
-        execCommand(
-          'aws',
-          ['s3', 'sync', `s3://${oldImagesBucket}`, `s3://${imagesBucket}`, ...common],
-          {
-            stdio: 'inherit',
-            dryRun,
-          }
-        );
-
-        logStep(`[Migration] Emptying old images bucket s3://${oldImagesBucket}...`);
-        execCommand('aws', ['s3', 'rm', `s3://${oldImagesBucket}`, '--recursive', ...common], {
-          stdio: 'pipe',
-          dryRun,
-        });
-
-        logStep(`[Migration] Deleting old images bucket s3://${oldImagesBucket}...`);
-        execCommand('aws', ['s3', 'rb', `s3://${oldImagesBucket}`, ...common], {
-          stdio: 'pipe',
-          dryRun,
-        });
-      } else {
-        logInfo('Old images bucket not found or already migrated.');
-      }
-    }
-
-    // Clean up FrontendBucket (static assets, no sync needed as Step 6 uploads fresh files)
-    if (oldFrontendBucket !== frontendBucket) {
-      logStep(`Checking if old frontend bucket s3://${oldFrontendBucket} exists...`);
-      const checkOldFrontend = execCommand(
-        'aws',
-        ['s3', 'ls', `s3://${oldFrontendBucket}`, ...common],
-        {
-          stdio: 'pipe',
-          dryRun,
-        }
-      );
-      if (dryRun || checkOldFrontend.status === 0) {
-        logStep(`[Migration] Emptying old frontend bucket s3://${oldFrontendBucket}...`);
-        execCommand('aws', ['s3', 'rm', `s3://${oldFrontendBucket}`, '--recursive', ...common], {
-          stdio: 'pipe',
-          dryRun,
-        });
-
-        logStep(`[Migration] Deleting old frontend bucket s3://${oldFrontendBucket}...`);
-        execCommand('aws', ['s3', 'rb', `s3://${oldFrontendBucket}`, ...common], {
-          stdio: 'pipe',
-          dryRun,
-        });
-      } else {
-        logInfo('Old frontend bucket not found or already migrated.');
-      }
-    }
+    migrateImagesBucket(oldImagesBucket, imagesBucket, common, dryRun);
+    cleanupFrontendBucket(oldFrontendBucket, frontendBucket, common, dryRun);
   }
 }
 

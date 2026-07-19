@@ -11,6 +11,10 @@ Parameters:
     Type: String
     Default: ''
     Description: '(Optional) Custom domain name (e.g., wishboard.example.com).'
+  CertificateDomainName:
+    Type: String
+    Default: ''
+    Description: '(Optional) Custom domain name for the ACM Certificate. Set this to your base domain (e.g., wishboards.app) to request a wildcard certificate. If empty, falls back to DomainName.'
   HostedZoneId:
     Type: String
     Default: ''
@@ -37,8 +41,13 @@ Parameters:
 
 Conditions:
   UseCustomDomain: !Not [!Equals [!Ref DomainName, '']]
+  HasCertificateDomainName: !Not [!Equals [!Ref CertificateDomainName, '']]
   CreateCertificate:
-    !And [!Not [!Equals [!Ref DomainName, '']], !Equals [!Ref AcmCertificateArn, '']]
+    !And
+      - !Or
+          - !Not [!Equals [!Ref DomainName, '']]
+          - !Not [!Equals [!Ref CertificateDomainName, '']]
+      - !Equals [!Ref AcmCertificateArn, '']
 
 Resources:
   # VPC networking + EFS removed (#136): the app now uses Turso (hosted libSQL)
@@ -389,11 +398,18 @@ Resources:
     Type: AWS::CertificateManager::Certificate
     Condition: CreateCertificate
     Properties:
-      DomainName: !Ref DomainName
+      DomainName: !If [HasCertificateDomainName, !Ref CertificateDomainName, !Ref DomainName]
+      SubjectAlternativeNames:
+        - !If [HasCertificateDomainName, !Sub '*.${CertificateDomainName}', !Ref AWS::NoValue]
       ValidationMethod: DNS
-      DomainValidationOptions:
-        - DomainName: !Ref DomainName
-          HostedZoneId: !Ref HostedZoneId
+      DomainValidationOptions: !If
+        - HasCertificateDomainName
+        - - DomainName: !Ref CertificateDomainName
+            HostedZoneId: !Ref HostedZoneId
+          - DomainName: !Sub '*.${CertificateDomainName}'
+            HostedZoneId: !Ref HostedZoneId
+        - - DomainName: !Ref DomainName
+            HostedZoneId: !Ref HostedZoneId
       Tags:
         - Key: Project
           Value: wishboard

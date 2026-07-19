@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
+import { DomainProvider } from './DomainContext';
 import HomePage from './pages/HomePage';
 import EnterWishPage from './pages/EnterWishPage';
 import SearchPage from './pages/SearchPage';
@@ -183,6 +184,7 @@ function AppContent() {
           <nav className="nav-bar">
             {pages.map((item) => (
               <button
+                type="button"
                 key={item.id}
                 className={page === item.id ? 'nav-button active' : 'nav-button'}
                 onClick={() => navigate(item.id as PageId)}
@@ -195,6 +197,7 @@ function AppContent() {
             {user ? (
               <>
                 <button
+                  type="button"
                   className="user-link-button"
                   onClick={() => navigate('account')}
                   aria-label="My Account"
@@ -207,7 +210,7 @@ function AppContent() {
                   </span>
                   {user.username}
                 </button>
-                <button className="compact-btn" onClick={logout}>
+                <button type="button" className="compact-btn" onClick={logout}>
                   Log out
                 </button>
               </>
@@ -232,7 +235,7 @@ function AppContent() {
                   </span>{' '}
                   Guest
                 </div>
-                <button className="compact-btn" onClick={() => navigate('account')}>
+                <button type="button" className="compact-btn" onClick={() => navigate('account')}>
                   Log in
                 </button>
               </>
@@ -270,6 +273,7 @@ function AppContent() {
             .filter((p) => !['admin', 'poster', 'about'].includes(p.id))
             .map((item) => (
               <button
+                type="button"
                 key={item.id}
                 className={`mobile-tab-button ${page === item.id ? 'active' : ''}`}
                 onClick={() => navigate(item.id as PageId)}
@@ -284,6 +288,7 @@ function AppContent() {
             ))}
           {/* Hamburger Menu for the rest */}
           <button
+            type="button"
             className="mobile-tab-button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -305,6 +310,7 @@ function AppContent() {
           style={{ display: 'flex' }}
         >
           <button
+            type="button"
             aria-label="Close menu"
             style={{
               position: 'absolute',
@@ -323,11 +329,16 @@ function AppContent() {
             }}
           />
           <div className="hamburger-content">
-            <button className="hamburger-close" onClick={() => setIsMobileMenuOpen(false)}>
+            <button
+              type="button"
+              className="hamburger-close"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
               ✕
             </button>
             <div className="hamburger-items">
               <button
+                type="button"
                 className="hamburger-item"
                 onClick={() => {
                   navigate('about');
@@ -337,6 +348,7 @@ function AppContent() {
                 About
               </button>
               <button
+                type="button"
                 className="hamburger-item"
                 onClick={() => {
                   navigate('admin');
@@ -347,6 +359,7 @@ function AppContent() {
               </button>
               {user && (
                 <button
+                  type="button"
                   className="hamburger-item"
                   onClick={() => {
                     logout();
@@ -416,8 +429,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <DomainProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </DomainProvider>
   );
 }

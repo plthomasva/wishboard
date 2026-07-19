@@ -1,57 +1,53 @@
 import React from 'react';
+import { useDomain } from '../DomainContext';
 
 interface Props {
+  attributes?: Record<string, string[]>;
+  // Fallbacks for legacy/transition
   genders?: string[];
   orientations?: string[];
 }
 
-export default function IdentityStickers({ genders = [], orientations = [] }: Readonly<Props>) {
+export default function IdentityStickers({
+  attributes,
+  genders = [],
+  orientations = [],
+}: Readonly<Props>) {
+  const { stickers = {} } = useDomain();
+
+  const attrs = attributes || { gender: genders, orientation: orientations };
+
   const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
 
-  const renderOrientationSticker = (orientation: string, index: number) => {
-    const norm = normalize(orientation);
-    let flagClass = '';
+  const renderSticker = (cat: string, val: string, index: number) => {
+    const norm = normalize(val);
+    const catStickers = stickers[cat] || {};
 
-    if (norm.includes('straight')) flagClass = 'flag-straight';
-    else if (norm.includes('gay')) flagClass = 'flag-rainbow';
-    else if (norm.includes('lesbian')) flagClass = 'flag-lesbian';
-    else if (norm.includes('bi')) flagClass = 'flag-bisexual';
-    else if (norm.includes('pan')) flagClass = 'flag-pansexual';
-    else if (norm.includes('asexual') || norm.includes('ace')) flagClass = 'flag-asexual';
-    else if (norm.includes('queer')) flagClass = 'flag-rainbow';
-    else return null;
+    // Find the first matching sticker rule
+    const matchKey = Object.keys(catStickers).find((k) => norm.includes(k));
+    if (!matchKey) return null;
 
-    return (
-      <div key={`ori-${index}`} className="sticker-heart-shadow" title={orientation}>
-        <div className={`sticker-heart ${flagClass}`}></div>
-      </div>
-    );
-  };
+    const rule = catStickers[matchKey];
 
-  const renderGenderSticker = (gender: string, index: number) => {
-    const norm = normalize(gender);
-    if (norm.includes('trans')) {
+    if (rule.type === 'heart') {
       return (
-        <div key={`gen-${index}`} className="sticker sticker-flag flag-trans" title={gender}></div>
+        <div key={`${cat}-${index}`} className="sticker-heart-shadow" title={val}>
+          <div className={`sticker-heart ${rule.class}`}></div>
+        </div>
       );
     }
-    if (
-      norm.includes('nonbinary') ||
-      norm.includes('enby') ||
-      norm.includes('genderqueer') ||
-      norm.includes('agender')
-    ) {
+    if (rule.type === 'flag') {
       return (
         <div
-          key={`gen-${index}`}
-          className="sticker sticker-flag flag-nonbinary"
-          title={gender}
+          key={`${cat}-${index}`}
+          className={`sticker sticker-flag ${rule.class}`}
+          title={val}
         ></div>
       );
     }
-    if (norm.includes('woman') || norm.includes('female')) {
+    if (rule.type === 'icon' && rule.iconType === 'female') {
       return (
-        <div key={`gen-${index}`} className="sticker sticker-icon female-icon" title={gender}>
+        <div key={`${cat}-${index}`} className={`sticker sticker-icon ${rule.class}`} title={val}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -67,9 +63,9 @@ export default function IdentityStickers({ genders = [], orientations = [] }: Re
         </div>
       );
     }
-    if (norm.includes('man') || norm.includes('male')) {
+    if (rule.type === 'icon' && rule.iconType === 'male') {
       return (
-        <div key={`gen-${index}`} className="sticker sticker-icon male-icon" title={gender}>
+        <div key={`${cat}-${index}`} className={`sticker sticker-icon ${rule.class}`} title={val}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -86,16 +82,32 @@ export default function IdentityStickers({ genders = [], orientations = [] }: Re
         </div>
       );
     }
+    if (rule.type === 'image') {
+      return (
+        <div key={`${cat}-${index}`} className="sticker sticker-image" title={val}>
+          <img
+            src={rule.src}
+            alt={val}
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
+        </div>
+      );
+    }
+
     return null;
   };
 
-  const hasStickers = genders.length > 0 || orientations.length > 0;
-  if (!hasStickers) return null;
+  const rendered: React.ReactNode[] = [];
+  for (const [cat, vals] of Object.entries(attrs)) {
+    if (Array.isArray(vals)) {
+      vals.forEach((val, i) => {
+        const el = renderSticker(cat, val, i);
+        if (el) rendered.push(el);
+      });
+    }
+  }
 
-  return (
-    <div className="identity-stickers">
-      {orientations.map((ori, index) => renderOrientationSticker(ori, index))}
-      {genders.map((gen, index) => renderGenderSticker(gen, index))}
-    </div>
-  );
+  if (rendered.length === 0) return null;
+
+  return <div className="identity-stickers">{rendered}</div>;
 }

@@ -247,6 +247,7 @@ export default function WishCard({
       >
         {!hasImage && (
           <IdentityStickers
+            attributes={wish.creator_attributes}
             genders={wish.creator_genders}
             orientations={wish.creator_orientations}
           />

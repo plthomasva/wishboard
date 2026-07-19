@@ -410,9 +410,9 @@ describe('AccountPage', () => {
 
     // In register mode by default
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'testuser' } });
-    fireEvent.change(screen.getByLabelText('Identity genders'), { target: { value: 'agender' } });
-    fireEvent.change(screen.getByLabelText('Identity orientations'), { target: { value: 'ace' } });
-    fireEvent.change(screen.getByLabelText('Identity roles'), { target: { value: 'attendee' } });
+    fireEvent.change(screen.getByLabelText(/Identity Genders/i), { target: { value: 'man' } });
+    fireEvent.change(screen.getByLabelText(/Identity Orientations/i), { target: { value: 'gay' } });
+    fireEvent.change(screen.getByLabelText(/Identity Roles/i), { target: { value: 'top' } });
 
     const submit = screen
       .getAllByRole('button')

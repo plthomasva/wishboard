@@ -14,10 +14,10 @@ describe('EnterWishPage Coverage', () => {
 
     render(<EnterWishPage />);
 
-    const genderInput = screen.getByLabelText('Creator genders (anonymous only)');
+    const genderInput = screen.getByLabelText(/Creator Genders?.*\(anonymous only\)/i);
     fireEvent.change(genderInput, { target: { value: 'man, non-binary ' } });
 
-    const orientationInput = screen.getByLabelText('Creator orientations (anonymous only)');
+    const orientationInput = screen.getByLabelText(/Creator Orientations?.*\(anonymous only\)/i);
     fireEvent.change(orientationInput, { target: { value: ' gay, queer ' } });
 
     // Check if the preview card reflects the mapped array

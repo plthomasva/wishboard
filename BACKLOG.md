@@ -10,6 +10,7 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 - **[#180](https://github.com/plthomasva/wishboard/issues/180)** — Upgrade to ESLint 10 once `eslint-plugin-react` supports it (currently pinned to 9.x; Dependabot 10.x updates ignored). A weekly CI watcher (#181) pings this issue when the upstream peers unblock.
 - **[#165](https://github.com/plthomasva/wishboard/issues/165)** — Un-exclude `WishScanner.tsx` from Stryker `mutate` and give it a real component test suite (split from #120; its `cardProcessor.ts` delegate is now hardened to ~80%).
+- **[#261](https://github.com/plthomasva/wishboard/issues/261)** — Stryker Mutation Review: Review Stryker mutation coverage for the generalized rules engine and dynamic identity attributes to ensure logic edge cases are tested.
 
 ### Database & Deployment
 
@@ -18,8 +19,8 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 ### Features & Enhancements
 
 - **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
-- **[#232](https://github.com/plthomasva/wishboard/issues/232)** — Support context-gated expansion rules in the matching engine to allow orientation-specific role/attribute mapping (Proposed in [ADR 0005](docs/adr/0005-matching-engine-generalization.md)).
 
 ## Infrastructure & DevOps
 
 - **[#238](https://github.com/plthomasva/wishboard/issues/238)** — Implement automated database and media backups: periodically snapshot the SQLite database (Turso point-in-time restore vs. `turso db dump` exports) and S3 uploaded images.
+- **[#262](https://github.com/plthomasva/wishboard/issues/262)** — Root Domain Redirector: Create a small redirector for the bare domain (e.g. `wishboards.app`) to either redirect to the demo deployment or present a landing page selecting among currently deployed active stacks.
