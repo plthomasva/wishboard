@@ -65,6 +65,11 @@ const MOCK_DOMAIN = {
       woman: { type: 'icon', class: 'female-icon', iconType: 'female' },
       man: { type: 'icon', class: 'male-icon', iconType: 'male' },
     },
+    role: {
+      speaker: { type: 'icon', class: 'speaker-icon', iconType: 'microphone' },
+      attendee: { type: 'icon', class: 'attendee-icon', iconType: 'ticket' },
+      top: { type: 'icon', class: 'top-icon', iconType: 'arrow-up' },
+    },
   },
   realtimeProvider: 'socketio',
   apIp: '',

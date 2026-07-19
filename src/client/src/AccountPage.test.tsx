@@ -48,9 +48,11 @@ describe('AccountPage', () => {
         id: 'user-test',
         username: 'tester',
         role: 'user',
-        identity_genders: ['woman'],
-        identity_orientations: ['queer'],
-        identity_roles: ['speaker'],
+        attributes: {
+          gender: ['woman'],
+          orientation: ['queer'],
+          role: ['speaker'],
+        },
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -68,11 +70,11 @@ describe('AccountPage', () => {
 
     expect(screen.getByText('Welcome back, tester')).toBeInTheDocument();
     expect(screen.getByText('Genders:')).toBeInTheDocument();
-    expect(screen.getByText('woman')).toBeInTheDocument();
+    expect(screen.getAllByText('woman')[0]).toBeInTheDocument();
     expect(screen.getByText('Orientations:')).toBeInTheDocument();
-    expect(screen.getByText('queer')).toBeInTheDocument();
+    expect(screen.getAllByText('queer')[0]).toBeInTheDocument();
     expect(screen.getByText('Roles:')).toBeInTheDocument();
-    expect(screen.getByText('speaker')).toBeInTheDocument();
+    expect(screen.getAllByText('speaker')[0]).toBeInTheDocument();
 
     await screen.findByText('No wishes yet. Submit a new wish from the Enter a Wish page.');
   });
@@ -105,11 +107,7 @@ describe('AccountPage', () => {
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'newuser' } });
     fireEvent.click(registerSubmitButton);
 
-    expect(register).toHaveBeenCalledWith('newuser', undefined, {
-      genders: '',
-      orientations: '',
-      roles: '',
-    });
+    expect(register).toHaveBeenCalledWith('newuser', undefined, {});
     await screen.findByText(/Account created. Remember your passphrase:/);
   });
 
@@ -216,9 +214,11 @@ describe('AccountPage', () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              identity_genders: ['woman'],
-              identity_orientations: ['queer'],
-              identity_roles: ['speaker'],
+              attributes: {
+                gender: ['woman'],
+                orientation: ['queer'],
+                role: ['speaker'],
+              },
             }),
         });
       }
@@ -237,9 +237,11 @@ describe('AccountPage', () => {
         id: 'user-test',
         username: 'tester',
         role: 'user',
-        identity_genders: ['woman'],
-        identity_orientations: ['queer'],
-        identity_roles: ['speaker'],
+        attributes: {
+          gender: ['woman'],
+          orientation: ['queer'],
+          role: ['speaker'],
+        },
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -420,9 +422,9 @@ describe('AccountPage', () => {
     fireEvent.click(submit!);
 
     expect(register).toHaveBeenCalledWith('testuser', undefined, {
-      genders: 'agender',
-      orientations: 'ace',
-      roles: 'attendee',
+      gender: 'man',
+      orientation: 'gay',
+      role: 'top',
     });
     await screen.findByText(/Account created. Remember your passphrase: secret/);
   });
