@@ -44,6 +44,18 @@ const validateProfile = (identityAttrs) => {
   };
 };
 
+const getIdentityAttributes = (body) => {
+  let attrs = parseAttributesInput(body.identity_attributes);
+  if (Object.keys(attrs).length === 0) {
+    attrs = {
+      gender: normalizeArrayInput(body.identity_genders),
+      orientation: normalizeArrayInput(body.identity_orientations),
+      role: normalizeArrayInput(body.identity_roles),
+    };
+  }
+  return attrs;
+};
+
 router.post('/register', async (req, res) => {
   const {
     username,
@@ -72,14 +84,7 @@ router.post('/register', async (req, res) => {
   const userId = idGenerator();
   const now = new Date().toISOString();
 
-  let identityAttrs = parseAttributesInput(req.body.identity_attributes);
-  if (Object.keys(identityAttrs).length === 0) {
-    identityAttrs = {
-      gender: normalizeArrayInput(identity_genders),
-      orientation: normalizeArrayInput(identity_orientations),
-      role: normalizeArrayInput(identity_roles),
-    };
-  }
+  const identityAttrs = getIdentityAttributes(req.body);
 
   const { error } = validateProfile(identityAttrs);
   if (error) {
@@ -133,14 +138,7 @@ router.put('/me', async (req, res) => {
 
   const { identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled } =
     req.body;
-  let identityAttrs = parseAttributesInput(req.body.identity_attributes);
-  if (Object.keys(identityAttrs).length === 0) {
-    identityAttrs = {
-      gender: normalizeArrayInput(identity_genders),
-      orientation: normalizeArrayInput(identity_orientations),
-      role: normalizeArrayInput(identity_roles),
-    };
-  }
+  const identityAttrs = getIdentityAttributes(req.body);
 
   const { error } = validateProfile(identityAttrs);
   if (error) {

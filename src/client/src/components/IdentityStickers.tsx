@@ -16,7 +16,7 @@ export default function IdentityStickers({ attributes }: Readonly<Props>) {
 
     // Find the first matching sticker rule
     const matchKey = Object.keys(catStickers).find((k) => {
-      const regex = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b`);
+      const regex = new RegExp(String.raw`\b${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\b`);
       return regex.test(valLower);
     });
     if (!matchKey) return null;

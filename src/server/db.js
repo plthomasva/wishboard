@@ -204,7 +204,7 @@ try {
   await db.execute('ALTER TABLE users DROP COLUMN identity_orientations');
   await db.execute('ALTER TABLE users DROP COLUMN identity_roles');
 } catch (_e) {
-  // Ignored: columns may have already been dropped or this is a fresh database
+  console.debug('Ignored: columns may have already been dropped');
 }
 
 try {
@@ -238,7 +238,7 @@ try {
   await db.execute('ALTER TABLE wishes DROP COLUMN desired_orientations');
   await db.execute('ALTER TABLE wishes DROP COLUMN desired_roles');
 } catch (_e) {
-  // Ignored: columns may have already been dropped or this is a fresh database
+  console.debug('Ignored: columns may have already been dropped');
 }
 
 // WebSocket subscription state (serverless API Gateway target). Board events
