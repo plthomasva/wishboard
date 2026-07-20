@@ -11,8 +11,7 @@ interface Contact {
 interface Wish {
   id: string;
   content: string;
-  creator_genders?: string[];
-  creator_orientations?: string[];
+  creator_attributes?: Record<string, string[]>;
   contacts?: Contact[];
   wishmail_enabled?: boolean;
   image_url?: string;
@@ -245,12 +244,7 @@ export default function WishCard({
               }
         }
       >
-        {!hasImage && (
-          <IdentityStickers
-            genders={wish.creator_genders}
-            orientations={wish.creator_orientations}
-          />
-        )}
+        {!hasImage && <IdentityStickers attributes={wish.creator_attributes} />}
 
         {showTopActions && (
           <div className="card-top-left-actions">
@@ -336,10 +330,7 @@ export default function WishCard({
             <div
               style={{ position: 'absolute', top: '0', right: '6px', zIndex: 5, fontSize: '10px' }}
             >
-              <IdentityStickers
-                genders={wish.creator_genders}
-                orientations={wish.creator_orientations}
-              />
+              <IdentityStickers attributes={wish.creator_attributes} />
             </div>
             {/* Hidden text for accessibility/search */}
             <p className="sr-only" style={{ display: 'none' }}>

@@ -81,22 +81,25 @@ describe('User registration and login', () => {
       .put('/api/users/me')
       .set('Authorization', `Bearer ${token}`)
       .send({
-        identity_genders: 'non-binary',
-        identity_orientations: 'pansexual',
-        identity_roles: 'mentor',
+        identity_attributes: {
+          gender: ['non-binary'],
+          orientation: ['pansexual'],
+          role: ['mentor'],
+        },
       })
       .set('Accept', 'application/json');
 
     expect(update.status).toBe(200);
-    expect(update.body.identity_genders).toEqual(['non-binary']);
-    expect(update.body.identity_orientations).toEqual(['pansexual']);
-    expect(update.body.identity_roles).toEqual(['mentor']);
+    expect(update.body.identity_attributes.gender).toEqual(['non-binary']);
+    expect(update.body.identity_attributes.orientation).toEqual(['pansexual']);
+    expect(update.body.identity_attributes.role).toEqual(['mentor']);
 
+    // Fetch me
     const me = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
     expect(me.status).toBe(200);
-    expect(me.body.identity_genders).toEqual(['non-binary']);
-    expect(me.body.identity_orientations).toEqual(['pansexual']);
-    expect(me.body.identity_roles).toEqual(['mentor']);
+    expect(me.body.identity_attributes.gender).toEqual(['non-binary']);
+    expect(me.body.identity_attributes.orientation).toEqual(['pansexual']);
+    expect(me.body.identity_attributes.role).toEqual(['mentor']);
   });
 
   it('rejects login when existing user supplies an incorrect passphrase', async () => {
@@ -118,39 +121,36 @@ describe('User registration and login', () => {
     const register = await request(app)
       .post('/api/users/register')
       .send({
-        username: 'identity_user',
-        passphrase: 'testpass',
-        identity_genders: 'woman',
-        identity_orientations: 'bisexual',
-        identity_roles: 'switch',
+        username: 'test_register_user',
+        passphrase: 'secure_password_here',
+        identity_attributes: { gender: ['woman'], orientation: ['bisexual'], role: ['switch'] },
       })
       .set('Accept', 'application/json');
 
     expect(register.status).toBe(200);
-    expect(register.body.identity_genders).toEqual(['woman']);
-    expect(register.body.identity_orientations).toEqual(['bisexual']);
-    expect(register.body.identity_roles).toEqual(['switch']);
+    expect(register.body.identity_attributes.gender).toEqual(['woman']);
+    expect(register.body.identity_attributes.orientation).toEqual(['bisexual']);
+    expect(register.body.identity_attributes.role).toEqual(['switch']);
 
-    // Verify the attributes survive a fresh login (i.e. they were actually saved to the DB)
-    const login = await request(app)
-      .post('/api/users/login')
-      .send({ username: 'identity_user', passphrase: 'testpass' })
-      .set('Accept', 'application/json');
+    const login = await request(app).post('/api/users/login').send({
+      username: 'test_register_user',
+      passphrase: 'secure_password_here',
+    });
 
     expect(login.status).toBe(200);
-    expect(login.body.identity_genders).toEqual(['woman']);
-    expect(login.body.identity_orientations).toEqual(['bisexual']);
-    expect(login.body.identity_roles).toEqual(['switch']);
+    expect(login.body.token).toBeTypeOf('string');
+    expect(login.body.identity_attributes.gender).toEqual(['woman']);
+    expect(login.body.identity_attributes.orientation).toEqual(['bisexual']);
+    expect(login.body.identity_attributes.role).toEqual(['switch']);
 
     // Also verify via direct DB query for belt-and-suspenders
     const row = await db
-      .prepare(
-        'SELECT identity_genders, identity_orientations, identity_roles FROM users WHERE username = ?'
-      )
-      .get('identity_user');
-    expect(JSON.parse(row.identity_genders)).toEqual(['woman']);
-    expect(JSON.parse(row.identity_orientations)).toEqual(['bisexual']);
-    expect(JSON.parse(row.identity_roles)).toEqual(['switch']);
+      .prepare('SELECT identity_attributes FROM users WHERE username = ?')
+      .get('test_register_user');
+    const identityAttrs = JSON.parse(row.identity_attributes);
+    expect(identityAttrs.gender).toEqual(['woman']);
+    expect(identityAttrs.orientation).toEqual(['bisexual']);
+    expect(identityAttrs.role).toEqual(['switch']);
   });
   it('handles missing usernames in /exists and /register', async () => {
     const exists = await request(app).get('/api/users/exists');

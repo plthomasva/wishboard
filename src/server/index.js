@@ -95,14 +95,13 @@ const frontendLimiter = rateLimit({
   },
 });
 
-app.get('/api/config', (req, res) => {
+app.get('/api/config', async (req, res) => {
+  const { getDomainConfig } = await import('./configManager.js');
+  const domainConfig = getDomainConfig();
   res.json({
+    ...domainConfig,
     realtimeProvider: process.env.REALTIME_PROVIDER || 'socketio',
-    // Public domain + AP IP are resolved at RUNTIME (per deployment), not baked in
-    // at Vite build time — a single GHCR image is deployed to many domains, so a
-    // build-time VITE_WISHBOARD_DOMAIN is always wrong somewhere. The poster and the
-    // kiosk Wi-Fi popup read these. Empty when unset; the client falls back sensibly.
-    domain: process.env.WISHBOARD_DOMAIN || '',
+    domain: process.env.WISHBOARD_DOMAIN || domainConfig.domain || '',
     apIp: process.env.WISHBOARD_AP_IP || '',
     isServerless: !!process.env.AWS_EXECUTION_ENV,
   });

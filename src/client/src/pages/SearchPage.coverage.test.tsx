@@ -64,12 +64,14 @@ describe('SearchPage Coverage', () => {
     });
 
     render(<SearchPage />);
-    fireEvent.change(screen.getByPlaceholderText('e.g. woman, cisgender man'), {
+    fireEvent.change(screen.getByLabelText(/Your Gender\(s\)/i), {
       target: { value: 'man' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));
 
-    await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('sg=man')));
+    await waitFor(() =>
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('%22gender%22%3A%22man%22'))
+    );
   });
 
   it('handles admin delete successfully', async () => {
@@ -78,9 +80,6 @@ describe('SearchPage Coverage', () => {
         id: 'u1',
         username: 'admin',
         role: 'admin',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
     } as unknown as ReturnType<typeof AuthContext.useAuth>);
@@ -114,9 +113,6 @@ describe('SearchPage Coverage', () => {
         id: 'u1',
         username: 'admin',
         role: 'admin',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
     } as unknown as ReturnType<typeof AuthContext.useAuth>);
@@ -151,9 +147,6 @@ describe('SearchPage Coverage', () => {
         id: 'u1',
         username: 'admin',
         role: 'admin',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
     } as unknown as ReturnType<typeof AuthContext.useAuth>);
@@ -188,9 +181,6 @@ describe('SearchPage Coverage', () => {
         id: 'u1',
         username: 'admin',
         role: 'admin',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
     } as unknown as ReturnType<typeof AuthContext.useAuth>);

@@ -1,6 +1,66 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+const MOCK_DOMAIN = {
+  domain: 'default',
+  categories: [
+    { id: 'gender', label: 'Gender', suggestions: [] },
+    { id: 'orientation', label: 'Orientation', suggestions: [] },
+    { id: 'role', label: 'Role', suggestions: [] },
+  ],
+  stickers: {
+    orientation: {
+      straight: { type: 'heart', class: 'flag-straight' },
+      gay: { type: 'heart', class: 'flag-rainbow' },
+      lesbian: { type: 'heart', class: 'flag-lesbian' },
+      bi: { type: 'heart', class: 'flag-bisexual' },
+      pan: { type: 'heart', class: 'flag-pansexual' },
+      asexual: { type: 'heart', class: 'flag-asexual' },
+      queer: { type: 'heart', class: 'flag-rainbow' },
+    },
+    gender: {
+      trans: { type: 'flag', class: 'flag-trans' },
+      nonbinary: { type: 'flag', class: 'flag-nonbinary' },
+      'non-binary': { type: 'flag', class: 'flag-nonbinary' },
+      woman: { type: 'icon', class: 'female-icon', iconType: 'female' },
+      man: { type: 'icon', class: 'male-icon', iconType: 'male' },
+    },
+    role: {
+      speaker: { type: 'icon', class: 'speaker-icon', iconType: 'microphone' },
+      attendee: { type: 'icon', class: 'attendee-icon', iconType: 'ticket' },
+      top: { type: 'icon', class: 'top-icon', iconType: 'arrow-up' },
+    },
+  },
+  realtimeProvider: 'socketio',
+  apIp: '',
+  isServerless: false,
+};
+
+const originalFetch = globalThis.fetch;
+globalThis.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+  const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.href : '';
+  if (urlStr === '/api/config' || urlStr.endsWith('/api/config')) {
+    return {
+      ok: true,
+      json: async () => MOCK_DOMAIN,
+    } as Response;
+  }
+  if (originalFetch) {
+    return originalFetch(url, init);
+  }
+  return { ok: true, json: async () => ({}) } as Response;
+});
+
+// Mock DomainContext so it renders children immediately without waiting for fetch in tests
+vi.mock('./DomainContext', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as any),
+    DomainProvider: ({ children }: any) => children,
+    useDomain: vi.fn(() => MOCK_DOMAIN),
+  };
+});
+
 vi.mock('@techstark/opencv-js', () => ({
   default: {
     Mat: vi.fn().mockImplementation(() => ({

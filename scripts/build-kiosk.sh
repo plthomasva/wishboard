@@ -45,7 +45,7 @@ sudo -u wishboard bash -c "echo 'WISHBOARD_UID=$WISHBOARD_UID' >> $WISHBOARD_HOM
 sudo -u wishboard bash -c "echo 'WISHBOARD_GID=$WISHBOARD_GID' >> $WISHBOARD_HOME/wishboard/.env"
 
 # One-time migration from the legacy db_data named volume to the new ./data/db host bind mount
-if $RUN_CMD volume inspect db_data &>/dev/null && { [ ! -d "$WISHBOARD_HOME/wishboard/data/db" ] || [ -z "$(ls -A $WISHBOARD_HOME/wishboard/data/db 2>/dev/null)" ]; }; then
+if $RUN_CMD volume inspect db_data &>/dev/null && { [[ ! -d "$WISHBOARD_HOME/wishboard/data/db" ]] || [[ -z "$(ls -A $WISHBOARD_HOME/wishboard/data/db 2>/dev/null)" ]]; }; then
     echo "One-time migration: copying existing database from db_data named volume to ./data/db..."
     sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard/data/db
     # Temporary alpine container to copy files (runs under rootless docker, so files will be owned by wishboard user)

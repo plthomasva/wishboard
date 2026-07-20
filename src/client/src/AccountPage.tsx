@@ -6,10 +6,11 @@ import InfoToggle from './components/InfoToggle';
 import AttributeInput from './components/AttributeInput';
 import WishCard from './components/WishCard';
 import PassphraseInput from './components/PassphraseInput';
-import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from './constants';
+
 import { QRCodeSVG } from 'qrcode.react';
 import ConfirmDeleteAccountModal from './components/ConfirmDeleteAccountModal';
 import { parseAttributesString, fetchConflicts, getConflictWarning } from './utils/conflicts';
+import { useDomain } from './DomainContext';
 
 function useUsernameExistence(username: string) {
   const [existingUsername, setExistingUsername] = useState(false);
@@ -146,17 +147,11 @@ interface UnauthenticatedAccountViewProps {
   setUsername: (username: string) => void;
   passphrase: string;
   setPassphrase: (passphrase: string) => void;
-  identityGenders: string;
-  setIdentityGenders: (genders: string) => void;
-  identityOrientations: string;
-  setIdentityOrientations: (orientations: string) => void;
-  identityRoles: string;
-  setIdentityRoles: (roles: string) => void;
+  identityAttributes: Record<string, string>;
+  setIdentityAttributes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  regConflicts: Array<{ message: string; target_attribute: string }>;
   message: string | null;
   error: string | null;
-  gendersWarning?: string;
-  orientationsWarning?: string;
-  rolesWarning?: string;
   isSubmitDisabled?: boolean;
 }
 
@@ -170,19 +165,14 @@ function UnauthenticatedAccountView({
   setUsername,
   passphrase,
   setPassphrase,
-  identityGenders,
-  setIdentityGenders,
-  identityOrientations,
-  setIdentityOrientations,
-  identityRoles,
-  setIdentityRoles,
+  identityAttributes,
+  setIdentityAttributes,
+  regConflicts,
   message,
   error,
-  gendersWarning,
-  orientationsWarning,
-  rolesWarning,
   isSubmitDisabled,
 }: Readonly<UnauthenticatedAccountViewProps>) {
+  const { categories } = useDomain();
   return (
     <section>
       <h1>My Account</h1>
@@ -232,36 +222,24 @@ function UnauthenticatedAccountView({
                 default when you search.
               </InfoToggle>
             </div>
-            <label>
-              Identity genders
-              <AttributeInput
-                value={identityGenders}
-                onChange={setIdentityGenders}
-                placeholder="e.g. woman, non-binary"
-                suggestions={SUGGESTED_GENDERS}
-                warning={gendersWarning}
-              />
-            </label>
-            <label>
-              Identity orientations
-              <AttributeInput
-                value={identityOrientations}
-                onChange={setIdentityOrientations}
-                placeholder="e.g. queer, straight"
-                suggestions={SUGGESTED_ORIENTATIONS}
-                warning={orientationsWarning}
-              />
-            </label>
-            <label>
-              Identity roles
-              <AttributeInput
-                value={identityRoles}
-                onChange={setIdentityRoles}
-                placeholder="e.g. speaker, volunteer"
-                suggestions={SUGGESTED_ROLES}
-                warning={rolesWarning}
-              />
-            </label>
+            {categories.map((cat) => {
+              const suggs = cat.suggestions || [];
+              return (
+                <label key={cat.id}>
+                  Identity {cat.label}s
+                  <AttributeInput
+                    category={cat.id}
+                    value={identityAttributes[cat.id] || ''}
+                    onChange={(val) =>
+                      setIdentityAttributes((prev) => ({ ...prev, [cat.id]: val }))
+                    }
+                    placeholder={suggs.length > 0 ? `e.g. ${suggs.slice(0, 2).join(', ')}` : ''}
+                    suggestions={suggs}
+                    warning={getConflictWarning(regConflicts, cat.id)}
+                  />
+                </label>
+              );
+            })}
           </>
         )}
         <button type="submit" disabled={effectiveMode === 'register' && isSubmitDisabled}>
@@ -292,8 +270,7 @@ interface Wish {
   flagged: number;
   contacts: Array<{ type: string; value: string }>;
   wishmail_enabled: boolean;
-  creator_genders: string[];
-  creator_orientations: string[];
+  creator_attributes?: Record<string, string[]>;
   is_active: boolean;
   image_id?: string;
   image_url?: string;
@@ -305,12 +282,9 @@ export default function AccountPage() {
   const { excludedIds, unexcludeWish } = useExcludedWishes();
   const [username, setUsername] = useState('');
   const [passphrase, setPassphrase] = useState('');
-  const [identityGenders, setIdentityGenders] = useState('');
-  const [identityOrientations, setIdentityOrientations] = useState('');
-  const [identityRoles, setIdentityRoles] = useState('');
-  const [editIdentityGenders, setEditIdentityGenders] = useState('');
-  const [editIdentityOrientations, setEditIdentityOrientations] = useState('');
-  const [editIdentityRoles, setEditIdentityRoles] = useState('');
+  const { categories } = useDomain();
+  const [identityAttributes, setIdentityAttributes] = useState<Record<string, string>>({});
+  const [editIdentityAttributes, setEditIdentityAttributes] = useState<Record<string, string>>({});
   const [contacts, setContacts] = useState<Array<{ type: string; value: string }>>([]);
   const [wishmailEnabled, setWishmailEnabled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -339,28 +313,28 @@ export default function AccountPage() {
   useEffect(() => {
     if (effectiveMode !== 'register') return;
     const timer = globalThis.setTimeout(async () => {
-      const conflicts = await fetchConflicts({
-        gender: parseAttributesString(identityGenders),
-        orientation: parseAttributesString(identityOrientations),
-        role: parseAttributesString(identityRoles),
-      });
+      const parsed: Record<string, string[]> = {};
+      categories.forEach(
+        (cat) => (parsed[cat.id] = parseAttributesString(identityAttributes[cat.id] || ''))
+      );
+      const conflicts = await fetchConflicts(parsed);
       setRegConflicts(conflicts);
     }, 300);
     return () => clearTimeout(timer);
-  }, [identityGenders, identityOrientations, identityRoles, effectiveMode]);
+  }, [identityAttributes, categories, effectiveMode]);
 
   // Debounced conflict check for profile edit form
   useEffect(() => {
     const timer = globalThis.setTimeout(async () => {
-      const conflicts = await fetchConflicts({
-        gender: parseAttributesString(editIdentityGenders),
-        orientation: parseAttributesString(editIdentityOrientations),
-        role: parseAttributesString(editIdentityRoles),
-      });
+      const parsed: Record<string, string[]> = {};
+      categories.forEach(
+        (cat) => (parsed[cat.id] = parseAttributesString(editIdentityAttributes[cat.id] || ''))
+      );
+      const conflicts = await fetchConflicts(parsed);
       setEditConflicts(conflicts);
     }, 300);
     return () => clearTimeout(timer);
-  }, [editIdentityGenders, editIdentityOrientations, editIdentityRoles]);
+  }, [editIdentityAttributes, categories]);
 
   const loadWishes = useCallback(async () => {
     setError(null);
@@ -422,9 +396,15 @@ export default function AccountPage() {
     if (!user) {
       return;
     }
-    setEditIdentityGenders(user.identity_genders.join(', '));
-    setEditIdentityOrientations(user.identity_orientations.join(', '));
-    setEditIdentityRoles(user.identity_roles.join(', '));
+    if (user.attributes) {
+      const initialAttributes: Record<string, string> = {};
+      Object.keys(user.attributes).forEach((key) => {
+        if (Array.isArray(user.attributes[key])) {
+          initialAttributes[key] = user.attributes[key].join(', ');
+        }
+      });
+      setEditIdentityAttributes(initialAttributes);
+    }
     setContacts(user.contacts || []);
     setWishmailEnabled(user.wishmail_enabled || false);
   }, [user]);
@@ -439,9 +419,7 @@ export default function AccountPage() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
-        identity_genders: editIdentityGenders,
-        identity_orientations: editIdentityOrientations,
-        identity_roles: editIdentityRoles,
+        identity_attributes: editIdentityAttributes,
         contacts,
         wishmail_enabled: wishmailEnabled,
       }),
@@ -485,11 +463,11 @@ export default function AccountPage() {
       setError('Username is required to register.');
       return;
     }
-    const response = await register(username.trim(), passphrase.trim() || undefined, {
-      genders: identityGenders,
-      orientations: identityOrientations,
-      roles: identityRoles,
-    });
+    const response = await register(
+      username.trim(),
+      passphrase.trim() || undefined,
+      identityAttributes
+    );
     if (!response.success) {
       setError(response.error || 'Registration failed.');
       return;
@@ -497,9 +475,7 @@ export default function AccountPage() {
     setMessage(`Account created. Remember your passphrase: ${response.secret}`);
     setUsername('');
     setPassphrase('');
-    setIdentityGenders('');
-    setIdentityOrientations('');
-    setIdentityRoles('');
+    setIdentityAttributes({});
   };
 
   const deleteWish = async (id: string) => {
@@ -605,17 +581,11 @@ export default function AccountPage() {
           setUsername={setUsername}
           passphrase={passphrase}
           setPassphrase={setPassphrase}
-          identityGenders={identityGenders}
-          setIdentityGenders={setIdentityGenders}
-          identityOrientations={identityOrientations}
-          setIdentityOrientations={setIdentityOrientations}
-          identityRoles={identityRoles}
-          setIdentityRoles={setIdentityRoles}
+          identityAttributes={identityAttributes}
+          setIdentityAttributes={setIdentityAttributes}
+          regConflicts={regConflicts}
           message={message}
           error={error}
-          gendersWarning={getConflictWarning(regConflicts, 'gender')}
-          orientationsWarning={getConflictWarning(regConflicts, 'orientation')}
-          rolesWarning={getConflictWarning(regConflicts, 'role')}
           isSubmitDisabled={regConflicts.length > 0}
         />
         {hiddenWishes.length > 0 && (
@@ -672,20 +642,16 @@ export default function AccountPage() {
 
       <div className="profile-details">
         <h2>Your profile attributes</h2>
-        <ul>
-          <li>
-            <strong>Genders:</strong>{' '}
-            {user.identity_genders.length ? user.identity_genders.join(', ') : 'None set'}
-          </li>
-          <li>
-            <strong>Orientations:</strong>{' '}
-            {user.identity_orientations.length ? user.identity_orientations.join(', ') : 'None set'}
-          </li>
-          <li>
-            <strong>Roles:</strong>{' '}
-            {user.identity_roles.length ? user.identity_roles.join(', ') : 'None set'}
-          </li>
-        </ul>
+        {categories.map((cat) => (
+          <div className="info-row" key={cat.id}>
+            <span className="info-label">{cat.label}s:</span>
+            <span className="info-value">
+              {user.attributes?.[cat.id]?.length > 0
+                ? user.attributes[cat.id].join(', ')
+                : '(None)'}
+            </span>
+          </div>
+        ))}
       </div>
 
       <div className="profile-edit">
@@ -696,36 +662,24 @@ export default function AccountPage() {
             your wishes.
           </InfoToggle>
         </div>
-        <label>
-          Genders
-          <AttributeInput
-            value={editIdentityGenders}
-            onChange={setEditIdentityGenders}
-            placeholder="e.g. woman, non-binary"
-            suggestions={SUGGESTED_GENDERS}
-            warning={getConflictWarning(editConflicts, 'gender')}
-          />
-        </label>
-        <label>
-          Orientations
-          <AttributeInput
-            value={editIdentityOrientations}
-            onChange={setEditIdentityOrientations}
-            placeholder="e.g. queer, straight"
-            suggestions={SUGGESTED_ORIENTATIONS}
-            warning={getConflictWarning(editConflicts, 'orientation')}
-          />
-        </label>
-        <label>
-          Roles
-          <AttributeInput
-            value={editIdentityRoles}
-            onChange={setEditIdentityRoles}
-            placeholder="e.g. speaker, volunteer"
-            suggestions={SUGGESTED_ROLES}
-            warning={getConflictWarning(editConflicts, 'role')}
-          />
-        </label>
+        {categories.map((cat) => {
+          const suggs = cat.suggestions || [];
+          return (
+            <label key={cat.id}>
+              {cat.label}s
+              <AttributeInput
+                category={cat.id}
+                value={editIdentityAttributes[cat.id] || ''}
+                onChange={(val) =>
+                  setEditIdentityAttributes((prev) => ({ ...prev, [cat.id]: val }))
+                }
+                placeholder={suggs.length > 0 ? `e.g. ${suggs.slice(0, 2).join(', ')}` : ''}
+                suggestions={suggs}
+                warning={getConflictWarning(editConflicts, cat.id)}
+              />
+            </label>
+          );
+        })}
 
         <div style={{ marginTop: '24px', marginBottom: '16px' }}>
           <h2 style={{ margin: 0 }}>Default Contact Methods</h2>

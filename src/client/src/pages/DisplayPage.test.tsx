@@ -26,8 +26,6 @@ describe('DisplayPage', () => {
         {
           id: 'wish-1',
           content: 'Big screen wish',
-          creator_genders: ['man'],
-          creator_orientations: ['straight'],
         },
       ],
     }) as any;
@@ -125,9 +123,7 @@ describe('DisplayPage', () => {
       if (url === '/api/wishes/random?limit=12') {
         return Promise.resolve({
           ok: true,
-          json: async () => [
-            { id: 'wish-1', content: 'Flag me', creator_genders: [], creator_orientations: [] },
-          ],
+          json: async () => [{ id: 'wish-1', content: 'Flag me' }],
         });
       }
       if (url === '/api/wishes/wish-1/flag' && init?.method === 'POST') {
@@ -165,8 +161,6 @@ describe('DisplayPage', () => {
         {
           id: 'wish-1',
           content: 'Cancel flag wish',
-          creator_genders: [],
-          creator_orientations: [],
         },
       ],
     }) as any;
@@ -198,8 +192,6 @@ describe('DisplayPage', () => {
             {
               id: 'wish-1',
               content: 'Fail flag wish',
-              creator_genders: [],
-              creator_orientations: [],
             },
           ],
         });

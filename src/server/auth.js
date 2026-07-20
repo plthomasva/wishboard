@@ -60,13 +60,25 @@ export const normalizeArrayInput = (value) => {
     .filter(Boolean);
 };
 
+export const parseJsonObject = (value) => {
+  if (!value) {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
 export const getUserFromToken = async (token) => {
   if (!token) {
     return null;
   }
   const row = await db
     .prepare(
-      'SELECT u.id, u.username, u.role, u.is_active, u.identity_genders, u.identity_orientations, u.identity_roles, u.contacts, u.wishmail_enabled FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?'
+      'SELECT u.id, u.username, u.role, u.is_active, u.contacts, u.wishmail_enabled, u.identity_attributes FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?'
     )
     .get(token, new Date().toISOString());
   if (!row) {
@@ -77,11 +89,9 @@ export const getUserFromToken = async (token) => {
     username: row.username,
     role: row.role,
     is_active: Boolean(row.is_active),
-    identity_genders: parseJsonArray(row.identity_genders),
-    identity_orientations: parseJsonArray(row.identity_orientations),
-    identity_roles: parseJsonArray(row.identity_roles),
     contacts: parseJsonArray(row.contacts),
     wishmail_enabled: Boolean(row.wishmail_enabled),
+    identity_attributes: parseJsonObject(row.identity_attributes),
   };
 };
 

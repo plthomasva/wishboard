@@ -42,9 +42,9 @@ test.describe('Wishboard E2E Smoke Tests', () => {
     await page.fill('input[placeholder="Search existing wishes"]', 'Spontaneous road trip');
 
     // Set search user attributes so matching rules show the wish
-    await page.fill('#search-genders', 'non-binary');
-    await page.fill('#search-orientations', 'queer');
-    await page.fill('#search-roles', 'switch');
+    await page.fill('#search-gender', 'non-binary');
+    await page.fill('#search-orientation', 'queer');
+    await page.fill('#search-role', 'switch');
 
     await page.click('button[type="submit"]:has-text("Search")');
 

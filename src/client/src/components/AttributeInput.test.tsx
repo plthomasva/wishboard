@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import AttributeInput from './AttributeInput';
 import React from 'react';
+import { useDomain } from '../DomainContext';
 
 describe('AttributeInput', () => {
   it('renders suggestions as pills', () => {
@@ -85,5 +86,30 @@ describe('AttributeInput', () => {
 
     expect(manSvg).toBeInTheDocument();
     expect(manSvg).toHaveAttribute('stroke', '#1565c0');
+  });
+
+  it('renders custom image stickers on suggestions', () => {
+    vi.mocked(useDomain).mockReturnValue({
+      stickers: {
+        role: {
+          presenter: { type: 'image', src: '/assets/presenter.png' },
+        },
+      },
+    } as any);
+
+    render(
+      <AttributeInput
+        category="role"
+        value=""
+        onChange={() => {}}
+        placeholder="Enter role"
+        suggestions={['presenter']}
+      />
+    );
+
+    const pill = screen.getByRole('button', { name: /presenter/ });
+    const img = pill.querySelector('img');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', '/assets/presenter.png');
   });
 });

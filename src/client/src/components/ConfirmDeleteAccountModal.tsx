@@ -38,10 +38,11 @@ export default function ConfirmDeleteAccountModal({
           className="kiosk-modal-actions"
           style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}
         >
-          <button className="secondary-button" onClick={onCancel}>
+          <button type="button" className="secondary-button" onClick={onCancel}>
             Cancel
           </button>
           <button
+            type="button"
             className="button"
             style={{ background: '#e53e3e', color: 'white', borderColor: '#e53e3e' }}
             onClick={onConfirm}

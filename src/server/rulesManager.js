@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import db from './db.js';
 import logger from './logger.js';
-import defaultRules from './defaultRules.js';
+import { getDomainConfig } from './configManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,7 +104,7 @@ export const seedIfEmpty = async () => {
   if (Number(rs.rows[0].n) > 0) return;
 
   const legacy = loadLegacyYamlRules();
-  const seed = legacy ?? defaultRules;
+  const seed = legacy ?? getDomainConfig().rules;
   const source = legacy ? 'legacy rules.yaml' : 'bundled defaults';
 
   for (const rule of seed) {

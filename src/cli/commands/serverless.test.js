@@ -309,7 +309,7 @@ describe('serverless commands', () => {
       expect(pov).toContain("DomainName='demo.wishboards.app'");
       expect(pov).toContain("HostedZoneId='Z07ABC'");
       expect(pov).toContain("AcmCertificateArn='arn:aws:acm:us-east-1:1:certificate/abc'");
-      expect(pov).not.toContain("DomainName=''");
+      expect(pov).not.toMatch(/(^|\s)DomainName=''/);
     });
 
     it('passes DatabaseUrl and DatabaseAuthTokenSsm from samconfig into the overrides', () => {

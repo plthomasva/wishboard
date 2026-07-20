@@ -33,8 +33,6 @@ describe('SearchPage WebSocket', () => {
         {
           id: 'w1',
           content: 'Existing search result',
-          creator_genders: [],
-          creator_orientations: [],
         },
       ],
     }) as any;
@@ -61,14 +59,10 @@ describe('SearchPage WebSocket', () => {
         {
           id: 'w2',
           content: 'Brand new matching wish',
-          creator_genders: [],
-          creator_orientations: [],
         },
         {
           id: 'w1',
           content: 'Existing search result',
-          creator_genders: [],
-          creator_orientations: [],
         },
       ],
     }) as any;
@@ -81,8 +75,6 @@ describe('SearchPage WebSocket', () => {
       await wishCreatedHandler({
         id: 'w2',
         content: 'Brand new matching wish',
-        creator_genders: [],
-        creator_orientations: [],
       });
     });
 
@@ -105,8 +97,6 @@ describe('SearchPage WebSocket', () => {
         {
           id: 'w1',
           content: 'Existing search result',
-          creator_genders: [],
-          creator_orientations: [],
         },
       ],
     }) as any;
@@ -118,8 +108,6 @@ describe('SearchPage WebSocket', () => {
       await wishCreatedHandler({
         id: 'w-no-match',
         content: 'Non matching wish',
-        creator_genders: [],
-        creator_orientations: [],
       });
     });
 
@@ -141,8 +129,6 @@ describe('SearchPage WebSocket', () => {
         {
           id: 'w1',
           content: 'Existing search result',
-          creator_genders: [],
-          creator_orientations: [],
         },
       ],
     }) as any;
@@ -154,8 +140,6 @@ describe('SearchPage WebSocket', () => {
       await wishCreatedHandler({
         id: 'w1',
         content: 'Existing search result',
-        creator_genders: [],
-        creator_orientations: [],
       });
     });
 
@@ -175,8 +159,6 @@ describe('SearchPage WebSocket', () => {
       await wishCreatedHandler?.({
         id: 'w-early',
         content: 'Too early wish',
-        creator_genders: [],
-        creator_orientations: [],
       });
     });
 
@@ -203,8 +185,6 @@ describe('SearchPage WebSocket', () => {
         await wishCreatedHandler({
           id: 'w-err',
           content: 'Error wish',
-          creator_genders: [],
-          creator_orientations: [],
         });
       })
     ).resolves.not.toThrow();

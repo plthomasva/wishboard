@@ -72,20 +72,16 @@ describe('Admin routes', () => {
     const now = new Date().toISOString();
     await db
       .prepare(
-        `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO wishes (id, user_id, content, secret_hash, creator_attributes, desired_attributes, created_at, updated_at, flagged)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         wishId,
         null,
         'Please remove me',
         null,
-        JSON.stringify([]),
-        JSON.stringify([]),
-        JSON.stringify([]),
-        JSON.stringify([]),
-        JSON.stringify([]),
-        JSON.stringify([]),
+        JSON.stringify({}),
+        JSON.stringify({}),
         now,
         now,
         1
@@ -124,24 +120,10 @@ describe('Admin routes', () => {
     const insertWish = async (id) => {
       await db
         .prepare(
-          `INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, created_at, updated_at, flagged)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO wishes (id, user_id, content, secret_hash, creator_attributes, desired_attributes, created_at, updated_at, flagged)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
-        .run(
-          id,
-          null,
-          'Content ' + id,
-          null,
-          JSON.stringify([]),
-          JSON.stringify([]),
-          JSON.stringify([]),
-          JSON.stringify([]),
-          JSON.stringify([]),
-          JSON.stringify([]),
-          now,
-          now,
-          1
-        );
+        .run(id, null, 'Content ' + id, null, JSON.stringify({}), JSON.stringify({}), now, now, 1);
     };
 
     await insertWish(wishId1);

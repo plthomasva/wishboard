@@ -13,8 +13,6 @@ export default function ManageWishPage() {
     contacts: any[];
     wishmail_enabled: boolean;
     created_at: string;
-    creator_genders?: string[];
-    creator_orientations?: string[];
     is_active: boolean;
     image_url?: string;
     image_id?: string;
@@ -192,8 +190,6 @@ export default function ManageWishPage() {
   const previewWish = {
     id: wish.id,
     content: content,
-    creator_genders: wish.creator_genders,
-    creator_orientations: wish.creator_orientations,
     contacts: contacts.filter((c) => c.value.trim()),
     wishmail_enabled: wishmailEnabled,
     image_url: wish.image_url,

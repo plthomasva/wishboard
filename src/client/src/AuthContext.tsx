@@ -4,9 +4,7 @@ type AuthUser = {
   id: string;
   username: string;
   role: string;
-  identity_genders: string[];
-  identity_orientations: string[];
-  identity_roles: string[];
+  attributes: Record<string, string[]>;
   contacts: { type: string; value: string }[];
   wishmail_enabled: boolean;
   is_active: boolean;
@@ -22,11 +20,7 @@ type AuthContextValue = {
   register: (
     username: string,
     passphrase?: string,
-    identityFields?: {
-      genders?: string;
-      orientations?: string;
-      roles?: string;
-    },
+    identityAttributes?: Record<string, string>,
     contacts?: { type: string; value: string }[],
     wishmailEnabled?: boolean
   ) => Promise<{ success: boolean; error?: string; secret?: string; role?: string }>;
@@ -42,9 +36,7 @@ const mapToAuthUser = (data: any): AuthUser => ({
   id: data.id,
   username: data.username,
   role: data.role,
-  identity_genders: data.identity_genders || [],
-  identity_orientations: data.identity_orientations || [],
-  identity_roles: data.identity_roles || [],
+  attributes: data.attributes || data.identity_attributes || {},
   contacts: data.contacts || [],
   wishmail_enabled: Boolean(data.wishmail_enabled),
   is_active: data.is_active === undefined ? true : Boolean(data.is_active),
@@ -126,7 +118,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const register = async (
     username: string,
     passphrase?: string,
-    identityFields?: { genders?: string; orientations?: string; roles?: string },
+    identityAttributes?: Record<string, string>,
     contacts?: { type: string; value: string }[],
     wishmailEnabled?: boolean
   ) => {
@@ -136,9 +128,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       body: JSON.stringify({
         username,
         passphrase,
-        identity_genders: identityFields?.genders,
-        identity_orientations: identityFields?.orientations,
-        identity_roles: identityFields?.roles,
+        identity_attributes: identityAttributes,
         contacts,
         wishmail_enabled: wishmailEnabled,
       }),

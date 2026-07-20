@@ -5,15 +5,14 @@ import useFlagWish from '../hooks/useFlagWish';
 import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
 import SendWishmailModal from '../components/SendWishmailModal';
-import { SUGGESTED_GENDERS, SUGGESTED_ORIENTATIONS, SUGGESTED_ROLES } from '../constants';
+import { useDomain } from '../DomainContext';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useExcludedWishes } from '../hooks/useExcludedWishes';
 
 interface Wish {
   id: string;
   content: string;
-  creator_genders?: string[];
-  creator_orientations?: string[];
+  creator_attributes?: Record<string, string[]>;
   image_url?: string;
   image_id?: string;
 }
@@ -22,9 +21,7 @@ interface SearchParamInput {
   query: string;
   user: any;
   useProfileAttributes: boolean;
-  manualGenders: string;
-  manualOrientations: string;
-  manualRoles: string;
+  manualAttributes: Record<string, string>;
   excludedIds: string[];
 }
 
@@ -32,9 +29,7 @@ function applyCompatibilityParams(
   params: URLSearchParams,
   user: any,
   useProfileAttributes: boolean,
-  manualGenders: string,
-  manualOrientations: string,
-  manualRoles: string
+  manualAttributes: Record<string, string>
 ) {
   if (user) {
     if (!useProfileAttributes) {
@@ -43,15 +38,13 @@ function applyCompatibilityParams(
     return;
   }
 
-  const gTrim = manualGenders.trim();
-  const oTrim = manualOrientations.trim();
-  const rTrim = manualRoles.trim();
+  const manualValues = Object.fromEntries(
+    Object.entries(manualAttributes).filter(([_, val]) => val.trim().length > 0)
+  );
 
-  if (gTrim) params.set('sg', gTrim);
-  if (oTrim) params.set('so', oTrim);
-  if (rTrim) params.set('sr', rTrim);
-
-  if (!gTrim && !oTrim && !rTrim) {
+  if (Object.keys(manualValues).length > 0) {
+    params.set('attributes', JSON.stringify(manualValues));
+  } else {
     params.set('ignore_attributes', '1');
   }
 }
@@ -60,9 +53,7 @@ function buildSearchParams({
   query,
   user,
   useProfileAttributes,
-  manualGenders,
-  manualOrientations,
-  manualRoles,
+  manualAttributes,
   excludedIds,
 }: Readonly<SearchParamInput>): URLSearchParams {
   const params = new URLSearchParams();
@@ -71,14 +62,7 @@ function buildSearchParams({
     params.set('q', qTrim);
   }
 
-  applyCompatibilityParams(
-    params,
-    user,
-    useProfileAttributes,
-    manualGenders,
-    manualOrientations,
-    manualRoles
-  );
+  applyCompatibilityParams(params, user, useProfileAttributes, manualAttributes);
 
   if (!user && excludedIds.length > 0) {
     params.set('exclude', excludedIds.join(','));
@@ -95,9 +79,8 @@ export default function SearchPage() {
   const [justExcludedId, setJustExcludedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [useProfileAttributes, setUseProfileAttributes] = useState<boolean>(Boolean(user));
-  const [manualGenders, setManualGenders] = useState('');
-  const [manualOrientations, setManualOrientations] = useState('');
-  const [manualRoles, setManualRoles] = useState('');
+  const [manualAttributes, setManualAttributes] = useState<Record<string, string>>({});
+  const { categories } = useDomain();
   const [mailWishId, setMailWishId] = useState<string | null>(null);
   const [lastSearchParams, setLastSearchParams] = useState<string | null>(null);
   const { socket } = useWebSocket();
@@ -151,9 +134,7 @@ export default function SearchPage() {
       query,
       user,
       useProfileAttributes,
-      manualGenders,
-      manualOrientations,
-      manualRoles,
+      manualAttributes,
       excludedIds,
     });
 
@@ -269,9 +250,7 @@ export default function SearchPage() {
         ) : (
           <div style={{ marginTop: '16px' }}>
             <div className="label-with-info" style={{ marginBottom: '8px' }}>
-              <label htmlFor="search-genders" style={{ fontWeight: 'bold' }}>
-                Your Gender(s)
-              </label>
+              <span style={{ fontWeight: 'bold' }}>Your Attributes</span>
               <InfoToggle>
                 <p style={{ margin: 0, fontSize: '0.9rem', color: '#556275' }}>
                   Select or type attributes to filter compatible wishes. Commas separate multiple
@@ -279,41 +258,27 @@ export default function SearchPage() {
                 </p>
               </InfoToggle>
             </div>
-            <AttributeInput
-              id="search-genders"
-              value={manualGenders}
-              onChange={setManualGenders}
-              placeholder="e.g. woman, cisgender man"
-              suggestions={SUGGESTED_GENDERS}
-            />
-
-            <label
-              htmlFor="search-orientations"
-              style={{ fontWeight: 'bold', marginTop: '16px', display: 'block' }}
-            >
-              Your Orientation(s)
-            </label>
-            <AttributeInput
-              id="search-orientations"
-              value={manualOrientations}
-              onChange={setManualOrientations}
-              placeholder="e.g. lesbian, bisexual"
-              suggestions={SUGGESTED_ORIENTATIONS}
-            />
-
-            <label
-              htmlFor="search-roles"
-              style={{ fontWeight: 'bold', marginTop: '16px', display: 'block' }}
-            >
-              Your Role(s)
-            </label>
-            <AttributeInput
-              id="search-roles"
-              value={manualRoles}
-              onChange={setManualRoles}
-              placeholder="e.g. top, bottom"
-              suggestions={SUGGESTED_ROLES}
-            />
+            {categories.map((cat) => {
+              const suggs = cat.suggestions || [];
+              return (
+                <div key={cat.id} style={{ marginTop: '16px' }}>
+                  <label
+                    htmlFor={`search-${cat.id}`}
+                    style={{ fontWeight: 'bold', display: 'block' }}
+                  >
+                    Your {cat.label}(s)
+                  </label>
+                  <AttributeInput
+                    id={`search-${cat.id}`}
+                    category={cat.id}
+                    value={manualAttributes[cat.id] || ''}
+                    onChange={(val) => setManualAttributes((prev) => ({ ...prev, [cat.id]: val }))}
+                    placeholder={suggs.length > 0 ? `e.g. ${suggs.slice(0, 2).join(', ')}` : ''}
+                    suggestions={suggs}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
 

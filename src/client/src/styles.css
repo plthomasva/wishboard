@@ -648,6 +648,15 @@ button:hover {
   height: 0.9em;
 }
 
+.sticker-image {
+  width: 1.5em;
+  height: 1.5em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
 .female-icon {
   color: #d81b60;
   border-color: #fce4ec;
@@ -733,6 +742,10 @@ button:hover {
     #9c59d1 50% 75%,
     #2c2c2c 75%
   );
+}
+
+.flag-genderqueer {
+  background: linear-gradient(to bottom, #b57edc 33.3%, #ffffff 33.3% 66.6%, #4a8123 66.6%);
 }
 
 /* Big Screen Display scaling */

@@ -1,6 +1,6 @@
 # ADR 0005: Matching Engine Generalization and Context-Aware Rules
 
-- **Status:** Proposed
+- **Status:** Implemented
 - **Date:** 2026-07
 - **Context Date:** 2026-07
 
@@ -53,14 +53,15 @@ We will propagate the `searcherProfile` through [matchesAttribute](file:///c:/Us
 
 The rule engine and the `rules` database table schema are already fully generic (they support any arbitrary string in `trigger_attribute` and `target_attribute`).
 
-However, adding a new 4th attribute category to Wishboard (e.g., `activity`) would require updates at the database, business logic, and UI boundaries:
+Before the full implementation of this ADR, adding a new 4th attribute category to Wishboard (e.g., `activity`) would have required updates across the database, business logic, and UI boundaries. However, as noted in the Implementation Notes below, the codebase was fully refactored to eliminate hardcoded schemas.
 
-- **Database Schema**: Add new JSON-array columns to `wishes` (`desired_activities`, `creator_activities`) and `users` (`identity_activities`) tables.
-- **Matching Business Logic**: Introduce a new call site to [matchesAttribute](file:///c:/Users/pltho/wishboard/src/server/routes/wishes.js#L226-L242) inside [isCompatible](file:///c:/Users/pltho/wishboard/src/server/routes/wishes.js#L261-L327) to validate the new category (e.g., `matchesAttribute(searcherProfile.activity, desiredActivities, 'activity', rules)`).
-- **Default Seed Rules**: Update [defaultRules.js](file:///c:/Users/pltho/wishboard/src/server/defaultRules.js) to include default rule definitions for the new category.
-- **Frontend / UI Layer**: Add input components, autocomplete suggestions, and visual pills/chips for the new attribute category on the registration, profile edit, and wish creation pages.
+Currently, adding a new category is almost entirely configuration-driven:
 
-**Conclusion:** The core rule evaluation engine itself requires no changes to support arbitrary new categories; the work is purely integration-level across the persistence, API, and UI boundaries.
+- **Domain Configuration**: Simply add the new category to the active domain configuration file (e.g., `defaultDomain.yaml`). The frontend will automatically read this and dynamically render inputs, pills, and suggestions for it.
+- **Database Schema**: No changes needed! The `users` and `wishes` tables now use a single unified JSON `attributes` blob that can store arbitrary keyed category arrays.
+- **Matching Business Logic**: The matching engine natively maps over the unified `attributes` JSON, automatically validating and filtering across all defined categories.
+
+**Conclusion:** Thanks to the unified Domain Configuration Layer and JSON `attributes` migration, adding new attribute categories requires zero code or schema changes—it is managed entirely via configuration.
 
 ### 2. Multi-Domain Deployment Configuration
 
@@ -91,3 +92,13 @@ To support clean multi-domain deployments without code forks, we propose introdu
 - **Cons**:
   - Slightly increases complexity of matching engine function signatures by threading the context profile.
   - Requires care to prevent infinite loops in recursive expansions (mitigated by passing `null` for the nested context profile).
+
+---
+
+## Implementation Notes
+
+During the implementation of this ADR, we went beyond fixing the context-gated expansions. We completely eliminated hardcoded `gender`, `orientation`, and `role` references across both the frontend and backend.
+
+- **Frontend:** Adopted a `DomainContext` system, where attribute inputs are dynamically generated from a configuration YAML file (e.g., `defaultDomain.yaml`).
+- **Backend/API:** Refactored the `/api/wishes` endpoint to accept a unified `attributes` JSON payload, falling back to legacy query parameters only when necessary.
+- **Infrastructure:** Updated the AWS serverless template and `wishboard` CLI to support deploying parallel stacks to multiple domains, utilizing wildcard certificates (primary `wishboards.app`, SAN `*.wishboards.app`) and isolated Turso databases to support alternate community implementations (like a conference setup vs. the default demo).

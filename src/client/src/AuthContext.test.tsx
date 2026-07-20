@@ -14,7 +14,9 @@ const TestComponent = () => {
         Login
       </button>
       <button
-        onClick={() => register('testuser', 'pass', { genders: 'female' })}
+        onClick={() =>
+          register('testuser', 'pass', { identity_attributes: { gender: ['female'] } })
+        }
         data-testid="register-btn"
       >
         Register
@@ -47,14 +49,12 @@ describe('AuthContext', () => {
         if (token && token !== 'invalid-token' && token !== 'no-token') {
           let username = 'mockuser';
           let role = 'user';
-          let identity_genders: string[] = [];
           if (token === 'new-token') {
             username = 'testuser';
             role = 'admin';
           } else if (token === 'reg-token') {
             username = 'testuser';
             role = 'user';
-            identity_genders = ['female'];
           }
           return {
             ok: true,
@@ -62,9 +62,6 @@ describe('AuthContext', () => {
               id: '123',
               username,
               role,
-              identity_genders,
-              identity_orientations: [],
-              identity_roles: [],
             }),
           };
         }
@@ -81,7 +78,6 @@ describe('AuthContext', () => {
               id: '456',
               username: 'testuser',
               role: 'admin',
-              identity_genders: [],
             }),
           };
         }
@@ -102,7 +98,6 @@ describe('AuthContext', () => {
               username: 'testuser',
               role: 'user',
               secret: 'secret-passphrase',
-              identity_genders: ['female'],
             }),
           };
         }

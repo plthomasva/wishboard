@@ -26,9 +26,6 @@ describe('Wishmail UI Flow', () => {
             token: 'fake-token',
             id: 'u1',
             username: 'usera',
-            identity_genders: [],
-            identity_orientations: [],
-            identity_roles: [],
             contacts: [],
           }),
         };

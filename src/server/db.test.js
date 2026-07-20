@@ -68,9 +68,7 @@ describe('db initialization', () => {
     expect(columnNames).toContain('created_at');
 
     // Ensured columns
-    expect(columnNames).toContain('identity_genders');
-    expect(columnNames).toContain('identity_orientations');
-    expect(columnNames).toContain('identity_roles');
+    expect(columnNames).toContain('identity_attributes');
     expect(columnNames).toContain('contacts');
     expect(columnNames).toContain('wishmail_enabled');
     expect(columnNames).toContain('is_active');
@@ -81,12 +79,8 @@ describe('db initialization', () => {
     const columnNames = columns.map((c) => c.name);
 
     // Ensured columns
-    expect(columnNames).toContain('creator_genders');
-    expect(columnNames).toContain('creator_orientations');
-    expect(columnNames).toContain('creator_roles');
-    expect(columnNames).toContain('desired_genders');
-    expect(columnNames).toContain('desired_orientations');
-    expect(columnNames).toContain('desired_roles');
+    expect(columnNames).toContain('creator_attributes');
+    expect(columnNames).toContain('desired_attributes');
     expect(columnNames).toContain('contacts');
     expect(columnNames).toContain('wishmail_enabled');
     expect(columnNames).toContain('is_active');

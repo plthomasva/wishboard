@@ -72,9 +72,7 @@ await db.executeMultiple(`
     passphrase_hash TEXT NOT NULL,
     passphrase_salt TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'user',
-    identity_genders TEXT,
-    identity_orientations TEXT,
-    identity_roles TEXT,
+    identity_attributes TEXT,
     created_at TEXT NOT NULL
   );
 
@@ -90,12 +88,8 @@ await db.executeMultiple(`
     user_id TEXT,
     content TEXT NOT NULL,
     secret_hash TEXT,
-    creator_genders TEXT,
-    creator_orientations TEXT,
-    creator_roles TEXT,
-    desired_genders TEXT,
-    desired_orientations TEXT,
-    desired_roles TEXT,
+    creator_attributes TEXT,
+    desired_attributes TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     flagged INTEGER DEFAULT 0,
@@ -166,22 +160,86 @@ const ensureColumn = async (table, column, type) => {
   }
 };
 
-await ensureColumn('users', 'identity_genders', 'TEXT');
-await ensureColumn('users', 'identity_orientations', 'TEXT');
-await ensureColumn('users', 'identity_roles', 'TEXT');
+await ensureColumn('users', 'identity_attributes', 'TEXT');
 await ensureColumn('users', 'contacts', 'TEXT');
 await ensureColumn('users', 'wishmail_enabled', 'INTEGER DEFAULT 0');
 await ensureColumn('users', 'is_active', 'INTEGER DEFAULT 1');
-await ensureColumn('wishes', 'creator_genders', 'TEXT');
-await ensureColumn('wishes', 'creator_orientations', 'TEXT');
-await ensureColumn('wishes', 'creator_roles', 'TEXT');
-await ensureColumn('wishes', 'desired_genders', 'TEXT');
-await ensureColumn('wishes', 'desired_orientations', 'TEXT');
-await ensureColumn('wishes', 'desired_roles', 'TEXT');
+await ensureColumn('wishes', 'creator_attributes', 'TEXT');
+await ensureColumn('wishes', 'desired_attributes', 'TEXT');
 await ensureColumn('wishes', 'contacts', 'TEXT');
 await ensureColumn('wishes', 'wishmail_enabled', 'INTEGER DEFAULT 0');
 await ensureColumn('wishes', 'is_active', 'INTEGER DEFAULT 1');
 await ensureColumn('wishes', 'image_id', 'TEXT');
+
+const parseJsonSafe = (str) => {
+  if (!str) return [];
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    console.warn('Failed to parse JSON attribute:', e);
+    return [];
+  }
+};
+
+try {
+  const usersToMigrate = await db.execute(
+    'SELECT id, identity_genders, identity_orientations, identity_roles FROM users WHERE identity_attributes IS NULL'
+  );
+  if (usersToMigrate.rows.length > 0) {
+    console.log(`Migrating ${usersToMigrate.rows.length} users to identity_attributes...`);
+    for (const row of usersToMigrate.rows) {
+      const attrs = {
+        gender: parseJsonSafe(row.identity_genders),
+        orientation: parseJsonSafe(row.identity_orientations),
+        role: parseJsonSafe(row.identity_roles),
+      };
+      await db.execute({
+        sql: 'UPDATE users SET identity_attributes = ? WHERE id = ?',
+        args: [JSON.stringify(attrs), row.id],
+      });
+    }
+  }
+  // Data migrated, drop columns
+  await db.execute('ALTER TABLE users DROP COLUMN identity_genders');
+  await db.execute('ALTER TABLE users DROP COLUMN identity_orientations');
+  await db.execute('ALTER TABLE users DROP COLUMN identity_roles');
+} catch (_e) {
+  console.debug('Ignored: columns may have already been dropped');
+}
+
+try {
+  const wishesToMigrate = await db.execute(
+    'SELECT id, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles FROM wishes WHERE creator_attributes IS NULL'
+  );
+  if (wishesToMigrate.rows.length > 0) {
+    console.log(`Migrating ${wishesToMigrate.rows.length} wishes to JSON attributes...`);
+    for (const row of wishesToMigrate.rows) {
+      const creatorAttrs = {
+        gender: parseJsonSafe(row.creator_genders),
+        orientation: parseJsonSafe(row.creator_orientations),
+        role: parseJsonSafe(row.creator_roles),
+      };
+      const desiredAttrs = {
+        gender: parseJsonSafe(row.desired_genders),
+        orientation: parseJsonSafe(row.desired_orientations),
+        role: parseJsonSafe(row.desired_roles),
+      };
+      await db.execute({
+        sql: 'UPDATE wishes SET creator_attributes = ?, desired_attributes = ? WHERE id = ?',
+        args: [JSON.stringify(creatorAttrs), JSON.stringify(desiredAttrs), row.id],
+      });
+    }
+  }
+  // Data migrated, drop columns
+  await db.execute('ALTER TABLE wishes DROP COLUMN creator_genders');
+  await db.execute('ALTER TABLE wishes DROP COLUMN creator_orientations');
+  await db.execute('ALTER TABLE wishes DROP COLUMN creator_roles');
+  await db.execute('ALTER TABLE wishes DROP COLUMN desired_genders');
+  await db.execute('ALTER TABLE wishes DROP COLUMN desired_orientations');
+  await db.execute('ALTER TABLE wishes DROP COLUMN desired_roles');
+} catch (_e) {
+  console.debug('Ignored: columns may have already been dropped');
+}
 
 // WebSocket subscription state (serverless API Gateway target). Board events
 // (wish:*) broadcast to everyone, but sys:log is an admin-only, opt-in channel:

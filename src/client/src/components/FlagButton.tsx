@@ -10,7 +10,7 @@ export default function FlagButton({
   title = 'Flag as inappropriate',
 }: Readonly<FlagButtonProps>) {
   return (
-    <button className="flag-wish-btn" title={title} onClick={onFlag}>
+    <button type="button" className="flag-wish-btn" title={title} onClick={onFlag}>
       <span className="emoji-icon" aria-hidden="true">
         🚩
       </span>

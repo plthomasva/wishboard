@@ -10,11 +10,7 @@ export function parseAttributesString(val: string): string[] {
     .filter(Boolean);
 }
 
-export async function fetchConflicts(attributes: {
-  gender: string[];
-  orientation: string[];
-  role: string[];
-}): Promise<Conflict[]> {
+export async function fetchConflicts(attributes: Record<string, string[]>): Promise<Conflict[]> {
   try {
     const response = await fetch('/api/rules/check-conflicts', {
       method: 'POST',

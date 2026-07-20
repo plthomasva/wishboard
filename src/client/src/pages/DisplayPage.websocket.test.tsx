@@ -19,16 +19,14 @@ const realSetInterval = globalThis.setInterval;
 const realClearInterval = globalThis.clearInterval;
 
 // Helper: get the mock socket produced by the mocked socket.io-client
-const getMockSocket = () => (io as ReturnType<typeof vi.fn>)();
+const getMockSocket = () => (io as any)();
 
 describe('DisplayPage WebSocket', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => [
-        { id: 'w1', content: 'Existing wish', creator_genders: [], creator_orientations: [] },
-      ],
+      json: async () => [{ id: 'w1', content: 'Existing wish' }],
     }) as any;
     globalThis.setInterval = vi.fn(() => 42) as any;
     globalThis.clearInterval = vi.fn() as any;
@@ -55,8 +53,6 @@ describe('DisplayPage WebSocket', () => {
       wishCreatedHandler({
         id: 'w2',
         content: 'Live new wish',
-        creator_genders: [],
-        creator_orientations: [],
       });
     });
 
@@ -81,8 +77,6 @@ describe('DisplayPage WebSocket', () => {
       wishCreatedHandler({
         id: 'w2',
         content: 'Timer reset wish',
-        creator_genders: [],
-        creator_orientations: [],
       });
     });
 
@@ -100,8 +94,6 @@ describe('DisplayPage WebSocket', () => {
     const initialWishes = Array.from({ length: 12 }, (_, i) => ({
       id: `w${i}`,
       content: `Wish ${i}`,
-      creator_genders: [],
-      creator_orientations: [],
     }));
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -120,8 +112,6 @@ describe('DisplayPage WebSocket', () => {
       wishCreatedHandler({
         id: 'w-new',
         content: 'Brand new wish',
-        creator_genders: [],
-        creator_orientations: [],
       });
     });
 

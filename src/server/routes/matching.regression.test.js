@@ -22,17 +22,23 @@ import defaultRules from '../defaultRules.js';
 
 const arr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
 const wish = ({ g, o, r, dg, dorient, dr } = {}) => ({
-  creator_genders: JSON.stringify(arr(g)),
-  creator_orientations: JSON.stringify(arr(o)),
-  creator_roles: JSON.stringify(arr(r)),
-  desired_genders: JSON.stringify(arr(dg)),
-  desired_orientations: JSON.stringify(arr(dorient)),
-  desired_roles: JSON.stringify(arr(dr)),
+  creator_attributes: JSON.stringify({
+    gender: arr(g),
+    orientation: arr(o),
+    role: arr(r),
+  }),
+  desired_attributes: JSON.stringify({
+    gender: arr(dg),
+    orientation: arr(dorient),
+    role: arr(dr),
+  }),
 });
 const searcher = ({ g, o, r } = {}) => ({
-  identity_genders: arr(g),
-  identity_orientations: arr(o),
-  identity_roles: arr(r),
+  identity_attributes: JSON.stringify({
+    gender: arr(g),
+    orientation: arr(o),
+    role: arr(r),
+  }),
 });
 const match = (w, s) => isCompatible(w, s, defaultRules);
 

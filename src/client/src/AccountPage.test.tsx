@@ -48,9 +48,11 @@ describe('AccountPage', () => {
         id: 'user-test',
         username: 'tester',
         role: 'user',
-        identity_genders: ['woman'],
-        identity_orientations: ['queer'],
-        identity_roles: ['speaker'],
+        attributes: {
+          gender: ['woman'],
+          orientation: ['queer'],
+          role: ['speaker'],
+        },
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -68,11 +70,11 @@ describe('AccountPage', () => {
 
     expect(screen.getByText('Welcome back, tester')).toBeInTheDocument();
     expect(screen.getByText('Genders:')).toBeInTheDocument();
-    expect(screen.getByText('woman')).toBeInTheDocument();
+    expect(screen.getAllByText('woman')[0]).toBeInTheDocument();
     expect(screen.getByText('Orientations:')).toBeInTheDocument();
-    expect(screen.getByText('queer')).toBeInTheDocument();
+    expect(screen.getAllByText('queer')[0]).toBeInTheDocument();
     expect(screen.getByText('Roles:')).toBeInTheDocument();
-    expect(screen.getByText('speaker')).toBeInTheDocument();
+    expect(screen.getAllByText('speaker')[0]).toBeInTheDocument();
 
     await screen.findByText('No wishes yet. Submit a new wish from the Enter a Wish page.');
   });
@@ -105,11 +107,7 @@ describe('AccountPage', () => {
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'newuser' } });
     fireEvent.click(registerSubmitButton);
 
-    expect(register).toHaveBeenCalledWith('newuser', undefined, {
-      genders: '',
-      orientations: '',
-      roles: '',
-    });
+    expect(register).toHaveBeenCalledWith('newuser', undefined, {});
     await screen.findByText(/Account created. Remember your passphrase:/);
   });
 
@@ -216,9 +214,11 @@ describe('AccountPage', () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              identity_genders: ['woman'],
-              identity_orientations: ['queer'],
-              identity_roles: ['speaker'],
+              attributes: {
+                gender: ['woman'],
+                orientation: ['queer'],
+                role: ['speaker'],
+              },
             }),
         });
       }
@@ -237,9 +237,11 @@ describe('AccountPage', () => {
         id: 'user-test',
         username: 'tester',
         role: 'user',
-        identity_genders: ['woman'],
-        identity_orientations: ['queer'],
-        identity_roles: ['speaker'],
+        attributes: {
+          gender: ['woman'],
+          orientation: ['queer'],
+          role: ['speaker'],
+        },
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -285,9 +287,6 @@ describe('AccountPage', () => {
       user: {
         id: 'user-test',
         username: 'tester',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -379,9 +378,6 @@ describe('AccountPage', () => {
       user: {
         id: 'user-test',
         username: 'tester',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -410,9 +406,9 @@ describe('AccountPage', () => {
 
     // In register mode by default
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'testuser' } });
-    fireEvent.change(screen.getByLabelText('Identity genders'), { target: { value: 'agender' } });
-    fireEvent.change(screen.getByLabelText('Identity orientations'), { target: { value: 'ace' } });
-    fireEvent.change(screen.getByLabelText('Identity roles'), { target: { value: 'attendee' } });
+    fireEvent.change(screen.getByLabelText(/Identity Genders/i), { target: { value: 'man' } });
+    fireEvent.change(screen.getByLabelText(/Identity Orientations/i), { target: { value: 'gay' } });
+    fireEvent.change(screen.getByLabelText(/Identity Roles/i), { target: { value: 'top' } });
 
     const submit = screen
       .getAllByRole('button')
@@ -420,9 +416,9 @@ describe('AccountPage', () => {
     fireEvent.click(submit!);
 
     expect(register).toHaveBeenCalledWith('testuser', undefined, {
-      genders: 'agender',
-      orientations: 'ace',
-      roles: 'attendee',
+      gender: 'man',
+      orientation: 'gay',
+      role: 'top',
     });
     await screen.findByText(/Account created. Remember your passphrase: secret/);
   });
@@ -451,9 +447,6 @@ describe('AccountPage', () => {
       user: {
         id: 'user-test',
         username: 'tester',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -515,9 +508,6 @@ describe('AccountPage', () => {
       user: {
         id: 'user-test',
         username: 'tester',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -587,9 +577,6 @@ describe('AccountPage', () => {
         id: 'u1',
         username: 'user1',
         role: 'user',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -631,9 +618,6 @@ describe('AccountPage', () => {
         id: 'u1',
         username: 'user1',
         role: 'user',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -668,9 +652,6 @@ describe('AccountPage', () => {
         id: 'u1',
         username: 'user1',
         role: 'user',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -767,9 +748,6 @@ describe('AccountPage', () => {
         username: 'user1',
         role: 'user',
         is_active: true,
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
       login: vi.fn(),
@@ -810,9 +788,6 @@ describe('AccountPage', () => {
         id: 'u1',
         username: 'user1',
         role: 'user',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
         contacts: [{ type: 'FetLife', value: 'myhandle' }],
       },
       token: 'fake-token',
@@ -853,9 +828,6 @@ describe('AccountPage', () => {
         id: 'u1',
         username: 'user1',
         role: 'user',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
         wishmail_enabled: false,
       },
       token: 'fake-token',
