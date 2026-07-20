@@ -18,6 +18,8 @@ the DB migration, [ADR 0002](adr/0002-serverless-database-architecture.md)) is
 migrated once and then the database is the single source of truth — there is no
 longer a `data/rules.yaml` runtime file.
 
+Identity attributes are dynamically configured via domain settings (e.g. `domain.yaml`, [ADR 0005](adr/0005-matching-engine-generalization.md)) and stored in unified `attributes` JSON fields on users and wishes. All legacy hardcoded column fallbacks (`creator_genders`, `desired_genders`, etc.) and helper logic (`getIdentityAttributes`) have been completely removed from backend routes.
+
 ## 1. Enrichment (Implicit Attribute Mapping)
 
 **Purpose**: To implicitly add an attribute to a user's profile based on the
