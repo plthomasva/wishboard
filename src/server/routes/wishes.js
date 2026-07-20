@@ -411,18 +411,7 @@ const uploadImageToS3 = async (file) => {
 };
 
 router.post('/', upload.single('image'), async (req, res) => {
-  const {
-    content,
-    passphrase,
-    creator_genders,
-    creator_orientations,
-    creator_roles,
-    desired_genders,
-    desired_orientations,
-    desired_roles,
-    contacts,
-    wishmail_enabled,
-  } = req.body;
+  const { content, passphrase, contacts, wishmail_enabled } = req.body;
   if (!content?.trim()) {
     return res.status(400).json({ error: 'Wish content is required.' });
   }

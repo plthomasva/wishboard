@@ -19,7 +19,7 @@ const realSetInterval = globalThis.setInterval;
 const realClearInterval = globalThis.clearInterval;
 
 // Helper: get the mock socket produced by the mocked socket.io-client
-const getMockSocket = () => (io as ReturnType<typeof vi.fn>)();
+const getMockSocket = () => (io as any)();
 
 describe('DisplayPage WebSocket', () => {
   beforeEach(() => {

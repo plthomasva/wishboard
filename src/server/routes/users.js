@@ -8,7 +8,6 @@ import {
   getUserFromRequest,
   getTokenFromRequestHeader,
   verifyPassphrase,
-  normalizeArrayInput,
   parseJsonArray,
   parseJsonObject,
 } from '../auth.js';
@@ -45,15 +44,7 @@ const validateProfile = (identityAttrs) => {
 };
 
 router.post('/register', async (req, res) => {
-  const {
-    username,
-    passphrase,
-    identity_genders,
-    identity_orientations,
-    identity_roles,
-    contacts,
-    wishmail_enabled,
-  } = req.body;
+  const { username, passphrase, contacts, wishmail_enabled } = req.body;
   if (!username?.trim()) {
     return res.status(400).json({ error: 'Username is required.' });
   }
