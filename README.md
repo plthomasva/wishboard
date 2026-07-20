@@ -87,10 +87,10 @@ SonarQube scan — also run in CI on every push and pull request.
 Detailed guides and documentation can be found in the `docs/` and `aws-serverless/` directories:
 
 - [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.md) - Instructions for securely deploying Wishboard as a locked-down offline Wi-Fi kiosk on a Raspberry Pi.
+- [**Event Profiles & Multi-Stack Deployments**](docs/EVENT_PROFILES.md) - Guide for managing event profiles (`lifestyle`, `professional`), custom domains, and parallel stacks.
 - [**AWS Deployment Guide**](aws-serverless/deploy-instructions.md) - Instructions and monthly pricing analysis for deploying to AWS as a serverless application.
 - [**Matching Rules**](docs/MATCHING_RULES.md) - A deep dive into how the matchmaking engine implicitly maps, expands, and cross-matches user identities.
-- [**Mutation Testing**](docs/MUTATION_TESTING.md) - Details on how we use Stryker to guarantee robust unit testing, and how to view the daily automated reports.
-- [**Architecture Decision Records**](docs/adr/) - Records of significant architectural decisions, such as unifying cross-platform deployment logic in a Node/TypeScript CLI.
+- [**Design Documents**](docs/design/0300-event-profiles-and-theming.md) - Architectural design documents, including event profile separation and decoupled theming.
 
 ## User Interface
 

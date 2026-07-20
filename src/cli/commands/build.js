@@ -50,7 +50,41 @@ export function downloadFile(url, destPath, redirectCount = 0) {
   });
 }
 
+const repoRoot = path.resolve(__dirname, '../../..');
+
+export function prepareProfile(profileName = process.env.EVENT_PROFILE || 'lifestyle', opts = {}) {
+  if (opts.dryRun) {
+    console.log(`Would prepare profile '${profileName}' assets and theme.css`);
+    return;
+  }
+
+  const profileDir = path.resolve(repoRoot, 'profiles', profileName);
+  if (!fs.existsSync(profileDir)) {
+    if (process.env.VITEST) return;
+    throw new Error(`Event profile '${profileName}' not found at ${profileDir}`);
+  }
+
+  const publicDir = path.resolve(__dirname, '../../client/public');
+  fs.mkdirSync(publicDir, { recursive: true });
+
+  const themeSrc = path.join(profileDir, 'theme.css');
+  if (fs.existsSync(themeSrc)) {
+    fs.copyFileSync(themeSrc, path.join(publicDir, 'theme.css'));
+    console.log(`Prepared theme.css for profile '${profileName}'`);
+  }
+
+  const assetsSrc = path.join(profileDir, 'assets');
+  if (fs.existsSync(assetsSrc)) {
+    const assetsDest = path.join(publicDir, 'assets');
+    fs.mkdirSync(assetsDest, { recursive: true });
+    fs.cpSync(assetsSrc, assetsDest, { recursive: true });
+    console.log(`Prepared assets for profile '${profileName}'`);
+  }
+}
+
 export async function downloadFonts(opts = {}) {
+  prepareProfile(opts.profile || process.env.EVENT_PROFILE || 'lifestyle', opts);
+
   if (opts.dryRun) {
     console.log('Would have downloaded fallback fonts to: ' + targetDir);
     return;

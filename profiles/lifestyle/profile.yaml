@@ -1,4 +1,8 @@
-domain: default
+profile: lifestyle
+contact_methods:
+  - FetLife
+  - Phone
+  - Email
 categories:
   - id: gender
     label: Gender

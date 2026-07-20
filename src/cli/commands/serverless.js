@@ -569,6 +569,13 @@ export function deployServerless(options) {
   const frontendOnly = !!options.frontendOnly;
   const skipFrontendUpload = !!options.skipFrontendUpload;
 
+  const eventProfile = options.eventProfile || 'lifestyle';
+  const profileDir = path.resolve(PROJECT_ROOT, 'profiles', eventProfile);
+  if (!dryRun && !process.env.VITEST && !fs.existsSync(profileDir)) {
+    throw new Error(`Event profile '${eventProfile}' not found at ${profileDir}`);
+  }
+  process.env.EVENT_PROFILE = eventProfile;
+
   let { stackName, region, profile } = resolveConfig(options);
   let common = awsCommonArgs(profile, region);
 

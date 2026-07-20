@@ -1,4 +1,8 @@
-domain: conference
+profile: professional
+contact_methods:
+  - LinkedIn
+  - Phone
+  - Email
 categories:
   - id: knowledge_domain
     label: Knowledge Domain
@@ -26,22 +30,16 @@ categories:
       - Business Development
       - Hiring
       - Job Seeking
-
 stickers:
   role:
     presenter: { type: image, src: '/assets/presenter.png' }
     attendee: { type: image, src: '/assets/attendee.png' }
-
 rules:
-  # Everyone can match with anyone unless they specify a goal
-  # Example cross match: Job Seekers match with Hiring
   - rule_type: cross_match
     trigger_attribute: goal
     trigger_value: Hiring
     target_attribute: goal
     target_value: Job Seeking
-
-  # Example cross match: Mentoring
   - rule_type: cross_match
     trigger_attribute: goal
     trigger_value: Mentoring

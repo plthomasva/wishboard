@@ -1,4 +1,5 @@
 import React from 'react';
+import { useEventProfile } from '../EventProfileContext';
 
 interface Contact {
   type: string;
@@ -16,7 +17,10 @@ export default function ContactEditor({
   setContacts,
   addButtonLabel = '+ Add Contact Method',
 }: Readonly<ContactEditorProps>) {
-  const addContact = () => setContacts([...contacts, { type: 'FetLife', value: '' }]);
+  const { contact_methods = ['Phone', 'Email'] } = useEventProfile();
+  const defaultMethod = contact_methods[0] || 'Phone';
+
+  const addContact = () => setContacts([...contacts, { type: defaultMethod, value: '' }]);
 
   const updateContact = (index: number, field: 'type' | 'value', val: string) => {
     const newContacts = [...contacts];
@@ -45,9 +49,11 @@ export default function ContactEditor({
               background: 'white',
             }}
           >
-            <option value="FetLife">FetLife</option>
-            <option value="Phone">Phone</option>
-            <option value="Email">Email</option>
+            {contact_methods.map((method) => (
+              <option key={method} value={method}>
+                {method}
+              </option>
+            ))}
           </select>
           <input
             type="text"

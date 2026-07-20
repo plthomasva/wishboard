@@ -61,6 +61,12 @@ export function deployKiosk(options) {
   const appVersion = resolveVersion(options.appVersion);
   assertMode(mode);
 
+  const eventProfile = options.eventProfile || 'lifestyle';
+  const profileDir = path.resolve(PROJECT_ROOT, 'profiles', eventProfile);
+  if (!fs.existsSync(profileDir)) {
+    throw new Error(`Event profile '${eventProfile}' not found at ${profileDir}`);
+  }
+
   const target = `${user}@${host}`;
   console.log(`\n\x1b[32mWishboard kiosk deployment → ${target}\x1b[0m`);
   logInfo(`Mode: ${mode}   Domain: ${domain}   Version: ${appVersion}   Rules: ${deployRules}`);

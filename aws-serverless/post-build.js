@@ -125,12 +125,18 @@ for (const fn of functions) {
     console.log(`Patched ${fn}/lambda.mjs for Node 22 ESM compatibility`);
   }
 
-  // Copy defaultDomain.yaml into artifact root (/var/task) for domain config loading
-  const defaultDomainSrc = path.join(repoRoot, 'src', 'server', 'defaultDomain.yaml');
-  if (fs.existsSync(defaultDomainSrc)) {
-    const destDomainPath = path.join(fnDir, 'defaultDomain.yaml');
-    fs.copyFileSync(defaultDomainSrc, destDomainPath);
-    console.log(`Copied defaultDomain.yaml -> ${path.relative(repoRoot, destDomainPath)}`);
+  // Copy active profile.yaml into artifact root (/var/task) for profile config loading
+  const profileName = process.env.EVENT_PROFILE || 'lifestyle';
+  const profileSrc = path.join(repoRoot, 'profiles', profileName, 'profile.yaml');
+  if (fs.existsSync(profileSrc)) {
+    const destProfilePath = path.join(fnDir, 'profile.yaml');
+    fs.copyFileSync(profileSrc, destProfilePath);
+    console.log(
+      `Copied profile.yaml (${profileName}) -> ${path.relative(repoRoot, destProfilePath)}`
+    );
+  } else {
+    console.error(`ERROR: Event profile '${profileName}' not found at ${profileSrc}`);
+    process.exit(1);
   }
 
   copied += 1;
