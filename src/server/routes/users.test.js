@@ -81,9 +81,11 @@ describe('User registration and login', () => {
       .put('/api/users/me')
       .set('Authorization', `Bearer ${token}`)
       .send({
-        identity_genders: 'non-binary',
-        identity_orientations: 'pansexual',
-        identity_roles: 'mentor',
+        identity_attributes: {
+          gender: ['non-binary'],
+          orientation: ['pansexual'],
+          role: ['mentor'],
+        },
       })
       .set('Accept', 'application/json');
 
@@ -121,9 +123,7 @@ describe('User registration and login', () => {
       .send({
         username: 'test_register_user',
         passphrase: 'secure_password_here',
-        identity_genders: 'woman',
-        identity_orientations: 'bisexual',
-        identity_roles: 'switch',
+        identity_attributes: { gender: ['woman'], orientation: ['bisexual'], role: ['switch'] },
       })
       .set('Accept', 'application/json');
 

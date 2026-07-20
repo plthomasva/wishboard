@@ -450,18 +450,6 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 
   let creatorAttrs = parseAttributesInput(req.body.creator_attributes);
-  if (
-    Object.keys(creatorAttrs).length === 0 &&
-    (creator_genders !== undefined ||
-      creator_orientations !== undefined ||
-      creator_roles !== undefined)
-  ) {
-    creatorAttrs = {
-      gender: normalizeArrayInput(creator_genders),
-      orientation: normalizeArrayInput(creator_orientations),
-      role: normalizeArrayInput(creator_roles),
-    };
-  }
 
   if (user?.identity_attributes) {
     // Merge user identity attributes if logged in
@@ -472,18 +460,6 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 
   let desiredAttrs = parseAttributesInput(req.body.desired_attributes);
-  if (
-    Object.keys(desiredAttrs).length === 0 &&
-    (desired_genders !== undefined ||
-      desired_orientations !== undefined ||
-      desired_roles !== undefined)
-  ) {
-    desiredAttrs = {
-      gender: normalizeArrayInput(desired_genders),
-      orientation: normalizeArrayInput(desired_orientations),
-      role: normalizeArrayInput(desired_roles),
-    };
-  }
 
   const rules = getRules();
   const creatorConflicts = getExclusionConflicts(creatorAttrs, rules);

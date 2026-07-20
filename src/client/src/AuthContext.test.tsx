@@ -14,7 +14,9 @@ const TestComponent = () => {
         Login
       </button>
       <button
-        onClick={() => register('testuser', 'pass', { genders: 'female' })}
+        onClick={() =>
+          register('testuser', 'pass', { identity_attributes: { gender: ['female'] } })
+        }
         data-testid="register-btn"
       >
         Register

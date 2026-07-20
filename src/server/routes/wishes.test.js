@@ -47,9 +47,7 @@ describe('Authenticated wish creation', () => {
       .send({
         username: 'user3',
         passphrase: 'secret',
-        identity_genders: 'woman',
-        identity_orientations: 'queer',
-        identity_roles: 'speaker',
+        identity_attributes: { gender: ['woman'], orientation: ['queer'], role: ['speaker'] },
       })
       .set('Accept', 'application/json');
 
@@ -142,20 +140,22 @@ describe('Authenticated wish creation', () => {
 describe('Matchmaking logic', () => {
   it('correctly filters mutually compatible and incompatible wishes based on gender and orientation', async () => {
     // 1. Create Lesbian Woman wish
-    await request(app).post('/api/wishes').send({
-      content: 'Lesbian wish',
-      creator_genders: 'woman',
-      creator_orientations: 'lesbian',
-      desired_genders: 'woman',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Lesbian wish',
+        creator_attributes: { gender: ['woman'], orientation: ['lesbian'] },
+        desired_attributes: { gender: ['woman'] },
+      });
 
     // 2. Create Straight Woman wish
-    await request(app).post('/api/wishes').send({
-      content: 'Straight Woman wish',
-      creator_genders: 'woman',
-      creator_orientations: 'straight',
-      desired_genders: 'man',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Straight Woman wish',
+        creator_attributes: { gender: ['woman'], orientation: ['straight'] },
+        desired_attributes: { gender: ['man'] },
+      });
 
     // 3. Search as a Straight Man
     const resSearch1 = await request(app).get('/api/wishes').query({
@@ -184,11 +184,13 @@ describe('Matchmaking logic', () => {
   });
 
   it('correctly matches role preferences (dom/sub)', async () => {
-    await request(app).post('/api/wishes').send({
-      content: 'Sub looking for dom',
-      creator_roles: 'sub',
-      desired_roles: 'dom',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Sub looking for dom',
+        creator_attributes: { role: ['sub'] },
+        desired_attributes: { role: ['dom'] },
+      });
 
     const resSearchDom = await request(app).get('/api/wishes').query({
       sr: 'dom',
@@ -204,11 +206,12 @@ describe('Matchmaking logic', () => {
   });
 
   it('correctly uses implicit preferences when desired_genders is empty', async () => {
-    await request(app).post('/api/wishes').send({
-      content: 'Implicit Lesbian wish',
-      creator_genders: 'woman',
-      creator_orientations: 'lesbian',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Implicit Lesbian wish',
+        creator_attributes: { gender: ['woman'], orientation: ['lesbian'] },
+      });
 
     const resSearch1 = await request(app).get('/api/wishes').query({
       sg: 'man',
@@ -220,11 +223,12 @@ describe('Matchmaking logic', () => {
   });
 
   it('prevents straight users from matching their own gender implicitly', async () => {
-    await request(app).post('/api/wishes').send({
-      content: 'Straight Man wish',
-      creator_genders: 'man',
-      creator_orientations: 'straight',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Straight Man wish',
+        creator_attributes: { gender: ['man'], orientation: ['straight'] },
+      });
 
     const resSearch1 = await request(app).get('/api/wishes').query({
       sg: 'man',
@@ -236,12 +240,13 @@ describe('Matchmaking logic', () => {
   });
 
   it('allows explicit desired_genders to override implicit orientation preferences', async () => {
-    await request(app).post('/api/wishes').send({
-      content: 'Lesbian looking for man',
-      creator_genders: 'woman',
-      creator_orientations: 'lesbian',
-      desired_genders: 'man',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Lesbian looking for man',
+        creator_attributes: { gender: ['woman'], orientation: ['lesbian'] },
+        desired_attributes: { gender: ['man'] },
+      });
 
     const resSearch1 = await request(app).get('/api/wishes').query({
       sg: 'man',
@@ -257,11 +262,12 @@ describe('Matchmaking logic', () => {
     // over-matched — a woman's wish with no stated orientation and no desired
     // gender was shown to a straight man. With no basis to infer a preference,
     // it must not match; the user should set an orientation or a desired gender.
-    await request(app).post('/api/wishes').send({
-      content: 'No orientation wish',
-      creator_genders: 'woman',
-      creator_orientations: '',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'No orientation wish',
+        creator_attributes: { gender: ['woman'], orientation: [''] },
+      });
 
     const resSearch1 = await request(app).get('/api/wishes').query({
       sg: 'man',
@@ -275,12 +281,13 @@ describe('Matchmaking logic', () => {
   it('still matches a no-orientation wish when the searcher fits an explicit desired gender', async () => {
     // Tightening the implicit path must not harm wishes that DO state who they
     // want: no orientation, but an explicit desired gender still matches.
-    await request(app).post('/api/wishes').send({
-      content: 'No orientation but wants men',
-      creator_genders: 'woman',
-      creator_orientations: '',
-      desired_genders: 'man',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'No orientation but wants men',
+        creator_attributes: { gender: ['woman'], orientation: [''] },
+        desired_attributes: { gender: ['man'] },
+      });
 
     const resSearch1 = await request(app).get('/api/wishes').query({
       sg: 'man',
@@ -311,10 +318,12 @@ describe('Matchmaking logic', () => {
     });
 
     // 2. Create wish wanting a pet
-    await request(app).post('/api/wishes').send({
-      content: 'Looking for pet',
-      desired_roles: 'pet',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Looking for pet',
+        desired_attributes: { role: ['pet'] },
+      });
 
     // 3. Search as pup (expansion match)
     const resPup = await request(app).get('/api/wishes').query({ sr: 'pup', q: 'Looking for pet' });
@@ -327,10 +336,12 @@ describe('Matchmaking logic', () => {
     expect(resHandler.body).toHaveLength(1);
 
     // 5. Create wish wanting a handler
-    await request(app).post('/api/wishes').send({
-      content: 'Looking for handler',
-      desired_roles: 'handler',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Looking for handler',
+        desired_attributes: { role: ['handler'] },
+      });
 
     // 6. Search as pet (cross match)
     const resPet = await request(app)
@@ -431,12 +442,13 @@ describe('Claiming wishes', () => {
 
   it('correctly matches gender synonyms and variants using rules engine', async () => {
     // 1. Wish desiring 'nonbinary', searcher is 'enby' (should match)
-    await request(app).post('/api/wishes').send({
-      content: 'Wish for nonbinary',
-      creator_genders: 'woman',
-      creator_orientations: 'pan',
-      desired_genders: 'nonbinary',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Wish for nonbinary',
+        creator_attributes: { gender: ['woman'], orientation: ['pan'] },
+        desired_attributes: { gender: ['nonbinary'] },
+      });
     const resEnby = await request(app).get('/api/wishes').query({
       sg: 'enby',
       so: 'pan',
@@ -445,12 +457,13 @@ describe('Claiming wishes', () => {
     expect(resEnby.body.length).toBe(1);
 
     // 2. Wish desiring 'woman', searcher is 'female' (should match)
-    await request(app).post('/api/wishes').send({
-      content: 'Wish for woman',
-      creator_genders: 'man',
-      creator_orientations: 'straight',
-      desired_genders: 'woman',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Wish for woman',
+        creator_attributes: { gender: ['man'], orientation: ['straight'] },
+        desired_attributes: { gender: ['woman'] },
+      });
     const resFemale = await request(app).get('/api/wishes').query({
       sg: 'female',
       so: 'straight',
@@ -459,12 +472,13 @@ describe('Claiming wishes', () => {
     expect(resFemale.body.length).toBe(1);
 
     // 3. Wish desiring 'man', searcher is 'male' (should match)
-    await request(app).post('/api/wishes').send({
-      content: 'Wish for man',
-      creator_genders: 'woman',
-      creator_orientations: 'straight',
-      desired_genders: 'man',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Wish for man',
+        creator_attributes: { gender: ['woman'], orientation: ['straight'] },
+        desired_attributes: { gender: ['man'] },
+      });
     const resMale = await request(app).get('/api/wishes').query({
       sg: 'male',
       so: 'straight',

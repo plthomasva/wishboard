@@ -43,48 +43,52 @@ afterAll(() => {
 describe('wishes.js coverage', () => {
   it('covers various matchmaking branches', async () => {
     // pan/queer
-    await request(app).post('/api/wishes').send({
-      content: 'Queer wish',
-      creator_genders: 'man',
-      creator_orientations: 'queer',
-      desired_genders: 'trans-man',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Queer wish',
+        creator_attributes: { gender: ['man'], orientation: ['queer'] },
+        desired_attributes: { gender: ['trans-man'] },
+      });
     const resQueer = await request(app)
       .get('/api/wishes')
       .query({ sg: 'trans-man', so: 'gay', q: 'Queer wish' });
     expect(resQueer.body.length).toBe(1);
 
     // bi/bisexual
-    await request(app).post('/api/wishes').send({
-      content: 'Bi wish',
-      creator_genders: 'man',
-      creator_orientations: 'bisexual',
-      desired_genders: 'woman',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Bi wish',
+        creator_attributes: { gender: ['man'], orientation: ['bisexual'] },
+        desired_attributes: { gender: ['woman'] },
+      });
     const resBi = await request(app)
       .get('/api/wishes')
       .query({ sg: 'woman', so: 'straight', q: 'Bi wish' });
     expect(resBi.body.length).toBe(1);
 
     // gay/homosexual with woman
-    await request(app).post('/api/wishes').send({
-      content: 'Gay woman wish',
-      creator_genders: 'woman',
-      creator_orientations: 'homosexual',
-      desired_genders: 'woman',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Gay woman wish',
+        creator_attributes: { gender: ['woman'], orientation: ['homosexual'] },
+        desired_attributes: { gender: ['woman'] },
+      });
     const resGayW = await request(app)
       .get('/api/wishes')
       .query({ sg: 'woman', so: 'lesbian', q: 'Gay woman wish' });
     expect(resGayW.body.length).toBe(1);
 
     // gay/homosexual with man
-    await request(app).post('/api/wishes').send({
-      content: 'Gay man wish',
-      creator_genders: 'man',
-      creator_orientations: 'homosexual',
-      desired_genders: 'man',
-    });
+    await request(app)
+      .post('/api/wishes')
+      .send({
+        content: 'Gay man wish',
+        creator_attributes: { gender: ['man'], orientation: ['homosexual'] },
+        desired_attributes: { gender: ['man'] },
+      });
     const resGayM = await request(app)
       .get('/api/wishes')
       .query({ sg: 'man', so: 'gay', q: 'Gay man wish' });
@@ -99,7 +103,11 @@ describe('wishes.js coverage', () => {
     // empty searcher roles
     await request(app)
       .post('/api/wishes')
-      .send({ content: 'Role wish', creator_roles: 'top', desired_roles: 'bottom' });
+      .send({
+        content: 'Role wish',
+        creator_attributes: { role: ['top'] },
+        desired_attributes: { role: ['bottom'] },
+      });
     const resNoRole = await request(app)
       .get('/api/wishes')
       .query({ so: 'straight', sr: '', q: 'Role wish' });

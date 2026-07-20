@@ -282,8 +282,7 @@ describe('Write-Time Exclusion Rules', () => {
         .send({
           username: 'conflict_reg',
           passphrase: 'secret_password',
-          identity_genders: 'man',
-          identity_orientations: 'lesbian',
+          identity_attributes: { gender: ['man'], orientation: ['lesbian'] },
         })
         .set('Accept', 'application/json');
 
@@ -298,8 +297,7 @@ describe('Write-Time Exclusion Rules', () => {
         .send({
           username: 'valid_reg',
           passphrase: 'secret_password',
-          identity_genders: 'woman',
-          identity_orientations: 'lesbian',
+          identity_attributes: { gender: ['woman'], orientation: ['lesbian'] },
         })
         .set('Accept', 'application/json');
 
@@ -331,8 +329,7 @@ describe('Write-Time Exclusion Rules', () => {
         .put('/api/users/me')
         .set('Authorization', `Bearer ${token}`)
         .send({
-          identity_genders: 'man',
-          identity_orientations: 'lesbian',
+          identity_attributes: { gender: ['man'], orientation: ['lesbian'] },
         })
         .set('Accept', 'application/json');
 
@@ -348,8 +345,7 @@ describe('Write-Time Exclusion Rules', () => {
         .put('/api/users/me')
         .set('Authorization', `Bearer ${token}`)
         .send({
-          identity_genders: 'woman',
-          identity_orientations: 'lesbian',
+          identity_attributes: { gender: ['woman'], orientation: ['lesbian'] },
         })
         .set('Accept', 'application/json');
 
@@ -378,8 +374,7 @@ describe('Write-Time Exclusion Rules', () => {
         .post('/api/wishes')
         .send({
           content: 'Test conflict wish',
-          creator_genders: 'man',
-          creator_orientations: 'lesbian',
+          creator_attributes: { gender: ['man'], orientation: ['lesbian'] },
         })
         .set('Accept', 'application/json');
 
@@ -393,8 +388,7 @@ describe('Write-Time Exclusion Rules', () => {
         .post('/api/wishes')
         .send({
           content: 'Test conflict wish 2',
-          desired_genders: 'man',
-          desired_orientations: 'lesbian',
+          desired_attributes: { gender: ['man'], orientation: ['lesbian'] },
         })
         .set('Accept', 'application/json');
 
@@ -408,10 +402,8 @@ describe('Write-Time Exclusion Rules', () => {
         .post('/api/wishes')
         .send({
           content: 'Test valid wish',
-          creator_genders: 'woman',
-          creator_orientations: 'lesbian',
-          desired_genders: 'woman',
-          desired_orientations: 'lesbian',
+          creator_attributes: { gender: ['woman'], orientation: ['lesbian'] },
+          desired_attributes: { gender: ['woman'], orientation: ['lesbian'] },
         })
         .set('Accept', 'application/json');
 

@@ -45,12 +45,13 @@ describe('integration: file-backed libSQL round-trip', () => {
     const marker = `integration wish ${Date.now()}`;
 
     // Create a wish through the real HTTP API → real matching engine → real DB write.
-    const created = await request(app).post('/api/wishes').send({
-      content: marker,
-      creator_genders: 'woman',
-      creator_orientations: 'lesbian',
-      desired_genders: 'woman',
-    });
+    const created = await request(app)
+      .post('/api/wishes')
+      .send({
+        content: marker,
+        creator_attributes: { gender: ['woman'], orientation: ['lesbian'] },
+        desired_attributes: { gender: ['woman'] },
+      });
     expect(created.status).toBe(201);
     expect(created.body.id).toBeTruthy();
     const wishId = created.body.id;
