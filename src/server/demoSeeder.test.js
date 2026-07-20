@@ -28,14 +28,12 @@ describe('generateDemoData', () => {
       expect(user.role).toBe('user');
 
       // Verify JSON arrays
-      const genders = JSON.parse(user.identity_genders);
-      const orientations = JSON.parse(user.identity_orientations);
-      const roles = JSON.parse(user.identity_roles);
+      const identityAttributes = JSON.parse(user.identity_attributes);
       const contacts = JSON.parse(user.contacts);
 
-      expect(Array.isArray(genders)).toBe(true);
-      expect(Array.isArray(orientations)).toBe(true);
-      expect(Array.isArray(roles)).toBe(true);
+      expect(Array.isArray(identityAttributes.gender)).toBe(true);
+      expect(Array.isArray(identityAttributes.orientation)).toBe(true);
+      expect(Array.isArray(identityAttributes.role)).toBe(true);
       expect(Array.isArray(contacts)).toBe(true);
 
       if (user.wishmail_enabled === 1) hasWishmailEnabled = true;
@@ -74,15 +72,15 @@ describe('generateDemoData', () => {
 
     for (const wish of wishes) {
       expect(wish.content.length).toBeGreaterThan(0);
-      expect(wish.creator_genders).toBeDefined();
-      expect(wish.creator_orientations).toBeDefined();
-      expect(wish.creator_roles).toBeDefined();
+      expect(wish.creator_attributes).toBeDefined();
+      expect(wish.desired_attributes).toBeDefined();
       expect(wish.flagged).toBe(0);
 
       // Verify desired fields are valid JSON
-      expect(Array.isArray(JSON.parse(wish.desired_genders))).toBe(true);
-      expect(Array.isArray(JSON.parse(wish.desired_orientations))).toBe(true);
-      expect(Array.isArray(JSON.parse(wish.desired_roles))).toBe(true);
+      const desiredAttrs = JSON.parse(wish.desired_attributes);
+      expect(Array.isArray(desiredAttrs.gender)).toBe(true);
+      expect(Array.isArray(desiredAttrs.orientation)).toBe(true);
+      expect(Array.isArray(desiredAttrs.role)).toBe(true);
 
       const contacts = JSON.parse(wish.contacts);
       expect(Array.isArray(contacts)).toBe(true);

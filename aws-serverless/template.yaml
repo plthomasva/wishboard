@@ -42,12 +42,11 @@ Parameters:
 Conditions:
   UseCustomDomain: !Not [!Equals [!Ref DomainName, '']]
   HasCertificateDomainName: !Not [!Equals [!Ref CertificateDomainName, '']]
-  CreateCertificate:
-    !And
-      - !Or
-          - !Not [!Equals [!Ref DomainName, '']]
-          - !Not [!Equals [!Ref CertificateDomainName, '']]
-      - !Equals [!Ref AcmCertificateArn, '']
+  CreateCertificate: !And
+    - !Or
+      - !Not [!Equals [!Ref DomainName, '']]
+      - !Not [!Equals [!Ref CertificateDomainName, '']]
+    - !Equals [!Ref AcmCertificateArn, '']
 
 Resources:
   # VPC networking + EFS removed (#136): the app now uses Turso (hosted libSQL)

@@ -10,11 +10,12 @@ import {
   verifyPassphrase,
   normalizeArrayInput,
   parseJsonArray,
+  parseJsonObject,
 } from '../auth.js';
 import { generatePassphrase } from '../../client/src/passphrase.js';
 import logger from '../logger.js';
 import { getRules } from '../rulesManager.js';
-import { getExclusionConflicts } from './wishes.js';
+import { getExclusionConflicts, parseAttributesInput } from './wishes.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
@@ -31,24 +32,11 @@ router.get('/exists', async (req, res) => {
   res.json({ exists: Boolean(existingUser) });
 });
 
-const validateProfile = ({ identity_genders, identity_orientations, identity_roles }) => {
-  const genders = normalizeArrayInput(identity_genders);
-  const orientations = normalizeArrayInput(identity_orientations);
-  const roles = normalizeArrayInput(identity_roles);
-
+const validateProfile = (identityAttrs) => {
   const rules = getRules();
-  const conflicts = getExclusionConflicts(
-    {
-      gender: genders,
-      orientation: orientations,
-      role: roles,
-    },
-    rules
-  );
+  const conflicts = getExclusionConflicts(identityAttrs, rules);
   return {
-    genders,
-    orientations,
-    roles,
+    identityAttrs,
     error:
       conflicts.length > 0
         ? `Validation failed: Profile attributes conflict. ${conflicts.map((c) => c.message).join(' ')}`
@@ -84,11 +72,16 @@ router.post('/register', async (req, res) => {
   const userId = idGenerator();
   const now = new Date().toISOString();
 
-  const { genders, orientations, roles, error } = validateProfile({
-    identity_genders,
-    identity_orientations,
-    identity_roles,
-  });
+  let identityAttrs = parseAttributesInput(req.body.identity_attributes);
+  if (Object.keys(identityAttrs).length === 0) {
+    identityAttrs = {
+      gender: normalizeArrayInput(identity_genders),
+      orientation: normalizeArrayInput(identity_orientations),
+      role: normalizeArrayInput(identity_roles),
+    };
+  }
+
+  const { error } = validateProfile(identityAttrs);
   if (error) {
     return res.status(400).json({ error });
   }
@@ -97,7 +90,7 @@ router.post('/register', async (req, res) => {
 
   await db
     .prepare(
-      'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, contacts, wishmail_enabled, created_at, identity_attributes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )
     .run(
       userId,
@@ -105,12 +98,10 @@ router.post('/register', async (req, res) => {
       hash,
       salt,
       'user',
-      JSON.stringify(genders),
-      JSON.stringify(orientations),
-      JSON.stringify(roles),
       JSON.stringify(contacts || []),
       wishmailEnabledInt,
-      now
+      now,
+      JSON.stringify(identityAttrs)
     );
 
   logger.info('New user registered', { user_id: userId, username: username.trim() });
@@ -122,11 +113,9 @@ router.post('/register', async (req, res) => {
     is_active: true,
     token,
     secret,
-    identity_genders: genders,
-    identity_orientations: orientations,
-    identity_roles: roles,
     contacts: contacts || [],
     wishmail_enabled: Boolean(wishmailEnabledInt),
+    identity_attributes: identityAttrs,
   });
 });
 
@@ -144,11 +133,16 @@ router.put('/me', async (req, res) => {
 
   const { identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled } =
     req.body;
-  const { genders, orientations, roles, error } = validateProfile({
-    identity_genders,
-    identity_orientations,
-    identity_roles,
-  });
+  let identityAttrs = parseAttributesInput(req.body.identity_attributes);
+  if (Object.keys(identityAttrs).length === 0) {
+    identityAttrs = {
+      gender: normalizeArrayInput(identity_genders),
+      orientation: normalizeArrayInput(identity_orientations),
+      role: normalizeArrayInput(identity_roles),
+    };
+  }
+
+  const { error } = validateProfile(identityAttrs);
   if (error) {
     return res.status(400).json({ error });
   }
@@ -157,14 +151,12 @@ router.put('/me', async (req, res) => {
 
   await db
     .prepare(
-      'UPDATE users SET identity_genders = ?, identity_orientations = ?, identity_roles = ?, contacts = ?, wishmail_enabled = ? WHERE id = ?'
+      'UPDATE users SET contacts = ?, wishmail_enabled = ?, identity_attributes = ? WHERE id = ?'
     )
     .run(
-      JSON.stringify(genders),
-      JSON.stringify(orientations),
-      JSON.stringify(roles),
       JSON.stringify(contacts || []),
       wishmailEnabledInt,
+      JSON.stringify(identityAttrs),
       user.id
     );
 
@@ -172,11 +164,9 @@ router.put('/me', async (req, res) => {
     id: user.id,
     username: user.username,
     role: user.role,
-    identity_genders: genders,
-    identity_orientations: orientations,
-    identity_roles: roles,
     contacts: contacts || [],
     wishmail_enabled: Boolean(wishmailEnabledInt),
+    identity_attributes: identityAttrs,
   });
 });
 
@@ -188,7 +178,7 @@ router.post('/login', async (req, res) => {
 
   const user = await db
     .prepare(
-      'SELECT id, username, role, is_active, passphrase_hash, passphrase_salt, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled FROM users WHERE username = ?'
+      'SELECT id, username, role, is_active, passphrase_hash, passphrase_salt, contacts, wishmail_enabled, identity_attributes FROM users WHERE username = ?'
     )
     .get(username.trim());
   if (
@@ -207,11 +197,9 @@ router.post('/login', async (req, res) => {
     role: user.role,
     is_active: Boolean(user.is_active),
     token,
-    identity_genders: parseJsonArray(user.identity_genders),
-    identity_orientations: parseJsonArray(user.identity_orientations),
-    identity_roles: parseJsonArray(user.identity_roles),
     contacts: parseJsonArray(user.contacts),
     wishmail_enabled: Boolean(user.wishmail_enabled),
+    identity_attributes: parseJsonObject(user.identity_attributes),
   });
 });
 
@@ -272,15 +260,14 @@ async function setUserActiveState(req, res, isActive) {
   if (isActive) {
     const wishes = await db
       .prepare(
-        'SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled, image_id FROM wishes WHERE user_id = ? AND is_active = 1'
+        'SELECT id, content, creator_attributes, contacts, wishmail_enabled, image_id FROM wishes WHERE user_id = ? AND is_active = 1'
       )
       .all(user.id);
     const { emitWishReactivated } = await import('../socket.js');
     wishes.forEach((w) => {
       emitWishReactivated({
         ...w,
-        creator_genders: parseJsonArray(w.creator_genders),
-        creator_orientations: parseJsonArray(w.creator_orientations),
+        creator_attributes: parseJsonObject(w.creator_attributes),
         contacts: parseJsonArray(w.contacts),
         wishmail_enabled: Boolean(w.wishmail_enabled),
         image_id: w.image_id,
@@ -310,14 +297,14 @@ router.get('/me/wishes', async (req, res) => {
 
   const rows = await db
     .prepare(
-      'SELECT id, content, contacts, wishmail_enabled, creator_genders, creator_orientations, flagged, created_at, updated_at, is_active, image_id, (SELECT COUNT(*) FROM wishmails wm WHERE wm.wish_id = wishes.id AND wm.read = 0) AS unread_wishmail_count FROM wishes WHERE user_id = ? ORDER BY created_at DESC'
+      'SELECT id, content, contacts, wishmail_enabled, creator_attributes, desired_attributes, flagged, created_at, updated_at, is_active, image_id, (SELECT COUNT(*) FROM wishmails wm WHERE wm.wish_id = wishes.id AND wm.read = 0) AS unread_wishmail_count FROM wishes WHERE user_id = ? ORDER BY created_at DESC'
     )
     .all(user.id);
 
   const formattedRows = rows.map((row) => ({
     ...row,
-    creator_genders: parseJsonArray(row.creator_genders),
-    creator_orientations: parseJsonArray(row.creator_orientations),
+    creator_attributes: parseJsonObject(row.creator_attributes),
+    desired_attributes: parseJsonObject(row.desired_attributes),
     contacts: parseJsonArray(row.contacts),
     wishmail_enabled: Boolean(row.wishmail_enabled),
     is_active: Boolean(row.is_active),

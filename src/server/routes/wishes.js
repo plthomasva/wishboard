@@ -91,6 +91,23 @@ export const parseJsonSafe = (str) => {
   }
 };
 
+export const parseAttributesInput = (rawAttrs) => {
+  const result = {};
+  if (!rawAttrs) return result;
+
+  let parsed = rawAttrs;
+  if (typeof rawAttrs === 'string') {
+    parsed = parseJsonSafe(rawAttrs);
+  }
+
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    for (const key of Object.keys(parsed)) {
+      result[key] = normalizeArrayInput(parsed[key]);
+    }
+  }
+  return result;
+};
+
 const matchesContext = (rule, contextProfile, rules = []) => {
   if (!rule.context_attribute || !rule.context_value) return true;
   if (!contextProfile) return false;
@@ -300,30 +317,17 @@ export const isCompatible = (wish, searcher, rules = []) => {
   const creatorProfileRaw =
     typeof wish.creator_attributes === 'string'
       ? parseJsonSafe(wish.creator_attributes)
-      : wish.creator_attributes || {
-          gender: parseJsonArray(wish.creator_genders),
-          orientation: parseJsonArray(wish.creator_orientations),
-          role: parseJsonArray(wish.creator_roles),
-        };
+      : wish.creator_attributes || {};
 
   const desiredProfileRaw =
     typeof wish.desired_attributes === 'string'
       ? parseJsonSafe(wish.desired_attributes)
-      : wish.desired_attributes || {
-          gender: parseJsonArray(wish.desired_genders),
-          orientation: parseJsonArray(wish.desired_orientations),
-          role: parseJsonArray(wish.desired_roles),
-        };
+      : wish.desired_attributes || {};
 
   const searcherProfileRaw =
     typeof searcher.identity_attributes === 'string'
       ? parseJsonSafe(searcher.identity_attributes)
-      : searcher.identity_attributes || {
-          gender: searcher.identity_genders || searcher.identity_attributes?.gender || [],
-          orientation:
-            searcher.identity_orientations || searcher.identity_attributes?.orientation || [],
-          role: searcher.identity_roles || searcher.identity_attributes?.role || [],
-        };
+      : searcher.identity_attributes || {};
 
   const creatorProfile = {};
   for (const key of Object.keys(creatorProfileRaw)) {
@@ -437,37 +441,51 @@ router.post('/', upload.single('image'), async (req, res) => {
     secretHash = `${salt}:${hash}`;
   }
 
-  const creatorGenders = user?.identity_genders ?? normalizeArrayInput(creator_genders);
-  const creatorOrientations =
-    user?.identity_orientations ?? normalizeArrayInput(creator_orientations);
-  const creatorRoles = user?.identity_roles ?? normalizeArrayInput(creator_roles);
-  const desiredGenders = normalizeArrayInput(desired_genders);
-  const desiredOrientations = normalizeArrayInput(desired_orientations);
-  const desiredRoles = normalizeArrayInput(desired_roles);
+  let creatorAttrs = parseAttributesInput(req.body.creator_attributes);
+  if (
+    Object.keys(creatorAttrs).length === 0 &&
+    (creator_genders !== undefined ||
+      creator_orientations !== undefined ||
+      creator_roles !== undefined)
+  ) {
+    creatorAttrs = {
+      gender: normalizeArrayInput(creator_genders),
+      orientation: normalizeArrayInput(creator_orientations),
+      role: normalizeArrayInput(creator_roles),
+    };
+  }
+
+  if (user && user.identity_attributes) {
+    // Merge user identity attributes if logged in
+    creatorAttrs = {
+      ...user.identity_attributes,
+      ...creatorAttrs,
+    };
+  }
+
+  let desiredAttrs = parseAttributesInput(req.body.desired_attributes);
+  if (
+    Object.keys(desiredAttrs).length === 0 &&
+    (desired_genders !== undefined ||
+      desired_orientations !== undefined ||
+      desired_roles !== undefined)
+  ) {
+    desiredAttrs = {
+      gender: normalizeArrayInput(desired_genders),
+      orientation: normalizeArrayInput(desired_orientations),
+      role: normalizeArrayInput(desired_roles),
+    };
+  }
 
   const rules = getRules();
-  const creatorConflicts = getExclusionConflicts(
-    {
-      gender: creatorGenders,
-      orientation: creatorOrientations,
-      role: creatorRoles,
-    },
-    rules
-  );
+  const creatorConflicts = getExclusionConflicts(creatorAttrs, rules);
   if (creatorConflicts.length > 0) {
     return res.status(400).json({
       error: `Validation failed: Creator attributes conflict. ${creatorConflicts.map((c) => c.message).join(' ')}`,
     });
   }
 
-  const desiredConflicts = getExclusionConflicts(
-    {
-      gender: desiredGenders,
-      orientation: desiredOrientations,
-      role: desiredRoles,
-    },
-    rules
-  );
+  const desiredConflicts = getExclusionConflicts(desiredAttrs, rules);
   if (desiredConflicts.length > 0) {
     return res.status(400).json({
       error: `Validation failed: Desired criteria conflict. ${desiredConflicts.map((c) => c.message).join(' ')}`,
@@ -480,34 +498,20 @@ router.post('/', upload.single('image'), async (req, res) => {
   const now = new Date().toISOString();
   await db
     .prepare(
-      'INSERT INTO wishes (id, user_id, content, secret_hash, creator_genders, creator_orientations, creator_roles, desired_genders, desired_orientations, desired_roles, contacts, wishmail_enabled, created_at, updated_at, image_id, creator_attributes, desired_attributes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO wishes (id, user_id, content, secret_hash, contacts, wishmail_enabled, created_at, updated_at, image_id, creator_attributes, desired_attributes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )
     .run(
       id,
       userId,
       content.trim(),
       secretHash,
-      JSON.stringify(creatorGenders),
-      JSON.stringify(creatorOrientations),
-      JSON.stringify(creatorRoles),
-      JSON.stringify(desiredGenders),
-      JSON.stringify(desiredOrientations),
-      JSON.stringify(desiredRoles),
       JSON.stringify(parsedContacts),
       wme,
       now,
       now,
       imageId,
-      JSON.stringify({
-        gender: creatorGenders,
-        orientation: creatorOrientations,
-        role: creatorRoles,
-      }),
-      JSON.stringify({
-        gender: desiredGenders,
-        orientation: desiredOrientations,
-        role: desiredRoles,
-      })
+      JSON.stringify(creatorAttrs),
+      JSON.stringify(desiredAttrs)
     );
 
   logger.info('Wish created', { user_id: userId, wish_id: id });
@@ -515,22 +519,8 @@ router.post('/', upload.single('image'), async (req, res) => {
     id,
     content: content.trim(),
     created_at: now,
-    creator_genders: creatorGenders,
-    creator_orientations: creatorOrientations,
-    creator_roles: creatorRoles,
-    desired_genders: desiredGenders,
-    desired_orientations: desiredOrientations,
-    desired_roles: desiredRoles,
-    creator_attributes: {
-      gender: creatorGenders,
-      orientation: creatorOrientations,
-      role: creatorRoles,
-    },
-    desired_attributes: {
-      gender: desiredGenders,
-      orientation: desiredOrientations,
-      role: desiredRoles,
-    },
+    creator_attributes: creatorAttrs,
+    desired_attributes: desiredAttrs,
     contacts: parsedContacts,
     wishmail_enabled: Boolean(wme),
     image_id: imageId,
@@ -545,15 +535,13 @@ router.get('/random', async (req, res) => {
   const limit = Number(req.query.limit || 12);
   const rows = await db
     .prepare(
-      'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_attributes, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY RANDOM() LIMIT ?'
+      'SELECT w.id, w.content, w.creator_attributes, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1) ORDER BY RANDOM() LIMIT ?'
     )
     .all(limit);
   res.json(
     rows.map((wish) => ({
       id: wish.id,
       content: wish.content,
-      creator_genders: parseJsonArray(wish.creator_genders),
-      creator_orientations: parseJsonArray(wish.creator_orientations),
       creator_attributes: parseJsonSafe(wish.creator_attributes),
       contacts: parseJsonArray(wish.contacts),
       wishmail_enabled: Boolean(wish.wishmail_enabled),
@@ -650,7 +638,7 @@ router.get('/', async (req, res) => {
   };
 
   let sql =
-    'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.creator_attributes, w.desired_attributes, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1)';
+    'SELECT w.id, w.content, w.creator_attributes, w.desired_attributes, w.contacts, w.wishmail_enabled, w.image_id FROM wishes w LEFT JOIN users u ON w.user_id = u.id WHERE w.is_active = 1 AND (u.id IS NULL OR u.is_active = 1)';
   let args = [];
 
   if (query) {
@@ -691,12 +679,6 @@ router.get('/', async (req, res) => {
     filtered.map((wish) => ({
       id: wish.id,
       content: wish.content,
-      creator_genders: parseJsonArray(wish.creator_genders),
-      creator_orientations: parseJsonArray(wish.creator_orientations),
-      creator_roles: parseJsonArray(wish.creator_roles),
-      desired_genders: parseJsonArray(wish.desired_genders),
-      desired_orientations: parseJsonArray(wish.desired_orientations),
-      desired_roles: parseJsonArray(wish.desired_roles),
       creator_attributes: parseJsonSafe(wish.creator_attributes),
       desired_attributes: parseJsonSafe(wish.desired_attributes),
       contacts: parseJsonArray(wish.contacts),
@@ -721,7 +703,7 @@ router.get('/exclusions', requireAuth, async (req, res) => {
   const userId = req.user.id;
   const rows = await db
     .prepare(
-      'SELECT w.id, w.content, w.creator_genders, w.creator_orientations, w.creator_roles, w.desired_genders, w.desired_orientations, w.desired_roles, w.creator_attributes, w.desired_attributes, w.contacts, w.wishmail_enabled, w.image_id FROM wish_exclusions x JOIN wishes w ON x.wish_id = w.id WHERE x.user_id = ?'
+      'SELECT w.id, w.content, w.creator_attributes, w.desired_attributes, w.contacts, w.wishmail_enabled, w.image_id FROM wish_exclusions x JOIN wishes w ON x.wish_id = w.id WHERE x.user_id = ?'
     )
     .all(userId);
 
@@ -729,12 +711,6 @@ router.get('/exclusions', requireAuth, async (req, res) => {
     rows.map((wish) => ({
       id: wish.id,
       content: wish.content,
-      creator_genders: parseJsonArray(wish.creator_genders),
-      creator_orientations: parseJsonArray(wish.creator_orientations),
-      creator_roles: parseJsonArray(wish.creator_roles),
-      desired_genders: parseJsonArray(wish.desired_genders),
-      desired_orientations: parseJsonArray(wish.desired_orientations),
-      desired_roles: parseJsonArray(wish.desired_roles),
       creator_attributes: parseJsonSafe(wish.creator_attributes),
       desired_attributes: parseJsonSafe(wish.desired_attributes),
       contacts: parseJsonArray(wish.contacts),
@@ -889,14 +865,18 @@ router.post('/:id/reactivate', async (req, res) => {
 
   const wish = await db
     .prepare(
-      'SELECT id, content, creator_genders, creator_orientations, contacts, wishmail_enabled, image_id FROM wishes WHERE id = ?'
+      'SELECT id, content, creator_attributes, contacts, wishmail_enabled, image_id FROM wishes WHERE id = ?'
     )
     .get(auth.id);
+
+  if (!wish) {
+    return res.status(404).json({ error: 'Wish not found' });
+  }
+
   const { emitWishReactivated } = await import('../socket.js');
   emitWishReactivated({
     ...wish,
-    creator_genders: parseJsonArray(wish.creator_genders),
-    creator_orientations: parseJsonArray(wish.creator_orientations),
+    creator_attributes: parseJsonSafe(wish.creator_attributes),
     contacts: parseJsonArray(wish.contacts),
     wishmail_enabled: Boolean(wish.wishmail_enabled),
     image_id: wish.image_id,

@@ -23,8 +23,6 @@ describe('SearchPage', () => {
         {
           id: 'wish-1',
           content: 'Hello world',
-          creator_genders: ['woman'],
-          creator_orientations: ['queer'],
         },
       ],
     }) as any;
@@ -115,8 +113,6 @@ describe('SearchPage', () => {
             {
               id: 'wish-1',
               content: 'Search result wish',
-              creator_genders: [],
-              creator_orientations: [],
             },
           ],
         });

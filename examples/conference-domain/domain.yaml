@@ -40,7 +40,7 @@ rules:
     trigger_value: Hiring
     target_attribute: goal
     target_value: Job Seeking
-  
+
   # Example cross match: Mentoring
   - rule_type: cross_match
     trigger_attribute: goal

@@ -172,7 +172,7 @@ function UnauthenticatedAccountView({
   error,
   isSubmitDisabled,
 }: Readonly<UnauthenticatedAccountViewProps>) {
-  const { categories, stickers } = useDomain();
+  const { categories } = useDomain();
   return (
     <section>
       <h1>My Account</h1>
@@ -223,11 +223,12 @@ function UnauthenticatedAccountView({
               </InfoToggle>
             </div>
             {categories.map((cat) => {
-              const suggs = Object.keys(stickers?.[cat.id] || {});
+              const suggs = cat.suggestions || [];
               return (
                 <label key={cat.id}>
                   Identity {cat.label}s
                   <AttributeInput
+                    category={cat.id}
                     value={identityAttributes[cat.id] || ''}
                     onChange={(val) =>
                       setIdentityAttributes((prev) => ({ ...prev, [cat.id]: val }))
@@ -269,8 +270,7 @@ interface Wish {
   flagged: number;
   contacts: Array<{ type: string; value: string }>;
   wishmail_enabled: boolean;
-  creator_genders: string[];
-  creator_orientations: string[];
+  creator_attributes?: Record<string, string[]>;
   is_active: boolean;
   image_id?: string;
   image_url?: string;
@@ -282,7 +282,7 @@ export default function AccountPage() {
   const { excludedIds, unexcludeWish } = useExcludedWishes();
   const [username, setUsername] = useState('');
   const [passphrase, setPassphrase] = useState('');
-  const { categories, stickers } = useDomain();
+  const { categories } = useDomain();
   const [identityAttributes, setIdentityAttributes] = useState<Record<string, string>>({});
   const [editIdentityAttributes, setEditIdentityAttributes] = useState<Record<string, string>>({});
   const [contacts, setContacts] = useState<Array<{ type: string; value: string }>>([]);
@@ -663,11 +663,12 @@ export default function AccountPage() {
           </InfoToggle>
         </div>
         {categories.map((cat) => {
-          const suggs = Object.keys(stickers?.[cat.id] || {});
+          const suggs = cat.suggestions || [];
           return (
             <label key={cat.id}>
               {cat.label}s
               <AttributeInput
+                category={cat.id}
                 value={editIdentityAttributes[cat.id] || ''}
                 onChange={(val) =>
                   setEditIdentityAttributes((prev) => ({ ...prev, [cat.id]: val }))

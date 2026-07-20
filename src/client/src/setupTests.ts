@@ -26,6 +26,7 @@ globalThis.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
           gender: {
             trans: { type: 'flag', class: 'flag-trans' },
             nonbinary: { type: 'flag', class: 'flag-nonbinary' },
+            'non-binary': { type: 'flag', class: 'flag-nonbinary' },
             woman: { type: 'icon', class: 'female-icon', iconType: 'female' },
             man: { type: 'icon', class: 'male-icon', iconType: 'male' },
           },
@@ -62,6 +63,7 @@ const MOCK_DOMAIN = {
     gender: {
       trans: { type: 'flag', class: 'flag-trans' },
       nonbinary: { type: 'flag', class: 'flag-nonbinary' },
+      'non-binary': { type: 'flag', class: 'flag-nonbinary' },
       woman: { type: 'icon', class: 'female-icon', iconType: 'female' },
       man: { type: 'icon', class: 'male-icon', iconType: 'male' },
     },

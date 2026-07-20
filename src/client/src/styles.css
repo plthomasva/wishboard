@@ -648,6 +648,15 @@ button:hover {
   height: 0.9em;
 }
 
+.sticker-image {
+  width: 1.5em;
+  height: 1.5em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
 .female-icon {
   color: #d81b60;
   border-color: #fce4ec;

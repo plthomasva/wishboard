@@ -7,8 +7,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 interface Wish {
   id: string;
   content: string;
-  creator_genders?: string[];
-  creator_orientations?: string[];
+  creator_attributes?: Record<string, string[]>;
   image_url?: string;
   image_id?: string;
 }

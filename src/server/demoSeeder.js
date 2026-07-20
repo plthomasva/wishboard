@@ -127,8 +127,8 @@ async function clearDemoData() {
 async function generateDemoUsers() {
   const users = [];
   const insertUser = await db.prepare(`
-    INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, contacts, wishmail_enabled, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_attributes, contacts, wishmail_enabled, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   // 2. Generate 50 simulated users
@@ -153,9 +153,11 @@ async function generateDemoUsers() {
       attempts++;
     }
 
-    const genders = JSON.stringify(gendersArr);
-    const orientations = JSON.stringify(orientationsArr);
-    const roles = JSON.stringify(rolesArr);
+    const identityAttributes = JSON.stringify({
+      gender: gendersArr,
+      orientation: orientationsArr,
+      role: rolesArr,
+    });
     const contacts = generateRandomContacts();
     const wishmailEnabledInt = crypto.randomInt(0, 100) > 50 ? 1 : 0;
     const createdAt = new Date().toISOString();
@@ -166,9 +168,7 @@ async function generateDemoUsers() {
       hash,
       salt,
       'user',
-      genders,
-      orientations,
-      roles,
+      identityAttributes,
       JSON.stringify(contacts),
       wishmailEnabledInt,
       createdAt
@@ -177,9 +177,7 @@ async function generateDemoUsers() {
     // Keep in memory to assign wishes later
     users.push({
       id,
-      genders,
-      orientations,
-      roles,
+      identityAttributes,
       contacts,
       wishmailEnabled: wishmailEnabledInt === 1,
     });
@@ -205,9 +203,11 @@ function createSingleWish(insertWish, randomUser) {
     attempts++;
   }
 
-  const desiredGenders = JSON.stringify(desiredGendersArr);
-  const desiredOrientations = JSON.stringify(desiredOrientationsArr);
-  const desiredRoles = JSON.stringify(desiredRolesArr);
+  const desiredAttributes = JSON.stringify({
+    gender: desiredGendersArr,
+    orientation: desiredOrientationsArr,
+    role: desiredRolesArr,
+  });
 
   const timeOffset = crypto.randomInt(0, 30 * 24 * 60 * 60 * 1000);
   const date = new Date(Date.now() - timeOffset).toISOString();
@@ -227,12 +227,8 @@ function createSingleWish(insertWish, randomUser) {
     id,
     randomUser.id,
     content,
-    randomUser.genders,
-    randomUser.orientations,
-    randomUser.roles,
-    desiredGenders,
-    desiredOrientations,
-    desiredRoles,
+    randomUser.identityAttributes,
+    desiredAttributes,
     JSON.stringify(wishContacts),
     wishWishmail ? 1 : 0,
     date,
@@ -245,11 +241,10 @@ async function generateDemoWishes(users) {
   const insertWish = await db.prepare(`
     INSERT INTO wishes (
       id, user_id, content, 
-      creator_genders, creator_orientations, creator_roles, 
-      desired_genders, desired_orientations, desired_roles, 
+      creator_attributes, desired_attributes, 
       contacts, wishmail_enabled,
       created_at, updated_at, flagged
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   // 3. Distribute 100 wishes randomly across the 50 users

@@ -80,9 +80,6 @@ describe('SearchPage Coverage', () => {
         id: 'u1',
         username: 'admin',
         role: 'admin',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
     } as unknown as ReturnType<typeof AuthContext.useAuth>);
@@ -116,9 +113,6 @@ describe('SearchPage Coverage', () => {
         id: 'u1',
         username: 'admin',
         role: 'admin',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
     } as unknown as ReturnType<typeof AuthContext.useAuth>);
@@ -153,9 +147,6 @@ describe('SearchPage Coverage', () => {
         id: 'u1',
         username: 'admin',
         role: 'admin',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
     } as unknown as ReturnType<typeof AuthContext.useAuth>);
@@ -190,9 +181,6 @@ describe('SearchPage Coverage', () => {
         id: 'u1',
         username: 'admin',
         role: 'admin',
-        identity_genders: [],
-        identity_orientations: [],
-        identity_roles: [],
       },
       token: 'fake-token',
     } as unknown as ReturnType<typeof AuthContext.useAuth>);

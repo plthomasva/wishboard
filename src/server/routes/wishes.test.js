@@ -72,15 +72,13 @@ describe('Authenticated wish creation', () => {
     expect(wishResponse.status).toBe(201);
     expect(wishResponse.body.id).toBeTypeOf('string');
 
-    const row = await db
-      .prepare(
-        'SELECT creator_genders, creator_orientations, creator_roles FROM wishes WHERE id = ?'
-      )
+    const dbRow = await db
+      .prepare('SELECT creator_attributes FROM wishes WHERE id = ?')
       .get(wishResponse.body.id);
-
-    expect(JSON.parse(row.creator_genders)).toEqual(['woman']);
-    expect(JSON.parse(row.creator_orientations)).toEqual(['queer']);
-    expect(JSON.parse(row.creator_roles)).toEqual(['speaker']);
+    const creatorAttrs = JSON.parse(dbRow.creator_attributes);
+    expect(creatorAttrs.gender).toEqual(['woman']);
+    expect(creatorAttrs.orientation).toEqual(['queer']);
+    expect(creatorAttrs.role).toEqual(['speaker']);
   });
 
   it('saves contacts and wishmail_enabled flag', async () => {

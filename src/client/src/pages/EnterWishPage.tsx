@@ -33,7 +33,7 @@ export default function EnterWishPage() {
   const { token, user } = useAuth();
   const [content, setContent] = useState('');
   const [passphrase, setPassphrase] = useState('');
-  const { categories = [], stickers = {} } = useDomain();
+  const { categories = [] } = useDomain();
   const [creatorAttributes, setCreatorAttributes] = useState<Record<string, string>>({});
   const [desiredAttributes, setDesiredAttributes] = useState<Record<string, string>>({});
 
@@ -330,11 +330,12 @@ export default function EnterWishPage() {
                 />
               </div>
               {categories.map((cat) => {
-                const suggs = Object.keys(stickers[cat.id] || {});
+                const suggs = cat.suggestions || [];
                 return (
                   <label key={cat.id}>
                     Creator {cat.label}s (anonymous only)
                     <AttributeInput
+                      category={cat.id}
                       value={creatorAttributes[cat.id] || ''}
                       onChange={(val) =>
                         setCreatorAttributes((prev) => ({ ...prev, [cat.id]: val }))
@@ -391,7 +392,7 @@ export default function EnterWishPage() {
               <legend style={{ fontWeight: 600, padding: '0 8px' }}>Advanced Match Criteria</legend>
               <div style={{ display: 'grid', gap: '12px' }}>
                 {categories.map((cat, idx) => {
-                  const suggs = Object.keys(stickers[cat.id] || {});
+                  const suggs = cat.suggestions || [];
                   return (
                     <div
                       key={cat.id}
@@ -405,6 +406,7 @@ export default function EnterWishPage() {
                       </div>
                       <AttributeInput
                         id={`desired-${cat.id}`}
+                        category={cat.id}
                         value={desiredAttributes[cat.id] || ''}
                         onChange={(val) =>
                           setDesiredAttributes((prev) => ({ ...prev, [cat.id]: val }))

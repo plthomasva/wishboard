@@ -86,7 +86,7 @@ describe('Server Auth Helper Functions', () => {
       const userId = 'user-' + Math.random().toString(36).substring(2, 9);
       await db
         .prepare(
-          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_attributes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
         )
         .run(
           userId,
@@ -94,9 +94,7 @@ describe('Server Auth Helper Functions', () => {
           'hash',
           'salt',
           'user',
-          JSON.stringify(['woman']),
-          JSON.stringify(['queer']),
-          JSON.stringify(['top']),
+          JSON.stringify({ gender: ['woman'], orientation: ['queer'], role: ['top'] }),
           new Date().toISOString()
         );
 
@@ -106,9 +104,9 @@ describe('Server Auth Helper Functions', () => {
       const user = await getUserFromToken(token);
       expect(user).not.toBeNull();
       expect(user.id).toBe(userId);
-      expect(user.identity_genders).toEqual(['woman']);
-      expect(user.identity_orientations).toEqual(['queer']);
-      expect(user.identity_roles).toEqual(['top']);
+      expect(user.identity_attributes.gender).toEqual(['woman']);
+      expect(user.identity_attributes.orientation).toEqual(['queer']);
+      expect(user.identity_attributes.role).toEqual(['top']);
     });
   });
 
@@ -145,17 +143,15 @@ describe('Server Auth Helper Functions', () => {
       const userId = 'user-' + Math.random().toString(36).substring(2, 9);
       await db
         .prepare(
-          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_attributes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
         )
         .run(
           userId,
-          `auth-user-${userId}`,
+          `test-user-${userId}`,
           'hash',
           'salt',
           'user',
-          '[]',
-          '[]',
-          '[]',
+          JSON.stringify({ gender: [], orientation: [], role: [] }),
           new Date().toISOString()
         );
 
@@ -178,7 +174,7 @@ describe('Server Auth Helper Functions', () => {
       const userId = 'user-' + Math.random().toString(36).substring(2, 9);
       await db
         .prepare(
-          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_attributes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
         )
         .run(
           userId,
@@ -186,9 +182,7 @@ describe('Server Auth Helper Functions', () => {
           'hash',
           'salt',
           'user',
-          '[]',
-          '[]',
-          '[]',
+          '{"gender":[],"orientation":[],"role":[]}',
           new Date().toISOString()
         );
 
@@ -222,7 +216,7 @@ describe('Server Auth Helper Functions', () => {
       const userId = 'user-' + Math.random().toString(36).substring(2, 9);
       await db
         .prepare(
-          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_genders, identity_orientations, identity_roles, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+          'INSERT INTO users (id, username, passphrase_hash, passphrase_salt, role, identity_attributes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
         )
         .run(
           userId,
@@ -230,13 +224,16 @@ describe('Server Auth Helper Functions', () => {
           'hash',
           'salt',
           'admin',
-          '[]',
-          '[]',
-          '[]',
+          '{"gender":[],"orientation":[],"role":[]}',
           new Date().toISOString()
         );
 
-      const token = await createSessionToken(userId);
+      // Create a session for this admin
+      const token = 'test-admin-token-' + Math.random().toString(36).substring(2, 9);
+      await db
+        .prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
+        .run(token, userId, new Date(Date.now() + 86400000).toISOString());
+
       const req = { headers: { authorization: `Bearer ${token}` } };
       const res = {
         status: vi.fn().mockReturnThis(),

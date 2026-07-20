@@ -1,7 +1,9 @@
 import React from 'react';
+import { useDomain } from '../DomainContext';
 
 interface AttributeInputProps {
   id?: string;
+  category?: string;
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
@@ -9,92 +11,106 @@ interface AttributeInputProps {
   warning?: string;
 }
 
-const getPillIcon = (opt: string) => {
-  const norm = opt.toLowerCase().replace(/[^a-z]/g, '');
-
-  if (norm.includes('trans')) {
-    return <span className="pill-flag flag-trans" title="Transgender" />;
-  }
-  if (
-    norm.includes('nonbinary') ||
-    norm.includes('enby') ||
-    norm.includes('genderqueer') ||
-    norm.includes('agender')
-  ) {
-    return <span className="pill-flag flag-nonbinary" title="Nonbinary" />;
-  }
-  if (norm.includes('lesbian')) {
-    return <span className="pill-flag-heart flag-lesbian" title="Lesbian" />;
-  }
-  if (norm.includes('bisexual') || norm === 'bi') {
-    return <span className="pill-flag-heart flag-bisexual" title="Bisexual" />;
-  }
-  if (norm.includes('pansexual') || norm === 'pan') {
-    return <span className="pill-flag-heart flag-pansexual" title="Pansexual" />;
-  }
-  if (norm.includes('asexual') || norm === 'ace') {
-    return <span className="pill-flag-heart flag-asexual" title="Asexual" />;
-  }
-  if (norm.includes('gay') || norm.includes('queer') || norm.includes('rainbow')) {
-    return <span className="pill-flag-heart flag-rainbow" title="Rainbow / Queer" />;
-  }
-  if (norm.includes('straight')) {
-    return <span className="pill-flag-heart flag-straight" title="Straight" />;
-  }
-  if (norm.includes('woman') || norm.includes('female')) {
-    return (
-      <svg
-        viewBox="0 0 24 24"
-        width="12"
-        height="12"
-        stroke="#d81b60"
-        strokeWidth="2.5"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="pill-svg-icon"
-      >
-        <circle cx="12" cy="10" r="6" />
-        <line x1="12" y1="16" x2="12" y2="22" />
-        <line x1="9" y1="19" x2="15" y2="19" />
-      </svg>
-    );
-  }
-  if (norm.includes('man') || norm.includes('male')) {
-    return (
-      <svg
-        viewBox="0 0 24 24"
-        width="12"
-        height="12"
-        stroke="#1565c0"
-        strokeWidth="2.5"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="pill-svg-icon"
-      >
-        <circle cx="10" cy="14" r="6" />
-        <line x1="14.24" y1="9.76" x2="20" y2="4" />
-        <line x1="16" y1="4" x2="20" y2="4" />
-        <line x1="20" y1="8" x2="20" y2="4" />
-      </svg>
-    );
-  }
-  return null;
-};
-
 export default function AttributeInput({
   id,
+  category,
   value,
   onChange,
   placeholder,
   suggestions,
   warning,
 }: Readonly<AttributeInputProps>) {
+  const { stickers = {} } = useDomain();
+
   const currentItems = value
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter((s) => s !== '');
+
+  const getDynamicPillIcon = (opt: string) => {
+    const optLower = opt.toLowerCase();
+
+    const findMatch = (stickerMap: Record<string, any>) => {
+      return Object.keys(stickerMap).find((k) => {
+        const regex = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b`);
+        return regex.test(optLower);
+      });
+    };
+
+    let rule: any;
+
+    if (category && stickers[category]) {
+      const matchKey = findMatch(stickers[category]);
+      if (matchKey) rule = stickers[category][matchKey];
+    } else {
+      for (const cat of Object.keys(stickers)) {
+        const matchKey = findMatch(stickers[cat]);
+        if (matchKey) {
+          rule = stickers[cat][matchKey];
+          break;
+        }
+      }
+    }
+
+    if (rule) {
+      if (rule.type === 'heart') {
+        return <span className={`pill-flag-heart ${rule.class}`} title={opt} />;
+      }
+      if (rule.type === 'flag') {
+        return <span className={`pill-flag ${rule.class}`} title={opt} />;
+      }
+      if (rule.type === 'icon' && rule.iconType === 'female') {
+        return (
+          <svg
+            viewBox="0 0 24 24"
+            width="12"
+            height="12"
+            stroke="#d81b60"
+            strokeWidth="2.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="pill-svg-icon"
+          >
+            <circle cx="12" cy="10" r="6" />
+            <line x1="12" y1="16" x2="12" y2="22" />
+            <line x1="9" y1="19" x2="15" y2="19" />
+          </svg>
+        );
+      }
+      if (rule.type === 'icon' && rule.iconType === 'male') {
+        return (
+          <svg
+            viewBox="0 0 24 24"
+            width="12"
+            height="12"
+            stroke="#1565c0"
+            strokeWidth="2.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="pill-svg-icon"
+          >
+            <circle cx="10" cy="14" r="6" />
+            <line x1="14.24" y1="9.76" x2="20" y2="4" />
+            <line x1="16" y1="4" x2="20" y2="4" />
+            <line x1="20" y1="8" x2="20" y2="4" />
+          </svg>
+        );
+      }
+      if (rule.type === 'image') {
+        return (
+          <img
+            src={rule.src}
+            alt={opt}
+            style={{ width: '1.2em', height: '1.2em', objectFit: 'contain', borderRadius: '4px' }}
+          />
+        );
+      }
+    }
+
+    return null;
+  };
 
   const handleToggle = (option: string) => {
     const optionLower = option.toLowerCase();
@@ -154,7 +170,7 @@ export default function AttributeInput({
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
               <span>{isSelected ? '✓ ' : '+ '}</span>
-              {getPillIcon(opt)}
+              {getDynamicPillIcon(opt)}
               <span>{opt}</span>
             </button>
           );

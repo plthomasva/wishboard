@@ -56,14 +56,14 @@ describe('IdentityStickers', () => {
   it('renders all recognized orientations for default domain', () => {
     vi.mocked(DomainContext.useDomain).mockReturnValue(mockDefaultDomain);
     const orientations = ['straight', 'gay', 'lesbian', 'bi', 'pan', 'asexual', 'queer', 'unknown'];
-    const { container } = render(<IdentityStickers orientations={orientations} />);
+    const { container } = render(<IdentityStickers attributes={{ orientation: orientations }} />);
     expect(container.querySelectorAll('.sticker-heart-shadow')).toHaveLength(7);
   });
 
   it('renders all recognized genders for default domain', () => {
     vi.mocked(DomainContext.useDomain).mockReturnValue(mockDefaultDomain);
     const genders = ['trans', 'nonbinary', 'woman', 'man', 'unknown'];
-    const { container } = render(<IdentityStickers genders={genders} />);
+    const { container } = render(<IdentityStickers attributes={{ gender: genders }} />);
     expect(container.querySelectorAll('.sticker-flag')).toHaveLength(2);
     expect(container.querySelectorAll('.sticker-icon')).toHaveLength(2);
   });

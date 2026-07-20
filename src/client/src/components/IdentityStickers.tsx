@@ -3,28 +3,22 @@ import { useDomain } from '../DomainContext';
 
 interface Props {
   attributes?: Record<string, string[]>;
-  // Fallbacks for legacy/transition
-  genders?: string[];
-  orientations?: string[];
 }
 
-export default function IdentityStickers({
-  attributes,
-  genders = [],
-  orientations = [],
-}: Readonly<Props>) {
+export default function IdentityStickers({ attributes }: Readonly<Props>) {
   const { stickers = {} } = useDomain();
 
-  const attrs = attributes || { gender: genders, orientation: orientations };
-
-  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
+  const attrs = attributes || {};
 
   const renderSticker = (cat: string, val: string, index: number) => {
-    const norm = normalize(val);
+    const valLower = val.toLowerCase();
     const catStickers = stickers[cat] || {};
 
     // Find the first matching sticker rule
-    const matchKey = Object.keys(catStickers).find((k) => norm.includes(k));
+    const matchKey = Object.keys(catStickers).find((k) => {
+      const regex = new RegExp(`\\b${k.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b`);
+      return regex.test(valLower);
+    });
     if (!matchKey) return null;
 
     const rule = catStickers[matchKey];

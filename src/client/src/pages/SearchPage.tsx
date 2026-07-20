@@ -12,8 +12,7 @@ import { useExcludedWishes } from '../hooks/useExcludedWishes';
 interface Wish {
   id: string;
   content: string;
-  creator_genders?: string[];
-  creator_orientations?: string[];
+  creator_attributes?: Record<string, string[]>;
   image_url?: string;
   image_id?: string;
 }
@@ -81,7 +80,7 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [useProfileAttributes, setUseProfileAttributes] = useState<boolean>(Boolean(user));
   const [manualAttributes, setManualAttributes] = useState<Record<string, string>>({});
-  const { categories, stickers } = useDomain();
+  const { categories } = useDomain();
   const [mailWishId, setMailWishId] = useState<string | null>(null);
   const [lastSearchParams, setLastSearchParams] = useState<string | null>(null);
   const { socket } = useWebSocket();
@@ -260,7 +259,7 @@ export default function SearchPage() {
               </InfoToggle>
             </div>
             {categories.map((cat) => {
-              const suggs = Object.keys(stickers?.[cat.id] || {});
+              const suggs = cat.suggestions || [];
               return (
                 <div key={cat.id} style={{ marginTop: '16px' }}>
                   <label
@@ -271,6 +270,7 @@ export default function SearchPage() {
                   </label>
                   <AttributeInput
                     id={`search-${cat.id}`}
+                    category={cat.id}
                     value={manualAttributes[cat.id] || ''}
                     onChange={(val) => setManualAttributes((prev) => ({ ...prev, [cat.id]: val }))}
                     placeholder={suggs.length > 0 ? `e.g. ${suggs.slice(0, 2).join(', ')}` : ''}

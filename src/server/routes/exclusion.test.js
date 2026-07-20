@@ -426,8 +426,8 @@ describe('Write-Time Exclusion Rules', () => {
 
       // Seed conflicting attributes to this user directly in the DB bypass
       await db.execute({
-        sql: 'UPDATE users SET identity_genders = ?, identity_orientations = ? WHERE username = ?',
-        args: [JSON.stringify(['man']), JSON.stringify(['lesbian']), 'user_wish_test'],
+        sql: 'UPDATE users SET identity_attributes = ? WHERE username = ?',
+        args: [JSON.stringify({ gender: ['man'], orientation: ['lesbian'] }), 'user_wish_test'],
       });
 
       const response = await request(app)
