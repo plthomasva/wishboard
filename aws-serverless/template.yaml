@@ -405,8 +405,6 @@ Resources:
         - HasCertificateDomainName
         - - DomainName: !Ref CertificateDomainName
             HostedZoneId: !Ref HostedZoneId
-          - DomainName: !Sub '*.${CertificateDomainName}'
-            HostedZoneId: !Ref HostedZoneId
         - - DomainName: !Ref DomainName
             HostedZoneId: !Ref HostedZoneId
       Tags:
