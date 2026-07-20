@@ -125,6 +125,14 @@ for (const fn of functions) {
     console.log(`Patched ${fn}/lambda.mjs for Node 22 ESM compatibility`);
   }
 
+  // Copy defaultDomain.yaml into artifact root (/var/task) for domain config loading
+  const defaultDomainSrc = path.join(repoRoot, 'src', 'server', 'defaultDomain.yaml');
+  if (fs.existsSync(defaultDomainSrc)) {
+    const destDomainPath = path.join(fnDir, 'defaultDomain.yaml');
+    fs.copyFileSync(defaultDomainSrc, destDomainPath);
+    console.log(`Copied defaultDomain.yaml -> ${path.relative(repoRoot, destDomainPath)}`);
+  }
+
   copied += 1;
 }
 
