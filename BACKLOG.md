@@ -18,6 +18,7 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 ### Features & Enhancements
 
+- **[#263](https://github.com/plthomasva/wishboard/issues/263)** — Decouple domain-specific styles from general application styles (`styles.css` containing hardcoded traits/colors to domain config/dynamic styles).
 - **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
 
 ## Infrastructure & DevOps
