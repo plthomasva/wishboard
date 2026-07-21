@@ -84,6 +84,10 @@ serverless
     'Named AWS CLI profile (falls back to samconfig.toml, then default credentials)'
   )
   .option('--stack-name <name>', 'CloudFormation stack name (falls back to samconfig.toml)')
+  .option(
+    '--project-name <name>',
+    'Project name for resource prefixes (default: derived from stack name)'
+  )
   .option('--region <name>', 'AWS region (falls back to samconfig.toml, then AWS config)')
   .option('--mode <mode>', 'Deployment mode: prod or dev', 'prod')
   .option('--domain <name>', 'Custom domain name (e.g., wishboard.example.com)')

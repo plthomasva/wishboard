@@ -157,9 +157,19 @@ function buildParameterOverrides(options, mode) {
   const nodeEnv = mode === 'dev' ? 'development' : 'production';
   const tomlOverrides = readTomlValue('parameter_overrides');
 
-  let projectName = process.env.PROJECT_NAME || getOverrideValue('ProjectName', tomlOverrides);
-  if (!projectName) projectName = 'wishboard';
-  if (mode === 'dev' && projectName === 'wishboard') projectName = 'wishboard-dev';
+  let projectName = options.projectName || process.env.PROJECT_NAME;
+  if (!projectName) {
+    if (options.stackName) {
+      projectName = options.stackName
+        .replace(/^wishboard-serverless-?/, 'wishboard-')
+        .replace(/-dev$/, '');
+    } else {
+      projectName = getOverrideValue('ProjectName', tomlOverrides) || 'wishboard';
+    }
+  }
+  if (mode === 'dev' && !projectName.endsWith('-dev')) {
+    projectName = `${projectName}-dev`;
+  }
 
   const domainName =
     options.domain || process.env.DOMAIN_NAME || getOverrideValue('DomainName', tomlOverrides);
