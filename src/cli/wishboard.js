@@ -95,6 +95,14 @@ serverless
     'Route 53 Hosted Zone ID for custom domain aliases and SSL validation'
   )
   .option('--acm-cert-arn <arn>', 'Existing ACM Certificate ARN in us-east-1')
+  .option(
+    '--database-url <url>',
+    'Remote libSQL/Turso database URL (e.g. libsql://your-db.turso.io)'
+  )
+  .option(
+    '--database-auth-token-ssm <path>',
+    'AWS SSM parameter name holding the database auth token'
+  )
   .option('--guided', 'Force interactive sam deploy --guided (first-time setup)')
   .option('--frontend-only', 'Rebuild and upload only the frontend; skip the backend build/deploy')
   .option(

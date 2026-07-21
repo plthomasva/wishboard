@@ -126,6 +126,20 @@ export function execCommand(command, args, options = {}) {
   };
 }
 
+/**
+ * Sets environment variables for AWS SDK operations based on CLI options.
+ * @param {object} [options={}]
+ */
+export function setupAwsEnv(options = {}) {
+  if (options.profile) {
+    process.env.AWS_PROFILE = options.profile;
+  }
+  if (options.region) {
+    process.env.AWS_REGION = options.region;
+    process.env.AWS_DEFAULT_REGION = options.region;
+  }
+}
+
 export const DEFAULT_EVENT_PROFILE = 'lifestyle';
 
 /**
@@ -134,7 +148,5 @@ export const DEFAULT_EVENT_PROFILE = 'lifestyle';
  * @returns {string}
  */
 export function getEventProfile(options = {}) {
-  return (
-    options.eventProfile || options.profile || process.env.EVENT_PROFILE || DEFAULT_EVENT_PROFILE
-  );
+  return options.eventProfile || process.env.EVENT_PROFILE || DEFAULT_EVENT_PROFILE;
 }

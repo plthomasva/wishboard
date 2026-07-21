@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { hasCommand, execCommand, getEventProfile } from '../commandUtils.js';
+import { hasCommand, execCommand, getEventProfile, setupAwsEnv } from '../commandUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
@@ -179,9 +179,14 @@ function buildParameterOverrides(options, mode) {
   // DatabaseUrl is the (non-secret) libSQL/Turso endpoint; DatabaseAuthTokenSsm
   // names the SSM SecureString the Lambda reads the token from at runtime. The
   // token itself never flows through here.
-  const databaseUrl = process.env.DATABASE_URL || getOverrideValue('DatabaseUrl', tomlOverrides);
+  const databaseUrl =
+    options.databaseUrl ||
+    process.env.DATABASE_URL ||
+    getOverrideValue('DatabaseUrl', tomlOverrides);
   const databaseAuthTokenSsm =
-    process.env.DATABASE_AUTH_TOKEN_SSM || getOverrideValue('DatabaseAuthTokenSsm', tomlOverrides);
+    options.databaseAuthTokenSsm ||
+    process.env.DATABASE_AUTH_TOKEN_SSM ||
+    getOverrideValue('DatabaseAuthTokenSsm', tomlOverrides);
 
   assertSafeParam('ProjectName', projectName);
   assertSafeParam('DomainName', domainName);
@@ -577,6 +582,7 @@ export function deployServerless(options) {
   process.env.EVENT_PROFILE = eventProfile;
 
   let { stackName, region, profile } = resolveConfig(options);
+  setupAwsEnv({ profile, region });
   let common = awsCommonArgs(profile, region);
 
   console.log('\n\x1b[32mWishboard serverless deployment\x1b[0m');
@@ -643,6 +649,7 @@ export function destroyServerless(options) {
   const dryRun = !!options.dryRun;
   const force = !!options.force;
   const { stackName, region, profile } = resolveConfig(options);
+  setupAwsEnv({ profile, region });
   const common = awsCommonArgs(profile, region);
 
   // Guard production stacks against accidental data loss.
