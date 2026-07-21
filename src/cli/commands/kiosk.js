@@ -46,6 +46,28 @@ function assertCommand(name) {
   }
 }
 
+function runRemoteKioskSteps(target, remoteTemp, mode, domain, deployRules, appVersion, dryRun) {
+  logStep('[2/4] Uploading setup-kiosk.sh, build-kiosk.sh, and docker-compose.yml...');
+  for (const src of [SETUP_SCRIPT, BUILD_SCRIPT, COMPOSE_FILE]) {
+    const up = execCommand('scp', [src, `${target}:${remoteTemp}/${path.basename(src)}`], {
+      dryRun,
+    });
+    if (up.status !== 0) throw new Error(`Failed to upload ${path.basename(src)} to ${target}.`);
+  }
+
+  logStep('[3/4] Running setup-kiosk.sh on the Pi (user, Docker rootless, kiosk, hotspot)...');
+  const setupCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/setup-kiosk.sh && sudo bash ${remoteTemp}/setup-kiosk.sh ${mode} ${domain} ${remoteTemp}`;
+  if (execCommand('ssh', [target, setupCmd], { dryRun }).status !== 0) {
+    throw new Error('Remote setup-kiosk.sh failed.');
+  }
+
+  logStep('[4/4] Running build-kiosk.sh on the Pi (docker compose up + display)...');
+  const buildCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/build-kiosk.sh && sudo bash ${remoteTemp}/build-kiosk.sh ${mode} ${domain} ${deployRules} ${appVersion}`;
+  if (execCommand('ssh', [target, buildCmd], { dryRun }).status !== 0) {
+    throw new Error('Remote build-kiosk.sh failed.');
+  }
+}
+
 /**
  * Deploys the kiosk stack to a remote Raspberry Pi over SSH. Cross-platform Node
  * port of deploy-kiosk.sh / deploy-kiosk.ps1: uploads the setup/build scripts and
@@ -91,28 +113,7 @@ export function deployKiosk(options) {
   }
 
   try {
-    // 2. Upload scripts + compose
-    logStep('[2/4] Uploading setup-kiosk.sh, build-kiosk.sh, and docker-compose.yml...');
-    for (const src of [SETUP_SCRIPT, BUILD_SCRIPT, COMPOSE_FILE]) {
-      const up = execCommand('scp', [src, `${target}:${remoteTemp}/${path.basename(src)}`], {
-        dryRun,
-      });
-      if (up.status !== 0) throw new Error(`Failed to upload ${path.basename(src)} to ${target}.`);
-    }
-
-    // 3. Run setup on the Pi (strip CRLF first so uploaded scripts run under bash)
-    logStep('[3/4] Running setup-kiosk.sh on the Pi (user, Docker rootless, kiosk, hotspot)...');
-    const setupCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/setup-kiosk.sh && sudo bash ${remoteTemp}/setup-kiosk.sh ${mode} ${domain} ${remoteTemp}`;
-    if (execCommand('ssh', [target, setupCmd], { dryRun }).status !== 0) {
-      throw new Error('Remote setup-kiosk.sh failed.');
-    }
-
-    // 4. Bring up the container + display
-    logStep('[4/4] Running build-kiosk.sh on the Pi (docker compose up + display)...');
-    const buildCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/build-kiosk.sh && sudo bash ${remoteTemp}/build-kiosk.sh ${mode} ${domain} ${deployRules} ${appVersion}`;
-    if (execCommand('ssh', [target, buildCmd], { dryRun }).status !== 0) {
-      throw new Error('Remote build-kiosk.sh failed.');
-    }
+    runRemoteKioskSteps(target, remoteTemp, mode, domain, deployRules, appVersion, dryRun);
 
     if (dryRun) {
       console.log(
