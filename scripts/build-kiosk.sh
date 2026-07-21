@@ -7,13 +7,14 @@ MODE="${1:-dev}"
 DOMAIN_NAME="${2:-wishboard.painless-computing.com}"
 DEPLOY_RULES="${3:-keep}"
 APP_VERSION="${4:-latest}"
+EVENT_PROFILE="${5:-lifestyle}"
 
 # Configure the Docker command to securely execute as the wishboard service user using their isolated rootless daemon
 WISHBOARD_UID=$(id -u wishboard)
 WISHBOARD_GID=$(id -g wishboard)
 RUN_CMD="sudo -u wishboard DOCKER_HOST=unix:///run/user/$WISHBOARD_UID/docker.sock docker"
 
-echo "Deployment Mode: $MODE, Domain: $DOMAIN_NAME, Rules: $DEPLOY_RULES, Version: $APP_VERSION"
+echo "Deployment Mode: $MODE, Domain: $DOMAIN_NAME, Rules: $DEPLOY_RULES, Version: $APP_VERSION, Profile: $EVENT_PROFILE"
 REQUIRED_MB=800
 AVAILABLE_MB=$(df -m /home | awk 'NR==2 {print $4}')
 if [[ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]]; then
@@ -41,6 +42,7 @@ else
 fi
 sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> $WISHBOARD_HOME/wishboard/.env"
 sudo -u wishboard bash -c "echo 'APP_VERSION=$APP_VERSION' >> $WISHBOARD_HOME/wishboard/.env"
+sudo -u wishboard bash -c "echo 'EVENT_PROFILE=$EVENT_PROFILE' >> $WISHBOARD_HOME/wishboard/.env"
 sudo -u wishboard bash -c "echo 'WISHBOARD_UID=$WISHBOARD_UID' >> $WISHBOARD_HOME/wishboard/.env"
 sudo -u wishboard bash -c "echo 'WISHBOARD_GID=$WISHBOARD_GID' >> $WISHBOARD_HOME/wishboard/.env"
 

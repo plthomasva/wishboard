@@ -4,10 +4,7 @@ import { Command } from 'commander';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { setupOidc, destroyOidc } from './commands/oidc.js';
-import { deployServerless, destroyServerless } from './commands/serverless.js';
-import { deployKiosk, setupKiosk, runKiosk } from './commands/kiosk.js';
-import { generateAuthToken } from './commands/auth.js';
+import { DEFAULT_EVENT_PROFILE, setupAwsEnv } from './commandUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
@@ -24,7 +21,16 @@ program
   .name('wishboard')
   .description('Unified deployment and administration CLI for Wishboard')
   .version(packageJson.version)
-  .option('--dry-run', 'Preview the action without executing it');
+  .option('--dry-run', 'Preview the action without executing it')
+  .option(
+    '--event-profile <name>',
+    'Event profile name (e.g. lifestyle, professional)',
+    DEFAULT_EVENT_PROFILE
+  );
+
+program.hook('preAction', (thisCommand, actionCommand) => {
+  setupAwsEnv(actionCommand.optsWithGlobals());
+});
 
 // 1. OIDC Command Group
 const oidc = program
@@ -37,9 +43,10 @@ oidc
   .option('--org <name>', 'GitHub organization or username')
   .option('--repo <name>', 'GitHub repository name')
   .option('--region <name>', 'AWS region', 'us-east-1')
-  .action((options, command) => {
+  .action(async (options, command) => {
     try {
-      setupOidc(command.optsWithGlobals());
+      const { setupOidc } = await import('./commands/oidc.js');
+      await setupOidc(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during setup: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -52,9 +59,10 @@ oidc
   .option('--org <name>', 'GitHub organization or username')
   .option('--repo <name>', 'GitHub repository name')
   .option('--region <name>', 'AWS region', 'us-east-1')
-  .action((options, command) => {
+  .action(async (options, command) => {
     try {
-      destroyOidc(command.optsWithGlobals());
+      const { destroyOidc } = await import('./commands/oidc.js');
+      await destroyOidc(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during destroy: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -76,6 +84,10 @@ serverless
     'Named AWS CLI profile (falls back to samconfig.toml, then default credentials)'
   )
   .option('--stack-name <name>', 'CloudFormation stack name (falls back to samconfig.toml)')
+  .option(
+    '--project-name <name>',
+    'Project name for resource prefixes (default: derived from stack name)'
+  )
   .option('--region <name>', 'AWS region (falls back to samconfig.toml, then AWS config)')
   .option('--mode <mode>', 'Deployment mode: prod or dev', 'prod')
   .option('--domain <name>', 'Custom domain name (e.g., wishboard.example.com)')
@@ -88,15 +100,24 @@ serverless
     'Route 53 Hosted Zone ID for custom domain aliases and SSL validation'
   )
   .option('--acm-cert-arn <arn>', 'Existing ACM Certificate ARN in us-east-1')
+  .option(
+    '--database-url <url>',
+    'Remote libSQL/Turso database URL (e.g. libsql://your-db.turso.io)'
+  )
+  .option(
+    '--database-auth-token-ssm <path>',
+    'AWS SSM parameter name holding the database auth token'
+  )
   .option('--guided', 'Force interactive sam deploy --guided (first-time setup)')
   .option('--frontend-only', 'Rebuild and upload only the frontend; skip the backend build/deploy')
   .option(
     '--skip-frontend-upload',
     'Deploy the backend only; skip the S3 upload and CloudFront invalidation'
   )
-  .action((options, command) => {
+  .action(async (options, command) => {
     try {
-      deployServerless(command.optsWithGlobals());
+      const { deployServerless } = await import('./commands/serverless.js');
+      await deployServerless(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during deploy: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -110,9 +131,10 @@ serverless
   .option('--stack-name <name>', 'CloudFormation stack name (falls back to samconfig.toml)')
   .option('--region <name>', 'AWS region (falls back to samconfig.toml)')
   .option('--force', 'Required to delete a non-dev (production) stack')
-  .action((options, command) => {
+  .action(async (options, command) => {
     try {
-      destroyServerless(command.optsWithGlobals());
+      const { destroyServerless } = await import('./commands/serverless.js');
+      await destroyServerless(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during destroy: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -137,9 +159,10 @@ kiosk
     '--app-version <version>',
     'Container image tag to deploy (default: package.json version)'
   )
-  .action((options, command) => {
+  .action(async (options, command) => {
     try {
-      deployKiosk(command.optsWithGlobals());
+      const { deployKiosk } = await import('./commands/kiosk.js');
+      await deployKiosk(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during kiosk deploy: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -155,9 +178,10 @@ kiosk
     'Public domain (used in prod mode)',
     'wishboard.painless-computing.com'
   )
-  .action((options, command) => {
+  .action(async (options, command) => {
     try {
-      setupKiosk(command.optsWithGlobals());
+      const { setupKiosk } = await import('./commands/kiosk.js');
+      await setupKiosk(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during kiosk setup: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -175,9 +199,10 @@ kiosk
   )
   .option('--reset-rules', 'Re-seed matching rules from bundled defaults (default: keep existing)')
   .option('--app-version <version>', 'Container image tag to run (default: package.json version)')
-  .action((options, command) => {
+  .action(async (options, command) => {
     try {
-      runKiosk(command.optsWithGlobals());
+      const { runKiosk } = await import('./commands/kiosk.js');
+      await runKiosk(command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError during kiosk run: ${err.message}\x1b[0m`);
       process.exit(1);
@@ -221,7 +246,37 @@ dbGroup
     }
   });
 
+dbGroup
+  .command('set-ssm-token <param_name> <token_value>')
+  .description('Store a database auth token in AWS SSM Parameter Store as a SecureString')
+  .option('--region <region>', 'AWS region (default: us-east-1)', 'us-east-1')
+  .action(async (paramName, tokenValue, options, command) => {
+    try {
+      const opts = command.optsWithGlobals();
+      const { setSsmToken } = await import('./commands/db.js');
+      const success = await setSsmToken(paramName, tokenValue, opts);
+      if (!success) process.exit(1);
+    } catch (err) {
+      console.error(`\x1b[31mError setting SSM parameter: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
+  });
+
 const buildGroup = program.command('build').description('Manage wishboard build tasks');
+
+buildGroup
+  .command('prepare-profile')
+  .description('Prepare event profile assets and theme.css for frontend build/dev')
+  .action(async (options, command) => {
+    try {
+      const opts = command.optsWithGlobals();
+      const { prepareProfile } = await import('./commands/build.js');
+      prepareProfile(opts.eventProfile, opts);
+    } catch (err) {
+      console.error(`\x1b[31mError preparing profile: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
+  });
 
 buildGroup
   .command('download-fonts')
@@ -252,6 +307,7 @@ auth
   )
   .action(async (username, options, command) => {
     try {
+      const { generateAuthToken } = await import('./commands/auth.js');
       await generateAuthToken(username, command.optsWithGlobals());
     } catch (err) {
       console.error(`\x1b[31mError generating token: ${err.message}\x1b[0m`);

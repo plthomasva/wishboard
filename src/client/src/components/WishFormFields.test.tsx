@@ -85,7 +85,7 @@ describe('WishFormFields', () => {
     // Add contact
     const addButton = screen.getByRole('button', { name: '+ Add Contact Method' });
     fireEvent.click(addButton);
-    expect(setContacts).toHaveBeenCalledWith([...contacts, { type: 'FetLife', value: '' }]);
+    expect(setContacts).toHaveBeenCalledWith([...contacts, { type: 'Phone', value: '' }]);
 
     // Update contact type
     const selects = screen.getAllByRole('combobox');

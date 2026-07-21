@@ -7,6 +7,7 @@
   },
   "type": "module",
   "scripts": {
+    "predev": "node ./src/cli/wishboard.js build prepare-profile",
     "dev": "concurrently \"vite\" \"node --watch ./src/server/index.js\"",
     "prebuild": "node ./src/cli/wishboard.js build download-fonts",
     "build": "vite build",

@@ -7,10 +7,10 @@
 }
 
 :root {
-  color-scheme: light;
-  font-family: Inter, system-ui, sans-serif;
-  background: #fafafa;
-  color: #212121;
+  color-scheme: var(--color-scheme, light);
+  font-family: var(--font-family, Inter, system-ui, sans-serif);
+  background: var(--app-bg, #fafafa);
+  color: var(--text-main, #212121);
 }
 
 * {
@@ -20,7 +20,8 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f1f3f5;
+  background: var(--app-bg, #f1f3f5);
+  color: var(--text-main, #212121);
 }
 
 .app-shell {
@@ -46,8 +47,8 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 18px 24px;
-  background: #1a73e8;
-  color: white;
+  background: var(--header-bg, #1a73e8);
+  color: var(--header-text, #ffffff);
 }
 
 @media print {
@@ -136,10 +137,10 @@ body {
 }
 
 section {
-  background: white;
+  background: var(--card-bg, #ffffff);
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--card-shadow, 0 10px 30px rgba(15, 23, 42, 0.08));
 }
 
 h1 {

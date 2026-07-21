@@ -7,8 +7,9 @@ export interface Category {
   suggestions?: string[];
 }
 
-export interface DomainConfig {
-  domain: string;
+export interface EventProfile {
+  profile: string;
+  contact_methods: string[];
   categories: Category[];
   stickers?: Record<string, Record<string, any>>;
   realtimeProvider: string;
@@ -16,35 +17,32 @@ export interface DomainConfig {
   isServerless: boolean;
 }
 
-const defaultContext: DomainConfig = {
-  domain: 'default',
-  categories: [
-    { id: 'gender', label: 'Gender', suggestions: [] },
-    { id: 'orientation', label: 'Orientation', suggestions: [] },
-    { id: 'role', label: 'Role', suggestions: [] },
-  ],
+const emptyProfile: EventProfile = {
+  profile: '',
+  contact_methods: ['Phone', 'Email'],
+  categories: [],
   realtimeProvider: 'socketio',
   apIp: '',
   isServerless: false,
 };
 
-const DomainContext = createContext<DomainConfig>(defaultContext);
+const EventProfileContext = createContext<EventProfile>(emptyProfile);
 
-export const useDomain = () => useContext(DomainContext);
+export const useEventProfile = () => useContext(EventProfileContext);
 
-export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [config, setConfig] = useState<DomainConfig>(defaultContext);
+export const EventProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [profile, setProfile] = useState<EventProfile>(emptyProfile);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     fetch('/api/config')
       .then((r) => r.json())
       .then((data) => {
-        setConfig((prev) => ({ ...prev, ...data }));
+        setProfile((prev) => ({ ...prev, ...data }));
         setLoaded(true);
       })
       .catch((e) => {
-        console.error('Failed to load domain config:', e);
+        console.error('Failed to load event profile config:', e);
         setLoaded(true);
       });
   }, []);
@@ -54,5 +52,7 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       <div style={{ padding: '20px', textAlign: 'center' }}>Loading application config...</div>
     );
 
-  return <DomainContext.Provider value={config}>{children}</DomainContext.Provider>;
+  return <EventProfileContext.Provider value={profile}>{children}</EventProfileContext.Provider>;
 };
+
+export default EventProfileContext;

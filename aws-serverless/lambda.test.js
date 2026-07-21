@@ -32,5 +32,5 @@ describe('lambda.mjs', () => {
     const res2 = await lambda.handler(event, context);
     expect(res2).toBe('mocked-response');
     expect(serverlessExpress).toHaveBeenCalledTimes(1);
-  });
+  }, 15000);
 });

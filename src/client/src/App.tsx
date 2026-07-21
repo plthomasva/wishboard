@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
-import { DomainProvider } from './DomainContext';
+import { EventProfileProvider } from './EventProfileContext';
 import HomePage from './pages/HomePage';
 import EnterWishPage from './pages/EnterWishPage';
 import SearchPage from './pages/SearchPage';
@@ -429,10 +429,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <DomainProvider>
+    <EventProfileProvider>
       <AuthProvider>
         <AppContent />
       </AuthProvider>
-    </DomainProvider>
+    </EventProfileProvider>
   );
 }

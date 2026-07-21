@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
-import { useDomain } from '../DomainContext';
+import { useEventProfile } from '../EventProfileContext';
 import { QRCodeSVG } from 'qrcode.react';
 import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
@@ -33,7 +33,7 @@ export default function EnterWishPage() {
   const { token, user } = useAuth();
   const [content, setContent] = useState('');
   const [passphrase, setPassphrase] = useState('');
-  const { categories = [] } = useDomain();
+  const { categories = [] } = useEventProfile();
   const [creatorAttributes, setCreatorAttributes] = useState<Record<string, string>>({});
   const [desiredAttributes, setDesiredAttributes] = useState<Record<string, string>>({});
 

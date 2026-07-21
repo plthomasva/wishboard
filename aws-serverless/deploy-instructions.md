@@ -53,8 +53,9 @@ The serverless stack uses a hosted **[Turso](https://turso.tech)** (libSQL) data
 
    ```bash
    turso db tokens create wishboard
-   aws ssm put-parameter --name /wishboard/dev/turso-auth-token \
-     --type SecureString --value "<token>" --overwrite --region us-east-1
+   npx wishboard db set-ssm-token /wishboard/dev/turso-auth-token "<token>" --region us-east-1
+   # (Or directly via AWS CLI):
+   # aws ssm put-parameter --name /wishboard/dev/turso-auth-token --type SecureString --value "<token>" --overwrite --region us-east-1
    ```
 
 3. Pass the **URL** and the **SSM parameter name** to the deploy as the `DatabaseUrl` and `DatabaseAuthTokenSsm` parameters — via `sam --guided`, `samconfig.toml` (local; gitignored), or the `DATABASE_URL` / `DATABASE_AUTH_TOKEN_SSM` repository **Variables** (CI).

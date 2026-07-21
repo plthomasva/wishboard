@@ -10,7 +10,7 @@ import PassphraseInput from './components/PassphraseInput';
 import { QRCodeSVG } from 'qrcode.react';
 import ConfirmDeleteAccountModal from './components/ConfirmDeleteAccountModal';
 import { parseAttributesString, fetchConflicts, getConflictWarning } from './utils/conflicts';
-import { useDomain } from './DomainContext';
+import { useEventProfile } from './EventProfileContext';
 
 function useUsernameExistence(username: string) {
   const [existingUsername, setExistingUsername] = useState(false);
@@ -172,7 +172,7 @@ function UnauthenticatedAccountView({
   error,
   isSubmitDisabled,
 }: Readonly<UnauthenticatedAccountViewProps>) {
-  const { categories } = useDomain();
+  const { categories } = useEventProfile();
   return (
     <section>
       <h1>My Account</h1>
@@ -282,7 +282,7 @@ export default function AccountPage() {
   const { excludedIds, unexcludeWish } = useExcludedWishes();
   const [username, setUsername] = useState('');
   const [passphrase, setPassphrase] = useState('');
-  const { categories } = useDomain();
+  const { categories } = useEventProfile();
   const [identityAttributes, setIdentityAttributes] = useState<Record<string, string>>({});
   const [editIdentityAttributes, setEditIdentityAttributes] = useState<Record<string, string>>({});
   const [contacts, setContacts] = useState<Array<{ type: string; value: string }>>([]);

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { hasCommand, execCommand } from '../commandUtils.js';
+import { hasCommand, execCommand, getEventProfile } from '../commandUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
@@ -46,6 +46,29 @@ function assertCommand(name) {
   }
 }
 
+function runRemoteKioskSteps(target, remoteTemp, config, dryRun) {
+  const { mode, domain, deployRules, appVersion, eventProfile } = config;
+  logStep('[2/4] Uploading setup-kiosk.sh, build-kiosk.sh, and docker-compose.yml...');
+  for (const src of [SETUP_SCRIPT, BUILD_SCRIPT, COMPOSE_FILE]) {
+    const up = execCommand('scp', [src, `${target}:${remoteTemp}/${path.basename(src)}`], {
+      dryRun,
+    });
+    if (up.status !== 0) throw new Error(`Failed to upload ${path.basename(src)} to ${target}.`);
+  }
+
+  logStep('[3/4] Running setup-kiosk.sh on the Pi (user, Docker rootless, kiosk, hotspot)...');
+  const setupCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/setup-kiosk.sh && sudo bash ${remoteTemp}/setup-kiosk.sh ${mode} ${domain} ${remoteTemp}`;
+  if (execCommand('ssh', [target, setupCmd], { dryRun }).status !== 0) {
+    throw new Error('Remote setup-kiosk.sh failed.');
+  }
+
+  logStep('[4/4] Running build-kiosk.sh on the Pi (docker compose up + display)...');
+  const buildCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/build-kiosk.sh && sudo bash ${remoteTemp}/build-kiosk.sh ${mode} ${domain} ${deployRules} ${appVersion} ${eventProfile}`;
+  if (execCommand('ssh', [target, buildCmd], { dryRun }).status !== 0) {
+    throw new Error('Remote build-kiosk.sh failed.');
+  }
+}
+
 /**
  * Deploys the kiosk stack to a remote Raspberry Pi over SSH. Cross-platform Node
  * port of deploy-kiosk.sh / deploy-kiosk.ps1: uploads the setup/build scripts and
@@ -60,6 +83,12 @@ export function deployKiosk(options) {
   const deployRules = options.resetRules ? 'reset' : 'keep';
   const appVersion = resolveVersion(options.appVersion);
   assertMode(mode);
+
+  const eventProfile = getEventProfile(options);
+  const profileDir = path.resolve(PROJECT_ROOT, 'profiles', eventProfile);
+  if (!fs.existsSync(profileDir)) {
+    throw new Error(`Event profile '${eventProfile}' not found at ${profileDir}`);
+  }
 
   const target = `${user}@${host}`;
   console.log(`\n\x1b[32mWishboard kiosk deployment → ${target}\x1b[0m`);
@@ -85,28 +114,12 @@ export function deployKiosk(options) {
   }
 
   try {
-    // 2. Upload scripts + compose
-    logStep('[2/4] Uploading setup-kiosk.sh, build-kiosk.sh, and docker-compose.yml...');
-    for (const src of [SETUP_SCRIPT, BUILD_SCRIPT, COMPOSE_FILE]) {
-      const up = execCommand('scp', [src, `${target}:${remoteTemp}/${path.basename(src)}`], {
-        dryRun,
-      });
-      if (up.status !== 0) throw new Error(`Failed to upload ${path.basename(src)} to ${target}.`);
-    }
-
-    // 3. Run setup on the Pi (strip CRLF first so uploaded scripts run under bash)
-    logStep('[3/4] Running setup-kiosk.sh on the Pi (user, Docker rootless, kiosk, hotspot)...');
-    const setupCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/setup-kiosk.sh && sudo bash ${remoteTemp}/setup-kiosk.sh ${mode} ${domain} ${remoteTemp}`;
-    if (execCommand('ssh', [target, setupCmd], { dryRun }).status !== 0) {
-      throw new Error('Remote setup-kiosk.sh failed.');
-    }
-
-    // 4. Bring up the container + display
-    logStep('[4/4] Running build-kiosk.sh on the Pi (docker compose up + display)...');
-    const buildCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/build-kiosk.sh && sudo bash ${remoteTemp}/build-kiosk.sh ${mode} ${domain} ${deployRules} ${appVersion}`;
-    if (execCommand('ssh', [target, buildCmd], { dryRun }).status !== 0) {
-      throw new Error('Remote build-kiosk.sh failed.');
-    }
+    runRemoteKioskSteps(
+      target,
+      remoteTemp,
+      { mode, domain, deployRules, appVersion, eventProfile },
+      dryRun
+    );
 
     if (dryRun) {
       console.log(

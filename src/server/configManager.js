@@ -3,26 +3,41 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'yaml';
 import defaultRules from './defaultRules.js';
+import { DEFAULT_EVENT_PROFILE } from '../cli/commandUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let cachedConfig = null;
 
-export const getDomainConfig = () => {
+export const getEventProfile = () => {
   if (cachedConfig) {
     return cachedConfig;
   }
 
-  const configPath = process.env.DOMAIN_CONFIG_PATH
-    ? path.resolve(process.cwd(), process.env.DOMAIN_CONFIG_PATH)
-    : path.resolve(__dirname, 'defaultDomain.yaml');
+  let configPath = process.env.EVENT_PROFILE_PATH || process.env.DOMAIN_CONFIG_PATH;
+
+  if (!configPath) {
+    const profileName = process.env.EVENT_PROFILE || DEFAULT_EVENT_PROFILE;
+    // Check root /profiles/<name>/profile.yaml first, then bundled /var/task/profile.yaml
+    const repoPath = path.resolve(process.cwd(), 'profiles', profileName, 'profile.yaml');
+    const bundledPath = path.resolve(__dirname, 'profile.yaml');
+    if (fs.existsSync(repoPath)) {
+      configPath = repoPath;
+    } else if (fs.existsSync(bundledPath)) {
+      configPath = bundledPath;
+    } else {
+      configPath = repoPath; // fallback for error reporting
+    }
+  } else {
+    configPath = path.resolve(process.cwd(), configPath);
+  }
 
   let fileContents = '';
   try {
     fileContents = fs.readFileSync(configPath, 'utf8');
   } catch (err) {
-    console.error(`Failed to read domain config at ${configPath}:`, err.message);
+    console.error(`Failed to read event profile config at ${configPath}:`, err.message);
     throw err;
   }
 
@@ -32,9 +47,15 @@ export const getDomainConfig = () => {
     config.rules = defaultRules;
   }
 
+  if (!config.contact_methods) {
+    config.contact_methods = ['Phone', 'Email'];
+  }
+
   cachedConfig = config;
   return config;
 };
+
+export const getDomainConfig = getEventProfile;
 
 export const clearConfigCache = () => {
   cachedConfig = null;

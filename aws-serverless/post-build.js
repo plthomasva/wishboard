@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { DEFAULT_EVENT_PROFILE } from '../src/cli/commandUtils.js';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -123,6 +124,20 @@ for (const fn of functions) {
     content = content.replace(/\b__filename\b/g, 'globalThis.__filename');
     fs.writeFileSync(lambdaMjsPath, content, 'utf8');
     console.log(`Patched ${fn}/lambda.mjs for Node 22 ESM compatibility`);
+  }
+
+  // Copy active profile.yaml into artifact root (/var/task) for profile config loading
+  const profileName = process.env.EVENT_PROFILE || DEFAULT_EVENT_PROFILE;
+  const profileSrc = path.join(repoRoot, 'profiles', profileName, 'profile.yaml');
+  if (fs.existsSync(profileSrc)) {
+    const destProfilePath = path.join(fnDir, 'profile.yaml');
+    fs.copyFileSync(profileSrc, destProfilePath);
+    console.log(
+      `Copied profile.yaml (${profileName}) -> ${path.relative(repoRoot, destProfilePath)}`
+    );
+  } else {
+    console.error(`ERROR: Event profile '${profileName}' not found at ${profileSrc}`);
+    process.exit(1);
   }
 
   copied += 1;

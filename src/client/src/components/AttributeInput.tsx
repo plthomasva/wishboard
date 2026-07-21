@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDomain } from '../DomainContext';
+import { useEventProfile } from '../EventProfileContext';
 
 interface AttributeInputProps {
   id?: string;
@@ -20,7 +20,7 @@ export default function AttributeInput({
   suggestions,
   warning,
 }: Readonly<AttributeInputProps>) {
-  const { stickers = {} } = useDomain();
+  const { stickers = {} } = useEventProfile();
 
   const currentItems = value
     .split(',')

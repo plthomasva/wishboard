@@ -167,3 +167,36 @@ async function getAdminToken(url, opts, consoleError) {
   const loginData = await loginRes.json();
   return loginData.token;
 }
+
+export async function setSsmToken(
+  name,
+  value,
+  opts = {},
+  consoleLog = console.log,
+  consoleError = console.error
+) {
+  if (opts.dryRun) {
+    consoleLog(`[DRY RUN] Would store SSM parameter '${name}' (SecureString)`);
+    return true;
+  }
+
+  try {
+    const { SSMClient, PutParameterCommand } = await import('@aws-sdk/client-ssm');
+    const region =
+      opts.region || process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
+    const ssm = new SSMClient({ region });
+    await ssm.send(
+      new PutParameterCommand({
+        Name: name,
+        Value: value,
+        Type: 'SecureString',
+        Overwrite: true,
+      })
+    );
+    consoleLog(`Successfully stored SSM SecureString parameter '${name}' in region '${region}'.`);
+    return true;
+  } catch (err) {
+    consoleError(`Error setting SSM parameter '${name}': ${err.message}`);
+    return false;
+  }
+}

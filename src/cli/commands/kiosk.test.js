@@ -3,10 +3,14 @@ import { deployKiosk, setupKiosk, runKiosk } from './kiosk.js';
 import * as commandUtils from '../commandUtils.js';
 import fs from 'node:fs';
 
-vi.mock('../commandUtils.js', () => ({
-  hasCommand: vi.fn(() => true),
-  execCommand: vi.fn(() => ({ status: 0, stdout: '', stderr: '' })),
-}));
+vi.mock('../commandUtils.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    hasCommand: vi.fn(() => true),
+    execCommand: vi.fn(() => ({ status: 0, stdout: '', stderr: '' })),
+  };
+});
 
 vi.mock('node:fs', () => ({
   default: {

@@ -1,0 +1,15 @@
+:root {
+  --color-scheme: light;
+  --font-family: Inter, system-ui, sans-serif;
+  --app-bg: #f8fafc;
+  --text-main: #0f172a;
+  --header-bg: #0f172a;
+  --header-text: #f8fafc;
+  --card-bg: #ffffff;
+  --card-shadow: 0 10px 25px rgba(15, 23, 42, 0.1);
+  --primary-button-bg: #2563eb;
+  --primary-button-text: #ffffff;
+  --secondary-button-bg: #f1f5f9;
+  --secondary-button-text: #334155;
+  --accent-color: #2563eb;
+}
