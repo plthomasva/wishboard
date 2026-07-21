@@ -231,6 +231,20 @@ dbGroup
 const buildGroup = program.command('build').description('Manage wishboard build tasks');
 
 buildGroup
+  .command('prepare-profile')
+  .description('Prepare event profile assets and theme.css for frontend build/dev')
+  .action(async (options, command) => {
+    try {
+      const opts = command.optsWithGlobals();
+      const { prepareProfile } = await import('./commands/build.js');
+      prepareProfile(opts.eventProfile, opts);
+    } catch (err) {
+      console.error(`\x1b[31mError preparing profile: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
+  });
+
+buildGroup
   .command('download-fonts')
   .description('Download fallback fonts for offline execution')
   .action(async (options, command) => {

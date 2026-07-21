@@ -28,3 +28,8 @@ test-results/
 # Local SonarQube MCP server config (contains a SonarCloud token)
 .sonarqube.env
 .mcp.json
+
+# Generated event profile build/dev assets
+src/client/public/theme.css
+src/client/public/assets/*
+!src/client/public/assets/.gitkeep
