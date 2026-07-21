@@ -228,6 +228,22 @@ dbGroup
     }
   });
 
+dbGroup
+  .command('set-ssm-token <param_name> <token_value>')
+  .description('Store a database auth token in AWS SSM Parameter Store as a SecureString')
+  .option('--region <region>', 'AWS region (default: us-east-1)', 'us-east-1')
+  .action(async (paramName, tokenValue, options, command) => {
+    try {
+      const opts = command.optsWithGlobals();
+      const { setSsmToken } = await import('./commands/db.js');
+      const success = await setSsmToken(paramName, tokenValue, opts);
+      if (!success) process.exit(1);
+    } catch (err) {
+      console.error(`\x1b[31mError setting SSM parameter: ${err.message}\x1b[0m`);
+      process.exit(1);
+    }
+  });
+
 const buildGroup = program.command('build').description('Manage wishboard build tasks');
 
 buildGroup

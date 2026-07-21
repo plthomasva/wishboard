@@ -35,7 +35,8 @@ if (!url) {
 let authToken = process.env.DATABASE_AUTH_TOKEN;
 if (!authToken && process.env.DATABASE_AUTH_TOKEN_SSM) {
   const { SSMClient, GetParameterCommand } = await import('@aws-sdk/client-ssm');
-  const ssm = new SSMClient({});
+  const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1';
+  const ssm = new SSMClient({ region });
   const res = await ssm.send(
     new GetParameterCommand({ Name: process.env.DATABASE_AUTH_TOKEN_SSM, WithDecryption: true })
   );

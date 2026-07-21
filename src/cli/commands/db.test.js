@@ -1,6 +1,6 @@
 /** @vitest-environment node */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { resetPassword, resetRules } from './db.js';
+import { resetPassword, resetRules, setSsmToken } from './db.js';
 import { promptPassphrase } from './auth.js';
 import db from '../../server/db.js';
 
@@ -419,6 +419,37 @@ describe('reset-password script', () => {
       expect(success).toBe(false);
       expect(errOutput).toContain('Error resetting rules: Mock local DB failure');
       spy.mockRestore();
+    });
+  });
+
+  describe('setSsmToken', () => {
+    it('previews action in dryRun mode', async () => {
+      let output = '';
+      const success = await setSsmToken(
+        '/wishboard/dev/turso-auth-token',
+        'dummy-token',
+        { dryRun: true },
+        (msg) => (output += msg + '\n'),
+        () => {}
+      );
+
+      expect(success).toBe(true);
+      expect(output).toContain('[DRY RUN] Would store SSM parameter');
+    });
+
+    it('handles SSM errors gracefully', async () => {
+      let errOutput = '';
+      const success = await setSsmToken(
+        '/invalid/param',
+        'val',
+        { region: 'us-east-1' },
+        () => {},
+        (msg) => (errOutput += msg + '\n')
+      );
+
+      // In unit test without real AWS credentials, SSMClient call throws
+      expect(success).toBe(false);
+      expect(errOutput).toContain('Error setting SSM parameter');
     });
   });
 });
