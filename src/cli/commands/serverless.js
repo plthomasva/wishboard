@@ -152,17 +152,33 @@ function assertSafeParam(name, value) {
   return value;
 }
 
-/** Assembles the CloudFormation parameter override tokens for sam deploy. */
-function buildParameterOverrides(options, mode) {
-  const nodeEnv = mode === 'dev' ? 'development' : 'production';
-  const tomlOverrides = readTomlValue('parameter_overrides');
+/**
+ * Resolves a configuration value across CLI options, process.env, samconfig.toml overrides, and default fallbacks.
+ * Precedence: CLI option > process.env > samconfig.toml override > default fallback.
+ */
+function resolveOverride(options = {}, optionKey, envKey, tomlKey, overrides = '', fallback = '') {
+  if (options && options[optionKey] !== undefined && options[optionKey] !== '') {
+    return options[optionKey];
+  }
+  if (envKey && process.env[envKey] !== undefined && process.env[envKey] !== '') {
+    return process.env[envKey];
+  }
+  if (tomlKey) {
+    const val = getOverrideValue(tomlKey, overrides);
+    if (val !== undefined && val !== '') return val;
+  }
+  return fallback;
+}
 
+/**
+ * Resolves the active ProjectName based on CLI flags, environment, stack name, and samconfig.toml.
+ */
+function resolveProjectName(options = {}, mode = 'prod', tomlOverrides = '') {
   let projectName = options.projectName || process.env.PROJECT_NAME;
   if (!projectName) {
     if (options.stackName) {
-      projectName = options.stackName
-        .replace(/^wishboard-serverless-?/, 'wishboard-')
-        .replace(/-dev$/, '');
+      const suffix = options.stackName.replace(/^wishboard-serverless-?/, '').replace(/-dev$/, '');
+      projectName = suffix ? `wishboard-${suffix}` : 'wishboard';
     } else {
       projectName = getOverrideValue('ProjectName', tomlOverrides) || 'wishboard';
     }
@@ -170,33 +186,51 @@ function buildParameterOverrides(options, mode) {
   if (mode === 'dev' && !projectName.endsWith('-dev')) {
     projectName = `${projectName}-dev`;
   }
+  return projectName;
+}
 
-  const domainName =
-    options.domain || process.env.DOMAIN_NAME || getOverrideValue('DomainName', tomlOverrides);
-  const certDomain =
-    options.certDomain ||
-    process.env.CERTIFICATE_DOMAIN_NAME ||
-    getOverrideValue('CertificateDomainName', tomlOverrides);
-  const hostedZoneId =
-    options.hostedZoneId ||
-    process.env.HOSTED_ZONE_ID ||
-    getOverrideValue('HostedZoneId', tomlOverrides);
-  const acmCertificateArn =
-    options.acmCertArn ||
-    process.env.ACM_CERTIFICATE_ARN ||
-    getOverrideValue('AcmCertificateArn', tomlOverrides);
+/** Assembles the CloudFormation parameter override tokens for sam deploy. */
+function buildParameterOverrides(options, mode) {
+  const nodeEnv = mode === 'dev' ? 'development' : 'production';
+  const tomlOverrides = readTomlValue('parameter_overrides');
 
-  // DatabaseUrl is the (non-secret) libSQL/Turso endpoint; DatabaseAuthTokenSsm
-  // names the SSM SecureString the Lambda reads the token from at runtime. The
-  // token itself never flows through here.
-  const databaseUrl =
-    options.databaseUrl ||
-    process.env.DATABASE_URL ||
-    getOverrideValue('DatabaseUrl', tomlOverrides);
-  const databaseAuthTokenSsm =
-    options.databaseAuthTokenSsm ||
-    process.env.DATABASE_AUTH_TOKEN_SSM ||
-    getOverrideValue('DatabaseAuthTokenSsm', tomlOverrides);
+  const projectName = resolveProjectName(options, mode, tomlOverrides);
+  const domainName = resolveOverride(options, 'domain', 'DOMAIN_NAME', 'DomainName', tomlOverrides);
+  const certDomain = resolveOverride(
+    options,
+    'certDomain',
+    'CERTIFICATE_DOMAIN_NAME',
+    'CertificateDomainName',
+    tomlOverrides
+  );
+  const hostedZoneId = resolveOverride(
+    options,
+    'hostedZoneId',
+    'HOSTED_ZONE_ID',
+    'HostedZoneId',
+    tomlOverrides
+  );
+  const acmCertificateArn = resolveOverride(
+    options,
+    'acmCertArn',
+    'ACM_CERTIFICATE_ARN',
+    'AcmCertificateArn',
+    tomlOverrides
+  );
+  const databaseUrl = resolveOverride(
+    options,
+    'databaseUrl',
+    'DATABASE_URL',
+    'DatabaseUrl',
+    tomlOverrides
+  );
+  const databaseAuthTokenSsm = resolveOverride(
+    options,
+    'databaseAuthTokenSsm',
+    'DATABASE_AUTH_TOKEN_SSM',
+    'DatabaseAuthTokenSsm',
+    tomlOverrides
+  );
 
   assertSafeParam('ProjectName', projectName);
   assertSafeParam('DomainName', domainName);
@@ -553,7 +587,14 @@ function cleanupFrontendBucket(oldFrontendBucket, frontendBucket, common, dryRun
 /**
  * Performs coordinated S3 migration when old-format regional buckets exist.
  */
-function performCoordinatedS3Migration(common, mode, dryRun, imagesBucket, frontendBucket) {
+function performCoordinatedS3Migration(
+  common,
+  mode,
+  dryRun,
+  imagesBucket,
+  frontendBucket,
+  options = {}
+) {
   let accountId = '';
   try {
     accountId = verifyAwsAuth(common, dryRun);
@@ -563,9 +604,7 @@ function performCoordinatedS3Migration(common, mode, dryRun, imagesBucket, front
 
   if (accountId) {
     const tomlOverrides = readTomlValue('parameter_overrides');
-    let projectName =
-      process.env.PROJECT_NAME || getOverrideValue('ProjectName', tomlOverrides) || 'wishboard';
-    if (mode === 'dev' && projectName === 'wishboard') projectName = 'wishboard-dev';
+    const projectName = resolveProjectName(options, mode, tomlOverrides);
 
     const oldFrontendBucket = `${projectName}-frontend-${accountId}`;
     const oldImagesBucket = `${projectName}-images-${accountId}`;
@@ -633,7 +672,7 @@ export function deployServerless(options) {
   logInfo(`Images bucket:   ${imagesBucket}`);
 
   // --- Coordinated S3 migration check ---
-  performCoordinatedS3Migration(common, mode, dryRun, imagesBucket, frontendBucket);
+  performCoordinatedS3Migration(common, mode, dryRun, imagesBucket, frontendBucket, options);
 
   if (distId) {
     configureCloudFrontId(stackName, common, distId, dryRun);
