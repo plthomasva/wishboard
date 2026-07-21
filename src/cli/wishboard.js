@@ -1,5 +1,21 @@
 #!/usr/bin/env node
 
+for (let i = 2; i < process.argv.length; i++) {
+  const arg = process.argv[i];
+  if (arg === '--profile' && i + 1 < process.argv.length) {
+    process.env.AWS_PROFILE = process.argv[i + 1];
+  } else if (arg.startsWith('--profile=')) {
+    process.env.AWS_PROFILE = arg.split('=')[1];
+  } else if (arg === '--region' && i + 1 < process.argv.length) {
+    process.env.AWS_REGION = process.argv[i + 1];
+    process.env.AWS_DEFAULT_REGION = process.argv[i + 1];
+  } else if (arg.startsWith('--region=')) {
+    const r = arg.split('=')[1];
+    process.env.AWS_REGION = r;
+    process.env.AWS_DEFAULT_REGION = r;
+  }
+}
+
 import { Command } from 'commander';
 import fs from 'node:fs';
 import path from 'node:path';
