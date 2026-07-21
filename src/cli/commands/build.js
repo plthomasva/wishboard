@@ -78,10 +78,14 @@ export function prepareProfile(profileName, opts = {}) {
 
   const assetsSrc = path.join(profileDir, 'assets');
   if (fs.existsSync(assetsSrc)) {
-    const assetsDest = path.join(publicDir, 'assets');
-    fs.mkdirSync(assetsDest, { recursive: true });
-    fs.cpSync(assetsSrc, assetsDest, { recursive: true });
-    console.log(`Prepared assets for profile '${resolvedProfile}'`);
+    try {
+      const assetsDest = path.join(publicDir, 'assets');
+      fs.mkdirSync(assetsDest, { recursive: true });
+      fs.cpSync(assetsSrc, assetsDest, { recursive: true });
+      console.log(`Prepared assets for profile '${resolvedProfile}'`);
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+    }
   }
 }
 
