@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.20.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.19.0...wishboard-v1.20.0) (2026-07-21)
+
+
+### Features
+
+* **profiles:** decouple configuration and styles into event profiles ([#263](https://github.com/plthomasva/wishboard/issues/263)) ([#269](https://github.com/plthomasva/wishboard/issues/269)) ([34ce629](https://github.com/plthomasva/wishboard/commit/34ce6290d11b78b058b9ecc8b3dc5ab73ce7c54a))
+* Refactor to domain-driven JSON attributes ([#264](https://github.com/plthomasva/wishboard/issues/264)) ([418f70a](https://github.com/plthomasva/wishboard/commit/418f70aa46b9ffb95c63114aa157f58d7ab7ba1f))
+
+
+### Bug Fixes
+
+* **aws:** remove duplicate DomainValidationOptions entry for wildcard certs ([#267](https://github.com/plthomasva/wishboard/issues/267)) ([948ee64](https://github.com/plthomasva/wishboard/commit/948ee64d9ccb458c7928095c022754a4ab3cf170))
+
 ## [1.19.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.18.1...wishboard-v1.19.0) (2026-07-18)
 
 
