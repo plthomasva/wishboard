@@ -90,7 +90,8 @@ Detailed guides and documentation can be found in the `docs/` and `aws-serverles
 - [**Event Profiles & Multi-Stack Deployments**](docs/EVENT_PROFILES.md) - Guide for managing event profiles (`lifestyle`, `professional`), custom domains, and parallel stacks.
 - [**AWS Deployment Guide**](aws-serverless/deploy-instructions.md) - Instructions and monthly pricing analysis for deploying to AWS as a serverless application.
 - [**Matching Rules**](docs/MATCHING_RULES.md) - A deep dive into how the matchmaking engine implicitly maps, expands, and cross-matches user identities.
-- [**Design Documents**](docs/design/0300-event-profiles-and-theming.md) - Architectural design documents, including event profile separation and decoupled theming.
+- [**Architecture Decision Records**](docs/adr/) - Technical decisions documenting project choices and trade-offs.
+- [**Design Documents**](docs/design/) - Detailed technical design specifications for major features.
 
 ## User Interface
 

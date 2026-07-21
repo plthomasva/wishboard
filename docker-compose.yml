@@ -34,6 +34,7 @@ services:
       # a bare `docker compose up`, which is fine — the client falls back to the host).
       - WISHBOARD_DOMAIN=${WISHBOARD_DOMAIN:-}
       - WISHBOARD_AP_IP=${WISHBOARD_AP_IP:-}
+      - EVENT_PROFILE=${EVENT_PROFILE:-lifestyle}
       # - WISHBOARD_ADMIN_USERNAME=admin
       # - WISHBOARD_ADMIN_SECRET=admin-board
       # - CORS_ALLOWED_ORIGINS=http://your-domain.com

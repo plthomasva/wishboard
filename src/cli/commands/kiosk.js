@@ -46,7 +46,16 @@ function assertCommand(name) {
   }
 }
 
-function runRemoteKioskSteps(target, remoteTemp, mode, domain, deployRules, appVersion, dryRun) {
+function runRemoteKioskSteps(
+  target,
+  remoteTemp,
+  mode,
+  domain,
+  deployRules,
+  appVersion,
+  eventProfile,
+  dryRun
+) {
   logStep('[2/4] Uploading setup-kiosk.sh, build-kiosk.sh, and docker-compose.yml...');
   for (const src of [SETUP_SCRIPT, BUILD_SCRIPT, COMPOSE_FILE]) {
     const up = execCommand('scp', [src, `${target}:${remoteTemp}/${path.basename(src)}`], {
@@ -62,7 +71,7 @@ function runRemoteKioskSteps(target, remoteTemp, mode, domain, deployRules, appV
   }
 
   logStep('[4/4] Running build-kiosk.sh on the Pi (docker compose up + display)...');
-  const buildCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/build-kiosk.sh && sudo bash ${remoteTemp}/build-kiosk.sh ${mode} ${domain} ${deployRules} ${appVersion}`;
+  const buildCmd = String.raw`sed -i 's/\r$//' ${remoteTemp}/build-kiosk.sh && sudo bash ${remoteTemp}/build-kiosk.sh ${mode} ${domain} ${deployRules} ${appVersion} ${eventProfile}`;
   if (execCommand('ssh', [target, buildCmd], { dryRun }).status !== 0) {
     throw new Error('Remote build-kiosk.sh failed.');
   }
@@ -113,7 +122,16 @@ export function deployKiosk(options) {
   }
 
   try {
-    runRemoteKioskSteps(target, remoteTemp, mode, domain, deployRules, appVersion, dryRun);
+    runRemoteKioskSteps(
+      target,
+      remoteTemp,
+      mode,
+      domain,
+      deployRules,
+      appVersion,
+      eventProfile,
+      dryRun
+    );
 
     if (dryRun) {
       console.log(
