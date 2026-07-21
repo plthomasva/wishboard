@@ -153,16 +153,28 @@ npx wishboard oidc destroy --org <github_org> --repo <repo_name> --region <aws_r
 
 Add `--dry-run` to preview the underlying commands without executing them.
 
+#### Kiosk & Remote Deployments
+
+Deploy Wishboard to a Raspberry Pi kiosk over SSH with a specific event profile:
+
+```bash
+# Deploy to Raspberry Pi using default 'lifestyle' profile
+npx wishboard kiosk deploy --user pi --host raspberrypi.local --mode dev
+
+# Deploy with a custom event profile (e.g., professional conference)
+npx wishboard kiosk deploy --event-profile professional --mode dev
+```
+
 #### AWS Serverless Deploy & Teardown
 
 Build and deploy (or tear down) the serverless stack:
 
 ```bash
 # Deploy: build frontend + backend, deploy the stack, upload assets, invalidate CloudFront
-npx wishboard serverless deploy --mode dev --region <aws_region>
+npx wishboard serverless deploy --mode dev --event-profile lifestyle --region <aws_region>
 
-# Deploy only the frontend to an already-deployed stack
-npx wishboard serverless deploy --frontend-only
+# Deploy only the frontend to an already-deployed stack with a professional profile
+npx wishboard serverless deploy --frontend-only --event-profile professional
 
 # Tear down a stack (a non-dev/production stack additionally requires --force)
 npx wishboard serverless destroy --stack-name <stack> --force
