@@ -16,6 +16,7 @@ COPY tsconfig.json vite.config.ts ./
 COPY src ./src
 COPY data ./data
 COPY scripts ./scripts
+COPY profiles ./profiles
 
 # Run the build script
 RUN npm run build
@@ -50,6 +51,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/server ./src/server
 COPY --from=builder /app/src/client/src/passphrase.js ./src/client/src/passphrase.js
 COPY --from=builder /app/data ./data
+COPY --from=builder /app/profiles ./profiles
 
 # Fix permissions for the data directory so the node user can write to it
 RUN chown -R node:node /app/data
