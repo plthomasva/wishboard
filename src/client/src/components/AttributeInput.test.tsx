@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import AttributeInput from './AttributeInput';
 import React from 'react';
-import { useDomain } from '../DomainContext';
+import { useEventProfile } from '../EventProfileContext';
 
 describe('AttributeInput', () => {
   it('renders suggestions as pills', () => {
@@ -89,7 +89,7 @@ describe('AttributeInput', () => {
   });
 
   it('renders custom image stickers on suggestions', () => {
-    vi.mocked(useDomain).mockReturnValue({
+    vi.mocked(useEventProfile).mockReturnValue({
       stickers: {
         role: {
           presenter: { type: 'image', src: '/assets/presenter.png' },

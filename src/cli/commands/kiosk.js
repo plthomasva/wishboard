@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { hasCommand, execCommand } from '../commandUtils.js';
+import { hasCommand, execCommand, getEventProfile } from '../commandUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
@@ -61,7 +61,7 @@ export function deployKiosk(options) {
   const appVersion = resolveVersion(options.appVersion);
   assertMode(mode);
 
-  const eventProfile = options.eventProfile || 'lifestyle';
+  const eventProfile = getEventProfile(options);
   const profileDir = path.resolve(PROJECT_ROOT, 'profiles', eventProfile);
   if (!fs.existsSync(profileDir)) {
     throw new Error(`Event profile '${eventProfile}' not found at ${profileDir}`);

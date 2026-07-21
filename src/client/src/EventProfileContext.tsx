@@ -55,8 +55,4 @@ export const EventProfileProvider: React.FC<{ children: React.ReactNode }> = ({ 
   return <EventProfileContext.Provider value={profile}>{children}</EventProfileContext.Provider>;
 };
 
-// Aliases for transition/compatibility
-export const useDomain = useEventProfile;
-export const DomainProvider = EventProfileProvider;
-export type DomainConfig = EventProfile;
 export default EventProfileContext;

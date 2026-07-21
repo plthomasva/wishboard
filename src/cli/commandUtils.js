@@ -125,3 +125,16 @@ export function execCommand(command, args, options = {}) {
     stderr: result.stderr ?? '',
   };
 }
+
+export const DEFAULT_EVENT_PROFILE = 'lifestyle';
+
+/**
+ * Resolves the active event profile name from CLI options, process.env, or default fallback.
+ * @param {object} [options={}]
+ * @returns {string}
+ */
+export function getEventProfile(options = {}) {
+  return (
+    options.eventProfile || options.profile || process.env.EVENT_PROFILE || DEFAULT_EVENT_PROFILE
+  );
+}

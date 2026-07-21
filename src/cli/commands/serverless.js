@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { hasCommand, execCommand } from '../commandUtils.js';
+import { hasCommand, execCommand, getEventProfile } from '../commandUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
@@ -569,7 +569,7 @@ export function deployServerless(options) {
   const frontendOnly = !!options.frontendOnly;
   const skipFrontendUpload = !!options.skipFrontendUpload;
 
-  const eventProfile = options.eventProfile || 'lifestyle';
+  const eventProfile = getEventProfile(options);
   const profileDir = path.resolve(PROJECT_ROOT, 'profiles', eventProfile);
   if (!dryRun && !process.env.VITEST && !fs.existsSync(profileDir)) {
     throw new Error(`Event profile '${eventProfile}' not found at ${profileDir}`);

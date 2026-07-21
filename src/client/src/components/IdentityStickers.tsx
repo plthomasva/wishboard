@@ -1,12 +1,12 @@
 import React from 'react';
-import { useDomain } from '../DomainContext';
+import { useEventProfile } from '../EventProfileContext';
 
 interface Props {
   attributes?: Record<string, string[]>;
 }
 
 export default function IdentityStickers({ attributes }: Readonly<Props>) {
-  const { stickers = {} } = useDomain();
+  const { stickers = {} } = useEventProfile();
 
   const attrs = attributes || {};
 

@@ -3,10 +3,14 @@ import { deployServerless, destroyServerless } from './serverless.js';
 import * as commandUtils from '../commandUtils.js';
 import fs from 'node:fs';
 
-vi.mock('../commandUtils.js', () => ({
-  hasCommand: vi.fn(),
-  execCommand: vi.fn(),
-}));
+vi.mock('../commandUtils.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    hasCommand: vi.fn(),
+    execCommand: vi.fn(),
+  };
+});
 
 vi.mock('node:fs', () => ({
   default: {

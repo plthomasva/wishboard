@@ -50,18 +50,21 @@ export function downloadFile(url, destPath, redirectCount = 0) {
   });
 }
 
+import { getEventProfile } from '../commandUtils.js';
+
 const repoRoot = path.resolve(__dirname, '../../..');
 
-export function prepareProfile(profileName = process.env.EVENT_PROFILE || 'lifestyle', opts = {}) {
+export function prepareProfile(profileName, opts = {}) {
+  const resolvedProfile = profileName || getEventProfile(opts);
   if (opts.dryRun) {
-    console.log(`Would prepare profile '${profileName}' assets and theme.css`);
+    console.log(`Would prepare profile '${resolvedProfile}' assets and theme.css`);
     return;
   }
 
-  const profileDir = path.resolve(repoRoot, 'profiles', profileName);
+  const profileDir = path.resolve(repoRoot, 'profiles', resolvedProfile);
   if (!fs.existsSync(profileDir)) {
     if (process.env.VITEST) return;
-    throw new Error(`Event profile '${profileName}' not found at ${profileDir}`);
+    throw new Error(`Event profile '${resolvedProfile}' not found at ${profileDir}`);
   }
 
   const publicDir = path.resolve(__dirname, '../../client/public');
@@ -70,7 +73,7 @@ export function prepareProfile(profileName = process.env.EVENT_PROFILE || 'lifes
   const themeSrc = path.join(profileDir, 'theme.css');
   if (fs.existsSync(themeSrc)) {
     fs.copyFileSync(themeSrc, path.join(publicDir, 'theme.css'));
-    console.log(`Prepared theme.css for profile '${profileName}'`);
+    console.log(`Prepared theme.css for profile '${resolvedProfile}'`);
   }
 
   const assetsSrc = path.join(profileDir, 'assets');
@@ -78,12 +81,12 @@ export function prepareProfile(profileName = process.env.EVENT_PROFILE || 'lifes
     const assetsDest = path.join(publicDir, 'assets');
     fs.mkdirSync(assetsDest, { recursive: true });
     fs.cpSync(assetsSrc, assetsDest, { recursive: true });
-    console.log(`Prepared assets for profile '${profileName}'`);
+    console.log(`Prepared assets for profile '${resolvedProfile}'`);
   }
 }
 
 export async function downloadFonts(opts = {}) {
-  prepareProfile(opts.profile || process.env.EVENT_PROFILE || 'lifestyle', opts);
+  prepareProfile(getEventProfile(opts), opts);
 
   if (opts.dryRun) {
     console.log('Would have downloaded fallback fonts to: ' + targetDir);

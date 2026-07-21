@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { DEFAULT_EVENT_PROFILE } from '../src/cli/commandUtils.js';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -126,7 +127,7 @@ for (const fn of functions) {
   }
 
   // Copy active profile.yaml into artifact root (/var/task) for profile config loading
-  const profileName = process.env.EVENT_PROFILE || 'lifestyle';
+  const profileName = process.env.EVENT_PROFILE || DEFAULT_EVENT_PROFILE;
   const profileSrc = path.join(repoRoot, 'profiles', profileName, 'profile.yaml');
   if (fs.existsSync(profileSrc)) {
     const destProfilePath = path.join(fnDir, 'profile.yaml');

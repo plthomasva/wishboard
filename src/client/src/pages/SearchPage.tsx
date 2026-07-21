@@ -5,7 +5,7 @@ import useFlagWish from '../hooks/useFlagWish';
 import InfoToggle from '../components/InfoToggle';
 import AttributeInput from '../components/AttributeInput';
 import SendWishmailModal from '../components/SendWishmailModal';
-import { useDomain } from '../DomainContext';
+import { useEventProfile } from '../EventProfileContext';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useExcludedWishes } from '../hooks/useExcludedWishes';
 
@@ -80,7 +80,7 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [useProfileAttributes, setUseProfileAttributes] = useState<boolean>(Boolean(user));
   const [manualAttributes, setManualAttributes] = useState<Record<string, string>>({});
-  const { categories } = useDomain();
+  const { categories } = useEventProfile();
   const [mailWishId, setMailWishId] = useState<string | null>(null);
   const [lastSearchParams, setLastSearchParams] = useState<string | null>(null);
   const { socket } = useWebSocket();

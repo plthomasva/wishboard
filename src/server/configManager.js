@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'yaml';
 import defaultRules from './defaultRules.js';
+import { DEFAULT_EVENT_PROFILE } from '../cli/commandUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +18,7 @@ export const getEventProfile = () => {
   let configPath = process.env.EVENT_PROFILE_PATH || process.env.DOMAIN_CONFIG_PATH;
 
   if (!configPath) {
-    const profileName = process.env.EVENT_PROFILE || 'lifestyle';
+    const profileName = process.env.EVENT_PROFILE || DEFAULT_EVENT_PROFILE;
     // Check root /profiles/<name>/profile.yaml first, then bundled /var/task/profile.yaml
     const repoPath = path.resolve(process.cwd(), 'profiles', profileName, 'profile.yaml');
     const bundledPath = path.resolve(__dirname, 'profile.yaml');

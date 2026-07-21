@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import IdentityStickers from './IdentityStickers';
-import * as DomainContext from '../DomainContext';
+import * as EventProfileContext from '../EventProfileContext';
 
-vi.mock('../DomainContext', () => ({
-  useDomain: vi.fn(),
+vi.mock('../EventProfileContext', () => ({
+  useEventProfile: vi.fn(),
 }));
 
-const mockDefaultDomain = {
-  domain: 'default',
+const mockDefaultProfile = {
+  profile: 'lifestyle',
+  contact_methods: ['Phone', 'Email'],
   categories: [],
   stickers: {
     orientation: {
@@ -32,8 +33,9 @@ const mockDefaultDomain = {
   isServerless: false,
 };
 
-const mockAlternativeDomain = {
-  domain: 'conference',
+const mockAlternativeProfile = {
+  profile: 'professional',
+  contact_methods: ['LinkedIn', 'Phone', 'Email'],
   categories: [],
   stickers: {
     role: {
@@ -48,20 +50,20 @@ const mockAlternativeDomain = {
 
 describe('IdentityStickers', () => {
   it('returns null if no stickers provided', () => {
-    vi.mocked(DomainContext.useDomain).mockReturnValue(mockDefaultDomain);
+    vi.mocked(EventProfileContext.useEventProfile).mockReturnValue(mockDefaultProfile);
     const { container } = render(<IdentityStickers />);
     expect(container.firstChild).toBeNull();
   });
 
   it('renders all recognized orientations for default domain', () => {
-    vi.mocked(DomainContext.useDomain).mockReturnValue(mockDefaultDomain);
+    vi.mocked(EventProfileContext.useEventProfile).mockReturnValue(mockDefaultProfile);
     const orientations = ['straight', 'gay', 'lesbian', 'bi', 'pan', 'asexual', 'queer', 'unknown'];
     const { container } = render(<IdentityStickers attributes={{ orientation: orientations }} />);
     expect(container.querySelectorAll('.sticker-heart-shadow')).toHaveLength(7);
   });
 
   it('renders all recognized genders for default domain', () => {
-    vi.mocked(DomainContext.useDomain).mockReturnValue(mockDefaultDomain);
+    vi.mocked(EventProfileContext.useEventProfile).mockReturnValue(mockDefaultProfile);
     const genders = ['trans', 'nonbinary', 'woman', 'man', 'unknown'];
     const { container } = render(<IdentityStickers attributes={{ gender: genders }} />);
     expect(container.querySelectorAll('.sticker-flag')).toHaveLength(2);
@@ -69,7 +71,7 @@ describe('IdentityStickers', () => {
   });
 
   it('renders alternative domain stickers correctly', () => {
-    vi.mocked(DomainContext.useDomain).mockReturnValue(mockAlternativeDomain);
+    vi.mocked(EventProfileContext.useEventProfile).mockReturnValue(mockAlternativeProfile);
     const attributes = { role: ['presenter', 'attendee', 'sponsor'] };
     const { container } = render(<IdentityStickers attributes={attributes} />);
     expect(container.querySelectorAll('.sticker-image')).toHaveLength(2);

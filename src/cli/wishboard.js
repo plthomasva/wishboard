@@ -20,6 +20,8 @@ program.configureHelp({
   showGlobalOptions: true,
 });
 
+import { DEFAULT_EVENT_PROFILE } from './commandUtils.js';
+
 program
   .name('wishboard')
   .description('Unified deployment and administration CLI for Wishboard')
@@ -28,7 +30,7 @@ program
   .option(
     '--event-profile <name>',
     'Event profile name (e.g. lifestyle, professional)',
-    'lifestyle'
+    DEFAULT_EVENT_PROFILE
   );
 
 // 1. OIDC Command Group

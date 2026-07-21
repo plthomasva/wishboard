@@ -51,13 +51,13 @@ globalThis.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
   return { ok: true, json: async () => ({}) } as Response;
 });
 
-// Mock DomainContext so it renders children immediately without waiting for fetch in tests
-vi.mock('./DomainContext', async (importOriginal) => {
+// Mock EventProfileContext so it renders children immediately without waiting for fetch in tests
+vi.mock('./EventProfileContext', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...(actual as any),
-    DomainProvider: ({ children }: any) => children,
-    useDomain: vi.fn(() => MOCK_DOMAIN),
+    EventProfileProvider: ({ children }: any) => children,
+    useEventProfile: vi.fn(() => MOCK_DOMAIN),
   };
 });
 
