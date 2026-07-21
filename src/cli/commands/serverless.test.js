@@ -270,6 +270,27 @@ describe('serverless commands', () => {
       expect(pov).not.toContain("ProjectName='wishboard-dev'");
     });
 
+    it('derives ProjectName dynamically from stackName for custom stacks', () => {
+      deployServerless({
+        stackName: 'wishboard-serverless-conference',
+        mode: 'dev',
+        skipFrontendUpload: true,
+      });
+      const pov = overridesOf(findDeploy());
+      expect(pov).toContain("ProjectName='wishboard-conference-dev'");
+    });
+
+    it('uses explicit projectName option when provided', () => {
+      deployServerless({
+        stackName: 'wishboard-serverless-conference',
+        projectName: 'my-custom-app',
+        mode: 'dev',
+        skipFrontendUpload: true,
+      });
+      const pov = overridesOf(findDeploy());
+      expect(pov).toContain("ProjectName='my-custom-app-dev'");
+    });
+
     it('takes ProjectName and domain params from environment variables', () => {
       process.env.PROJECT_NAME = 'custom-proj';
       process.env.DOMAIN_NAME = 'example.com';

@@ -46,16 +46,8 @@ function assertCommand(name) {
   }
 }
 
-function runRemoteKioskSteps(
-  target,
-  remoteTemp,
-  mode,
-  domain,
-  deployRules,
-  appVersion,
-  eventProfile,
-  dryRun
-) {
+function runRemoteKioskSteps(target, remoteTemp, config, dryRun) {
+  const { mode, domain, deployRules, appVersion, eventProfile } = config;
   logStep('[2/4] Uploading setup-kiosk.sh, build-kiosk.sh, and docker-compose.yml...');
   for (const src of [SETUP_SCRIPT, BUILD_SCRIPT, COMPOSE_FILE]) {
     const up = execCommand('scp', [src, `${target}:${remoteTemp}/${path.basename(src)}`], {
@@ -125,11 +117,7 @@ export function deployKiosk(options) {
     runRemoteKioskSteps(
       target,
       remoteTemp,
-      mode,
-      domain,
-      deployRules,
-      appVersion,
-      eventProfile,
+      { mode, domain, deployRules, appVersion, eventProfile },
       dryRun
     );
 

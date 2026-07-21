@@ -156,8 +156,8 @@ function assertSafeParam(name, value) {
  * Resolves a configuration value across CLI options, process.env, samconfig.toml overrides, and default fallbacks.
  * Precedence: CLI option > process.env > samconfig.toml override > default fallback.
  */
-function resolveOverride(options = {}, optionKey, envKey, tomlKey, overrides = '', fallback = '') {
-  if (options && options[optionKey] !== undefined && options[optionKey] !== '') {
+function resolveOverride(options, optionKey, envKey, tomlKey, overrides = '', fallback = '') {
+  if (options?.[optionKey] !== undefined && options?.[optionKey] !== '') {
     return options[optionKey];
   }
   if (envKey && process.env[envKey] !== undefined && process.env[envKey] !== '') {
@@ -165,7 +165,7 @@ function resolveOverride(options = {}, optionKey, envKey, tomlKey, overrides = '
   }
   if (tomlKey) {
     const val = getOverrideValue(tomlKey, overrides);
-    if (val !== undefined && val !== '') return val;
+    if (val) return val;
   }
   return fallback;
 }
