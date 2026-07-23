@@ -372,6 +372,19 @@ describe('serverless commands', () => {
       expect(deploy[1]).toEqual(expect.arrayContaining(['--profile', 'toml-prof']));
     });
 
+    it('reads section-aware config and passes --config-env when eventProfile is provided', () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        '[default.deploy.parameters]\nstack_name = "default-stack"\n\n[professional.deploy.parameters]\nstack_name = "wishboard-serverless-conference-dev"\n'
+      );
+      deployServerless({ eventProfile: 'professional', skipFrontendUpload: true });
+      const deploy = findDeploy();
+      expect(deploy[1][deploy[1].indexOf('--stack-name') + 1]).toBe(
+        'wishboard-serverless-conference-dev'
+      );
+      expect(deploy[1]).toEqual(expect.arrayContaining(['--config-env', 'professional']));
+    });
+
     it('defaults the stack name to wishboard-serverless when nothing is configured', () => {
       vi.mocked(fs.existsSync).mockReturnValue(false);
       deployServerless({ skipFrontendUpload: true, dryRun: true });
