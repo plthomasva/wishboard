@@ -28,9 +28,6 @@ sudo usermod -a -G video,audio,input,tty,render wishboard
 echo "Creating application folder..."
 WISHBOARD_HOME=$(getent passwd wishboard | cut -d: -f6)
 sudo mkdir -p $WISHBOARD_HOME/wishboard
-if [[ -f "$REMOTE_TEMP_DIR/docker-compose.yml" ]]; then
-  sudo mv "$REMOTE_TEMP_DIR/docker-compose.yml" $WISHBOARD_HOME/wishboard/docker-compose.yml
-fi
 sudo chown -R wishboard:wishboard $WISHBOARD_HOME
 
 echo "Installing graphical kiosk and network dependencies..."

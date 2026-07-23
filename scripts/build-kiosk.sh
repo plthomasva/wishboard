@@ -8,6 +8,7 @@ DOMAIN_NAME="${2:-wishboard.painless-computing.com}"
 DEPLOY_RULES="${3:-keep}"
 APP_VERSION="${4:-latest}"
 EVENT_PROFILE="${5:-lifestyle}"
+REMOTE_TEMP_DIR="${6:-}"
 
 # Configure the Docker command to securely execute as the wishboard service user using their isolated rootless daemon
 WISHBOARD_UID=$(id -u wishboard)
@@ -26,8 +27,12 @@ echo "Disk space OK (${AVAILABLE_MB} MB available)."
 # Determine the home directory dynamically
 WISHBOARD_HOME=$(getent passwd wishboard | cut -d: -f6 || echo "/home/wishboard")
 
-# Ensure directory exists for env file
-sudo -u wishboard mkdir -p $WISHBOARD_HOME/wishboard
+# Ensure directory exists for env file and copy docker-compose.yml if provided
+sudo mkdir -p $WISHBOARD_HOME/wishboard
+if [[ -n "$REMOTE_TEMP_DIR" && -f "$REMOTE_TEMP_DIR/docker-compose.yml" ]]; then
+    sudo cp "$REMOTE_TEMP_DIR/docker-compose.yml" "$WISHBOARD_HOME/wishboard/docker-compose.yml"
+    sudo chown wishboard:wishboard "$WISHBOARD_HOME/wishboard/docker-compose.yml"
+fi
 
 echo "Configuring environment variables..."
 if [[ "$MODE" = "prod" || "$MODE" = "dual" ]]; then
@@ -40,11 +45,32 @@ else
     sudo rm -f $WISHBOARD_HOME/wishboard/.env
     sudo -u wishboard bash -c "echo 'NODE_ENV=development' > $WISHBOARD_HOME/wishboard/.env"
 fi
+
+# Ensure application data directory permissions are cleanly owned by mapped container subuids.
+# sqld drops privileges from root to UID 666; node runs as UID 1000.
+#   node  (container UID 1000) -> host subuid_start + 999
+#   sqld  (container UID 666)  -> host subuid_start + 665
+echo "Configuring application data directory permissions..."
+if [[ -d "$WISHBOARD_HOME/wishboard/data" ]]; then
+    SUBUID_START=$(grep "^wishboard:" /etc/subuid 2>/dev/null | cut -d: -f2 || true)
+    if [[ -z "$SUBUID_START" ]]; then
+        SUBUID_START=$(grep "^pi:" /etc/subuid 2>/dev/null | cut -d: -f2 || true)
+    fi
+    if [[ -n "$SUBUID_START" ]]; then
+        NODE_SUBUID=$((SUBUID_START + 1000 - 1))
+        SQLD_SUBUID=$((SUBUID_START + 666 - 1))
+        # chown ./data to node first (recursive), then override ./data/db for sqld
+        sudo chown -R "$NODE_SUBUID:$NODE_SUBUID" "$WISHBOARD_HOME/wishboard/data" || true
+        if [[ -d "$WISHBOARD_HOME/wishboard/data/db" ]]; then
+            sudo chown -R "$SQLD_SUBUID:$SQLD_SUBUID" "$WISHBOARD_HOME/wishboard/data/db" || true
+        fi
+    fi
+    sudo chmod -R 2775 "$WISHBOARD_HOME/wishboard/data" || true
+fi
+
 sudo -u wishboard bash -c "echo 'CORS_ALLOWED_ORIGINS=https://$DOMAIN_NAME,http://localhost:3000,http://localhost:5173' >> $WISHBOARD_HOME/wishboard/.env"
 sudo -u wishboard bash -c "echo 'APP_VERSION=$APP_VERSION' >> $WISHBOARD_HOME/wishboard/.env"
 sudo -u wishboard bash -c "echo 'EVENT_PROFILE=$EVENT_PROFILE' >> $WISHBOARD_HOME/wishboard/.env"
-sudo -u wishboard bash -c "echo 'WISHBOARD_UID=$WISHBOARD_UID' >> $WISHBOARD_HOME/wishboard/.env"
-sudo -u wishboard bash -c "echo 'WISHBOARD_GID=$WISHBOARD_GID' >> $WISHBOARD_HOME/wishboard/.env"
 
 # One-time migration from the legacy db_data named volume to the new ./data/db host bind mount
 if $RUN_CMD volume inspect db_data &>/dev/null && { [[ ! -d "$WISHBOARD_HOME/wishboard/data/db" ]] || [[ -z "$(ls -A $WISHBOARD_HOME/wishboard/data/db 2>/dev/null)" ]]; }; then
