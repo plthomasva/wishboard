@@ -71,7 +71,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
 
     // eslint-disable-next-line no-control-regex -- intentionally matches ANSI escape sequences
     const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
-    const logRegex = /^(?:(\[WS\])\s+)?(?:\[([^\]]+)\]\s+)?(\w+):\s*(.*)$/;
+    const logRegex = /^(?:\[(WS)\]\s+)?(?:\[(?!(?:WS)\])([^\]]+)\]\s+)?(\w+):\s*(.*)$/;
 
     return filteredLines.map((line, idx) => {
       const cleanLine = line.replace(ansiRegex, '').trim();

@@ -179,12 +179,14 @@ function UnauthenticatedAccountView({
       <p>Create an account to manage multiple wishes, or log in if you already have one.</p>
       <div className="tab-buttons">
         <button
+          type="button"
           className={mode === 'login' ? 'nav-button active' : 'nav-button'}
           onClick={() => setMode('login')}
         >
           Login
         </button>
         <button
+          type="button"
           className={mode === 'register' ? 'nav-button active' : 'nav-button'}
           onClick={() => setMode('register')}
         >
@@ -635,7 +637,7 @@ export default function AccountPage() {
           </h1>
           <p>You can manage your saved wishes here.</p>
         </div>
-        <button className="secondary-button" onClick={logout}>
+        <button type="button" className="secondary-button" onClick={logout}>
           Logout
         </button>
       </div>

@@ -136,7 +136,7 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
       <div className="display-header-bar">
         <h1>Big Screen Display</h1>
         {!isKiosk && onEnterKiosk && (
-          <button className="kiosk-btn secondary-button" onClick={onEnterKiosk}>
+          <button type="button" className="kiosk-btn secondary-button" onClick={onEnterKiosk}>
             Enter Kiosk Mode
           </button>
         )}
