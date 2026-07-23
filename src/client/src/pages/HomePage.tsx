@@ -18,13 +18,25 @@ export default function HomePage({ onNavigate }: Readonly<HomePageProps>) {
       </div>
       <p>Choose an action below to enter a wish, search wishes, or show the rotating display.</p>
       <div className="home-actions">
-        <button onClick={() => onNavigate('enter')}>Enter a Wish</button>
-        <button onClick={() => onNavigate('search')}>Search Wishes</button>
-        <button onClick={() => onNavigate('display')}>Big Screen Display</button>
+        <button type="button" onClick={() => onNavigate('enter')}>
+          Enter a Wish
+        </button>
+        <button type="button" onClick={() => onNavigate('search')}>
+          Search Wishes
+        </button>
+        <button type="button" onClick={() => onNavigate('display')}>
+          Big Screen Display
+        </button>
 
-        <button onClick={() => onNavigate('account')}>My Account</button>
-        <button onClick={() => onNavigate('about')}>About Wishboard</button>
-        <button onClick={() => onNavigate('admin')}>Admin</button>
+        <button type="button" onClick={() => onNavigate('account')}>
+          My Account
+        </button>
+        <button type="button" onClick={() => onNavigate('about')}>
+          About Wishboard
+        </button>
+        <button type="button" onClick={() => onNavigate('admin')}>
+          Admin
+        </button>
       </div>
     </section>
   );

@@ -156,6 +156,7 @@ export default function PosterPage() {
         }
       `}</style>
       <button
+        type="button"
         className="primary-button no-print"
         onClick={() => globalThis.print()}
         style={styles.printBtn}

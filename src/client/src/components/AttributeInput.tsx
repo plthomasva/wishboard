@@ -11,6 +11,34 @@ interface AttributeInputProps {
   warning?: string;
 }
 
+function findStickerMatch(stickerMap: Record<string, any>, optLower: string) {
+  return Object.keys(stickerMap).find((k) => {
+    const escapedKey = k.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+    const regex = new RegExp(String.raw`\b${escapedKey}\b`);
+    return regex.test(optLower);
+  });
+}
+
+function resolveStickerRule(
+  opt: string,
+  category: string | undefined,
+  stickersMap: Record<string, any>
+) {
+  const optLower = opt.toLowerCase();
+  if (category && stickersMap[category]) {
+    const matchKey = findStickerMatch(stickersMap[category], optLower);
+    if (matchKey) return stickersMap[category][matchKey];
+  } else {
+    for (const cat of Object.keys(stickersMap)) {
+      const matchKey = findStickerMatch(stickersMap[cat], optLower);
+      if (matchKey) {
+        return stickersMap[cat][matchKey];
+      }
+    }
+  }
+  return null;
+}
+
 export default function AttributeInput({
   id,
   category,
@@ -27,31 +55,8 @@ export default function AttributeInput({
     .map((s) => s.trim().toLowerCase())
     .filter((s) => s !== '');
 
-  const getDynamicPillIcon = (opt: string, category: string | undefined, stickersMap: any) => {
-    const optLower = opt.toLowerCase();
-
-    const findMatch = (stickerMap: Record<string, any>) => {
-      return Object.keys(stickerMap).find((k) => {
-        const regex = new RegExp(String.raw`\b${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\b`);
-        return regex.test(optLower);
-      });
-    };
-
-    let rule: any;
-
-    if (category && stickersMap[category]) {
-      const matchKey = findMatch(stickersMap[category]);
-      if (matchKey) rule = stickersMap[category][matchKey];
-    } else {
-      // Fallback search across all categories if no specific category provided
-      for (const cat of Object.keys(stickersMap)) {
-        const matchKey = findMatch(stickersMap[cat]);
-        if (matchKey) {
-          rule = stickersMap[cat][matchKey];
-          break;
-        }
-      }
-    }
+  const getDynamicPillIcon = (opt: string, cat?: string, stickersMap?: any) => {
+    const rule = resolveStickerRule(opt, cat, stickersMap || {});
 
     if (rule?.type === 'icon') {
       if (rule.iconType === 'female') {
