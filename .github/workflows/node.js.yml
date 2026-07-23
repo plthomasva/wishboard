@@ -16,24 +16,48 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  quality-checks:
+    name: Code Quality & Security
     if: ${{ !startsWith(github.head_ref, 'release-please-') }}
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [22.x, 24.x]
-
     steps:
       - uses: actions/checkout@v7.0.0
         with:
-          fetch-depth: 0 # Full history: better SonarQube relevancy and complete gitleaks scan
+          fetch-depth: 0 # Full history for gitleaks
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.x
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run type-check
+      - name: Format check
+        run: npm run format:check
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  unit-and-integration:
+    name: Unit & Integration Tests
+    if: ${{ !startsWith(github.head_ref, 'release-please-') }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x, 24.x]
+    steps:
+      - uses: actions/checkout@v7.0.0
+        with:
+          fetch-depth: 0 # Full history: better SonarQube relevancy
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-
       - name: Cache SonarCloud packages
         uses: actions/cache@v6
         with:
@@ -42,25 +66,6 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
       - name: Install dependencies
         run: npm ci
-
-      # Cheap, version-independent checks — run once (on 24.x) and fail fast.
-      - name: Lint
-        if: matrix.node-version == '24.x'
-        run: npm run lint
-      - name: Type check
-        if: matrix.node-version == '24.x'
-        run: npm run type-check
-      - name: Format check
-        if: matrix.node-version == '24.x'
-        run: npm run format:check
-      - name: Gitleaks secret scan
-        if: matrix.node-version == '24.x'
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # GITLEAKS_LICENSE only required for GitHub organizations; omit for
-          # personal / public repos.
-
       - name: Build
         run: npm run build --if-present
       - name: Test and Coverage
@@ -72,33 +77,6 @@ jobs:
         run: |
           echo "## Integration Tests" >> $GITHUB_STEP_SUMMARY
           npm run test:integration
-      - name: Get Playwright Version
-        if: matrix.node-version == '24.x'
-        id: playwright-version
-        run: echo "version=$(npm view @playwright/test version)" >> $GITHUB_OUTPUT
-      - name: Cache Playwright Browsers
-        if: matrix.node-version == '24.x'
-        uses: actions/cache@v6
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-      - name: Install Playwright Browsers
-        if: matrix.node-version == '24.x' && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps
-      - name: Install Playwright System Deps
-        if: matrix.node-version == '24.x' && steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps
-      - name: Run Playwright E2E Smoke Tests
-        if: matrix.node-version == '24.x'
-        run: npm run test:e2e
-        env:
-          WISHBOARD_ADMIN_SECRET: e2e-admin-password
-      - name: Clean up E2E Test DB
-        if: always() && matrix.node-version == '24.x'
-        run: rm -f data/e2e-test.db data/e2e-test.db-shm data/e2e-test.db-wal
       - name: Ensure tests leave no artifacts in the working tree
         if: matrix.node-version == '24.x'
         run: |
@@ -110,35 +88,71 @@ jobs:
           fi
           echo "No test artifacts leaked into the working tree."
       - name: SonarCloud Scan
-        # Dependabot runs can't see SONAR_TOKEN (secrets are withheld from
-        # dependabot events), so Sonar is scoped to human PRs / pushes — which
-        # are also the ones auto-merge can race. See #164.
         if: github.actor != 'dependabot[bot]' && matrix.node-version == '22.x'
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         with:
-          # Block this job until SonarCloud finishes computing the Quality Gate
-          # and fail if it's red, so "CI Success" (and auto-merge) can't go green
-          # before Sonar has weighed in. Closes the auto-merge/Sonar race (#164).
           args: -Dsonar.qualitygate.wait=true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  e2e-tests:
+    name: Playwright E2E Tests
+    if: ${{ !startsWith(github.head_ref, 'release-please-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.x
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build --if-present
+      - name: Get Playwright Version
+        id: playwright-version
+        run: echo "version=$(npm view @playwright/test version)" >> $GITHUB_OUTPUT
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v6
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps
+      - name: Install Playwright System Deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps
+      - name: Run Playwright E2E Smoke Tests
+        run: npm run test:e2e
+        env:
+          WISHBOARD_ADMIN_SECRET: e2e-admin-password
+      - name: Clean up E2E Test DB
+        if: always()
+        run: rm -f data/e2e-test.db data/e2e-test.db-shm data/e2e-test.db-wal
+
   # Aggregate gate with a stable name for branch-protection required checks.
-  # The matrix `build` job reports per-leg names (build (22.x)/(24.x)) when it
-  # runs but a single `build` when skipped (e.g. release-please PRs), so it
-  # can't be required directly. This job always reports "CI Success": it passes
-  # when the build succeeded or was skipped, and fails otherwise.
   ci-success:
     name: CI Success
     if: always()
-    needs: [build]
+    needs: [quality-checks, unit-and-integration, e2e-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Verify build result
         run: |
-          result="${{ needs.build.result }}"
-          echo "build result: $result"
-          if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
-            exit 1
-          fi
+          q_res="${{ needs.quality-checks.result }}"
+          u_res="${{ needs.unit-and-integration.result }}"
+          e_res="${{ needs.e2e-tests.result }}"
+          echo "quality-checks result: $q_res"
+          echo "unit-and-integration result: $u_res"
+          echo "e2e-tests result: $e_res"
+          for res in "$q_res" "$u_res" "$e_res"; do
+            if [ "$res" = "failure" ] || [ "$res" = "cancelled" ]; then
+              exit 1
+            fi
+          done
