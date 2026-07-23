@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.20.0...wishboard-v1.20.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* **kiosk:** prevent node container from hijacking sqld data directory permissions ([#271](https://github.com/plthomasva/wishboard/issues/271)) ([3c5bce7](https://github.com/plthomasva/wishboard/commit/3c5bce7b1f38d991b8013f0363a1efd0dfd2b974))
+
 ## [1.20.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.19.0...wishboard-v1.20.0) (2026-07-21)
 
 
