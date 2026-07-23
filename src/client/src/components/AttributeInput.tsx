@@ -13,7 +13,8 @@ interface AttributeInputProps {
 
 function findStickerMatch(stickerMap: Record<string, any>, optLower: string) {
   return Object.keys(stickerMap).find((k) => {
-    const regex = new RegExp(String.raw`\b${k.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}\b`);
+    const escapedKey = k.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+    const regex = new RegExp(String.raw`\b${escapedKey}\b`);
     return regex.test(optLower);
   });
 }
