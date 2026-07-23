@@ -159,6 +159,7 @@ kiosk
     '--app-version <version>',
     'Container image tag to deploy (default: package.json version)'
   )
+  .option('--skip-setup', 'Skip running setup-kiosk.sh on the Pi (fast container update)')
   .action(async (options, command) => {
     try {
       const { deployKiosk } = await import('./commands/kiosk.js');

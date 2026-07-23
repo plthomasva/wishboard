@@ -87,6 +87,12 @@ describe('kiosk commands', () => {
       ).toBe(true);
     });
 
+    it('skips setup-kiosk.sh when skipSetup is true', () => {
+      deployKiosk({ host: 'pi.local', mode: 'dev', skipSetup: true });
+      expect(sshCmds().some((s) => s.includes('setup-kiosk.sh'))).toBe(false);
+      expect(sshCmds().some((s) => s.includes('build-kiosk.sh'))).toBe(true);
+    });
+
     it('throws if ssh is missing', () => {
       vi.mocked(commandUtils.hasCommand).mockImplementation((cmd) => cmd !== 'ssh');
       expect(() => deployKiosk({ host: 'pi.local' })).toThrow('ssh missing');
