@@ -21,7 +21,7 @@ jobs:
     if: ${{ !startsWith(github.head_ref, 'release-please-') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0 # Full history for gitleaks
       - name: Use Node.js 24.x
@@ -50,7 +50,7 @@ jobs:
       matrix:
         node-version: [22.x, 24.x]
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0 # Full history: better SonarQube relevancy
       - name: Use Node.js ${{ matrix.node-version }}
@@ -101,7 +101,7 @@ jobs:
     if: ${{ !startsWith(github.head_ref, 'release-please-') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - name: Use Node.js 24.x
         uses: actions/setup-node@v7.0.0
         with:
