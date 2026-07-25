@@ -86,7 +86,7 @@
     "prettier": "^3.9.5",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "react-dom": "^19.2.8",
     "recharts": "3.9.2",
     "resize-observer-polyfill": "^1.5.1",
     "socket.io-client": "^4.8.3",
