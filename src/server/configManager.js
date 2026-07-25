@@ -3,7 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'yaml';
 import defaultRules from './defaultRules.js';
-import { DEFAULT_EVENT_PROFILE } from '../cli/commandUtils.js';
+
+export const DEFAULT_EVENT_PROFILE = 'lifestyle';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

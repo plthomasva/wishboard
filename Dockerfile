@@ -49,6 +49,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy the built backend and frontend from the builder stage
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/server ./src/server
+COPY --from=builder /app/src/cli ./src/cli
 COPY --from=builder /app/src/client/src/passphrase.js ./src/client/src/passphrase.js
 COPY --from=builder /app/data ./data
 COPY --from=builder /app/profiles ./profiles

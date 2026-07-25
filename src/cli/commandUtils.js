@@ -139,8 +139,9 @@ export function setupAwsEnv(options = {}) {
     process.env.AWS_DEFAULT_REGION = options.region;
   }
 }
+import { DEFAULT_EVENT_PROFILE } from '../server/configManager.js';
 
-export const DEFAULT_EVENT_PROFILE = 'lifestyle';
+export { DEFAULT_EVENT_PROFILE };
 
 /**
  * Resolves the active event profile name from CLI options, process.env, or default fallback.
