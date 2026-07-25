@@ -4,9 +4,8 @@ services:
     # broke stats-file persistence under our rootless-Docker volume; 0.24.32 is
     # the last-known-good. Bumps come via Dependabot (docker-compose) as PRs.
     # Changing this minor/major may require recreating the db_data volume.
-    image: ghcr.io/tursodatabase/libsql-server:v0.24.33
+    image: ghcr.io/tursodatabase/libsql-server:v0.24.32
     container_name: wishboard-db
-    user: '${WISHBOARD_UID:-1000}:${WISHBOARD_GID:-1000}'
     volumes:
       - ./data/db:/var/lib/sqld
     restart: unless-stopped
