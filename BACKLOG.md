@@ -14,6 +14,7 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 ### Database & Deployment
 
+- **[#270](https://github.com/plthomasva/wishboard/issues/270)** — Pin `libsql-server` to v0.24.32 due to stats file permission error (`Permission denied (os error 13)`) under Rootless Docker volume mounts. Keep open until an upstream release resolves stats file persistence.
 - **[#239](https://github.com/plthomasva/wishboard/issues/239)** — Evaluate enabling WAL (Write-Ahead Logging) mode on local single-node deployments to prevent read operations from blocking during write bursts.
 
 ### Features & Enhancements
