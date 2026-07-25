@@ -113,7 +113,7 @@ jobs:
         run: npm run build --if-present
       - name: Get Playwright Version
         id: playwright-version
-        run: echo "version=$(npm view @playwright/test version)" >> $GITHUB_OUTPUT
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> $GITHUB_OUTPUT
       - name: Cache Playwright Browsers
         uses: actions/cache@v6
         id: playwright-cache
