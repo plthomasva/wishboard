@@ -45,7 +45,33 @@ npx wishboard serverless deploy \
   --cert-domain wishboards.app
 ```
 
-## 4. Alternative Turso Databases & SSM Token Seeding
+## 4. Environment Profiles in SAM Config (`samconfig.toml`)
+
+AWS SAM configuration (`aws-serverless/samconfig.toml`) supports section-based environment profiles (e.g. `default`, `lifestyle`, `professional`).
+
+Profile parameters inherit from `default.deploy.parameters` or `default.global.parameters`, so environment-specific sections only need to override profile-specific parameters (such as `stack_name`, `parameter_overrides` for `DomainName`, `DatabaseUrl`, and `DatabaseAuthTokenSsm`):
+
+```toml
+[default.deploy.parameters]
+stack_name = "wishboard-serverless-dev"
+region = "us-east-1"
+profile = "wishboard"
+
+[lifestyle.deploy.parameters]
+parameter_overrides = 'ProjectName="wishboard-serverless" DomainName="lifestyle.wishboards.app" HostedZoneId="Z0123456789ABCDEF" DatabaseUrl="libsql://wishboard-dev.turso.io" DatabaseAuthTokenSsm="/wishboard/dev/turso-auth-token"'
+
+[professional.deploy.parameters]
+stack_name = "wishboard-serverless-conference-dev"
+parameter_overrides = 'ProjectName="wishboard-serverless" DomainName="conference.wishboards.app" HostedZoneId="Z0123456789ABCDEF" DatabaseUrl="libsql://conference-dev.turso.io" DatabaseAuthTokenSsm="/wishboard/conf/turso-auth-token"'
+```
+
+When deploying with `--event-profile <name>` (or `--config-env <name>`), the CLI automatically:
+
+- Passes `--config-env <name>` to `sam deploy`.
+- Resolves stack configurations, parameter overrides, and region defaults from the matching `samconfig.toml` profile section with fallback to `default`.
+- Reuses the ACM SSL Certificate created by the primary stack when a wildcard or apex domain certificate is present.
+
+## 5. Alternative Turso Databases & SSM Token Seeding
 
 To point a serverless deployment stack to an isolated database:
 
