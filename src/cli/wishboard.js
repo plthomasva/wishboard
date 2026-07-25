@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_EVENT_PROFILE, setupAwsEnv } from './commandUtils.js';
+import { setupAwsEnv } from './commandUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
