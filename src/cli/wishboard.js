@@ -22,11 +22,7 @@ program
   .description('Unified deployment and administration CLI for Wishboard')
   .version(packageJson.version)
   .option('--dry-run', 'Preview the action without executing it')
-  .option(
-    '--event-profile <name>',
-    'Event profile name (e.g. lifestyle, professional)',
-    DEFAULT_EVENT_PROFILE
-  );
+  .option('--event-profile <name>', 'Event profile name (e.g. lifestyle, professional)');
 
 program.hook('preAction', (thisCommand, actionCommand) => {
   setupAwsEnv(actionCommand.optsWithGlobals());
