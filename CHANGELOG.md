@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.21.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.20.1...wishboard-v1.21.0) (2026-07-25)
+
+
+### Features
+
+* **serverless:** support section-aware samconfig environment profiles and --config-env ([#275](https://github.com/plthomasva/wishboard/issues/275)) ([666d5ca](https://github.com/plthomasva/wishboard/commit/666d5ca22c79de43582fcffe3f5aa680e56b2289))
+
+
+### Bug Fixes
+
+* **ci:** extract installed playwright version from package.json for exact browser cache keying ([#297](https://github.com/plthomasva/wishboard/issues/297)) ([0793af3](https://github.com/plthomasva/wishboard/commit/0793af37d77d4d81db343dbbada77a9b73e8d8d0))
+* **ci:** make playwright install step idempotent to handle browser cache miss on version updates ([#298](https://github.com/plthomasva/wishboard/issues/298)) ([b469eb9](https://github.com/plthomasva/wishboard/commit/b469eb9c02d1693fb0aa87879c62703b7af4c0d1))
+* **kiosk:** pin libsql-server to v0.24.32 and fix Dockerfile module resolution ([#286](https://github.com/plthomasva/wishboard/issues/286)) ([6f9a5a7](https://github.com/plthomasva/wishboard/commit/6f9a5a7c7519d9ede9914f484790b118f2218303))
+
 ## [1.20.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.20.0...wishboard-v1.20.1) (2026-07-23)
 
 
