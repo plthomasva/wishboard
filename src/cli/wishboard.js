@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_EVENT_PROFILE, setupAwsEnv } from './commandUtils.js';
+import { setupAwsEnv } from './commandUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
@@ -22,11 +22,7 @@ program
   .description('Unified deployment and administration CLI for Wishboard')
   .version(packageJson.version)
   .option('--dry-run', 'Preview the action without executing it')
-  .option(
-    '--event-profile <name>',
-    'Event profile name (e.g. lifestyle, professional)',
-    DEFAULT_EVENT_PROFILE
-  );
+  .option('--event-profile <name>', 'Event profile name (e.g. lifestyle, professional)');
 
 program.hook('preAction', (thisCommand, actionCommand) => {
   setupAwsEnv(actionCommand.optsWithGlobals());

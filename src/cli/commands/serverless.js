@@ -19,17 +19,38 @@ function logError(msg) {
   console.error(`\x1b[31mERROR: ${msg}\x1b[0m`);
 }
 
-/** Reads a scalar value (e.g. stack_name, region, profile) from samconfig.toml. */
-function readTomlValue(key) {
+/** Reads a scalar value (e.g. stack_name, region, profile) from samconfig.toml for a given config environment. */
+function readTomlValue(key, envName = 'default') {
   if (!fs.existsSync(SAM_CONFIG)) return '';
   const content = fs.readFileSync(SAM_CONFIG, 'utf8');
-  const regex = new RegExp(String.raw`^\s*${key}\s*=\s*(.+?)\s*$`);
+
+  const sections = [`${envName}.deploy.parameters`, `${envName}.global.parameters`];
+  if (envName !== 'default') {
+    sections.push('default.deploy.parameters', 'default.global.parameters');
+  }
+  sections.push('top_level');
+
+  let currentSection = 'top_level';
+  const valuesBySection = {};
+
   for (const line of content.split(/\r?\n/)) {
-    const match = regex.exec(line);
-    if (match) {
-      return match[1].trim().replace(/^"|"$/g, '');
+    const sectionMatch = /^\s*\[([^\]]+)\]/.exec(line);
+    if (sectionMatch) {
+      currentSection = sectionMatch[1].trim();
+      continue;
+    }
+    const match = new RegExp(String.raw`^\s*${key}\s*=\s*(.+?)\s*$`).exec(line);
+    if (match && currentSection && !valuesBySection[currentSection]) {
+      valuesBySection[currentSection] = match[1].trim().replace(/^"|"$/g, '');
     }
   }
+
+  for (const sec of sections) {
+    if (valuesBySection[sec]) {
+      return valuesBySection[sec];
+    }
+  }
+
   return '';
 }
 
@@ -67,12 +88,14 @@ function assertNotSilentlyBlanked(key, resolved, tomlOverrides) {
 
 /** Resolves config with precedence: CLI options > samconfig.toml > defaults. */
 function resolveConfig(options) {
+  const configEnv =
+    getEventProfile(options) || options?.configEnv || process.env.CONFIG_ENV || 'default';
   let { stackName, region, profile } = options;
-  if (!stackName) stackName = readTomlValue('stack_name');
+  if (!stackName) stackName = readTomlValue('stack_name', configEnv);
   if (!stackName) stackName = 'wishboard-serverless';
-  if (!region) region = readTomlValue('region');
-  if (!profile) profile = readTomlValue('profile');
-  return { stackName, region, profile };
+  if (!region) region = readTomlValue('region', configEnv);
+  if (!profile) profile = readTomlValue('profile', configEnv);
+  return { stackName, region, profile, configEnv };
 }
 
 /** Builds the shared --profile/--region args for sam and aws invocations. */
@@ -191,8 +214,10 @@ function resolveProjectName(options = {}, mode = 'prod', tomlOverrides = '') {
 
 /** Assembles the CloudFormation parameter override tokens for sam deploy. */
 function buildParameterOverrides(options, mode) {
+  const configEnv =
+    getEventProfile(options) || options?.configEnv || process.env.CONFIG_ENV || 'default';
   const nodeEnv = mode === 'dev' ? 'development' : 'production';
-  const tomlOverrides = readTomlValue('parameter_overrides');
+  const tomlOverrides = readTomlValue('parameter_overrides', configEnv);
 
   const projectName = resolveProjectName(options, mode, tomlOverrides);
   const domainName = resolveOverride(options, 'domain', 'DOMAIN_NAME', 'DomainName', tomlOverrides);
@@ -382,6 +407,8 @@ function performBackendBuild(dryRun) {
 }
 
 function performStackDeploy(options, stackName, common, guided, mode, dryRun, sleepFn = sleepSync) {
+  const configEnv =
+    getEventProfile(options) || options?.configEnv || process.env.CONFIG_ENV || 'default';
   if (guided) {
     logStep('[4/6] Deploying stack (sam deploy --guided)...');
     logInfo('No samconfig.toml found or --guided specified; starting interactive setup.');
@@ -391,6 +418,7 @@ function performStackDeploy(options, stackName, common, guided, mode, dryRun, sl
 
   const deployArgs = [
     'deploy',
+    ...(configEnv && configEnv !== 'default' ? ['--config-env', configEnv] : []),
     '--stack-name',
     stackName,
     ...(guided
