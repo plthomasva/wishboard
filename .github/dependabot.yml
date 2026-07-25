@@ -19,6 +19,3 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
-    ignore:
-      # Pinned to v0.24.32 due to Rootless Docker stats file permission bug in v0.24.33+ (see issue #270)
-      - dependency-name: 'ghcr.io/tursodatabase/libsql-server'
