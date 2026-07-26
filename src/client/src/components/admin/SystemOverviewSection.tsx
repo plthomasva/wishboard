@@ -14,11 +14,20 @@ export interface ParsedLogEntry {
   raw: string;
 }
 
+function normalizeLogLevel(raw: string): LogLevel {
+  const l = raw.trim().toLowerCase();
+  if (l === 'info') return 'info';
+  if (l === 'warn' || l === 'warning') return 'warn';
+  if (l === 'error' || l === 'err') return 'error';
+  if (l === 'debug' || l === 'trace') return 'debug';
+  return 'other';
+}
+
 // eslint-disable-next-line no-control-regex -- intentionally matches ANSI escape sequences
 const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
-const winstonRegex = /^(?:\[(WS)\]\s+)?(?:\[([^\]]+)\]\s+)?(\w+):\s*(.*)$/i;
+const winstonRegex = /^(?:\[(WS)\]\s*)?(?:\[([0-9T:.\s-]+)\]\s*)?(\w+):\s*(.*)$/i;
 const cloudwatchRegex =
-  /^(?:\[(WS)\]\s+)?(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\s+(?:[a-f0-9-]{8,}|undefined)\s+(INFO|WARN|WARNING|ERROR|ERR|DEBUG|TRACE)\b\s*(.*)$/i;
+  /^(?:\[(WS)\]\s*)?(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}\S*)\s+(\S+)\s+(INFO|WARN|WARNING|ERROR|ERR|DEBUG|TRACE)\b\s*(.*)$/i;
 
 function parseLogLine(line: string, idx: number): ParsedLogEntry {
   const cleanLine = line.replace(ansiRegex, '').trim();
@@ -38,20 +47,13 @@ function parseLogLine(line: string, idx: number): ParsedLogEntry {
   if (winstonMatch) {
     const prefix = winstonMatch[1]?.trim() || '';
     const timestamp = winstonMatch[2]?.trim() || '';
-    const rawLevel = winstonMatch[3]?.trim().toLowerCase() || 'other';
     const message = winstonMatch[4] || '';
-
-    let level: LogLevel = 'other';
-    if (rawLevel === 'info') level = 'info';
-    else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
-    else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
-    else if (rawLevel === 'debug' || rawLevel === 'trace') level = 'debug';
 
     return {
       id: `${idx}-${timestamp}-${message.slice(0, 10)}`,
       prefix,
       timestamp,
-      level,
+      level: normalizeLogLevel(winstonMatch[3] || ''),
       message,
       raw: cleanLine,
     };
@@ -66,20 +68,13 @@ function parseLogLine(line: string, idx: number): ParsedLogEntry {
       .replace('T', ' ')
       .replace(/\.\d+Z?$/, '')
       .replace(/Z$/, '');
-    const rawLevel = cloudwatchMatch[3]?.trim().toLowerCase() || 'other';
-    const message = cloudwatchMatch[4] || '';
-
-    let level: LogLevel = 'other';
-    if (rawLevel === 'info') level = 'info';
-    else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
-    else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
-    else if (rawLevel === 'debug' || rawLevel === 'trace') level = 'debug';
+    const message = cloudwatchMatch[5] || '';
 
     return {
       id: `${idx}-${formattedTs}-${message.slice(0, 10)}`,
       prefix,
       timestamp: formattedTs,
-      level,
+      level: normalizeLogLevel(cloudwatchMatch[4] || ''),
       message,
       raw: cleanLine,
     };
@@ -189,7 +184,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
         )
       : lines;
 
-    return filteredLines.map(parseLogLine);
+    return filteredLines.map((line, idx) => parseLogLine(line, idx));
   }, [rawLogs, filterRepeating]);
 
   useEffect(() => {
