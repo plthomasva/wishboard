@@ -83,7 +83,10 @@ export -f id
       const relativeMock = path.relative(PROJECT_ROOT, mockEnvFile).replace(/\\/g, '/');
       execFileSync(
         'bash',
-        ['-c', `source "./${relativeMock}" && ./scripts/build-kiosk.sh "${mode}" test-domain.com`],
+        [
+          '-c',
+          `source "./${relativeMock}" && bash ./scripts/build-kiosk.sh "${mode}" test-domain.com`,
+        ],
         {
           cwd: PROJECT_ROOT,
           env: {
