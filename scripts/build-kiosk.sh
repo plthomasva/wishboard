@@ -43,7 +43,10 @@ if [[ "$MODE" = "prod" || "$MODE" = "dual" ]]; then
     sudo -u wishboard bash -c "echo 'WISHBOARD_AP_IP=10.42.0.1:3000' >> $WISHBOARD_HOME/wishboard/.env"
 else
     sudo rm -f $WISHBOARD_HOME/wishboard/.env
-    sudo -u wishboard bash -c "echo 'NODE_ENV=development' > $WISHBOARD_HOME/wishboard/.env"
+fi
+
+if [[ "$MODE" = "dev" || "$MODE" = "dual" ]]; then
+    sudo -u wishboard bash -c "echo 'NODE_ENV=development' >> $WISHBOARD_HOME/wishboard/.env"
 fi
 
 # Ensure application data directory permissions are cleanly owned by mapped container subuids.
