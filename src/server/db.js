@@ -162,6 +162,16 @@ const ensureColumn = async (table, column, type) => {
   }
 };
 
+const dropColumnSafe = async (table, column) => {
+  try {
+    await db.execute(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+  } catch (err) {
+    console.debug(
+      `Ignored: column ${table}.${column} may have already been dropped: ${err?.message}`
+    );
+  }
+};
+
 await ensureColumn('users', 'identity_attributes', 'TEXT');
 await ensureColumn('users', 'contacts', 'TEXT');
 await ensureColumn('users', 'wishmail_enabled', 'INTEGER DEFAULT 0');
@@ -202,11 +212,11 @@ try {
     }
   }
   // Data migrated, drop columns
-  await db.execute('ALTER TABLE users DROP COLUMN identity_genders');
-  await db.execute('ALTER TABLE users DROP COLUMN identity_orientations');
-  await db.execute('ALTER TABLE users DROP COLUMN identity_roles');
-} catch (_e) {
-  console.debug('Ignored: columns may have already been dropped');
+  await dropColumnSafe('users', 'identity_genders');
+  await dropColumnSafe('users', 'identity_orientations');
+  await dropColumnSafe('users', 'identity_roles');
+} catch (e) {
+  console.error('Error migrating user attributes:', e);
 }
 
 try {
@@ -233,14 +243,14 @@ try {
     }
   }
   // Data migrated, drop columns
-  await db.execute('ALTER TABLE wishes DROP COLUMN creator_genders');
-  await db.execute('ALTER TABLE wishes DROP COLUMN creator_orientations');
-  await db.execute('ALTER TABLE wishes DROP COLUMN creator_roles');
-  await db.execute('ALTER TABLE wishes DROP COLUMN desired_genders');
-  await db.execute('ALTER TABLE wishes DROP COLUMN desired_orientations');
-  await db.execute('ALTER TABLE wishes DROP COLUMN desired_roles');
-} catch (_e) {
-  console.debug('Ignored: columns may have already been dropped');
+  await dropColumnSafe('wishes', 'creator_genders');
+  await dropColumnSafe('wishes', 'creator_orientations');
+  await dropColumnSafe('wishes', 'creator_roles');
+  await dropColumnSafe('wishes', 'desired_genders');
+  await dropColumnSafe('wishes', 'desired_orientations');
+  await dropColumnSafe('wishes', 'desired_roles');
+} catch (e) {
+  console.error('Error migrating wish attributes:', e);
 }
 
 // WebSocket subscription state (serverless API Gateway target). Board events

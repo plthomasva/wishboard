@@ -3,6 +3,126 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import AwsMetricsDashboard from './AwsMetricsDashboard';
 import LocalMetricsDashboard from './LocalMetricsDashboard';
 
+export type LogLevel = 'info' | 'warn' | 'error' | 'debug' | 'other';
+
+export interface ParsedLogEntry {
+  id: string;
+  prefix: string;
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  raw: string;
+}
+
+// eslint-disable-next-line no-control-regex -- intentionally matches ANSI escape sequences
+const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
+const winstonRegex = /^(?:\[(WS)\]\s+)?(?:\[([^\]]+)\]\s+)?(\w+):\s*(.*)$/i;
+const cloudwatchRegex =
+  /^(?:\[(WS)\]\s+)?(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\s+(?:[a-f0-9-]{8,}|undefined)\s+(INFO|WARN|WARNING|ERROR|ERR|DEBUG|TRACE)\b\s*(.*)$/i;
+
+function parseLogLine(line: string, idx: number): ParsedLogEntry {
+  const cleanLine = line.replace(ansiRegex, '').trim();
+  if (!cleanLine) {
+    return {
+      id: `${idx}-empty`,
+      prefix: '',
+      timestamp: '',
+      level: 'other',
+      message: '',
+      raw: '',
+    };
+  }
+
+  // Check Winston format first
+  const winstonMatch = winstonRegex.exec(cleanLine);
+  if (winstonMatch) {
+    const prefix = winstonMatch[1]?.trim() || '';
+    const timestamp = winstonMatch[2]?.trim() || '';
+    const rawLevel = winstonMatch[3]?.trim().toLowerCase() || 'other';
+    const message = winstonMatch[4] || '';
+
+    let level: LogLevel = 'other';
+    if (rawLevel === 'info') level = 'info';
+    else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
+    else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
+    else if (rawLevel === 'debug' || rawLevel === 'trace') level = 'debug';
+
+    return {
+      id: `${idx}-${timestamp}-${message.slice(0, 10)}`,
+      prefix,
+      timestamp,
+      level,
+      message,
+      raw: cleanLine,
+    };
+  }
+
+  // Check CloudWatch Lambda format next
+  const cloudwatchMatch = cloudwatchRegex.exec(cleanLine);
+  if (cloudwatchMatch) {
+    const prefix = cloudwatchMatch[1]?.trim() || '';
+    const rawTs = cloudwatchMatch[2]?.trim() || '';
+    const formattedTs = rawTs
+      .replace('T', ' ')
+      .replace(/\.\d+Z?$/, '')
+      .replace(/Z$/, '');
+    const rawLevel = cloudwatchMatch[3]?.trim().toLowerCase() || 'other';
+    const message = cloudwatchMatch[4] || '';
+
+    let level: LogLevel = 'other';
+    if (rawLevel === 'info') level = 'info';
+    else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
+    else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
+    else if (rawLevel === 'debug' || rawLevel === 'trace') level = 'debug';
+
+    return {
+      id: `${idx}-${formattedTs}-${message.slice(0, 10)}`,
+      prefix,
+      timestamp: formattedTs,
+      level,
+      message,
+      raw: cleanLine,
+    };
+  }
+
+  // Fallback: check unformatted lines
+  const prefix = cleanLine.startsWith('[WS]') ? '[WS]' : '';
+  const textWithoutWs = cleanLine.startsWith('[WS]')
+    ? cleanLine.replace(/^\[WS\]\s*/, '')
+    : cleanLine;
+  const cleanLower = textWithoutWs.toLowerCase();
+
+  let level: LogLevel = 'other';
+  if (
+    /^(error|err)\b/i.test(textWithoutWs) ||
+    cleanLower.includes('error:') ||
+    cleanLower.includes('err:') ||
+    cleanLower.includes('error message')
+  ) {
+    level = 'error';
+  } else if (
+    /^(warn|warning)\b/i.test(textWithoutWs) ||
+    cleanLower.includes('warn:') ||
+    cleanLower.includes('warning:') ||
+    cleanLower.includes('warn message')
+  ) {
+    level = 'warn';
+  } else if (/^info\b/i.test(textWithoutWs) || cleanLower.includes('info:')) {
+    level = 'info';
+  } else if (/^(debug|trace)\b/i.test(textWithoutWs) || cleanLower.includes('debug:')) {
+    level = 'debug';
+  }
+
+  return {
+    id: `${idx}-fallback`,
+    prefix,
+    timestamp: '',
+    level,
+    message: textWithoutWs,
+    raw: cleanLine,
+  };
+}
+
 export default function SystemOverviewSection({ authHeader, refreshCounter }: any) {
   const [rawLogs, setRawLogs] = useState<string>('');
   const [filterRepeating, setFilterRepeating] = useState<boolean>(true);
@@ -69,114 +189,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
         )
       : lines;
 
-    // eslint-disable-next-line no-control-regex -- intentionally matches ANSI escape sequences
-    const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
-    const winstonRegex = /^(?:\[(WS)\]\s+)?(?:\[([^\]]+)\]\s+)?(\w+):\s*(.*)$/i;
-    const cloudwatchRegex =
-      /^(?:\[(WS)\]\s+)?(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\s+(?:[a-f0-9-]{36}|[a-f0-9-]{8,}|undefined)\s+(INFO|WARN|WARNING|ERROR|ERR|DEBUG|TRACE)\b\s*(.*)$/i;
-
-    return filteredLines.map((line, idx) => {
-      const cleanLine = line.replace(ansiRegex, '').trim();
-      if (!cleanLine) {
-        return {
-          id: `${idx}-empty`,
-          prefix: '',
-          timestamp: '',
-          level: 'other' as const,
-          message: '',
-          raw: '',
-        };
-      }
-
-      // Check Winston format first
-      const winstonMatch = winstonRegex.exec(cleanLine);
-      if (winstonMatch) {
-        const prefix = winstonMatch[1]?.trim() || '';
-        const timestamp = winstonMatch[2]?.trim() || '';
-        const rawLevel = winstonMatch[3]?.trim().toLowerCase() || 'other';
-        const message = winstonMatch[4] || '';
-
-        let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
-        if (rawLevel === 'info') level = 'info';
-        else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
-        else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
-        else if (rawLevel === 'debug' || rawLevel === 'trace') level = 'debug';
-
-        return {
-          id: `${idx}-${timestamp}-${message.slice(0, 10)}`,
-          prefix,
-          timestamp,
-          level,
-          message,
-          raw: cleanLine,
-        };
-      }
-
-      // Check CloudWatch Lambda format next
-      const cloudwatchMatch = cloudwatchRegex.exec(cleanLine);
-      if (cloudwatchMatch) {
-        const prefix = cloudwatchMatch[1]?.trim() || '';
-        const rawTs = cloudwatchMatch[2]?.trim() || '';
-        const formattedTs = rawTs
-          .replace('T', ' ')
-          .replace(/\.\d+Z?$/, '')
-          .replace(/Z$/, '');
-        const rawLevel = cloudwatchMatch[3]?.trim().toLowerCase() || 'other';
-        const message = cloudwatchMatch[4] || '';
-
-        let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
-        if (rawLevel === 'info') level = 'info';
-        else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
-        else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
-        else if (rawLevel === 'debug' || rawLevel === 'trace') level = 'debug';
-
-        return {
-          id: `${idx}-${formattedTs}-${message.slice(0, 10)}`,
-          prefix,
-          timestamp: formattedTs,
-          level,
-          message,
-          raw: cleanLine,
-        };
-      }
-
-      // Fallback: check unformatted lines
-      const prefix = cleanLine.startsWith('[WS]') ? '[WS]' : '';
-      const textWithoutWs = cleanLine.startsWith('[WS]')
-        ? cleanLine.replace(/^\[WS\]\s*/, '')
-        : cleanLine;
-      const cleanLower = textWithoutWs.toLowerCase();
-
-      let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
-      if (
-        /^(error|err)\b/i.test(textWithoutWs) ||
-        cleanLower.includes('error:') ||
-        cleanLower.includes('err:') ||
-        cleanLower.includes('error message')
-      ) {
-        level = 'error';
-      } else if (
-        /^(warn|warning)\b/i.test(textWithoutWs) ||
-        cleanLower.includes('warn:') ||
-        cleanLower.includes('warning:') ||
-        cleanLower.includes('warn message')
-      ) {
-        level = 'warn';
-      } else if (/^info\b/i.test(textWithoutWs) || cleanLower.includes('info:')) {
-        level = 'info';
-      } else if (/^(debug|trace)\b/i.test(textWithoutWs) || cleanLower.includes('debug:')) {
-        level = 'debug';
-      }
-
-      return {
-        id: `${idx}-fallback`,
-        prefix,
-        timestamp: '',
-        level,
-        message: textWithoutWs,
-        raw: cleanLine,
-      };
-    });
+    return filteredLines.map(parseLogLine);
   }, [rawLogs, filterRepeating]);
 
   useEffect(() => {
