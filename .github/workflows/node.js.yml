@@ -37,7 +37,7 @@ jobs:
       - name: Format check
         run: npm run format:check
       - name: Gitleaks secret scan
-        uses: gitleaks/gitleaks-action@e0c47f44c6883e1040332357774d081b831414b3 # v3
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
