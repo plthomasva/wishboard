@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.21.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.21.0...wishboard-v1.21.1) (2026-07-26)
+
+
+### Bug Fixes
+
+* **admin:** improve CloudWatch log line parsing and level assignment in serverless mode ([#299](https://github.com/plthomasva/wishboard/issues/299)) ([4061c16](https://github.com/plthomasva/wishboard/commit/4061c16c233c5d4200e947541b90dfc5df8f0e44))
+* **ci:** harden node.js CI workflow permissions, dependencies, and action SHAs ([#303](https://github.com/plthomasva/wishboard/issues/303)) ([10a2283](https://github.com/plthomasva/wishboard/commit/10a2283e1772938e945d8e72ee5d0977291ba65b))
+* **kiosk:** write NODE_ENV=development to .env in dual mode ([#300](https://github.com/plthomasva/wishboard/issues/300)) ([6ed5f74](https://github.com/plthomasva/wishboard/commit/6ed5f746088f9fe1e47e55e57ff13a326f92dba7))
+
 ## [1.21.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.20.1...wishboard-v1.21.0) (2026-07-25)
 
 
