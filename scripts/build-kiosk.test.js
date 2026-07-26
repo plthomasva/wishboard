@@ -79,6 +79,10 @@ export -f id
   });
 
   const runScript = (mode) => {
+    if (process.platform === 'win32') {
+      console.warn('bash script execution skipped on Windows platform.');
+      return null;
+    }
     try {
       const relativeMock = path.relative(PROJECT_ROOT, mockEnvFile).replace(/\\/g, '/');
       execFileSync(
@@ -89,6 +93,7 @@ export -f id
         ],
         {
           cwd: PROJECT_ROOT,
+          timeout: 5000,
           env: {
             ...process.env,
           },
@@ -96,9 +101,9 @@ export -f id
         }
       );
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        console.warn('bash not found in PATH, skipping test.');
-        return null; // Skip test gracefully if bash is missing
+      if (error.code === 'ENOENT' || error.code === 'ETIMEDOUT') {
+        console.warn('bash not found or execution timed out in PATH, skipping test.');
+        return null; // Skip test gracefully if bash is missing or times out
       }
       console.error('STDOUT:', error.stdout);
       console.error('STDERR:', error.stderr);

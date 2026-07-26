@@ -7,6 +7,8 @@ describe('Logger', () => {
   let tmpDir;
 
   afterEach(async () => {
+    const winston = await import('winston');
+    winston.default.loggers.close();
     vi.resetModules();
     vi.restoreAllMocks();
     if (tmpDir) {

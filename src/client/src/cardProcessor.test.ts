@@ -616,4 +616,32 @@ describe('cardProcessor utility functions', () => {
       expect(result.hierarchy).toBeDefined();
     });
   });
+
+  describe('applyTemporalSmoothing corner orientation branches', () => {
+    it('shifts corners twice when bottom points are higher than top points (upside-down poly)', () => {
+      // Landscape quad (d01=100 > d12=20) where top points (y=100) are higher than bottom points (y=80)
+      const upsideDownPoly = [
+        { x: 0, y: 100 },
+        { x: 100, y: 100 },
+        { x: 100, y: 80 },
+        { x: 0, y: 80 },
+      ];
+      const result = applyTemporalSmoothing(upsideDownPoly, null, []);
+      // Shifting twice brings lower y coordinates (80) to the front
+      expect(result[0].y).toBe(80);
+      expect(result[2].y).toBe(100);
+    });
+
+    it('rotates portrait edge orientation when vertical distance exceeds horizontal distance', () => {
+      // Portrait quad: d12 (vertical=50) > d01 (horizontal=10)
+      const portraitPoly = [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 10, y: 50 },
+        { x: 0, y: 50 },
+      ];
+      const result = applyTemporalSmoothing(portraitPoly, null, []);
+      expect(result).toHaveLength(4);
+    });
+  });
 });

@@ -154,4 +154,48 @@ describe('rulesManager (DB-backed)', () => {
   it('stopWatchingRules is a no-op (file watcher removed with the DB migration)', () => {
     expect(() => rm.stopWatchingRules()).not.toThrow();
   });
+
+  it('falls back to bundled defaults when legacy rules.yaml contains invalid YAML', async () => {
+    const fs = await import('node:fs');
+    const os = await import('node:os');
+    const pathMod = await import('node:path');
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'wb-rules-bad-'));
+    const yamlPath = pathMod.join(dir, 'rules.yaml');
+    fs.writeFileSync(yamlPath, 'rules: [invalid: : : yaml]', 'utf8');
+
+    ({ db, rm } = await importFresh({ RULES_PATH: yamlPath }));
+
+    // Should log warning and fall back to bundled 51 defaults
+    expect(rm.getRules()).toHaveLength(51);
+
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('falls back to bundled defaults when legacy rules.yaml contains empty rules array', async () => {
+    const fs = await import('node:fs');
+    const os = await import('node:os');
+    const pathMod = await import('node:path');
+    const dir = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'wb-rules-empty-'));
+    const yamlPath = pathMod.join(dir, 'rules.yaml');
+    fs.writeFileSync(yamlPath, 'rules: []\n', 'utf8');
+
+    ({ db, rm } = await importFresh({ RULES_PATH: yamlPath }));
+
+    expect(rm.getRules()).toHaveLength(51);
+
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('does not trigger reload when cache TTL is fresh', async () => {
+    ({ db, rm } = await importFresh({ RULES_CACHE_TTL_MS: '600000' }));
+    await db.execute('DELETE FROM rules');
+    await rm.reloadRules();
+    expect(rm.getRules()).toHaveLength(0);
+
+    await insertDirect(db, 'ext-3');
+
+    // Cache is fresh, getRules does not pick up ext-3 synchronously or async
+    rm.getRules();
+    expect(rm.getRules()).toHaveLength(0);
+  });
 });
