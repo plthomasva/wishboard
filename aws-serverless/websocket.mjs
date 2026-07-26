@@ -40,12 +40,21 @@ export const handler = async (event) => {
         } else {
           logger.warn(`Rejected sys:log subscribe from ${connectionId}: not an admin`);
         }
+      } else if (channel === 'wish:*') {
+        await db
+          .prepare('UPDATE websocket_connections SET sub_wishes = 1 WHERE connection_id = ?')
+          .run(connectionId);
+        logger.info(`Connection ${connectionId} subscribed to wish:*`);
       }
     } else if (routeKey === 'unsubscribe') {
       const { channel } = JSON.parse(event.body || '{}');
       if (channel === 'sys:log') {
         await db
           .prepare('UPDATE websocket_connections SET sub_syslog = 0 WHERE connection_id = ?')
+          .run(connectionId);
+      } else if (channel === 'wish:*') {
+        await db
+          .prepare('UPDATE websocket_connections SET sub_wishes = 0 WHERE connection_id = ?')
           .run(connectionId);
       }
     }

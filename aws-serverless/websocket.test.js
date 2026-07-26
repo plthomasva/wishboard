@@ -108,4 +108,26 @@ describe('websocket.mjs', () => {
     expect(mockRun).toHaveBeenCalledWith('conn-1');
     expect(res.statusCode).toBe(200);
   });
+
+  it('subscribe to wish:* records the subscription', async () => {
+    const ws = await import('./websocket.mjs');
+    const res = await ws.handler({
+      requestContext: { connectionId: 'conn-1', routeKey: 'subscribe' },
+      body: JSON.stringify({ channel: 'wish:*' }),
+    });
+    // UPDATE … SET sub_wishes = 1 WHERE connection_id = ?
+    expect(mockRun).toHaveBeenCalledWith('conn-1');
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('unsubscribe from wish:* clears the subscription', async () => {
+    const ws = await import('./websocket.mjs');
+    const res = await ws.handler({
+      requestContext: { connectionId: 'conn-1', routeKey: 'unsubscribe' },
+      body: JSON.stringify({ channel: 'wish:*' }),
+    });
+    // UPDATE … SET sub_wishes = 0 WHERE connection_id = ?
+    expect(mockRun).toHaveBeenCalledWith('conn-1');
+    expect(res.statusCode).toBe(200);
+  });
 });

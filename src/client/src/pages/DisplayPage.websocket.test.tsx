@@ -120,13 +120,16 @@ describe('DisplayPage WebSocket', () => {
     expect(screen.queryByText('Wish 11')).not.toBeInTheDocument();
   });
 
-  it('removes wish:created listener on unmount', async () => {
+  it('subscribes to wish:* on mount and removes listener on unmount', async () => {
     const { unmount } = render(<DisplayPage isKiosk={false} />);
     await waitFor(() => expect(screen.getByText('Existing wish')).toBeInTheDocument());
 
     const socket = getMockSocket();
+    expect(socket.emit).toHaveBeenCalledWith('subscribe', { channel: 'wish:*' });
+
     unmount();
 
+    expect(socket.emit).toHaveBeenCalledWith('unsubscribe', { channel: 'wish:*' });
     expect(socket.off).toHaveBeenCalledWith('wish:created', expect.any(Function));
   });
 });

@@ -38,10 +38,12 @@ export default function FlaggedWishesSection({
   useEffect(() => {
     if (!socket) return;
 
+    socket.emit('subscribe', { channel: 'wish:*' });
     socket.on('wish:flagged', addFlag);
     socket.on('wish:deleted', removeFlag);
 
     return () => {
+      socket.emit('unsubscribe', { channel: 'wish:*' });
       socket.off('wish:flagged', addFlag);
       socket.off('wish:deleted', removeFlag);
     };
