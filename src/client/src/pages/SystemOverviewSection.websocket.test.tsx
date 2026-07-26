@@ -305,6 +305,27 @@ describe('SystemOverviewSection WebSocket', () => {
     expect(screen.getByText('Fallback ws message')).toBeInTheDocument();
   });
 
+  it('correctly parses AWS CloudWatch Lambda log format', async () => {
+    mockFetch({
+      '/api/admin/logs': {
+        logs: [
+          '2026-07-26T03:10:07.625Z undefined WARN Skipping unsupported "PRAGMA busy_timeout = 5000" on this database driver: SQL_PARSE_ERROR: SQL not allowed statement: PRAGMA busy_timeout = 5000',
+          '2026-07-26T03:10:07.720Z undefined DEBUG Ignored: columns may have already been dropped',
+        ].join('\n'),
+      },
+    });
+
+    render(<SystemOverviewSection {...defaultProps} />);
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Skipping unsupported "PRAGMA busy_timeout = 5000"/)
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText('Ignored: columns may have already been dropped')).toBeInTheDocument();
+    expect(screen.getByText('DEBUG')).toBeInTheDocument();
+    expect(screen.getByText('WARN')).toBeInTheDocument();
+  });
+
   it('toggles repeating logs filter', async () => {
     mockFetch({
       '/api/admin/logs': {

@@ -71,7 +71,9 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
 
     // eslint-disable-next-line no-control-regex -- intentionally matches ANSI escape sequences
     const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
-    const logRegex = /^(?:\[(WS)\]\s+)?(?:\[(?!(?:WS)\])([^\]]+)\]\s+)?(\w+):\s*(.*)$/;
+    const winstonRegex = /^(?:\[(WS)\]\s+)?(?:\[([^\]]+)\]\s+)?(\w+):\s*(.*)$/i;
+    const cloudwatchRegex =
+      /^(?:\[(WS)\]\s+)?(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\s+(?:[a-f0-9-]{36}|[a-f0-9-]{8,}|undefined)\s+(INFO|WARN|WARNING|ERROR|ERR|DEBUG|TRACE)\b\s*(.*)$/i;
 
     return filteredLines.map((line, idx) => {
       const cleanLine = line.replace(ansiRegex, '').trim();
@@ -86,18 +88,19 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
         };
       }
 
-      const match = logRegex.exec(cleanLine);
-      if (match) {
-        const prefix = match[1]?.trim() || '';
-        const timestamp = match[2]?.trim() || '';
-        const rawLevel = match[3]?.trim().toLowerCase() || 'other';
-        const message = match[4] || '';
+      // Check Winston format first
+      const winstonMatch = winstonRegex.exec(cleanLine);
+      if (winstonMatch) {
+        const prefix = winstonMatch[1]?.trim() || '';
+        const timestamp = winstonMatch[2]?.trim() || '';
+        const rawLevel = winstonMatch[3]?.trim().toLowerCase() || 'other';
+        const message = winstonMatch[4] || '';
 
         let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
         if (rawLevel === 'info') level = 'info';
         else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
         else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
-        else if (rawLevel === 'debug') level = 'debug';
+        else if (rawLevel === 'debug' || rawLevel === 'trace') level = 'debug';
 
         return {
           id: `${idx}-${timestamp}-${message.slice(0, 10)}`,
@@ -109,19 +112,68 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
         };
       }
 
+      // Check CloudWatch Lambda format next
+      const cloudwatchMatch = cloudwatchRegex.exec(cleanLine);
+      if (cloudwatchMatch) {
+        const prefix = cloudwatchMatch[1]?.trim() || '';
+        const rawTs = cloudwatchMatch[2]?.trim() || '';
+        const formattedTs = rawTs
+          .replace('T', ' ')
+          .replace(/\.\d+Z?$/, '')
+          .replace(/Z$/, '');
+        const rawLevel = cloudwatchMatch[3]?.trim().toLowerCase() || 'other';
+        const message = cloudwatchMatch[4] || '';
+
+        let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
+        if (rawLevel === 'info') level = 'info';
+        else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
+        else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
+        else if (rawLevel === 'debug' || rawLevel === 'trace') level = 'debug';
+
+        return {
+          id: `${idx}-${formattedTs}-${message.slice(0, 10)}`,
+          prefix,
+          timestamp: formattedTs,
+          level,
+          message,
+          raw: cleanLine,
+        };
+      }
+
+      // Fallback: check unformatted lines
+      const prefix = cleanLine.startsWith('[WS]') ? '[WS]' : '';
+      const textWithoutWs = cleanLine.startsWith('[WS]')
+        ? cleanLine.replace(/^\[WS\]\s*/, '')
+        : cleanLine;
+      const cleanLower = textWithoutWs.toLowerCase();
+
       let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
-      const cleanLower = cleanLine.toLowerCase();
-      if (cleanLower.includes('error') || cleanLower.includes('err:')) level = 'error';
-      else if (cleanLower.includes('warn') || cleanLower.includes('warning:')) level = 'warn';
-      else if (cleanLower.includes('info:')) level = 'info';
-      else if (cleanLower.includes('debug:')) level = 'debug';
+      if (
+        /^(error|err)\b/i.test(textWithoutWs) ||
+        cleanLower.includes('error:') ||
+        cleanLower.includes('err:') ||
+        cleanLower.includes('error message')
+      ) {
+        level = 'error';
+      } else if (
+        /^(warn|warning)\b/i.test(textWithoutWs) ||
+        cleanLower.includes('warn:') ||
+        cleanLower.includes('warning:') ||
+        cleanLower.includes('warn message')
+      ) {
+        level = 'warn';
+      } else if (/^info\b/i.test(textWithoutWs) || cleanLower.includes('info:')) {
+        level = 'info';
+      } else if (/^(debug|trace)\b/i.test(textWithoutWs) || cleanLower.includes('debug:')) {
+        level = 'debug';
+      }
 
       return {
         id: `${idx}-fallback`,
-        prefix: cleanLine.startsWith('[WS]') ? '[WS]' : '',
+        prefix,
         timestamp: '',
         level,
-        message: cleanLine.startsWith('[WS]') ? cleanLine.replace(/^\[WS\]\s*/, '') : cleanLine,
+        message: textWithoutWs,
         raw: cleanLine,
       };
     });
