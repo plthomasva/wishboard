@@ -3,6 +3,121 @@ import { useWebSocket } from '../../hooks/useWebSocket';
 import AwsMetricsDashboard from './AwsMetricsDashboard';
 import LocalMetricsDashboard from './LocalMetricsDashboard';
 
+export type LogLevel = 'info' | 'warn' | 'error' | 'debug' | 'other';
+
+export interface ParsedLogEntry {
+  id: string;
+  prefix: string;
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  raw: string;
+}
+
+function normalizeLogLevel(raw: string): LogLevel {
+  const l = raw.trim().toLowerCase();
+  if (l === 'info') return 'info';
+  if (l === 'warn' || l === 'warning') return 'warn';
+  if (l === 'error' || l === 'err') return 'error';
+  if (l === 'debug' || l === 'trace') return 'debug';
+  return 'other';
+}
+
+// eslint-disable-next-line no-control-regex -- intentionally matches ANSI escape sequences
+const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
+const winstonRegex = /^(?:\[(WS)\]\s*)?(?:\[([0-9T:.\s-]+)\]\s*)?(\w+):\s*(.*)$/i;
+const cloudwatchRegex =
+  /^(?:\[(WS)\]\s*)?(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}\S*)\s+(\S+)\s+(INFO|WARN|WARNING|ERROR|ERR|DEBUG|TRACE)\b\s*(.*)$/i;
+
+function parseLogLine(line: string, idx: number): ParsedLogEntry {
+  const cleanLine = line.replace(ansiRegex, '').trim();
+  if (!cleanLine) {
+    return {
+      id: `${idx}-empty`,
+      prefix: '',
+      timestamp: '',
+      level: 'other',
+      message: '',
+      raw: '',
+    };
+  }
+
+  // Check Winston format first
+  const winstonMatch = winstonRegex.exec(cleanLine);
+  if (winstonMatch) {
+    const prefix = winstonMatch[1]?.trim() || '';
+    const timestamp = winstonMatch[2]?.trim() || '';
+    const message = winstonMatch[4] || '';
+
+    return {
+      id: `${idx}-${timestamp}-${message.slice(0, 10)}`,
+      prefix,
+      timestamp,
+      level: normalizeLogLevel(winstonMatch[3] || ''),
+      message,
+      raw: cleanLine,
+    };
+  }
+
+  // Check CloudWatch Lambda format next
+  const cloudwatchMatch = cloudwatchRegex.exec(cleanLine);
+  if (cloudwatchMatch) {
+    const prefix = cloudwatchMatch[1]?.trim() || '';
+    const rawTs = cloudwatchMatch[2]?.trim() || '';
+    const formattedTs = rawTs
+      .replace('T', ' ')
+      .replace(/\.\d+Z?$/, '')
+      .replace(/Z$/, '');
+    const message = cloudwatchMatch[5] || '';
+
+    return {
+      id: `${idx}-${formattedTs}-${message.slice(0, 10)}`,
+      prefix,
+      timestamp: formattedTs,
+      level: normalizeLogLevel(cloudwatchMatch[4] || ''),
+      message,
+      raw: cleanLine,
+    };
+  }
+
+  // Fallback: check unformatted lines
+  const prefix = cleanLine.startsWith('[WS]') ? '[WS]' : '';
+  const textWithoutWs = cleanLine.startsWith('[WS]')
+    ? cleanLine.replace(/^\[WS\]\s*/, '')
+    : cleanLine;
+  const cleanLower = textWithoutWs.toLowerCase();
+
+  let level: LogLevel = 'other';
+  if (
+    /^(error|err)\b/i.test(textWithoutWs) ||
+    cleanLower.includes('error:') ||
+    cleanLower.includes('err:') ||
+    cleanLower.includes('error message')
+  ) {
+    level = 'error';
+  } else if (
+    /^(warn|warning)\b/i.test(textWithoutWs) ||
+    cleanLower.includes('warn:') ||
+    cleanLower.includes('warning:') ||
+    cleanLower.includes('warn message')
+  ) {
+    level = 'warn';
+  } else if (/^info\b/i.test(textWithoutWs) || cleanLower.includes('info:')) {
+    level = 'info';
+  } else if (/^(debug|trace)\b/i.test(textWithoutWs) || cleanLower.includes('debug:')) {
+    level = 'debug';
+  }
+
+  return {
+    id: `${idx}-fallback`,
+    prefix,
+    timestamp: '',
+    level,
+    message: textWithoutWs,
+    raw: cleanLine,
+  };
+}
+
 export default function SystemOverviewSection({ authHeader, refreshCounter }: any) {
   const [rawLogs, setRawLogs] = useState<string>('');
   const [filterRepeating, setFilterRepeating] = useState<boolean>(true);
@@ -69,62 +184,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
         )
       : lines;
 
-    // eslint-disable-next-line no-control-regex -- intentionally matches ANSI escape sequences
-    const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
-    const logRegex = /^(?:\[(WS)\]\s+)?(?:\[(?!(?:WS)\])([^\]]+)\]\s+)?(\w+):\s*(.*)$/;
-
-    return filteredLines.map((line, idx) => {
-      const cleanLine = line.replace(ansiRegex, '').trim();
-      if (!cleanLine) {
-        return {
-          id: `${idx}-empty`,
-          prefix: '',
-          timestamp: '',
-          level: 'other' as const,
-          message: '',
-          raw: '',
-        };
-      }
-
-      const match = logRegex.exec(cleanLine);
-      if (match) {
-        const prefix = match[1]?.trim() || '';
-        const timestamp = match[2]?.trim() || '';
-        const rawLevel = match[3]?.trim().toLowerCase() || 'other';
-        const message = match[4] || '';
-
-        let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
-        if (rawLevel === 'info') level = 'info';
-        else if (rawLevel === 'warn' || rawLevel === 'warning') level = 'warn';
-        else if (rawLevel === 'error' || rawLevel === 'err') level = 'error';
-        else if (rawLevel === 'debug') level = 'debug';
-
-        return {
-          id: `${idx}-${timestamp}-${message.slice(0, 10)}`,
-          prefix,
-          timestamp,
-          level,
-          message,
-          raw: cleanLine,
-        };
-      }
-
-      let level: 'info' | 'warn' | 'error' | 'debug' | 'other' = 'other';
-      const cleanLower = cleanLine.toLowerCase();
-      if (cleanLower.includes('error') || cleanLower.includes('err:')) level = 'error';
-      else if (cleanLower.includes('warn') || cleanLower.includes('warning:')) level = 'warn';
-      else if (cleanLower.includes('info:')) level = 'info';
-      else if (cleanLower.includes('debug:')) level = 'debug';
-
-      return {
-        id: `${idx}-fallback`,
-        prefix: cleanLine.startsWith('[WS]') ? '[WS]' : '',
-        timestamp: '',
-        level,
-        message: cleanLine.startsWith('[WS]') ? cleanLine.replace(/^\[WS\]\s*/, '') : cleanLine,
-        raw: cleanLine,
-      };
-    });
+    return filteredLines.map((line, idx) => parseLogLine(line, idx));
   }, [rawLogs, filterRepeating]);
 
   useEffect(() => {
