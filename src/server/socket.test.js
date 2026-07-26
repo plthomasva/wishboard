@@ -112,7 +112,7 @@ describe('socket.js', () => {
     expect(() => emitSystemLog('log line')).not.toThrow();
   });
 
-  it('emit helpers broadcast to all clients when io is initialized', async () => {
+  it('emit helpers broadcast to scoped rooms when io is initialized', async () => {
     const roomEmit = vi.fn();
     const mockIo = {
       on: vi.fn(),
@@ -127,23 +127,27 @@ describe('socket.js', () => {
     initSocket({}, {});
 
     const wish = { id: 'w1', content: 'test' };
+
     emitNewWish(wish);
-    expect(mockIo.emit).toHaveBeenCalledWith('wish:created', wish);
+    expect(mockIo.to).toHaveBeenCalledWith('wishes');
+    expect(roomEmit).toHaveBeenCalledWith('wish:created', wish);
 
     emitWishFlagged(wish);
-    expect(mockIo.emit).toHaveBeenCalledWith('wish:flagged', wish);
+    expect(mockIo.to).toHaveBeenCalledWith('wishes');
+    expect(roomEmit).toHaveBeenCalledWith('wish:flagged', wish);
 
     emitWishDeleted('w1');
-    expect(mockIo.emit).toHaveBeenCalledWith('wish:deleted', 'w1');
+    expect(mockIo.to).toHaveBeenCalledWith('wishes');
+    expect(roomEmit).toHaveBeenCalledWith('wish:deleted', 'w1');
 
-    // sys:log is scoped to the admin-only 'syslog' room, not a global broadcast.
+    // sys:log is scoped to the admin-only 'syslog' room.
     emitSystemLog('a log line');
     expect(mockIo.to).toHaveBeenCalledWith('syslog');
     expect(roomEmit).toHaveBeenCalledWith('sys:log', 'a log line');
     expect(mockIo.emit).not.toHaveBeenCalledWith('sys:log', 'a log line');
   });
 
-  it('socket.io subscribe joins the syslog room only for an admin token', async () => {
+  it('socket.io subscribe joins the appropriate rooms', async () => {
     let connectionCb;
     const mockIo = {
       on: vi.fn((event, cb) => {
@@ -165,17 +169,27 @@ describe('socket.js', () => {
 
     const handlerFor = (event) => socket.on.mock.calls.find(([e]) => e === event)?.[1];
 
-    // Non-admin token: no room join.
+    // sys:log Non-admin token: no room join.
     await handlerFor('subscribe')({ channel: 'sys:log', token: 'user-token' });
     expect(socket.join).not.toHaveBeenCalled();
 
-    // Admin token: joins the syslog room.
+    // sys:log Admin token: joins the syslog room.
     await handlerFor('subscribe')({ channel: 'sys:log', token: 'admin-token' });
     expect(socket.join).toHaveBeenCalledWith('syslog');
 
-    // Unsubscribe leaves the room.
+    // sys:log Unsubscribe leaves the room.
     handlerFor('unsubscribe')({ channel: 'sys:log' });
     expect(socket.leave).toHaveBeenCalledWith('syslog');
+
+    // wish:* subscription joins the wishes room (no token needed).
+    socket.join.mockClear();
+    await handlerFor('subscribe')({ channel: 'wish:*' });
+    expect(socket.join).toHaveBeenCalledWith('wishes');
+
+    // wish:* Unsubscribe leaves the room.
+    socket.leave.mockClear();
+    handlerFor('unsubscribe')({ channel: 'wish:*' });
+    expect(socket.leave).toHaveBeenCalledWith('wishes');
   });
 
   describe('API Gateway WebSocket mode', () => {
@@ -269,7 +283,7 @@ describe('socket.js', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
 
-    it('sys:log broadcast queries only subscribed connections; wish:* queries all', async () => {
+    it('sys:log broadcast queries sub_syslog; wish:* queries sub_wishes', async () => {
       const mockAll = vi.fn().mockResolvedValue([]);
       mockDbPrepare.mockImplementation(() => ({ all: mockAll, run: vi.fn() }));
 
@@ -283,8 +297,9 @@ describe('socket.js', () => {
 
       emitNewWish({ id: 'w1' });
       await new Promise((resolve) => setTimeout(resolve, 50));
-      // Public board events broadcast to every connection (no sub_syslog filter).
-      expect(mockDbPrepare).toHaveBeenCalledWith('SELECT connection_id FROM websocket_connections');
+      expect(mockDbPrepare).toHaveBeenCalledWith(
+        'SELECT connection_id FROM websocket_connections WHERE sub_wishes = 1'
+      );
     });
   });
 });

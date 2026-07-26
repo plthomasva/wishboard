@@ -38,15 +38,19 @@ export const initSocket = (httpServer, corsOptions) => {
 
     // sys:log is an admin-only, opt-in channel: a client joins the 'syslog' room
     // only when it subscribes AND presents an admin token. Board events (wish:*)
-    // stay a public broadcast to everyone. See #189 / ADR 0003.
+    // require explicit subscription as well to save bandwidth for views that don't need them. See #189 / ADR 0003.
     socket.on('subscribe', async ({ channel, token } = {}) => {
-      if (channel !== 'sys:log') return;
-      const user = await getUserFromToken(token);
-      if (user?.role === 'admin') socket.join('syslog');
+      if (channel === 'sys:log') {
+        const user = await getUserFromToken(token);
+        if (user?.role === 'admin') socket.join('syslog');
+      } else if (channel === 'wish:*') {
+        socket.join('wishes');
+      }
     });
 
     socket.on('unsubscribe', ({ channel } = {}) => {
       if (channel === 'sys:log') socket.leave('syslog');
+      else if (channel === 'wish:*') socket.leave('wishes');
     });
 
     socket.on('disconnect', () => {
@@ -96,11 +100,14 @@ const broadcastToApiGateway = async (event, data) => {
   }
 
   // sys:log goes only to connections that subscribed to it (admins who opened the
-  // log viewer); every other event is a public board broadcast to all connections.
-  const query =
-    event === 'sys:log'
-      ? 'SELECT connection_id FROM websocket_connections WHERE sub_syslog = 1'
-      : 'SELECT connection_id FROM websocket_connections';
+  // log viewer); wish:* events go to connections subscribed to wish:* (like the board).
+  let condition = '';
+  if (event === 'sys:log') {
+    condition = 'WHERE sub_syslog = 1';
+  } else if (event.startsWith('wish:')) {
+    condition = 'WHERE sub_wishes = 1';
+  }
+  const query = `SELECT connection_id FROM websocket_connections ${condition}`;
   let rows = [];
   try {
     rows = await db.prepare(query).all();
@@ -162,7 +169,7 @@ export const emitNewWish = (wish) => {
   if (getProvider() === 'apigateway') {
     track(broadcastToApiGateway('wish:created', wish));
   } else if (io) {
-    io.emit('wish:created', wish);
+    io.to('wishes').emit('wish:created', wish);
   }
 };
 
@@ -170,7 +177,7 @@ export const emitWishFlagged = (wish) => {
   if (getProvider() === 'apigateway') {
     track(broadcastToApiGateway('wish:flagged', wish));
   } else if (io) {
-    io.emit('wish:flagged', wish);
+    io.to('wishes').emit('wish:flagged', wish);
   }
 };
 
@@ -178,7 +185,7 @@ export const emitWishDeleted = (wishId) => {
   if (getProvider() === 'apigateway') {
     track(broadcastToApiGateway('wish:deleted', wishId));
   } else if (io) {
-    io.emit('wish:deleted', wishId);
+    io.to('wishes').emit('wish:deleted', wishId);
   }
 };
 
@@ -186,7 +193,7 @@ export const emitWishReactivated = (wish) => {
   if (getProvider() === 'apigateway') {
     track(broadcastToApiGateway('wish:reactivated', wish));
   } else if (io) {
-    io.emit('wish:reactivated', wish);
+    io.to('wishes').emit('wish:reactivated', wish);
   }
 };
 

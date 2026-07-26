@@ -18,8 +18,6 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 
 ### Features & Enhancements
 
-- **[#191](https://github.com/plthomasva/wishboard/issues/191)** — Generalize per-view WebSocket subscriptions to `wish:*` (efficiency; follow-up to the sys:log channel work in #189/#190).
-
 ## Infrastructure & DevOps
 
 - **[#238](https://github.com/plthomasva/wishboard/issues/238)** — Implement automated database and media backups: periodically snapshot the SQLite database (Turso point-in-time restore vs. `turso db dump` exports) and S3 uploaded images.

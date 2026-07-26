@@ -77,13 +77,16 @@ describe('FlaggedWishesSection WebSocket', () => {
     await waitFor(() => expect(screen.queryByText('Flagged wish A')).not.toBeInTheDocument());
   });
 
-  it('cleans up socket listeners on unmount', async () => {
+  it('subscribes to wish:* on mount and cleans up on unmount', async () => {
     const { unmount } = render(<FlaggedWishesSection {...defaultProps} />);
     await waitFor(() => expect(screen.getByText('Flagged wish A')).toBeInTheDocument());
 
     const socket = getMockSocket();
+    expect(socket.emit).toHaveBeenCalledWith('subscribe', { channel: 'wish:*' });
+
     unmount();
 
+    expect(socket.emit).toHaveBeenCalledWith('unsubscribe', { channel: 'wish:*' });
     expect(socket.off).toHaveBeenCalledWith('wish:flagged', expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith('wish:deleted', expect.any(Function));
   });

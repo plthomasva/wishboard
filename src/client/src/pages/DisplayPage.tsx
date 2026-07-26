@@ -74,9 +74,11 @@ export default function DisplayPage({ onEnterKiosk, isKiosk }: DisplayPageProps 
 
   useEffect(() => {
     if (!socket) return;
+    socket.emit('subscribe', { channel: 'wish:*' });
     socket.on('wish:created', handleNewWish);
     socket.on('wish:deleted', handleDeletedWish);
     return () => {
+      socket.emit('unsubscribe', { channel: 'wish:*' });
       socket.off('wish:created', handleNewWish);
       socket.off('wish:deleted', handleDeletedWish);
     };

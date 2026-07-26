@@ -193,12 +193,15 @@ describe('SearchPage WebSocket', () => {
     expect(screen.queryByText('Error wish')).not.toBeInTheDocument();
   });
 
-  it('cleans up the wish:created listener on unmount', async () => {
+  it('subscribes to wish:* on mount and cleans up on unmount', async () => {
     const { unmount } = render(<SearchPage />);
 
     const socket = getMockSocket();
+    expect(socket.emit).toHaveBeenCalledWith('subscribe', { channel: 'wish:*' });
+
     unmount();
 
+    expect(socket.emit).toHaveBeenCalledWith('unsubscribe', { channel: 'wish:*' });
     expect(socket.off).toHaveBeenCalledWith('wish:created', expect.any(Function));
   });
 });
