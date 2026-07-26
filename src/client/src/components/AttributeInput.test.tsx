@@ -112,4 +112,46 @@ describe('AttributeInput', () => {
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', '/assets/presenter.png');
   });
+
+  it('renders warning alert banner and border styling when warning prop is provided', () => {
+    render(
+      <AttributeInput
+        value=""
+        onChange={() => {}}
+        placeholder="Enter gender"
+        suggestions={['woman']}
+        warning="Conflicting attributes selected"
+      />
+    );
+
+    expect(screen.getByText('Conflicting attributes selected')).toBeInTheDocument();
+    const input = screen.getByPlaceholderText('Enter gender');
+    expect(input.style.borderColor).toBe('rgb(229, 57, 53)');
+  });
+
+  it('renders flag and heart sticker types correctly across categories', () => {
+    vi.mocked(useEventProfile).mockReturnValue({
+      stickers: {
+        orientation: {
+          lesbian: { type: 'flag', class: 'flag-lesbian' },
+          bi: { type: 'heart', class: 'heart-bi' },
+        },
+      },
+    } as any);
+
+    render(
+      <AttributeInput
+        value=""
+        onChange={() => {}}
+        placeholder="Enter orientation"
+        suggestions={['lesbian', 'bi']}
+      />
+    );
+
+    const lesbianPill = screen.getByRole('button', { name: /\blesbian\b/ });
+    expect(lesbianPill.querySelector('.pill-flag.flag-lesbian')).toBeInTheDocument();
+
+    const biPill = screen.getByRole('button', { name: /\bbi\b/ });
+    expect(biPill.querySelector('.pill-flag-heart.heart-bi')).toBeInTheDocument();
+  });
 });

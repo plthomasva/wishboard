@@ -320,3 +320,36 @@ describe('matching: roles — vers/versatile synonym expansion', () => {
     expect(match(straightWomanWanting('versatile'), straightManWithRole('vers'))).toBe(true);
   });
 });
+
+describe('matching: parseAttributesInput and custom context rules', () => {
+  it('parses stringified JSON, raw objects, arrays, and invalid inputs gracefully', async () => {
+    const { parseAttributesInput } = await import('./wishes.js');
+
+    expect(parseAttributesInput('{"gender":["woman"]}')).toEqual({ gender: ['woman'] });
+    expect(parseAttributesInput({ gender: 'woman', role: ['pet'] })).toEqual({
+      gender: ['woman'],
+      role: ['pet'],
+    });
+    expect(parseAttributesInput(['invalid'])).toEqual({});
+    expect(parseAttributesInput(null)).toEqual({});
+    expect(parseAttributesInput('{invalid-json')).toEqual({});
+  });
+
+  it('evaluates custom enrichment rules with context_attribute and context_value', () => {
+    const customRule = {
+      id: 'rule_custom_context',
+      rule_type: 'enrichment',
+      trigger_attribute: 'orientation',
+      trigger_value: 'queer',
+      context_attribute: 'gender',
+      context_value: 'man',
+      target_attribute: 'gender',
+      target_value: 'nonbinary',
+    };
+
+    const w = wish({ g: 'man', o: 'queer' });
+    const s = searcher({ g: 'nonbinary', o: 'queer' });
+
+    expect(isCompatible(w, s, [...defaultRules, customRule])).toBe(true);
+  });
+});

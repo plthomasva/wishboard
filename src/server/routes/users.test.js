@@ -201,4 +201,110 @@ describe('User registration and login', () => {
     const getMe = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
     expect(getMe.status).toBe(401);
   });
+
+  describe('profile attribute conflict validation', () => {
+    it('returns 400 when registering with conflicting attributes', async () => {
+      const res = await request(app)
+        .post('/api/users/register')
+        .send({
+          username: 'conflict_reg',
+          passphrase: 'password123',
+          identity_attributes: { gender: ['man'], orientation: ['lesbian'] },
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('Validation failed: Profile attributes conflict');
+    });
+
+    it('returns 400 when updating profile with conflicting attributes', async () => {
+      const reg = await request(app)
+        .post('/api/users/register')
+        .send({ username: 'conflict_upd', passphrase: 'password123' });
+
+      const res = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${reg.body.token}`)
+        .send({
+          identity_attributes: { gender: ['man'], orientation: ['lesbian'] },
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('Validation failed: Profile attributes conflict');
+    });
+  });
+
+  describe('account deletion, preview, and activation state management', () => {
+    it('fetches delete preview counts and allows normal user self-deletion', async () => {
+      const reg = await request(app)
+        .post('/api/users/register')
+        .send({ username: 'delete_me_user', passphrase: 'password123' });
+      const token = reg.body.token;
+
+      const preview = await request(app)
+        .get('/api/users/me/delete-preview')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(preview.status).toBe(200);
+      expect(preview.body.wishesCount).toBe(0);
+      expect(preview.body.wishmailsCount).toBe(0);
+
+      const del = await request(app)
+        .post('/api/users/me/delete')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(del.status).toBe(200);
+      expect(del.body.success).toBe(true);
+
+      const getMe = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
+      expect(getMe.status).toBe(401);
+    });
+
+    it('prevents deletion of the sole admin user', async () => {
+      const adminLogin = await request(app)
+        .post('/api/users/login')
+        .send({ username: 'admin', passphrase: 'admin-board' });
+
+      const token = adminLogin.body.token;
+
+      const del = await request(app)
+        .post('/api/users/me/delete')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(del.status).toBe(403);
+      expect(del.body.error).toBe('Cannot delete the last admin user.');
+    });
+
+    it('allows deactivating and reactivating a user account', async () => {
+      const reg = await request(app)
+        .post('/api/users/register')
+        .send({ username: 'active_toggle_user', passphrase: 'password123' });
+      const token = reg.body.token;
+
+      const deact = await request(app)
+        .post('/api/users/me/deactivate')
+        .set('Authorization', `Bearer ${token}`);
+      expect(deact.status).toBe(200);
+      expect(deact.body.success).toBe(true);
+
+      const react = await request(app)
+        .post('/api/users/me/reactivate')
+        .set('Authorization', `Bearer ${token}`);
+      expect(react.status).toBe(200);
+      expect(react.body.success).toBe(true);
+    });
+
+    it('returns user wishes list with unread wishmail count', async () => {
+      const reg = await request(app)
+        .post('/api/users/register')
+        .send({ username: 'wishes_list_user', passphrase: 'password123' });
+      const token = reg.body.token;
+
+      const wishes = await request(app)
+        .get('/api/users/me/wishes')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(wishes.status).toBe(200);
+      expect(Array.isArray(wishes.body)).toBe(true);
+    });
+  });
 });

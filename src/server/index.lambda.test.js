@@ -27,6 +27,6 @@ describe('Server index.js - Lambda Mode', () => {
     // (admin required), or 400 (route reached in Lambda mode) — never 404.
     expect([400, 401, 403]).toContain(res.status);
 
-    server.close();
+    server?.close();
   }, 20000);
 });
