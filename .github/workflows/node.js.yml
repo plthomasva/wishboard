@@ -12,14 +12,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 jobs:
   quality-checks:
     name: Code Quality & Security
     if: ${{ !startsWith(github.head_ref, 'release-please-') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -30,7 +29,7 @@ jobs:
           node-version: 24.x
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Lint
         run: npm run lint
       - name: Type check
@@ -38,7 +37,7 @@ jobs:
       - name: Format check
         run: npm run format:check
       - name: Gitleaks secret scan
-        uses: gitleaks/gitleaks-action@v3
+        uses: gitleaks/gitleaks-action@e0c47f44c6883e1040332357774d081b831414b3 # v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -46,6 +45,8 @@ jobs:
     name: Unit & Integration Tests
     if: ${{ !startsWith(github.head_ref, 'release-please-') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         node-version: [22.x, 24.x]
@@ -65,7 +66,7 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Build
         run: npm run build --if-present
       - name: Test and Coverage
@@ -100,6 +101,8 @@ jobs:
     name: Playwright E2E Tests
     if: ${{ !startsWith(github.head_ref, 'release-please-') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Use Node.js 24.x
@@ -108,7 +111,7 @@ jobs:
           node-version: 24.x
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Build
         run: npm run build --if-present
       - name: Get Playwright Version
@@ -123,7 +126,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
       - name: Install Playwright Browsers & System Deps
-        run: npx playwright install --with-deps
+        run: npx --no-install playwright install --with-deps
       - name: Run Playwright E2E Smoke Tests
         run: npm run test:e2e
         env:
@@ -138,6 +141,8 @@ jobs:
     if: always()
     needs: [quality-checks, unit-and-integration, e2e-tests]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Verify build result
         run: |
