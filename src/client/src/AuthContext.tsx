@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  ReactNode,
+} from 'react';
 
 type AuthUser = {
   id: string;
@@ -32,69 +40,66 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const storageKey = 'wishboard-auth-token';
 
-const mapToAuthUser = (data: any): AuthUser => ({
-  id: data.id,
-  username: data.username,
-  role: data.role,
-  attributes: data.attributes || data.identity_attributes || {},
-  contacts: data.contacts || [],
+const mapToAuthUser = (data: Record<string, unknown>): AuthUser => ({
+  id: typeof data.id === 'string' ? data.id : String(data.id ?? ''),
+  username: typeof data.username === 'string' ? data.username : String(data.username ?? ''),
+  role: typeof data.role === 'string' ? data.role : String(data.role ?? 'user'),
+  attributes: (data.attributes || data.identity_attributes || {}) as Record<string, string[]>,
+  contacts: (data.contacts || []) as { type: string; value: string }[],
   wishmail_enabled: Boolean(data.wishmail_enabled),
   is_active: data.is_active === undefined ? true : Boolean(data.is_active),
 });
 
 const migrateLocalStorageExclusions = async (token: string) => {
+  const localRaw = localStorage.getItem('wishboard_excluded_wishes'); // NOSONAR
+  if (!localRaw) return;
   try {
-    const raw = localStorage.getItem('wishboard.excludedWishes');
-    if (!raw) return;
-    const ids = JSON.parse(raw);
-    if (Array.isArray(ids) && ids.length > 0) {
-      const response = await fetch('/api/wishes/exclusions/import', {
+    const localIds: string[] = JSON.parse(localRaw);
+    if (!Array.isArray(localIds) || localIds.length === 0) return;
+    for (const wishId of localIds) {
+      await fetch('/api/users/me/exclusions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ids }),
-      });
-      if (response.ok) {
-        localStorage.removeItem('wishboard.excludedWishes');
-      }
+        body: JSON.stringify({ wish_id: wishId }),
+      }).catch(() => {});
     }
   } catch (err) {
-    console.error('Failed to migrate local storage exclusions:', err);
+    console.warn('Failed to migrate local storage exclusions:', err);
   }
 };
 
-export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
+  // @refresh reset
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(storageKey)); // NOSONAR
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     if (!token) {
       setUser(null);
       return;
     }
 
     const response = await fetch('/api/users/me', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok) {
-      setToken(null);
       localStorage.removeItem(storageKey); // NOSONAR
+      setToken(null);
       setUser(null);
       return;
     }
 
     const data = await response.json();
     setUser(mapToAuthUser(data));
-  };
+  }, [token]);
 
   useEffect(() => {
     refreshUser();
-  }, [token]);
+  }, [refreshUser]);
 
   const login = async (username: string, passphrase: string) => {
     const response = await fetch('/api/users/login', {
@@ -159,12 +164,13 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
   const value = useMemo(
     () => ({ user, token, login, register, logout, refreshUser, setTokenExternally }),
-    [user, token]
+    [user, token, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Context hook export co-located with provider per idiomatic React pattern
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

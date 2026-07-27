@@ -17,9 +17,15 @@ interface Wish {
   image_id?: string;
 }
 
+interface UserProfile {
+  attributes?: Record<string, string[]>;
+  identity_attributes?: Record<string, string[]>;
+  [key: string]: unknown;
+}
+
 interface SearchParamInput {
   query: string;
-  user: any;
+  user: UserProfile | null;
   useProfileAttributes: boolean;
   manualAttributes: Record<string, string>;
   excludedIds: string[];
@@ -27,7 +33,7 @@ interface SearchParamInput {
 
 function applyCompatibilityParams(
   params: URLSearchParams,
-  user: any,
+  user: UserProfile | null,
   useProfileAttributes: boolean,
   manualAttributes: Record<string, string>
 ) {

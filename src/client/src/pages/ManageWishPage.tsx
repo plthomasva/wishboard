@@ -10,7 +10,7 @@ export default function ManageWishPage() {
   const [wish, setWish] = useState<{
     id: string;
     content: string;
-    contacts: any[];
+    contacts: Array<{ type?: string; value?: string }>;
     wishmail_enabled: boolean;
     created_at: string;
     is_active: boolean;

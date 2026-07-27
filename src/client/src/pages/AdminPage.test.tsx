@@ -148,7 +148,6 @@ describe('AdminPage', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis.HTMLElement.prototype as any).scrollIntoView = undefined;
   });
 
@@ -309,6 +308,9 @@ describe('AdminPage', () => {
           json: async () => [{ id: 'user-1', username: 'tester', role: 'user' }],
         });
       }
+      if (url.endsWith('/api/admin/reset-demo')) {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      }
       if (url.includes('/api/admin/logs')) {
         return Promise.resolve({ ok: true, json: async () => ({ logs: 'logs' }) });
       }
@@ -332,7 +334,10 @@ describe('AdminPage', () => {
           }),
         });
       }
-      return Promise.resolve({ ok: false });
+      return Promise.resolve({
+        ok: false,
+        json: async () => ({ error: 'Unknown' }),
+      });
     });
 
     render(<AdminPage />);
@@ -536,10 +541,12 @@ describe('AdminPage', () => {
     // UI is up, so onSessionExpired -> handleSessionExpired -> logout + message.
     globalThis.fetch = vi.fn(async (input: any) => {
       const url = String(input);
-      if (url.endsWith('/api/admin/users')) return { ok: false, status: 401 } as any;
-      if (url.endsWith('/api/admin/config'))
+      if (url.includes('/api/admin/users')) {
+        return { ok: false, status: 401, json: async () => ({ error: 'Unauthorized' }) } as any;
+      }
+      if (url.includes('/api/admin/config'))
         return { ok: true, json: async () => ({ isProduction: false }) } as any;
-      if (url.endsWith('/api/config'))
+      if (url.includes('/api/config'))
         return { ok: true, json: async () => ({ realtimeProvider: 'socketio' }) } as any;
       return { ok: true, json: async () => [] } as any;
     }) as any;

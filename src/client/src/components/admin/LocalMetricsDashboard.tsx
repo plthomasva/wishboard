@@ -567,8 +567,9 @@ export default function LocalMetricsDashboard({
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
       setData(await res.json());
-    } catch (err: any) {
-      setError(err.message ?? 'Unknown error');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setError(msg);
     } finally {
       setLoading(false);
     }

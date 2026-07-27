@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import ConfirmDeleteAccountModal from '../ConfirmDeleteAccountModal';
 
+interface UserAccountsSectionProps {
+  authHeader: Record<string, string>;
+  setMessage: (msg: string | null) => void;
+  error: string | null;
+  setError: (err: string | null) => void;
+  refreshCounter: number;
+  triggerRefresh: () => void;
+  onSessionExpired?: () => void;
+}
+
 export default function UserAccountsSection({
   authHeader,
   setMessage,
@@ -9,9 +19,12 @@ export default function UserAccountsSection({
   refreshCounter,
   triggerRefresh,
   onSessionExpired,
-}: any) {
+}: Readonly<UserAccountsSectionProps>) {
   // A 401 means the session is dead; hand off so the app can drop to login.
-  // Returns true when handled, so callers can stop.
+  // Plain function (not useCallback) is intentional: capturing it in a stable
+  // callback would propagate the unstable handleSessionExpired reference from
+  // AdminPage through loadUsers into the useEffect dep array, causing a render
+  // loop that clears errors immediately after setting them.
   const handledUnauthorized = (response: Response) => {
     if (response.status === 401) {
       onSessionExpired?.();
@@ -53,6 +66,7 @@ export default function UserAccountsSection({
   useEffect(() => {
     loadUsers();
     loadConfig();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshCounter]);
 
   const updateRole = async (id: string, role: string) => {

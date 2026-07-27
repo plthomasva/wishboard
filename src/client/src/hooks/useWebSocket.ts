@@ -83,7 +83,7 @@ class RawWebSocketWrapper {
     }
   }
 
-  private trigger(event: string, data?: any) {
+  private trigger(event: string, data?: unknown) {
     if (!this.listeners[event]) return;
     this.listeners[event].forEach((cb) => cb(data));
   }
@@ -93,10 +93,12 @@ class RawWebSocketWrapper {
 let socketInstance: Socket | null = null;
 let rawInstance: RawWebSocketWrapper | null = null;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Polymorphic socket interface returning either Socket.io instance or RawWebSocketWrapper facade
 export const getSocket = (): any => {
   const isRawMode =
     import.meta.env.VITE_USE_RAW_WEBSOCKETS === 'true' ||
-    (globalThis as any).__WISHBOARD_CONFIG__?.realtimeProvider === 'apigateway';
+    (globalThis as unknown as { __WISHBOARD_CONFIG__?: { realtimeProvider?: string } })
+      .__WISHBOARD_CONFIG__?.realtimeProvider === 'apigateway';
 
   if (isRawMode) {
     rawInstance ??= new RawWebSocketWrapper();

@@ -1,17 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useWebSocket } from '../../hooks/useWebSocket';
 
+interface FlaggedWish {
+  id: string;
+  content: string;
+  flagged: number;
+  user_id: string | null;
+}
+
+interface FlaggedWishesSectionProps {
+  authHeader: Record<string, string>;
+  setMessage: (msg: string | null) => void;
+  setError: (err: string | null) => void;
+  refreshCounter: number;
+}
+
 export default function FlaggedWishesSection({
   authHeader,
   setMessage,
   setError,
   refreshCounter,
-}: any) {
-  const [flags, setFlags] = useState<
-    Array<{ id: string; content: string; flagged: number; user_id: string | null }>
-  >([]);
+}: Readonly<FlaggedWishesSectionProps>) {
+  const [flags, setFlags] = useState<Array<FlaggedWish>>([]);
 
-  const loadFlags = async () => {
+  const loadFlags = React.useCallback(async () => {
     setError(null);
     const response = await fetch('/api/admin/flags', { headers: authHeader });
     if (!response.ok) {
@@ -19,15 +31,15 @@ export default function FlaggedWishesSection({
       return;
     }
     setFlags(await response.json());
-  };
+  }, [authHeader, setError]);
 
   useEffect(() => {
     loadFlags();
-  }, [refreshCounter]);
+  }, [refreshCounter, loadFlags]);
 
   const { socket } = useWebSocket();
 
-  const addFlag = React.useCallback((wish: any) => {
+  const addFlag = React.useCallback((wish: FlaggedWish) => {
     setFlags((prev) => (prev.some((w) => w.id === wish.id) ? prev : [wish, ...prev]));
   }, []);
 

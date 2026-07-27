@@ -1,17 +1,37 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 
 const getSortIcon = (ruleSort: { key: string; dir: 'asc' | 'desc' }, key: string) => {
   if (ruleSort.key !== key) return '';
   return ruleSort.dir === 'asc' ? '▲' : '▼';
 };
 
+interface Rule {
+  id?: string;
+  rule_type: string;
+  trigger_attribute: string;
+  trigger_value: string;
+  target_attribute: string;
+  target_value: string;
+  context_attribute?: string;
+  context_value?: string;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+interface MatchingRulesSectionProps {
+  authHeader: Record<string, string>;
+  setMessage: (msg: string | null) => void;
+  setError: (err: string | null) => void;
+  refreshCounter: number;
+}
+
 export default function MatchingRulesSection({
   authHeader,
   setMessage,
   setError,
   refreshCounter,
-}: any) {
-  const [rules, setRules] = useState<Array<any>>([]);
+}: Readonly<MatchingRulesSectionProps>) {
+  const [rules, setRules] = useState<Array<Rule>>([]);
   const [ruleFilter, setRuleFilter] = useState('');
   const [ruleSort, setRuleSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({
     key: 'created_at',
@@ -29,15 +49,15 @@ export default function MatchingRulesSection({
   const [newRule, setNewRule] = useState(emptyRule);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
 
-  const loadRules = async () => {
+  const loadRules = useCallback(async () => {
     setError(null);
     const response = await fetch('/api/rules', { headers: authHeader });
     if (response.ok) setRules(await response.json());
-  };
+  }, [authHeader, setError]);
 
   useEffect(() => {
     loadRules();
-  }, [refreshCounter]);
+  }, [refreshCounter, loadRules]);
 
   const filteredRules = useMemo(() => {
     return rules
@@ -47,8 +67,8 @@ export default function MatchingRulesSection({
           Object.values(r).some((v) => String(v).toLowerCase().includes(ruleFilter.toLowerCase()))
       )
       .sort((a, b) => {
-        const aVal = a[ruleSort.key] || '';
-        const bVal = b[ruleSort.key] || '';
+        const aVal = String(a[ruleSort.key] ?? '');
+        const bVal = String(b[ruleSort.key] ?? '');
         if (aVal === bVal) return 0;
         const cmp = aVal > bVal ? 1 : -1;
         return ruleSort.dir === 'asc' ? cmp : -cmp;
@@ -63,7 +83,8 @@ export default function MatchingRulesSection({
     }
   };
 
-  const deleteRule = async (id: string) => {
+  const deleteRule = async (id?: string) => {
+    if (!id) return;
     if (!globalThis.confirm('Are you sure you want to delete this rule?')) return;
     setMessage(null);
     setError(null);
@@ -79,8 +100,8 @@ export default function MatchingRulesSection({
     loadRules();
   };
 
-  const editRule = (rule: any) => {
-    setEditingRuleId(rule.id);
+  const editRule = (rule: Rule) => {
+    setEditingRuleId(rule.id ?? null);
     setNewRule({
       rule_type: rule.rule_type,
       trigger_attribute: rule.trigger_attribute,
