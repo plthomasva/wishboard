@@ -50,6 +50,7 @@ export default defineConfig({
       'src/cli/**/*.{test,spec}.{js,ts}',
       'scripts/**/*.{test,spec}.{js,ts}',
       'aws-serverless/**/*.{test,spec}.{js,mjs,ts}',
+      'tests/integration/**/*.integration.test.js',
     ],
     setupFiles: 'src/client/src/setupTests.ts',
     globalSetup: 'vitest.global-setup.js',
@@ -66,5 +67,6 @@ export default defineConfig({
         'aws-serverless/**/*.{js,mjs,ts}',
       ],
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Vitest test option extension onto Vite UserConfig requires fallback cast
   } as any,
 });

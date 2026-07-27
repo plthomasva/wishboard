@@ -35,7 +35,7 @@ test.describe('Wishboard E2E Smoke Tests', () => {
     expect(passphrase.length).toBeGreaterThan(0);
 
     // 4. Navigate to Search Wishes page
-    await page.click('button:has-text("Search Wishes")');
+    await page.click('header nav button:has-text("Search Wishes")');
     await expect(page.locator('h1')).toHaveText('Search Wishes');
 
     // Enter search query

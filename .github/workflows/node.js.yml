@@ -74,7 +74,6 @@ jobs:
           echo "## Unit Tests & Coverage" >> $GITHUB_STEP_SUMMARY
           npm run test:coverage
       - name: Integration tests (real DB / SAM / dependency contracts)
-        if: matrix.node-version == '24.x'
         run: |
           echo "## Integration Tests" >> $GITHUB_STEP_SUMMARY
           npm run test:integration

@@ -12,10 +12,18 @@ const samAvailable = hasCommand('sam');
 const template = path.resolve(process.cwd(), 'aws-serverless/template.yaml');
 
 describe('integration: SAM template contract', () => {
-  it.skipIf(!samAvailable)('validates aws-serverless/template.yaml with the real sam CLI', () => {
-    const res = execCommand('sam', ['validate', '--template', template, '--region', 'us-east-1'], {
-      stdio: 'pipe',
-    });
-    expect(res.status).toBe(0);
-  });
+  it.skipIf(!samAvailable)(
+    'validates aws-serverless/template.yaml with the real sam CLI',
+    () => {
+      const res = execCommand(
+        'sam',
+        ['validate', '--template', template, '--region', 'us-east-1'],
+        {
+          stdio: 'pipe',
+        }
+      );
+      expect(res.status).toBe(0);
+    },
+    60000
+  );
 });
