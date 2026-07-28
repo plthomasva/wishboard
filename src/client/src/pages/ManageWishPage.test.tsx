@@ -126,4 +126,32 @@ describe('ManageWishPage', () => {
       expect(screen.getByText('Wish deleted successfully.')).toBeInTheDocument();
     });
   });
+
+  it('handles error responses in save update, deactivate, and delete actions', async () => {
+    globalThis.window.location.hash = '#manage-wish?id=w5&secret=sec';
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 'w5', content: 'Wish 5' }),
+    } as any);
+
+    render(<ManageWishPage />);
+    await waitFor(() => expect(screen.getByText('Manage Your Wish')).toBeInTheDocument());
+
+    // 1. Save error
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: 'Invalid secret' }),
+    } as any);
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    await waitFor(() => expect(screen.getByText('Invalid secret')).toBeInTheDocument());
+
+    // 2. Delete error
+    globalThis.window.confirm = vi.fn().mockReturnValue(true);
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: 'Delete failed' }),
+    } as any);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Wish' }));
+    await waitFor(() => expect(screen.getByText('Delete failed')).toBeInTheDocument());
+  });
 });

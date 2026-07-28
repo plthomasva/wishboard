@@ -298,7 +298,6 @@ describe('AuthContext', () => {
   });
 
   it('migrates local storage excluded wishes on login', async () => {
-    localStorage.setItem('wishboard-auth-token', 'valid-token');
     localStorage.setItem('wishboard_excluded_wishes', JSON.stringify(['w1', 'w2']));
     const postMock = vi.fn().mockResolvedValue({ ok: true });
     globalThis.fetch = vi.fn().mockImplementation(async (url) => {
@@ -311,14 +310,24 @@ describe('AuthContext', () => {
       return { ok: false };
     });
 
+    let ctx: any;
+    const Grabber = () => {
+      ctx = useAuth();
+      return null;
+    };
+
     render(
       <AuthProvider>
-        <TestComponent />
+        <Grabber />
       </AuthProvider>
     );
 
+    await act(async () => {
+      ctx.setTokenExternally('valid-token');
+    });
+
     await waitFor(() => {
-      expect(screen.getByTestId('user').textContent).toBe('mockuser');
+      expect(postMock).toHaveBeenCalledTimes(2);
     });
   });
 

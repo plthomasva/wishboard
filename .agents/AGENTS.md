@@ -37,7 +37,7 @@ This document outlines the core coding conventions, architectural patterns, envi
 ## 4. Testing & Quality Gates
 
 - **Coverage Threshold:** SonarQube applies an **80% test coverage threshold** specifically to **new code** (deltas) introduced on branches. Ensure any new files, code branches, or features are accompanied by robust unit test coverage.
-- **PR Verification:** When checking Pull Request status, use the SonarQube MCP or SonarCloud dashboard to check for test failures, duplicate code blocks, or security hotspots rather than relying solely on local test suite runs.
+- **PR Verification & SonarQube MCP Enforcement:** When checking Pull Request status or diagnosing Quality Gate failures, you MUST use the SonarQube MCP tools (`get_project_quality_gate_status`, `search_files_by_coverage`, and `get_file_coverage_details`) to retrieve exact line-by-line coverage data rather than relying solely on local test runs or manual diff estimation. Never abandon MCP tool calls if schema errors occur; correct the arguments and retry.
 - **Testing Commands:**
   - Run unit & integration test suite:
     ```bash

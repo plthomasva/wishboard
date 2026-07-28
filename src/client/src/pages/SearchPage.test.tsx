@@ -223,4 +223,37 @@ describe('SearchPage', () => {
 
     await waitFor(() => expect(screen.queryByText('Admin delete test')).not.toBeInTheDocument());
   });
+
+  it('allows excluding a wish and undoing the exclusion', async () => {
+    globalThis.fetch = vi.fn().mockImplementation((url) => {
+      if (url.startsWith('/api/wishes?')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'wish-exclude', content: 'Excludable Wish' }],
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'Excludable' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => expect(screen.getByText('Excludable Wish')).toBeInTheDocument());
+
+    // 1. Exclude wish
+    const excludeBtn = screen.getByTitle('Hide wish / Not interested');
+    fireEvent.click(excludeBtn);
+
+    expect(screen.queryByText('Excludable Wish')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Undo/i })).toBeInTheDocument();
+
+    // 2. Undo exclusion
+    const undoBtn = screen.getByRole('button', { name: /Undo/i });
+    fireEvent.click(undoBtn);
+
+    await waitFor(() => expect(screen.getByText('Excludable Wish')).toBeInTheDocument());
+  });
 });
