@@ -33,6 +33,17 @@ describe('MatchingRulesSection', () => {
     },
   ];
 
+  const renderSection = (propsOverrides = {}) =>
+    render(
+      <MatchingRulesSection
+        authHeader={mockAuthHeader}
+        setMessage={mockSetMessage}
+        setError={mockSetError}
+        refreshCounter={0}
+        {...propsOverrides}
+      />
+    );
+
   beforeEach(() => {
     vi.resetAllMocks();
     if (!window.HTMLElement.prototype.scrollIntoView) {
@@ -55,14 +66,7 @@ describe('MatchingRulesSection', () => {
   });
 
   it('fetches and renders matching rules table', async () => {
-    render(
-      <MatchingRulesSection
-        authHeader={mockAuthHeader}
-        setMessage={mockSetMessage}
-        setError={mockSetError}
-        refreshCounter={0}
-      />
-    );
+    renderSection();
 
     await waitFor(() => {
       expect(screen.getByRole('cell', { name: /role = pup/i })).toBeInTheDocument();
@@ -71,14 +75,7 @@ describe('MatchingRulesSection', () => {
   });
 
   it('filters rules by text input', async () => {
-    render(
-      <MatchingRulesSection
-        authHeader={mockAuthHeader}
-        setMessage={mockSetMessage}
-        setError={mockSetError}
-        refreshCounter={0}
-      />
-    );
+    renderSection();
 
     await waitFor(() =>
       expect(screen.getByRole('cell', { name: /role = pup/i })).toBeInTheDocument()
@@ -92,14 +89,7 @@ describe('MatchingRulesSection', () => {
   });
 
   it('sorts rules when clicking table column headers', async () => {
-    render(
-      <MatchingRulesSection
-        authHeader={mockAuthHeader}
-        setMessage={mockSetMessage}
-        setError={mockSetError}
-        refreshCounter={0}
-      />
-    );
+    renderSection();
 
     await waitFor(() =>
       expect(screen.getByRole('cell', { name: /role = pup/i })).toBeInTheDocument()
@@ -125,14 +115,7 @@ describe('MatchingRulesSection', () => {
       return { ok: true, json: async () => mockRules } as Response;
     });
 
-    render(
-      <MatchingRulesSection
-        authHeader={mockAuthHeader}
-        setMessage={mockSetMessage}
-        setError={mockSetError}
-        refreshCounter={0}
-      />
-    );
+    renderSection();
 
     await waitFor(() =>
       expect(screen.getByRole('cell', { name: /role = pup/i })).toBeInTheDocument()
@@ -161,14 +144,7 @@ describe('MatchingRulesSection', () => {
       return { ok: true, json: async () => mockRules } as Response;
     });
 
-    render(
-      <MatchingRulesSection
-        authHeader={mockAuthHeader}
-        setMessage={mockSetMessage}
-        setError={mockSetError}
-        refreshCounter={0}
-      />
-    );
+    renderSection();
 
     await waitFor(() =>
       expect(screen.getByRole('cell', { name: /role = pup/i })).toBeInTheDocument()
@@ -197,14 +173,7 @@ describe('MatchingRulesSection', () => {
       return { ok: true, json: async () => mockRules } as Response;
     });
 
-    render(
-      <MatchingRulesSection
-        authHeader={mockAuthHeader}
-        setMessage={mockSetMessage}
-        setError={mockSetError}
-        refreshCounter={0}
-      />
-    );
+    renderSection();
 
     await waitFor(() =>
       expect(screen.getByRole('cell', { name: /role = pup/i })).toBeInTheDocument()
@@ -240,14 +209,7 @@ describe('MatchingRulesSection', () => {
       return { ok: true, json: async () => mockRules } as Response;
     });
 
-    render(
-      <MatchingRulesSection
-        authHeader={mockAuthHeader}
-        setMessage={mockSetMessage}
-        setError={mockSetError}
-        refreshCounter={0}
-      />
-    );
+    renderSection();
 
     await waitFor(() =>
       expect(screen.getByRole('cell', { name: /role = pup/i })).toBeInTheDocument()
@@ -265,14 +227,7 @@ describe('MatchingRulesSection', () => {
   it('cancels deletion if confirm is rejected or handles delete failure', async () => {
     vi.spyOn(globalThis, 'confirm').mockReturnValue(false);
 
-    render(
-      <MatchingRulesSection
-        authHeader={mockAuthHeader}
-        setMessage={mockSetMessage}
-        setError={mockSetError}
-        refreshCounter={0}
-      />
-    );
+    renderSection();
 
     await waitFor(() =>
       expect(screen.getByRole('cell', { name: /role = pup/i })).toBeInTheDocument()

@@ -178,4 +178,57 @@ describe('FlaggedWishesSection WebSocket', () => {
       expect(defaultProps.setMessage).toHaveBeenCalledWith('Cleared all flags successfully.')
     );
   });
+
+  it('handles error responses in removeWish, clearFlag, and clearAllFlags', async () => {
+    globalThis.fetch = vi.fn().mockImplementation((url, _init) => {
+      if (url === '/api/admin/flags') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'f1', content: 'Flagged wish A', user_id: 'user1', flagged: 1 }],
+        });
+      }
+      return Promise.resolve({ ok: false });
+    }) as any;
+
+    render(<FlaggedWishesSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText('Flagged wish A')).toBeInTheDocument());
+
+    const removeBtn = screen.getByRole('button', { name: /^Remove$/i });
+    act(() => {
+      removeBtn.click();
+    });
+    await waitFor(() =>
+      expect(defaultProps.setError).toHaveBeenCalledWith('Failed to remove wish.')
+    );
+
+    const clearBtn = screen.getByRole('button', { name: /Clear Flag/i });
+    act(() => {
+      clearBtn.click();
+    });
+    await waitFor(() =>
+      expect(defaultProps.setError).toHaveBeenCalledWith('Failed to clear flag.')
+    );
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const clearAllBtn = screen.getByRole('button', { name: /Clear All Flags/i });
+    act(() => {
+      clearAllBtn.click();
+    });
+    await waitFor(() =>
+      expect(defaultProps.setError).toHaveBeenCalledWith('Failed to clear all flags.')
+    );
+  });
+
+  it('aborts clearAllFlags when user cancels prompt', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<FlaggedWishesSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText('Flagged wish A')).toBeInTheDocument());
+
+    const clearAllBtn = screen.getByRole('button', { name: /Clear All Flags/i });
+    act(() => {
+      clearAllBtn.click();
+    });
+
+    expect(defaultProps.setMessage).not.toHaveBeenCalledWith('Cleared all flags successfully.');
+  });
 });
