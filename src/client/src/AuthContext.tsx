@@ -41,9 +41,14 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const storageKey = 'wishboard-auth-token';
 
 const mapToAuthUser = (data: Record<string, unknown>): AuthUser => ({
-  id: typeof data.id === 'string' ? data.id : String(data.id ?? ''),
-  username: typeof data.username === 'string' ? data.username : String(data.username ?? ''),
-  role: typeof data.role === 'string' ? data.role : String(data.role ?? 'user'),
+  id: typeof data.id === 'string' ? data.id : typeof data.id === 'number' ? String(data.id) : '',
+  username:
+    typeof data.username === 'string'
+      ? data.username
+      : typeof data.username === 'number'
+        ? String(data.username)
+        : '',
+  role: typeof data.role === 'string' ? data.role : 'user',
   attributes: (data.attributes || data.identity_attributes || {}) as Record<string, string[]>,
   contacts: (data.contacts || []) as { type: string; value: string }[],
   wishmail_enabled: Boolean(data.wishmail_enabled),

@@ -67,8 +67,8 @@ export default function MatchingRulesSection({
           Object.values(r).some((v) => String(v).toLowerCase().includes(ruleFilter.toLowerCase()))
       )
       .sort((a, b) => {
-        const aVal = String(a[ruleSort.key] ?? '');
-        const bVal = String(b[ruleSort.key] ?? '');
+        const aVal = (a[ruleSort.key] ?? '') as string;
+        const bVal = (b[ruleSort.key] ?? '') as string;
         if (aVal === bVal) return 0;
         const cmp = aVal > bVal ? 1 : -1;
         return ruleSort.dir === 'asc' ? cmp : -cmp;
