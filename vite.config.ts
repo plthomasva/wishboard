@@ -58,13 +58,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       reportsDirectory: 'coverage',
-      exclude: [
-        '**/node_modules/**',
-        '**/dist/**',
-        '**/coverage/**',
-        '**/*.d.ts',
-        'src/client/src/WishScanner.tsx',
-      ],
+      exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/*.d.ts'],
       include: [
         'src/client/src/**/*.{js,ts,tsx}',
         'src/server/**/*.{js,ts}',
