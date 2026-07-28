@@ -224,4 +224,3 @@ describe('SearchPage', () => {
     await waitFor(() => expect(screen.queryByText('Admin delete test')).not.toBeInTheDocument());
   });
 });
-

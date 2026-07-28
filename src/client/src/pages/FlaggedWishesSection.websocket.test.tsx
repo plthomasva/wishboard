@@ -94,7 +94,9 @@ describe('FlaggedWishesSection WebSocket', () => {
   it('handles load error gracefully', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: false }) as any;
     render(<FlaggedWishesSection {...defaultProps} />);
-    await waitFor(() => expect(defaultProps.setError).toHaveBeenCalledWith('Unable to load flagged wishes.'));
+    await waitFor(() =>
+      expect(defaultProps.setError).toHaveBeenCalledWith('Unable to load flagged wishes.')
+    );
   });
 
   it('allows removing a wish', async () => {
@@ -144,7 +146,9 @@ describe('FlaggedWishesSection WebSocket', () => {
       clearBtn.click();
     });
 
-    await waitFor(() => expect(defaultProps.setMessage).toHaveBeenCalledWith('Cleared flag for wish f1'));
+    await waitFor(() =>
+      expect(defaultProps.setMessage).toHaveBeenCalledWith('Cleared flag for wish f1')
+    );
   });
 
   it('allows clearing all flags with confirmation', async () => {
@@ -170,7 +174,8 @@ describe('FlaggedWishesSection WebSocket', () => {
       clearAllBtn.click();
     });
 
-    await waitFor(() => expect(defaultProps.setMessage).toHaveBeenCalledWith('Cleared all flags successfully.'));
+    await waitFor(() =>
+      expect(defaultProps.setMessage).toHaveBeenCalledWith('Cleared all flags successfully.')
+    );
   });
 });
-
