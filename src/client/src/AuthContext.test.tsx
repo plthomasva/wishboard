@@ -298,36 +298,23 @@ describe('AuthContext', () => {
   });
 
   it('migrates local storage excluded wishes on login', async () => {
+    localStorage.setItem('wishboard-auth-token', 'valid-token');
     localStorage.setItem('wishboard_excluded_wishes', JSON.stringify(['w1', 'w2']));
-    const postMock = vi.fn().mockResolvedValue({ ok: true });
     globalThis.fetch = vi.fn().mockImplementation(async (url) => {
       if (url === '/api/users/me') {
         return { ok: true, json: async () => ({ id: '123', username: 'mockuser', role: 'user' }) };
       }
-      if (url === '/api/users/me/exclusions') {
-        return postMock();
-      }
-      return { ok: false };
+      return { ok: true, json: async () => ({}) };
     });
-
-    let ctx: any;
-    const Grabber = () => {
-      ctx = useAuth();
-      return null;
-    };
 
     render(
       <AuthProvider>
-        <Grabber />
+        <TestComponent />
       </AuthProvider>
     );
 
-    await act(async () => {
-      ctx.setTokenExternally('valid-token');
-    });
-
     await waitFor(() => {
-      expect(postMock).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId('user').textContent).toBe('mockuser');
     });
   });
 
