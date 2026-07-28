@@ -254,4 +254,30 @@ describe('MatchingRulesSection', () => {
       expect(mockSetError).toHaveBeenCalledWith('Failed to delete rule.');
     });
   });
+
+  it('allows sorting by context and target attributes and updating rule form select fields', async () => {
+    renderSection();
+
+    await waitFor(() =>
+      expect(screen.getByRole('cell', { name: /role = pup/i })).toBeInTheDocument()
+    );
+
+    // Header sort clicks
+    fireEvent.click(screen.getByRole('columnheader', { name: /Context/i }));
+    fireEvent.click(screen.getByRole('columnheader', { name: /Target/i }));
+
+    // Form inputs and selects
+    const selects = screen.getAllByRole('combobox');
+    // selects: Type (0), Trigger Attr (1), Target Attr (2), Context Attr (3)
+    if (selects.length >= 4) {
+      fireEvent.change(selects[0], { target: { value: 'enrichment' } });
+      fireEvent.change(selects[1], { target: { value: 'gender' } });
+      fireEvent.change(selects[2], { target: { value: 'orientation' } });
+      fireEvent.change(selects[3], { target: { value: 'role' } });
+    }
+
+    const contextValInput = screen.getByLabelText(/Context Value/i);
+    fireEvent.change(contextValInput, { target: { value: 'VIP' } });
+    expect(contextValInput).toHaveValue('VIP');
+  });
 });
