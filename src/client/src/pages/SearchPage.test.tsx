@@ -193,4 +193,35 @@ describe('SearchPage', () => {
     // Since profile attributes are disabled, it sets ignore_attributes=1
     expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('ignore_attributes=1'));
   });
+
+  it('allows admin users to delete a wish with confirmation', async () => {
+    mockUser = { username: 'admin', role: 'admin' };
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    globalThis.fetch = vi.fn().mockImplementation((url, init) => {
+      if (url.startsWith('/api/wishes?')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'wish-admin', content: 'Admin delete test' }],
+        });
+      }
+      if (url === '/api/admin/wishes/wish-admin/remove' && init?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'admin' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => expect(screen.getByText('Admin delete test')).toBeInTheDocument());
+
+    const deleteBtn = screen.getByTitle(/Admin Delete Wish/i);
+    fireEvent.click(deleteBtn);
+
+    await waitFor(() => expect(screen.queryByText('Admin delete test')).not.toBeInTheDocument());
+  });
 });
+

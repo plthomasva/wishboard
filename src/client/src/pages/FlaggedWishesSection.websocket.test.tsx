@@ -90,4 +90,87 @@ describe('FlaggedWishesSection WebSocket', () => {
     expect(socket.off).toHaveBeenCalledWith('wish:flagged', expect.any(Function));
     expect(socket.off).toHaveBeenCalledWith('wish:deleted', expect.any(Function));
   });
+
+  it('handles load error gracefully', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false }) as any;
+    render(<FlaggedWishesSection {...defaultProps} />);
+    await waitFor(() => expect(defaultProps.setError).toHaveBeenCalledWith('Unable to load flagged wishes.'));
+  });
+
+  it('allows removing a wish', async () => {
+    globalThis.fetch = vi.fn().mockImplementation((url, init) => {
+      if (url === '/api/admin/flags') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'f1', content: 'Flagged wish A', user_id: 'user1', flagged: 1 }],
+        });
+      }
+      if (url === '/api/admin/wishes/f1/remove' && init?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      }
+      return Promise.resolve({ ok: false });
+    }) as any;
+
+    render(<FlaggedWishesSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText('Flagged wish A')).toBeInTheDocument());
+
+    const removeBtn = screen.getByRole('button', { name: /^Remove$/i });
+    act(() => {
+      removeBtn.click();
+    });
+
+    await waitFor(() => expect(defaultProps.setMessage).toHaveBeenCalledWith('Removed wish f1'));
+  });
+
+  it('allows clearing a flag for a single wish', async () => {
+    globalThis.fetch = vi.fn().mockImplementation((url, init) => {
+      if (url === '/api/admin/flags') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'f1', content: 'Flagged wish A', user_id: 'user1', flagged: 1 }],
+        });
+      }
+      if (url === '/api/admin/wishes/f1/clear-flag' && init?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      }
+      return Promise.resolve({ ok: false });
+    }) as any;
+
+    render(<FlaggedWishesSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText('Flagged wish A')).toBeInTheDocument());
+
+    const clearBtn = screen.getByRole('button', { name: /Clear Flag/i });
+    act(() => {
+      clearBtn.click();
+    });
+
+    await waitFor(() => expect(defaultProps.setMessage).toHaveBeenCalledWith('Cleared flag for wish f1'));
+  });
+
+  it('allows clearing all flags with confirmation', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    globalThis.fetch = vi.fn().mockImplementation((url, init) => {
+      if (url === '/api/admin/flags') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'f1', content: 'Flagged wish A', user_id: 'user1', flagged: 1 }],
+        });
+      }
+      if (url === '/api/admin/wishes/clear-all-flags' && init?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      }
+      return Promise.resolve({ ok: false });
+    }) as any;
+
+    render(<FlaggedWishesSection {...defaultProps} />);
+    await waitFor(() => expect(screen.getByText('Flagged wish A')).toBeInTheDocument());
+
+    const clearAllBtn = screen.getByRole('button', { name: /Clear All Flags/i });
+    act(() => {
+      clearAllBtn.click();
+    });
+
+    await waitFor(() => expect(defaultProps.setMessage).toHaveBeenCalledWith('Cleared all flags successfully.'));
+  });
 });
+
