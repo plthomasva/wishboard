@@ -127,31 +127,73 @@ describe('ManageWishPage', () => {
     });
   });
 
-  it('handles error responses in save update, deactivate, and delete actions', async () => {
-    globalThis.window.location.hash = '#manage-wish?id=w5&secret=sec';
+  it('handles invalid secret format and invalid wish id format', async () => {
+    globalThis.window.location.hash = '#manage-wish?id=invalid!id&secret=invalid!secret';
+    render(<ManageWishPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Invalid secret format.')).toBeInTheDocument();
+    });
+  });
+
+  it('updates wish and updates location hash when newSecret is returned', async () => {
+    globalThis.window.location.hash = '#manage-wish?id=w5&secret=sec123';
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: 'w5', content: 'Wish 5' }),
+      json: async () => ({ id: 'w5', content: 'Original', wishmail_enabled: true }),
     } as any);
 
     render(<ManageWishPage />);
     await waitFor(() => expect(screen.getByText('Manage Your Wish')).toBeInTheDocument());
 
-    // 1. Save error
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ error: 'Invalid secret' }),
-    } as any);
-    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
-    await waitFor(() => expect(screen.getByText('Invalid secret')).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /View Wishmail/i })).toHaveAttribute(
+      'href',
+      '#wishmail-dashboard?id=w5&secret=sec123'
+    );
 
-    // 2. Delete error
-    globalThis.window.confirm = vi.fn().mockReturnValue(true);
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ newSecret: 'newsec456' }),
+    } as any);
+
+    fireEvent.submit(screen.getByRole('button', { name: /Save Changes/i }));
+    await waitFor(() => expect(screen.getByText('Wish updated successfully!')).toBeInTheDocument());
+  });
+
+  it('handles error responses in save update, deactivate, and delete actions', async () => {
+    globalThis.window.location.hash = '#manage-wish?id=w4&secret=sec';
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 'w4', content: 'Old content', is_active: true }),
+    } as any);
+
+    render(<ManageWishPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Manage Your Wish')).toBeInTheDocument();
+    });
+
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ error: 'Delete failed' }),
+      json: async () => ({ error: 'Update failed' }),
     } as any);
+
+    fireEvent.submit(screen.getByRole('button', { name: /Save Changes/i }));
+    await waitFor(() => expect(screen.getByText('Update failed')).toBeInTheDocument());
+
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({}),
+    } as any);
+
+    fireEvent.click(screen.getByRole('button', { name: /Deactivate Wish/i }));
+    await waitFor(() => expect(screen.getByText('Failed to deactivate wish.')).toBeInTheDocument());
+
+    globalThis.window.confirm = vi.fn().mockReturnValueOnce(true);
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: 'Delete error' }),
+    } as any);
+
     fireEvent.click(screen.getByRole('button', { name: 'Delete Wish' }));
-    await waitFor(() => expect(screen.getByText('Delete failed')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Delete error')).toBeInTheDocument());
   });
 });

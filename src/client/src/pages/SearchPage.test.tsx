@@ -256,4 +256,31 @@ describe('SearchPage', () => {
 
     await waitFor(() => expect(screen.getByText('Excludable Wish')).toBeInTheDocument());
   });
+
+  it('handles failed undo restoration gracefully', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ id: 'w10', content: 'Failing Undo Wish' }],
+    } as any);
+
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText('Search existing wishes'), {
+      target: { value: 'Failing' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => expect(screen.getByText('Failing Undo Wish')).toBeInTheDocument());
+
+    const excludeBtn = screen.getByTitle('Hide wish / Not interested');
+    fireEvent.click(excludeBtn);
+
+    vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error('Network error on undo'));
+
+    const undoBtn = screen.getByRole('button', { name: /Undo/i });
+    fireEvent.click(undoBtn);
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /Undo/i })).not.toBeInTheDocument()
+    );
+  });
 });
