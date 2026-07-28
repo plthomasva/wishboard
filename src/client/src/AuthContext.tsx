@@ -40,14 +40,15 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const storageKey = 'wishboard-auth-token';
 
+const parseStringOrNumber = (val: unknown, fallback = ''): string => {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') return String(val);
+  return fallback;
+};
+
 const mapToAuthUser = (data: Record<string, unknown>): AuthUser => ({
-  id: typeof data.id === 'string' ? data.id : typeof data.id === 'number' ? String(data.id) : '',
-  username:
-    typeof data.username === 'string'
-      ? data.username
-      : typeof data.username === 'number'
-        ? String(data.username)
-        : '',
+  id: parseStringOrNumber(data.id),
+  username: parseStringOrNumber(data.username),
   role: typeof data.role === 'string' ? data.role : 'user',
   attributes: (data.attributes || data.identity_attributes || {}) as Record<string, string[]>,
   contacts: (data.contacts || []) as { type: string; value: string }[],

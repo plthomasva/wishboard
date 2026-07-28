@@ -61,11 +61,11 @@ describe('cardProcessor geometry & layout utilities', () => {
   it('generates default polygon centered on element aspect ratio', () => {
     const videoWide = { videoWidth: 1920, videoHeight: 1080 } as any; // > 5/3 ratio
     const polyWide = getDefaultPoly(videoWide);
-    expect(polyWide.length).toBe(4);
+    expect(polyWide).toHaveLength(4);
 
     const videoTall = { videoWidth: 800, videoHeight: 1000 } as any; // < 5/3 ratio
     const polyTall = getDefaultPoly(videoTall);
-    expect(polyTall.length).toBe(4);
+    expect(polyTall).toHaveLength(4);
   });
 
   it('aligns polygon vertices to minimize total Euclidean distance', () => {
