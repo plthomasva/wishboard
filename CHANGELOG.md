@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.21.1...wishboard-v1.22.0) (2026-07-28)
+
+
+### Features
+
+* generalize per-view WebSocket subscriptions to wish:* ([#305](https://github.com/plthomasva/wishboard/issues/305)) ([eb11a8f](https://github.com/plthomasva/wishboard/commit/eb11a8fdf8ddf985edcdaa2a25af6fe343d3866e)), closes [#191](https://github.com/plthomasva/wishboard/issues/191)
+
 ## [1.21.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.21.0...wishboard-v1.21.1) (2026-07-26)
 
 
