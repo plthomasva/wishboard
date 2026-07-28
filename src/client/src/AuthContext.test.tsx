@@ -296,4 +296,66 @@ describe('AuthContext', () => {
     expect(contextValue.token).toBe('external-token');
     expect(localStorage.getItem('wishboard-auth-token')).toBe('external-token');
   });
+
+  it('migrates local storage excluded wishes on login', async () => {
+    localStorage.setItem('wishboard-auth-token', 'valid-token');
+    localStorage.setItem('wishboard_excluded_wishes', JSON.stringify(['w1', 'w2']));
+    const postMock = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = vi.fn().mockImplementation(async (url) => {
+      if (url === '/api/users/me') {
+        return { ok: true, json: async () => ({ id: '123', username: 'mockuser', role: 'user' }) };
+      }
+      if (url === '/api/users/me/exclusions') {
+        return postMock();
+      }
+      return { ok: false };
+    });
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user').textContent).toBe('mockuser');
+    });
+  });
+
+  it('handles corrupted wishboard_excluded_wishes gracefully during migration', async () => {
+    localStorage.setItem('wishboard_excluded_wishes', 'invalid-json{');
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+    expect(screen.getByTestId('user').textContent).toBe('no-user');
+  });
+
+  it('maps user attributes correctly when identity_attributes and non-string types are provided', async () => {
+    localStorage.setItem('wishboard-auth-token', 'token-alt');
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: 999,
+        username: 'numuser',
+        role: null,
+        identity_attributes: { gender: ['nonbinary'] },
+        contacts: [{ type: 'email', value: 'a@b.com' }],
+        wishmail_enabled: 1,
+        is_active: 0,
+      }),
+    });
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user').textContent).toBe('numuser');
+      expect(screen.getByTestId('role').textContent).toBe('user');
+    });
+  });
 });
