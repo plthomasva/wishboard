@@ -44,8 +44,13 @@ describe('App Coverage', () => {
 
   it('handles window undefined in getHashPage and checkIsKioskParam', () => {
     const originalWindow = globalThis.window;
-    delete (globalThis as Record<string, unknown>).window;
-    (globalThis as Record<string, unknown>).window = originalWindow;
+    try {
+      delete (globalThis as Record<string, unknown>).window;
+      render(<App />);
+      expect(screen.getByRole('navigation')).toBeInTheDocument();
+    } finally {
+      (globalThis as Record<string, unknown>).window = originalWindow;
+    }
   });
 
   it('navigates to account when clicking user link', async () => {
