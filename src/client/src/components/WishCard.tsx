@@ -8,7 +8,7 @@ interface Contact {
   value: string;
 }
 
-interface Wish {
+export interface Wish {
   id: string;
   content: string;
   creator_attributes?: Record<string, string[]>;
@@ -150,7 +150,10 @@ export default function WishCard({
   );
 
   // Use lower max font size for the card, and minimum 10px so we have enough room to scale down
-  const { containerRef, contentRef, isOverflowing } = useTextFit(
+  const { containerRef, contentRef, isOverflowing } = useTextFit<
+    HTMLDivElement,
+    HTMLParagraphElement
+  >(
     {
       minFontSize: 10,
       maxFontSize: cardClass === 'display-card' ? 36 : 18,

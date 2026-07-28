@@ -11,7 +11,17 @@ interface AttributeInputProps {
   warning?: string;
 }
 
-function findStickerMatch(stickerMap: Record<string, any>, optLower: string) {
+type StickerRule = {
+  type?: string;
+  iconType?: string;
+  unicode?: string;
+  color?: string;
+  class?: string;
+  src?: string;
+};
+type StickerMap = Record<string, Record<string, StickerRule>>;
+
+function findStickerMatch(stickerMap: Record<string, StickerRule>, optLower: string) {
   return Object.keys(stickerMap).find((k) => {
     const escapedKey = k.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
     const regex = new RegExp(String.raw`\b${escapedKey}\b`);
@@ -19,11 +29,7 @@ function findStickerMatch(stickerMap: Record<string, any>, optLower: string) {
   });
 }
 
-function resolveStickerRule(
-  opt: string,
-  category: string | undefined,
-  stickersMap: Record<string, any>
-) {
+function resolveStickerRule(opt: string, category: string | undefined, stickersMap: StickerMap) {
   const optLower = opt.toLowerCase();
   if (category && stickersMap[category]) {
     const matchKey = findStickerMatch(stickersMap[category], optLower);
@@ -55,7 +61,7 @@ export default function AttributeInput({
     .map((s) => s.trim().toLowerCase())
     .filter((s) => s !== '');
 
-  const getDynamicPillIcon = (opt: string, cat?: string, stickersMap?: any) => {
+  const getDynamicPillIcon = (opt: string, cat?: string, stickersMap?: StickerMap) => {
     const rule = resolveStickerRule(opt, cat, stickersMap || {});
 
     if (rule?.type === 'icon') {

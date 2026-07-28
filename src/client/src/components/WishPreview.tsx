@@ -1,9 +1,9 @@
 import React from 'react';
 import InfoToggle from './InfoToggle';
-import WishCard from './WishCard';
+import WishCard, { Wish } from './WishCard';
 
 interface WishPreviewProps {
-  wish: any;
+  wish: Wish;
   onOverflowChange: (isOverflowing: boolean) => void;
 }
 

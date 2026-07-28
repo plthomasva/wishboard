@@ -131,7 +131,7 @@ function AppContent() {
     };
     globalThis.addEventListener('hashchange', handleHashChange);
     return () => globalThis.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [setTokenExternally]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -11,7 +11,20 @@ export interface EventProfile {
   profile: string;
   contact_methods: string[];
   categories: Category[];
-  stickers?: Record<string, Record<string, any>>;
+  stickers?: Record<
+    string,
+    Record<
+      string,
+      {
+        type?: string;
+        iconType?: string;
+        unicode?: string;
+        color?: string;
+        class?: string;
+        src?: string;
+      }
+    >
+  >;
   realtimeProvider: string;
   apIp: string;
   isServerless: boolean;
@@ -28,6 +41,7 @@ const emptyProfile: EventProfile = {
 
 const EventProfileContext = createContext<EventProfile>(emptyProfile);
 
+// eslint-disable-next-line react-refresh/only-export-components -- Context hook export co-located with provider per idiomatic React pattern
 export const useEventProfile = () => useContext(EventProfileContext);
 
 export const EventProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -58,10 +58,11 @@ globalThis.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
 
 // Mock EventProfileContext so it renders children immediately without waiting for fetch in tests
 vi.mock('./EventProfileContext', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
-    ...(actual as any),
-    EventProfileProvider: ({ children }: any) => children,
+    ...actual,
+    EventProfileProvider: ({ children }: { children: React.ReactNode }) =>
+      children as React.ReactElement,
     useEventProfile: vi.fn(() => MOCK_DOMAIN),
   };
 });
@@ -130,13 +131,14 @@ vi.mock('socket.io-client', () => {
 });
 
 if (typeof HTMLCanvasElement !== 'undefined') {
-  HTMLCanvasElement.prototype.getContext = vi.fn() as any;
+  HTMLCanvasElement.prototype.getContext =
+    vi.fn() as unknown as typeof HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.toBlob = vi.fn(function (
     this: HTMLCanvasElement,
     callback: BlobCallback
   ) {
     callback(new Blob(['mock data'], { type: 'image/jpeg' }));
-  }) as any;
+  }) as unknown as typeof HTMLCanvasElement.prototype.toBlob;
 }
 
 globalThis.ResizeObserver = ResizeObserver;

@@ -42,10 +42,9 @@ describe('App Coverage', () => {
     expect(globalThis.window.location.hash).toBe('#account');
   });
 
-  it('handles window undefined in getHashPage and checkIsKioskParam', () => {
-    const originalWindow = globalThis.window;
-    delete (globalThis as Record<string, unknown>).window;
-    (globalThis as Record<string, unknown>).window = originalWindow;
+  it('renders default home page navigation', () => {
+    render(<App />);
+    expect(screen.getAllByRole('navigation')[0]).toBeInTheDocument();
   });
 
   it('navigates to account when clicking user link', async () => {

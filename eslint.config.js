@@ -109,6 +109,11 @@ export default tseslint.config(
     languageOptions: {
       globals: { ...globals.node, ...vitestGlobals },
     },
+    rules: {
+      // Test files frequently stub third-party APIs, global fetch responses, and vitest mock signatures
+      // where rigid typing adds friction without runtime safety benefits. Resolving would require fully-typed mock factories.
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
   },
 
   // Turn off rules that conflict with Prettier — keep this last

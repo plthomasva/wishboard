@@ -312,8 +312,9 @@ export default function AwsMetricsDashboard({ authHeader }: Readonly<AwsMetricsD
         throw new Error(body.error ?? `HTTP ${response.status}`);
       }
       setData(await response.json());
-    } catch (err: any) {
-      setError(err.message ?? 'Unknown error fetching metrics.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error fetching metrics.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

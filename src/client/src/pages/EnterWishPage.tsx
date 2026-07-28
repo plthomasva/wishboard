@@ -13,13 +13,15 @@ const WishScanner = React.lazy(() => import('../components/WishScanner'));
 // dynamically at the point of use (card upload / scan) so it is not fetched
 // on page load — mirrors the React.lazy(WishScanner) above. See issue #140.
 
-function loadImage(file: File): Promise<HTMLImageElement> {
+type TempImageElement = HTMLImageElement & { _tempUrl?: string };
+
+function loadImage(file: File): Promise<TempImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
-    const img = new Image();
+    const img: TempImageElement = new Image();
     img.src = url;
     img.onload = () => {
-      (img as any)._tempUrl = url;
+      img._tempUrl = url;
       resolve(img);
     };
     img.onerror = () => {
@@ -246,20 +248,22 @@ export default function EnterWishPage() {
                 setProcessingStatus('Processing card image...');
                 setError(null);
 
-                let img: HTMLImageElement | null = null;
+                let img: TempImageElement | null = null;
                 try {
                   img = await loadImage(file);
                   const { processCardImage } = await import('../cardProcessor');
                   const { blob, text } = await processCardImage(img);
                   if (text) setContent(text);
                   setImageBlob(blob);
-                } catch (err: any) {
+                } catch (err: unknown) {
                   console.error(err);
-                  setError(err.message || 'Error processing uploaded image.');
+                  const msg =
+                    err instanceof Error ? err.message : 'Error processing uploaded image.';
+                  setError(msg);
                   setImageBlob(null);
                 } finally {
-                  if (img && (img as any)._tempUrl) {
-                    URL.revokeObjectURL((img as any)._tempUrl);
+                  if (img?._tempUrl) {
+                    URL.revokeObjectURL(img._tempUrl);
                   }
                   setIsProcessing(false);
                 }

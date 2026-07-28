@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenCV.js WASM module, MatVector, and dynamic C++ bindings require any types throughout scanning pipeline */
 import React, { useRef, useState, useEffect } from 'react';
 import cvPromise from '@techstark/opencv-js';
 import {
@@ -186,12 +187,12 @@ export default function WishScanner({
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error accessing camera', err);
         setIsProcessing(true);
-        setProcessingStatus(
-          `Camera Error: ${err.message || 'Permissions denied or insecure context'}`
-        );
+        const message =
+          err instanceof Error ? err.message : 'Permissions denied or insecure context';
+        setProcessingStatus(`Camera Error: ${message}`);
       }
     }
     setupCamera();
@@ -276,8 +277,9 @@ export default function WishScanner({
         { x: drawX, y: drawY, w: drawW, h: drawH },
         stickerZoneHeightPercentage
       );
-    } catch (err: any) {
-      debugLines.push(`Error: ${err.message || err.toString()}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      debugLines.push(`Error: ${msg}`);
       console.warn('Live OpenCV processing error', err);
     }
 

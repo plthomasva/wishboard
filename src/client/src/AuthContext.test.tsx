@@ -296,4 +296,188 @@ describe('AuthContext', () => {
     expect(contextValue.token).toBe('external-token');
     expect(localStorage.getItem('wishboard-auth-token')).toBe('external-token');
   });
+
+  it('migrates local storage excluded wishes on login and register', async () => {
+    localStorage.setItem('wishboard_excluded_wishes', JSON.stringify(['w1', 'w2']));
+    const postMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    globalThis.fetch = vi.fn().mockImplementation(async (url) => {
+      if (url === '/api/users/login') {
+        return {
+          ok: true,
+          json: async () => ({ token: 'new-token', role: 'user', id: '123', username: 'testuser' }),
+        };
+      }
+      if (url === '/api/users/register') {
+        return {
+          ok: true,
+          json: async () => ({
+            token: 'reg-token',
+            role: 'user',
+            id: '456',
+            username: 'reguser',
+            secret: 'sec',
+          }),
+        };
+      }
+      if (url === '/api/users/me/exclusions') {
+        return postMock();
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    let contextValue: any;
+    const Grabber = () => {
+      contextValue = useAuth();
+      return null;
+    };
+
+    render(
+      <AuthProvider>
+        <Grabber />
+      </AuthProvider>
+    );
+
+    await act(async () => {
+      await contextValue.login('testuser', 'secret');
+    });
+
+    expect(postMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await contextValue.register('reguser', 'secret');
+    });
+
+    expect(postMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('handles non-array or empty excluded wishes during migration on login', async () => {
+    localStorage.setItem('wishboard_excluded_wishes', JSON.stringify('not-an-array'));
+    const postMock = vi.fn();
+    globalThis.fetch = vi.fn().mockImplementation(async (url) => {
+      if (url === '/api/users/login') {
+        return {
+          ok: true,
+          json: async () => ({ token: 't1', role: 'user', id: '1', username: 'u1' }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    let contextValue: any;
+    const Grabber = () => {
+      contextValue = useAuth();
+      return null;
+    };
+
+    render(
+      <AuthProvider>
+        <Grabber />
+      </AuthProvider>
+    );
+
+    await act(async () => {
+      await contextValue.login('u1', 'p1');
+    });
+
+    expect(postMock).not.toHaveBeenCalled();
+  });
+
+  it('handles network errors during local storage exclusion migration gracefully', async () => {
+    localStorage.setItem('wishboard_excluded_wishes', JSON.stringify(['w1']));
+    globalThis.fetch = vi.fn().mockImplementation(async (url) => {
+      if (url === '/api/users/login') {
+        return {
+          ok: true,
+          json: async () => ({ token: 't1', role: 'user', id: '1', username: 'u1' }),
+        };
+      }
+      if (url === '/api/users/me/exclusions') {
+        throw new Error('Network failure');
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    let contextValue: any;
+    const Grabber = () => {
+      contextValue = useAuth();
+      return null;
+    };
+
+    render(
+      <AuthProvider>
+        <Grabber />
+      </AuthProvider>
+    );
+
+    await act(async () => {
+      const res = await contextValue.login('u1', 'p1');
+      expect(res.success).toBe(true);
+    });
+  });
+
+  it('returns custom error message when login or register response is not ok', async () => {
+    globalThis.fetch = vi.fn().mockImplementation(async (url) => {
+      if (url === '/api/users/login' || url === '/api/users/register') {
+        return { ok: false, json: async () => ({}) };
+      }
+      return { ok: false };
+    });
+
+    let contextValue: any;
+    const Grabber = () => {
+      contextValue = useAuth();
+      return null;
+    };
+
+    render(
+      <AuthProvider>
+        <Grabber />
+      </AuthProvider>
+    );
+
+    await act(async () => {
+      const loginRes = await contextValue.login('u1', 'p1');
+      expect(loginRes.error).toBe('Login failed.');
+
+      const regRes = await contextValue.register('u2', 'p2');
+      expect(regRes.error).toBe('Registration failed.');
+    });
+  });
+
+  it('handles corrupted wishboard_excluded_wishes gracefully during migration', async () => {
+    localStorage.setItem('wishboard_excluded_wishes', 'invalid-json{');
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+    expect(screen.getByTestId('user').textContent).toBe('no-user');
+  });
+
+  it('maps user attributes correctly when identity_attributes and non-string types are provided', async () => {
+    localStorage.setItem('wishboard-auth-token', 'token-alt');
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: 999,
+        username: 'numuser',
+        role: null,
+        identity_attributes: { gender: ['nonbinary'] },
+        contacts: [{ type: 'email', value: 'a@b.com' }],
+        wishmail_enabled: 1,
+        is_active: 0,
+      }),
+    });
+
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user').textContent).toBe('numuser');
+      expect(screen.getByTestId('role').textContent).toBe('user');
+    });
+  });
 });

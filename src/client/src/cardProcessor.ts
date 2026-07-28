@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- OpenCV.js WASM module, MatVector, and dynamic C++ bindings require any types throughout processing pipeline */
 import cvPromise from '@techstark/opencv-js';
 import Tesseract from 'tesseract.js';
 
@@ -38,6 +39,28 @@ export function calculateDrawDimensions(video: ProcessableElement, canvas: HTMLC
   } else {
     drawH = canvas.width / videoRatio;
     drawY = (canvas.height - drawH) / 2;
+  }
+  return { drawW, drawH, drawX, drawY };
+}
+
+export function calculateAspectFitDrawConfig(
+  videoW: number,
+  videoH: number,
+  canvas: { width: number; height: number }
+): { drawW: number; drawH: number; drawX: number; drawY: number } {
+  let drawW = canvas.width;
+  let drawH = canvas.height;
+  let drawX = 0;
+  let drawY = 0;
+  const videoAspect = videoW / videoH;
+  const canvasAspect = canvas.width / canvas.height;
+
+  if (videoAspect > canvasAspect) {
+    drawH = canvas.width / videoAspect;
+    drawY = (canvas.height - drawH) / 2;
+  } else {
+    drawW = canvas.height * videoAspect;
+    drawX = (canvas.width - drawW) / 2;
   }
   return { drawW, drawH, drawX, drawY };
 }

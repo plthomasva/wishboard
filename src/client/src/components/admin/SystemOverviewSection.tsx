@@ -118,7 +118,15 @@ function parseLogLine(line: string, idx: number): ParsedLogEntry {
   };
 }
 
-export default function SystemOverviewSection({ authHeader, refreshCounter }: any) {
+interface SystemOverviewSectionProps {
+  authHeader: Record<string, string>;
+  refreshCounter: number;
+}
+
+export default function SystemOverviewSection({
+  authHeader,
+  refreshCounter,
+}: Readonly<SystemOverviewSectionProps>) {
   const [rawLogs, setRawLogs] = useState<string>('');
   const [filterRepeating, setFilterRepeating] = useState<boolean>(true);
   const [isTailing, setIsTailing] = useState<boolean>(true);
@@ -138,7 +146,7 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
       .catch(() => setIsServerlessMode(false));
   }, []);
 
-  const loadLogs = async () => {
+  const loadLogs = React.useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/logs?_t=${Date.now()}`, {
         headers: { ...authHeader, 'Cache-Control': 'no-cache' },
@@ -154,11 +162,11 @@ export default function SystemOverviewSection({ authHeader, refreshCounter }: an
       console.error(e);
       setRawLogs('Failed to load logs.');
     }
-  };
+  }, [authHeader]);
 
   useEffect(() => {
     loadLogs();
-  }, [refreshCounter]);
+  }, [refreshCounter, loadLogs]);
 
   const parsedLogs = useMemo(() => {
     const logsString = rawLogs || '';

@@ -193,4 +193,94 @@ describe('SearchPage', () => {
     // Since profile attributes are disabled, it sets ignore_attributes=1
     expect(globalThis.fetch).toHaveBeenCalledWith(expect.stringContaining('ignore_attributes=1'));
   });
+
+  it('allows admin users to delete a wish with confirmation', async () => {
+    mockUser = { username: 'admin', role: 'admin' };
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    globalThis.fetch = vi.fn().mockImplementation((url, init) => {
+      if (url.startsWith('/api/wishes?')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'wish-admin', content: 'Admin delete test' }],
+        });
+      }
+      if (url === '/api/admin/wishes/wish-admin/remove' && init?.method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'admin' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => expect(screen.getByText('Admin delete test')).toBeInTheDocument());
+
+    const deleteBtn = screen.getByTitle(/Admin Delete Wish/i);
+    fireEvent.click(deleteBtn);
+
+    await waitFor(() => expect(screen.queryByText('Admin delete test')).not.toBeInTheDocument());
+  });
+
+  it('allows excluding a wish and undoing the exclusion', async () => {
+    globalThis.fetch = vi.fn().mockImplementation((url) => {
+      if (url.startsWith('/api/wishes?')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'wish-exclude', content: 'Excludable Wish' }],
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText(/Search existing wishes/i), {
+      target: { value: 'Excludable' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => expect(screen.getByText('Excludable Wish')).toBeInTheDocument());
+
+    // 1. Exclude wish
+    const excludeBtn = screen.getByTitle('Hide wish / Not interested');
+    fireEvent.click(excludeBtn);
+
+    expect(screen.queryByText('Excludable Wish')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Undo/i })).toBeInTheDocument();
+
+    // 2. Undo exclusion
+    const undoBtn = screen.getByRole('button', { name: /Undo/i });
+    fireEvent.click(undoBtn);
+
+    await waitFor(() => expect(screen.getByText('Excludable Wish')).toBeInTheDocument());
+  });
+
+  it('handles failed undo restoration gracefully', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ id: 'w10', content: 'Failing Undo Wish' }],
+    } as any);
+
+    render(<SearchPage />);
+    fireEvent.change(screen.getByPlaceholderText('Search existing wishes'), {
+      target: { value: 'Failing' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Search/i }));
+
+    await waitFor(() => expect(screen.getByText('Failing Undo Wish')).toBeInTheDocument());
+
+    const excludeBtn = screen.getByTitle('Hide wish / Not interested');
+    fireEvent.click(excludeBtn);
+
+    vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error('Network error on undo'));
+
+    const undoBtn = screen.getByRole('button', { name: /Undo/i });
+    fireEvent.click(undoBtn);
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /Undo/i })).not.toBeInTheDocument()
+    );
+  });
 });

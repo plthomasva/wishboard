@@ -1,6 +1,6 @@
 # Project Style Guidelines & Conventions
 
-This document outlines the core coding conventions, architectural patterns, environment rules, and testing guidelines for the **Wishboard** project. All autonomous agents and developers working on this project should adhere to these principles.
+This document outlines the core coding conventions, architectural patterns, environment rules, git workflows, and testing guidelines for the **Wishboard** project. All autonomous agents and developers working on this project should adhere to these principles.
 
 ---
 
@@ -17,8 +17,8 @@ This document outlines the core coding conventions, architectural patterns, envi
 
 - **Global Accessors:** In TypeScript files, always prefer `globalThis` over `window`, `self`, or `global` to align with SonarQube quality gate conventions and maintain environment-agnostic execution.
 - **Conventional Commits:** Always use conventional commit structures (e.g., `feat:`, `fix:`, `refactor:`, `test:`, `docs:`) for git commits and Pull Request titles. These are used to generate release change logs automatically.
-- **Shell conditionals:** Use `[[` instead of `[` in `#!/bin/bash` scripts. The `[[` construct is safer and more feature-rich. (POSIX `#!/bin/sh` scripts must keep `[`.)
-- **Code quality:** Prefer extracting reusable helpers over duplicating logic; avoid data clumps (pass structured objects, not long parameter lists).
+- **Shell Conditionals:** Use `[[` instead of `[` in `#!/bin/bash` scripts. The `[[` construct is safer and more feature-rich. (POSIX `#!/bin/sh` scripts must keep `[`.)
+- **Code Quality & Linter Health:** Prefer extracting reusable helpers over duplicating logic; avoid data clumps (pass structured objects, not long parameter lists). Always check for linter/type errors on modified code blocks.
 
 ---
 
@@ -36,24 +36,25 @@ This document outlines the core coding conventions, architectural patterns, envi
 
 ## 4. Testing & Quality Gates
 
-- **Coverage Threshold:** SonarQube applies an **80% test coverage threshold** specifically to **new code** introduced on branches. Ensure any code changes are accompanied by robust unit test coverage.
-- **PR Verification:** When checking Pull Request status, use the SonarQube MCP or SonarCloud dashboard to check for test failures, duplicate code blocks, or security hotspots rather than relying solely on local test suite runs.
-- **Testing Command:**
-  - To run the test suite:
-
-    ```powershell
+- **Coverage Threshold:** SonarQube applies an **80% test coverage threshold** specifically to **new code** (deltas) introduced on branches. Ensure any new files, code branches, or features are accompanied by robust unit test coverage.
+- **PR Verification & SonarQube MCP Enforcement:** When checking Pull Request status or diagnosing Quality Gate failures, you MUST use the SonarQube MCP tools (`get_project_quality_gate_status`, `search_files_by_coverage`, and `get_file_coverage_details`) to retrieve exact line-by-line coverage data rather than relying solely on local test runs or manual diff estimation. Never abandon MCP tool calls if schema errors occur; correct the arguments and retry.
+- **Testing Commands:**
+  - Run unit & integration test suite:
+    ```bash
     npm test
     ```
-
-  - To run tests in watch mode:
-
-    ```powershell
+  - Run tests in watch mode:
+    ```bash
     npm run test:watch
+    ```
+  - Run end-to-end Playwright tests:
+    ```bash
+    npm run test:e2e
     ```
 
 - **Lint / Type-check / Format:** The project uses ESLint (flat config in `eslint.config.js`) and Prettier. Run these before committing:
 
-  ```powershell
+  ```bash
   npm run lint         # ESLint (use lint:fix to auto-fix)
   npm run type-check   # tsc against tsconfig.build.json (app source, excludes tests)
   npm run format:check # Prettier verification (use format to write)
@@ -61,3 +62,12 @@ This document outlines the core coding conventions, architectural patterns, envi
 
 - **CI Quality Gates:** The `Node.js CI` workflow runs lint, type-check, format-check, build, tests, gitleaks secret scanning, and the SonarQube scan on every push and PR. Git hooks (Husky) also run lint-staged on pre-commit and build + tests on pre-push.
 - **Rule Baseline:** `@typescript-eslint/no-explicit-any` and `ban-ts-comment` are set to **warn** (non-blocking); `eslint .` fails CI only on errors. Prefer fixing warnings in code you touch rather than adding new ones.
+
+---
+
+## 5. Git & Pull Request Workflow Guidelines
+
+- **PR Titles:** Pull Request titles must follow conventional commit naming (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`) as they form the squash commit title used for release changelogs.
+- **Auto-Closing Issues:** Always include issue auto-closing keywords in the PR body (e.g., `Fixes #<issue_number>` or `Closes #<issue_number>`) so linked issues automatically resolve upon PR merge.
+- **Remote Branch Deletion:** Pass `--no-verify` when executing `git push origin --delete <branch_name>` to bypass pre-push hooks during branch cleanup.
+- **CI Status Watching:** When waiting for GitHub PR status checks, use `gh pr checks <pr> --watch` rather than repeatedly polling or executing status checks in a loop.

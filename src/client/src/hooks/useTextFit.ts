@@ -17,7 +17,10 @@ interface UseTextFitProps {
   notionalSize?: { width: number; height: number };
 }
 
-export function useTextFit<T extends HTMLElement = any, U extends HTMLElement = any>(
+export function useTextFit<
+  T extends HTMLElement = HTMLElement,
+  U extends HTMLElement = HTMLElement,
+>(
   { minFontSize = 12, maxFontSize = 24, step = 1, notionalSize }: UseTextFitProps = {},
   deps: React.DependencyList = []
 ) {
@@ -100,6 +103,7 @@ export function useTextFit<T extends HTMLElement = any, U extends HTMLElement = 
     return () => {
       observer.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Custom hook accepts dynamic caller dependency list to re-trigger layout fit
   }, [minFontSize, maxFontSize, step, notionalSize, ...deps]);
 
   return { containerRef, contentRef, fontSize, isOverflowing };
