@@ -15,33 +15,20 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import prettier from 'eslint-config-prettier';
 
 // vitest exposes these as globals (vite.config.ts -> test.globals: true)
-const vitestGlobals = {
-  describe: 'readonly',
-  it: 'readonly',
-  test: 'readonly',
-  suite: 'readonly',
-  expect: 'readonly',
-  expectTypeOf: 'readonly',
-  assert: 'readonly',
-  vi: 'readonly',
-  vitest: 'readonly',
-  beforeAll: 'readonly',
-  afterAll: 'readonly',
-  beforeEach: 'readonly',
-  afterEach: 'readonly',
-};
-
 export default tseslint.config(
   {
     ignores: [
-      'dist',
-      'coverage',
-      'reports',
-      '.stryker-tmp',
+      'dist/**',
+      'coverage/**',
+      'reports/**',
+      '.stryker-tmp/**',
       '**/.aws-sam/**',
       '**/node_modules/**',
-      'src/client/public',
+      'src/client/public/**',
       'scratch/**',
+      'playwright-report/**',
+      'test-results/**',
+      '.vite/**',
     ],
   },
 
@@ -58,7 +45,12 @@ export default tseslint.config(
       // Allow intentionally-unused bindings when prefixed with `_`.
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
       ],
     },
   },
@@ -67,6 +59,7 @@ export default tseslint.config(
   {
     files: ['src/client/src/**/*.{ts,tsx,js,jsx}'],
     ...react.configs.flat.recommended,
+    ...react.configs.flat['jsx-runtime'],
     languageOptions: {
       ...react.configs.flat.recommended.languageOptions,
       globals: globals.browser,
@@ -79,7 +72,7 @@ export default tseslint.config(
     },
     rules: {
       ...react.configs.flat.recommended.rules,
-      'react/react-in-jsx-scope': 'off',
+      ...react.configs.flat['jsx-runtime'].rules,
       'react/prop-types': 'off',
       // Apostrophes/quotes in JSX copy render fine; escaping hurts readability.
       'react/no-unescaped-entities': 'off',
@@ -103,11 +96,11 @@ export default tseslint.config(
     },
   },
 
-  // Test files (vitest globals + node)
+  // Test files (vitest globals + node + browser for component tests)
   {
     files: ['**/*.{test,spec}.{js,mjs,ts,tsx}', '**/setupTests.ts', 'vitest.global-setup.js'],
     languageOptions: {
-      globals: { ...globals.node, ...vitestGlobals },
+      globals: { ...globals.node, ...globals.browser, ...globals.vitest },
     },
     rules: {
       // Test files frequently stub third-party APIs, global fetch responses, and vitest mock signatures
