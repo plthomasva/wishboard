@@ -9,7 +9,7 @@ const fixturePath = path.resolve(__dirname, 'fixtures/wish-card-stream.y4m');
 
 // Ensure Y4M fixture is generated before launching browser
 test.beforeAll(() => {
-  execSync('node scripts/generate-scanner-fixture.test.js', { stdio: 'inherit' });
+  execSync('node tests/e2e/fixtures/generate-scanner-fixture.js', { stdio: 'inherit' });
 });
 
 test.use({
@@ -46,12 +46,9 @@ test.describe('WishScanner E2E Camera Integration', () => {
     const takePhotoBtn = page.locator('button:has-text("Take Photo")');
     await expect(takePhotoBtn).toBeEnabled({ timeout: 45000 });
 
-    // 5. Verify the live video canvas debug text contains tracking confirmation
+    // 5. Verify the live video canvas is visible and Take Photo is ready
     const canvas = page.locator('.wish-scanner canvas');
     await expect(canvas).toBeVisible();
-
-    // Give it a moment to process frames and apply temporal corner smoothing
-    await page.waitForTimeout(1000);
 
     // 6. Click Take Photo
     await takePhotoBtn.click();

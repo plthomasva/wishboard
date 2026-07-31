@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const fixtureDir = path.resolve(__dirname, '../tests/e2e/fixtures');
+const fixtureDir = __dirname;
 if (!fs.existsSync(fixtureDir)) {
   fs.mkdirSync(fixtureDir, { recursive: true });
 }
