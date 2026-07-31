@@ -9,7 +9,7 @@ const fixturePath = path.resolve(__dirname, 'fixtures/wish-card-stream.y4m');
 
 // Ensure Y4M fixture is generated before launching browser
 test.beforeAll(() => {
-  execSync('node scripts/generate-scanner-fixture.js', { stdio: 'inherit' });
+  execSync('node scripts/generate-scanner-fixture.test.js', { stdio: 'inherit' });
 });
 
 test.use({
