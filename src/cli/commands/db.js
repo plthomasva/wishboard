@@ -1,7 +1,7 @@
 import db from '../../server/db.js';
 import { createSalt, hashPassphrase } from '../../server/auth.js';
 import { promptPassphrase } from './auth.js';
-import defaultRules from '../../server/defaultRules.js';
+import { getEventProfile } from '../../server/configManager.js';
 
 export async function resetPassword(
   username,
@@ -118,8 +118,9 @@ export async function resetRules(
     await db.prepare('DELETE FROM rules').run();
     consoleLog('Cleared existing rules.');
 
-    // Re-seed default rules
-    for (const rule of defaultRules) {
+    // Re-seed default rules from profile
+    const profileRules = getEventProfile().rules;
+    for (const rule of profileRules) {
       await db
         .prepare(
           `INSERT INTO rules (id, rule_type, trigger_attribute, trigger_value, context_attribute, context_value, target_attribute, target_value)
@@ -137,7 +138,7 @@ export async function resetRules(
         );
     }
     consoleLog(`\nSuccess! Matching rules have been reset to defaults.`);
-    consoleLog(`Rules re-seeded: ${defaultRules.length}\n`);
+    consoleLog(`Rules re-seeded: ${profileRules.length}\n`);
     return true;
   } catch (err) {
     consoleError(`Error resetting rules: ${err.message}`);

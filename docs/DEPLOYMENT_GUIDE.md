@@ -54,7 +54,7 @@ From your **local developer machine** (not the Pi), run the unified deployment c
 npx wishboard kiosk deploy --host raspberrypi.local --mode prod --domain wishboard.example.com
 ```
 
-Add `--user <name>` if your Pi login isn't `pi`, and `--dry-run` to preview the exact SSH/scp steps without executing them. `--reset-rules` re-seeds the matching rules from the bundled defaults (`src/server/defaultRules.js`) — rules live in the database `rules` table now, not a file. It clears only the DB `rules` table and preserves uploaded images, users, and wishes (this was corrected in [#194](https://github.com/plthomasva/wishboard/issues/194); it previously wiped the whole `/app/data` volume).
+Add `--user <name>` if your Pi login isn't `pi`, and `--dry-run` to preview the exact SSH/scp steps without executing them. `--reset-rules` re-seeds the matching rules from the profile defaults (`profiles/**/profiles.yaml`) — rules live in the database `rules` table now, not a file. It clears only the DB `rules` table and preserves uploaded images, users, and wishes (this was corrected in [#194](https://github.com/plthomasva/wishboard/issues/194); it previously wiped the whole `/app/data` volume).
 
 ### Networking Modes
 
@@ -76,14 +76,19 @@ The environment file is located on the Pi at:
 If you need to inject special environment variables (like changing the default admin credentials), follow these steps:
 
 1. SSH into the Pi:
+
    ```bash
    ssh pi@raspberrypi.local
    ```
+
 2. Edit the environment file (you must use `sudo` to edit as the `wishboard` service user):
+
    ```bash
    sudo -u wishboard nano /home/wishboard/wishboard/.env
    ```
+
 3. Add your custom variables:
+
    ```env
    # Pre-populated by deployment script. WISHBOARD_DOMAIN / WISHBOARD_AP_IP are
    # read at runtime by the server and served via /api/config to the poster and
@@ -96,7 +101,9 @@ If you need to inject special environment variables (like changing the default a
    WISHBOARD_ADMIN_USERNAME=event_admin
    WISHBOARD_ADMIN_SECRET=SuperSecretPassword123
    ```
+
 4. Restart the Docker container so it picks up the new environment variables:
+
    ```bash
    sudo -u wishboard DOCKER_HOST=unix:///run/user/$(id -u wishboard)/docker.sock bash -c 'cd /home/wishboard/wishboard && docker compose restart'
    ```
