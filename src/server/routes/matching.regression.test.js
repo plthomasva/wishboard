@@ -1,7 +1,8 @@
 /** @vitest-environment node */
 import { describe, it, expect } from 'vitest';
 import { isCompatible } from './wishes.js';
-import defaultRules from '../defaultRules.js';
+import { getEventProfile } from '../configManager.js';
+const profileRules = getEventProfile().rules;
 
 // Regression matrix for the matching engine (#199 and follow-up semantics review).
 //
@@ -40,7 +41,7 @@ const searcher = ({ g, o, r } = {}) => ({
     role: arr(r),
   }),
 });
-const match = (w, s) => isCompatible(w, s, defaultRules);
+const match = (w, s) => isCompatible(w, s, profileRules);
 
 describe('matching: core orientation × gender (bidirectional, implicit)', () => {
   it('straight man ↔ straight woman match', () => {
@@ -350,6 +351,6 @@ describe('matching: parseAttributesInput and custom context rules', () => {
     const w = wish({ g: 'man', o: 'queer' });
     const s = searcher({ g: 'nonbinary', o: 'queer' });
 
-    expect(isCompatible(w, s, [...defaultRules, customRule])).toBe(true);
+    expect(isCompatible(w, s, [...profileRules, customRule])).toBe(true);
   });
 });

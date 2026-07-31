@@ -7,7 +7,7 @@ import { requireAdmin } from '../auth.js';
 import { generateDemoData } from '../demoSeeder.js';
 import logger from '../logger.js';
 import { emitWishDeleted } from '../socket.js';
-import defaultRules from '../defaultRules.js';
+import { getEventProfile } from '../configManager.js';
 import { reloadRules } from '../rulesManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -197,8 +197,9 @@ router.post('/reset-rules', requireAdmin, async (req, res) => {
     // Clear existing rules
     await db.prepare('DELETE FROM rules').run();
 
-    // Re-seed default rules
-    for (const rule of defaultRules) {
+    // Re-seed default rules from profile
+    const profileRules = getEventProfile().rules;
+    for (const rule of profileRules) {
       await db
         .prepare(
           `INSERT INTO rules (id, rule_type, trigger_attribute, trigger_value, context_attribute, context_value, target_attribute, target_value)
@@ -221,11 +222,11 @@ router.post('/reset-rules', requireAdmin, async (req, res) => {
 
     logger.info('Admin reset matching rules to defaults', {
       admin_user_id: req.user.id,
-      rules_count: defaultRules.length,
+      rules_count: profileRules.length,
     });
     res.status(200).json({
       message: 'Matching rules successfully reset to defaults.',
-      rules_count: defaultRules.length,
+      rules_count: profileRules.length,
     });
   } catch (error) {
     logger.error('Failed to reset rules:', { error: error.message, admin_user_id: req.user.id });

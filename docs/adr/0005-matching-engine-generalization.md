@@ -6,7 +6,7 @@
 
 ## Context
 
-Wishboard's matching engine relies on matching rules defined in the database `rules` table (see [ADR 0002](file:///c:/Users/pltho/wishboard/docs/adr/0002-serverless-database-architecture.md) and [#188](https://github.com/plthomasva/wishboard/issues/188)), which are seeded by default from [defaultRules.js](file:///c:/Users/pltho/wishboard/src/server/defaultRules.js). These rules govern how attribute categories such as `gender`, `orientation`, and `role` are matched bidirectionally between a wish creator and a searcher.
+Wishboard's matching engine relies on matching rules defined in the database `rules` table (see [ADR 0002](0002-serverless-database-architecture.md) and [#188](https://github.com/plthomasva/wishboard/issues/188)), which are seeded by default from the active event profile's `profile.yaml` (e.g., [profiles/lifestyle/profile.yaml](../../profiles/lifestyle/profile.yaml)). These rules govern how attribute categories such as `gender`, `orientation`, and `role` are matched bidirectionally between a wish creator and a searcher.
 
 In the completed work for [#206](https://github.com/plthomasva/wishboard/issues/206) (see PR [#233](https://github.com/plthomasva/wishboard/pull/233)), we expanded the default taxonomy for power-exchange, activity, pet-play, and rope roles. However, during that implementation, context-gated rules were deferred due to a structural limitation:
 

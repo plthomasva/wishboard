@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'yaml';
-import defaultRules from './defaultRules.js';
 
 export const DEFAULT_EVENT_PROFILE = 'lifestyle';
 
@@ -16,7 +15,7 @@ export const getEventProfile = () => {
     return cachedConfig;
   }
 
-  let configPath = process.env.EVENT_PROFILE_PATH || process.env.DOMAIN_CONFIG_PATH;
+  let configPath = process.env.EVENT_PROFILE_PATH;
 
   if (!configPath) {
     const profileName = process.env.EVENT_PROFILE || DEFAULT_EVENT_PROFILE;
@@ -45,7 +44,7 @@ export const getEventProfile = () => {
   const config = yaml.parse(fileContents);
 
   if (!config.rules) {
-    config.rules = defaultRules;
+    config.rules = [];
   }
 
   if (!config.contact_methods) {
