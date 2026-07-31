@@ -845,4 +845,68 @@ describe('AccountPage', () => {
     fireEvent.click(checkbox);
     expect(checkbox).toBeChecked();
   });
+
+  it('validates blank fields, handles errors, and succeeds when claiming an anonymous wish', async () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user' },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    });
+
+    render(<AccountPage />);
+
+    // 1. Submit blank claim form -> validation error
+    const claimButton = screen.getByRole('button', { name: 'Claim Wish' });
+    fireEvent.click(claimButton);
+    expect(
+      screen.getByText('Wish ID and Passphrase are required to claim a wish.')
+    ).toBeInTheDocument();
+
+    // 2. Submit with ID and passphrase where API fails -> error message
+    const wishIdInput = screen.getByPlaceholderText('e.g. abc123xy');
+    const passphraseInput = screen.getByPlaceholderText('e.g. CorrectHorseBatteryStaple');
+
+    fireEvent.change(wishIdInput, { target: { value: 'claim-123' } });
+    fireEvent.change(passphraseInput, { target: { value: 'wrong-secret' } });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/claim')) {
+          return {
+            ok: false,
+            json: async () => ({ error: 'Invalid passphrase for this wish.' }),
+          };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    fireEvent.click(claimButton);
+    await waitFor(() => {
+      expect(screen.getByText('Invalid passphrase for this wish.')).toBeInTheDocument();
+    });
+
+    // 3. Submit with valid credentials -> success message
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/claim')) {
+          return {
+            ok: true,
+            json: async () => ({ success: true }),
+          };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    fireEvent.click(claimButton);
+    await waitFor(() => {
+      expect(screen.getByText('Wish claimed successfully!')).toBeInTheDocument();
+    });
+  });
 });

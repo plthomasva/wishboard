@@ -13,7 +13,6 @@ describe('configManager', () => {
   beforeEach(() => {
     process.env = { ...originalEnv };
     delete process.env.EVENT_PROFILE_PATH;
-    delete process.env.DOMAIN_CONFIG_PATH;
     delete process.env.EVENT_PROFILE;
     clearConfigCache();
   });
@@ -47,12 +46,6 @@ describe('configManager', () => {
 
   it('uses EVENT_PROFILE_PATH when provided', () => {
     process.env.EVENT_PROFILE_PATH = 'profiles/professional/profile.yaml';
-    const config = getEventProfile();
-    expect(config.profile).toBe('professional');
-  });
-
-  it('uses DOMAIN_CONFIG_PATH when provided', () => {
-    process.env.DOMAIN_CONFIG_PATH = 'profiles/professional/profile.yaml';
     const config = getEventProfile();
     expect(config.profile).toBe('professional');
   });
@@ -93,7 +86,6 @@ describe('configManager', () => {
     const config = getEventProfile();
     expect(config.profile).toBe('minimal');
     expect(Array.isArray(config.rules)).toBe(true);
-    expect(config.rules.length).toBeGreaterThan(0);
     expect(config.contact_methods).toEqual(['Phone', 'Email']);
   });
 

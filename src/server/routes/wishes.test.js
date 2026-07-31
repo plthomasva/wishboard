@@ -19,6 +19,8 @@ const appModule = await import('../index.js');
 const app = appModule.default;
 const db = (await import('../db.js')).default;
 const { addRule, reloadRules, stopWatchingRules } = await import('../rulesManager.js');
+const { normalizeToken, escapeRegExp, hasToken, parseJsonSafe, parseAttributesInput } =
+  await import('./wishes.js');
 
 const clearTestData = async () => {
   await db.exec('DELETE FROM sessions');
@@ -485,5 +487,56 @@ describe('Claiming wishes', () => {
       q: 'Wish for man',
     });
     expect(resMale.body.length).toBe(1);
+  });
+});
+
+describe('wishes route helper functions & file filter', () => {
+  it('normalizeToken trims, lowercases, and handles nullish input', () => {
+    expect(normalizeToken('  Hello WORLD  ')).toBe('hello world');
+    expect(normalizeToken('')).toBe('');
+    expect(normalizeToken(null)).toBe('');
+    expect(normalizeToken(undefined)).toBe('');
+  });
+
+  it('escapeRegExp correctly escapes special regex characters', () => {
+    expect(escapeRegExp('.*+?^${}()|[]\\')).toBe(String.raw`\.\*\+\?\^\$\{\}\(\)\|\[\]\\`);
+    expect(escapeRegExp('normalText')).toBe('normalText');
+  });
+
+  it('hasToken performs word boundary matching', () => {
+    expect(hasToken('Hello world of coding', 'world')).toBe(true);
+    expect(hasToken('Hello world of coding', 'WORLD')).toBe(true);
+    expect(hasToken('Hello worldof coding', 'world')).toBe(false);
+    expect(hasToken('', 'test')).toBe(false);
+  });
+
+  it('parseJsonSafe parses valid JSON and handles invalid/non-string inputs', () => {
+    expect(parseJsonSafe('{"a":1}')).toEqual({ a: 1 });
+    expect(parseJsonSafe('')).toEqual({});
+    expect(parseJsonSafe(null)).toEqual({});
+    expect(parseJsonSafe(123)).toBe(123);
+    expect(parseJsonSafe('{invalid json}')).toEqual({});
+  });
+
+  it('parseAttributesInput normalizes JSON strings, objects, and edge case inputs', () => {
+    expect(parseAttributesInput(null)).toEqual({});
+    expect(parseAttributesInput('')).toEqual({});
+    expect(parseAttributesInput('{"gender": "woman"}')).toEqual({ gender: ['woman'] });
+    expect(parseAttributesInput({ gender: 'woman', role: ['speaker'] })).toEqual({
+      gender: ['woman'],
+      role: ['speaker'],
+    });
+    expect(parseAttributesInput('["not an object"]')).toEqual({});
+    expect(parseAttributesInput(42)).toEqual({});
+  });
+
+  it('rejects file uploads with disallowed extensions', async () => {
+    const res = await request(app)
+      .post('/api/wishes')
+      .field('content', 'Wish with invalid image')
+      .attach('image', Buffer.from('fake data'), 'malicious.sh');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Invalid file type/i);
   });
 });

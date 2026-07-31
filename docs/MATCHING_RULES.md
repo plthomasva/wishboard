@@ -12,8 +12,8 @@ restarts and cold starts and are shared across all Lambda instances. Edit them
 through the **admin Rules page**; changes propagate to the matching engine within a
 short cache TTL (`RULES_CACHE_TTL_MS`, default 60s).
 
-The bundled default set is [`src/server/defaultRules.js`](../src/server/defaultRules.js),
-which seeds the table on first boot. A pre-existing legacy `rules.yaml` (from before
+The default rule set is defined inside each event profile's `profile.yaml` (e.g., [`profiles/lifestyle/profile.yaml`](../profiles/lifestyle/profile.yaml)),
+which seeds the database `rules` table on first boot based on the active event profile. A pre-existing legacy `rules.yaml` (from before
 the DB migration, [ADR 0002](adr/0002-serverless-database-architecture.md)) is
 migrated once and then the database is the single source of truth — there is no
 longer a `data/rules.yaml` runtime file.
