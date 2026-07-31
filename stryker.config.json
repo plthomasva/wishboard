@@ -32,8 +32,7 @@
     "!src/client/src/**/*.test.js",
     "!src/server/**/*.test.js",
     "!src/server/**/*.test.ts",
-    "!src/cli/**/*.test.js",
-    "!src/client/src/components/WishScanner.tsx"
+    "!src/cli/**/*.test.js"
   ],
   "ignorePatterns": ["!dist/**/*"]
 }
