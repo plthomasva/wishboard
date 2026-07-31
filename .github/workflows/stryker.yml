@@ -10,11 +10,19 @@ concurrency:
   group: 'pages'
   cancel-in-progress: false
 
+# Set permissions at workflow level
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7.0.1
