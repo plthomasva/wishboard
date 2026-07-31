@@ -82,12 +82,13 @@ export default tseslint.config(
     },
   },
 
-  // Node code (server, cli, scripts, serverless, root config files)
+  // Node code (server, cli, scripts, tests, serverless, root config files)
   {
     files: [
       'src/server/**/*.{js,ts}',
       'src/cli/**/*.{js,ts}',
       'scripts/**/*.js',
+      'tests/**/*.{js,ts,mjs}',
       'aws-serverless/**/*.{js,mjs}',
       '*.{js,ts,mjs}',
     ],
