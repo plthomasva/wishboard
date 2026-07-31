@@ -29,6 +29,9 @@ describe('Logger', () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
+    // Suppress actual stdout writes to prevent Vitest "Closing rpc while onUserConsoleLog was pending"
+    const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+
     // Point the log file at a throwaway temp dir (reaped in afterEach) so the
     // test never writes log files into the repo working tree.
     tmpDir = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'wishboard-logtest-'));
@@ -54,6 +57,8 @@ describe('Logger', () => {
 
     expect(mockEmitSystemLog).toHaveBeenCalled();
 
+    logger.close();
+    stdoutSpy.mockRestore();
     process.env.NODE_ENV = originalEnv;
   });
 
