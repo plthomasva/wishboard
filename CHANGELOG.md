@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.22.0...wishboard-v1.22.1) (2026-07-31)
+
+
+### Bug Fixes
+
+* **ci:** add GitHub Pages permissions to Stryker test job and document setup ([#323](https://github.com/plthomasva/wishboard/issues/323)) ([9d1be3e](https://github.com/plthomasva/wishboard/commit/9d1be3e445c5bf3353311e84c3fa61ceabab48e4))
+
 ## [1.22.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.21.1...wishboard-v1.22.0) (2026-07-28)
 
 
