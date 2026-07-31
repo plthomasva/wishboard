@@ -8,15 +8,16 @@ Stryker can take several hours to evaluate the entire project because it runs th
 
 To avoid slowing down local development and Pull Requests, we have configured a GitHub Actions workflow (`.github/workflows/stryker.yml`) to automatically run the full suite every night at midnight UTC.
 
-### Viewing the Daily Report
+### GitHub Pages Setup (For Forks & New Repositories)
 
-The GitHub Action automatically hosts the interactive HTML report natively on GitHub Pages.
+To publish the daily mutation testing report to GitHub Pages in your own fork or repository:
 
-You can view the latest mutation testing report here:
+1. Go to your repository's **Settings** tab on GitHub.
+2. Select **Pages** from the left-hand sidebar menu.
+3. Under **Build and deployment** > **Source**, select **GitHub Actions** (rather than "Deploy from a branch").
+4. The `.github/workflows/stryker.yml` workflow includes all required permissions (`pages: write` and `id-token: write`). Once GitHub Pages source is set to **GitHub Actions**, the daily workflow will automatically build and publish the HTML report upon completion.
 
-> **[Wishboard Daily Mutation Report](https://plthomasva.github.io/wishboard/)**
-
-This interactive dashboard allows you to click through the directory structure, view exactly which lines of code were mutated, and see which mutants "survived" (meaning a logic operator was changed, but the tests still passed).
+---
 
 ## Running Stryker Locally
 
