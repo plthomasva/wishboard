@@ -23,13 +23,12 @@ test.use({
 });
 
 test.describe('WishScanner E2E Camera Integration', () => {
-  test('opens camera, tracks perspective-skewed card, and captures image', async ({
-    page,
-    browserName,
-  }) => {
-    // Fake video capture flags (--use-file-for-fake-video-capture) are Chromium-only flags
-    test.skip(browserName !== 'chromium', 'Fake video stream flags are Chromium-only');
+  test.skip(
+    ({ browserName }) => browserName !== 'chromium',
+    'Fake video stream flags are Chromium-only'
+  );
 
+  test('opens camera, tracks perspective-skewed card, and captures image', async ({ page }) => {
     // 1. Navigate to Enter Wish page
     await page.goto('/');
     await page.click('button:has-text("Enter a Wish")');
