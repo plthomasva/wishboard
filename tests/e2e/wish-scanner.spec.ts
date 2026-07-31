@@ -59,5 +59,9 @@ test.describe('WishScanner E2E Camera Integration', () => {
     // 7. Wait for Tesseract OCR processing to complete and scanner modal to close
     await expect(scanner).not.toBeVisible({ timeout: 60000 });
     await expect(page.locator('text=Handwritten wish attached')).toBeVisible();
+
+    // 8. Assert that the textarea was automatically populated with OCR text from the synthetic video
+    const textarea = page.locator('textarea[placeholder="Type your wish here"]');
+    await expect(textarea).not.toHaveValue('');
   });
 });
