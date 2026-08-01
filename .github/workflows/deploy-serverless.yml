@@ -14,11 +14,11 @@ on:
       mode:
         description: 'Deployment mode (dev or prod)'
         required: true
-        default: 'prod'
+        default: 'dev'
         type: choice
         options:
-          - prod
           - dev
+          - prod
       domain_name:
         description: 'Custom domain name (e.g. demo.wishboards.app)'
         required: false
@@ -35,6 +35,14 @@ on:
         description: 'Turso Auth Token SSM Parameter Name'
         required: false
         type: string
+      certificate_domain_name:
+        description: 'Certificate Domain Name (e.g. wishboards.app for primary wildcard cert)'
+        required: false
+        type: string
+      acm_certificate_arn:
+        description: 'Existing ACM Certificate ARN'
+        required: false
+        type: string
   workflow_call:
     inputs:
       event_profile:
@@ -45,7 +53,7 @@ on:
       mode:
         description: 'Deployment mode (dev or prod)'
         required: true
-        default: 'prod'
+        default: 'dev'
         type: string
       domain_name:
         description: 'Custom domain name'
@@ -61,6 +69,10 @@ on:
         type: string
       database_auth_token_ssm:
         description: 'Turso Auth Token SSM Parameter Name'
+        required: false
+        type: string
+      certificate_domain_name:
+        description: 'Certificate Domain Name'
         required: false
         type: string
       acm_certificate_arn:
@@ -81,6 +93,7 @@ jobs:
       DOMAIN_NAME: ${{ inputs.domain_name || github.event.inputs.domain_name }}
       DATABASE_URL: ${{ inputs.database_url }}
       DATABASE_AUTH_TOKEN_SSM: ${{ inputs.database_auth_token_ssm }}
+      CERTIFICATE_DOMAIN_NAME: ${{ inputs.certificate_domain_name }}
       ACM_CERTIFICATE_ARN: ${{ inputs.acm_certificate_arn }}
       HOSTED_ZONE_ID: ${{ vars.HOSTED_ZONE_ID }}
 
@@ -106,7 +119,7 @@ jobs:
 
       - name: Deploy serverless stack
         run: |
-          MODE="${{ inputs.mode || github.event.inputs.mode || 'prod' }}"
+          MODE="${{ inputs.mode || github.event.inputs.mode || 'dev' }}"
           EVENT_PROF="${{ inputs.event_profile || github.event.inputs.event_profile || 'lifestyle' }}"
           STACK_NAME="${{ inputs.stack_name || github.event.inputs.stack_name }}"
 

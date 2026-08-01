@@ -77,13 +77,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [lifestyle, professional]
+        profile: ${{ fromJSON(vars.SERVERLESS_PROFILES || '["lifestyle", "professional"]') }}
     uses: ./.github/workflows/deploy-serverless.yml
     with:
       event_profile: ${{ matrix.profile }}
-      mode: prod
+      mode: ${{ matrix.profile == 'lifestyle' && (vars.LIFESTYLE_MODE || 'dev') || (vars.PROFESSIONAL_MODE || 'dev') }}
       domain_name: ${{ matrix.profile == 'lifestyle' && vars.LIFESTYLE_DOMAIN_NAME || vars.PROFESSIONAL_DOMAIN_NAME }}
       stack_name: ${{ matrix.profile == 'lifestyle' && vars.LIFESTYLE_AWS_STACK_NAME || vars.PROFESSIONAL_AWS_STACK_NAME }}
       database_url: ${{ matrix.profile == 'lifestyle' && vars.LIFESTYLE_DATABASE_URL || vars.PROFESSIONAL_DATABASE_URL }}
       database_auth_token_ssm: ${{ matrix.profile == 'lifestyle' && vars.LIFESTYLE_DATABASE_AUTH_TOKEN_SSM || vars.PROFESSIONAL_DATABASE_AUTH_TOKEN_SSM }}
+      certificate_domain_name: ${{ matrix.profile == 'lifestyle' && vars.LIFESTYLE_CERTIFICATE_DOMAIN_NAME || vars.PROFESSIONAL_CERTIFICATE_DOMAIN_NAME }}
+      acm_certificate_arn: ${{ matrix.profile == 'lifestyle' && vars.LIFESTYLE_ACM_CERTIFICATE_ARN || vars.PROFESSIONAL_ACM_CERTIFICATE_ARN }}
     secrets: inherit
