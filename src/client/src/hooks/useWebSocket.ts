@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Socket event listeners receive variadic payload arguments of any shape
 type Listener = (...args: any[]) => void;
 
 export interface WishboardSocket {
