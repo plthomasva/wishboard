@@ -222,9 +222,9 @@ describe('socket.js', () => {
         run: vi.fn(),
       }));
 
-      const { emitNewWish } = await import('./socket.js');
+      const { emitNewWish, flushBroadcasts } = await import('./socket.js');
       emitNewWish({ id: 'w1' });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await flushBroadcasts();
       expect(mockAll).toHaveBeenCalled();
     });
 
@@ -251,11 +251,17 @@ describe('socket.js', () => {
         run: mockRun,
       }));
 
-      const { emitNewWish, emitWishFlagged, emitWishDeleted, emitWishReactivated, emitSystemLog } =
-        await import('./socket.js');
+      const {
+        emitNewWish,
+        emitWishFlagged,
+        emitWishDeleted,
+        emitWishReactivated,
+        emitSystemLog,
+        flushBroadcasts,
+      } = await import('./socket.js');
 
       emitNewWish({ id: 'w1' });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await flushBroadcasts();
       expect(mockSend).toHaveBeenCalled();
       expect(mockRun).toHaveBeenCalledWith('conn-gone');
 
@@ -266,7 +272,7 @@ describe('socket.js', () => {
       // A second synchronous call must hit the re-entrancy guard (this is what
       // prevents the log -> broadcast -> log feedback storm).
       emitSystemLog('while a sys:log broadcast is in flight');
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await flushBroadcasts();
     });
 
     it('broadcastToApiGateway handles db error gracefully', async () => {
@@ -276,27 +282,27 @@ describe('socket.js', () => {
         },
       }));
 
-      const { emitNewWish } = await import('./socket.js');
+      const { emitNewWish, flushBroadcasts } = await import('./socket.js');
       expect(() => {
         emitNewWish({ id: 'w1' });
       }).not.toThrow();
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await flushBroadcasts();
     });
 
     it('sys:log broadcast queries sub_syslog; wish:* queries sub_wishes', async () => {
       const mockAll = vi.fn().mockResolvedValue([]);
       mockDbPrepare.mockImplementation(() => ({ all: mockAll, run: vi.fn() }));
 
-      const { emitSystemLog, emitNewWish } = await import('./socket.js');
+      const { emitSystemLog, emitNewWish, flushBroadcasts } = await import('./socket.js');
 
       emitSystemLog('log line');
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await flushBroadcasts();
       expect(mockDbPrepare).toHaveBeenCalledWith(
         'SELECT connection_id FROM websocket_connections WHERE sub_syslog = 1'
       );
 
       emitNewWish({ id: 'w1' });
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await flushBroadcasts();
       expect(mockDbPrepare).toHaveBeenCalledWith(
         'SELECT connection_id FROM websocket_connections WHERE sub_wishes = 1'
       );

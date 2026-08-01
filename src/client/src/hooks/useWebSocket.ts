@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-type Listener = (...args: unknown[]) => void;
+type Listener = (...args: any[]) => void;
 
-class RawWebSocketWrapper {
+export interface WishboardSocket {
+  connected: boolean;
+  on(event: string, cb: Listener): void;
+  off(event: string, cb: Listener): void;
+  emit(event: string, data?: Record<string, unknown>): void;
+}
+
+class RawWebSocketWrapper implements WishboardSocket {
   private listeners: Record<string, Listener[]> = {};
   private ws: WebSocket | null = null;
   private pending: string[] = [];
@@ -93,8 +100,7 @@ class RawWebSocketWrapper {
 let socketInstance: Socket | null = null;
 let rawInstance: RawWebSocketWrapper | null = null;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Polymorphic socket interface returning either Socket.io instance or RawWebSocketWrapper facade
-export const getSocket = (): any => {
+export const getSocket = (): WishboardSocket => {
   const isRawMode =
     import.meta.env.VITE_USE_RAW_WEBSOCKETS === 'true' ||
     (globalThis as unknown as { __WISHBOARD_CONFIG__?: { realtimeProvider?: string } })

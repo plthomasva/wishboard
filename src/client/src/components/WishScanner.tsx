@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- OpenCV.js WASM module, MatVector, and dynamic C++ bindings require any types throughout scanning pipeline */
 import React, { useRef, useState, useEffect } from 'react';
 import cvPromise from '@techstark/opencv-js';
 import {
@@ -25,6 +24,7 @@ interface DrawConfig {
 }
 
 function renderOverlay(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OpenCV WASM instance for perspective transform matrices
   cv: any,
   ctx: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement,
@@ -150,6 +150,7 @@ export default function WishScanner({
   const smoothedCornersRef = useRef<{ x: number; y: number }[] | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OpenCV.js Emscripten C++ WASM module instance
   const cvRef = useRef<any>(null);
   const [cvReady, setCvReady] = useState(false);
 
@@ -157,6 +158,7 @@ export default function WishScanner({
     let active = true;
     async function loadOpenCV() {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- cvPromise resolves dynamically-bound C++ Emscripten WASM module
         const resolved = await (cvPromise as any);
         if (active) {
           cvRef.current = resolved.default || resolved;
