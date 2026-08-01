@@ -909,4 +909,364 @@ describe('AccountPage', () => {
       expect(screen.getByText('Wish claimed successfully!')).toBeInTheDocument();
     });
   });
+
+  it('handles login and registration validation errors and success messages', async () => {
+    const login = vi.fn();
+    const register = vi.fn();
+    useAuthMock.mockReturnValue({
+      user: null,
+      token: null,
+      login,
+      register,
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    });
+
+    render(<AccountPage />);
+
+    // 1. Submit login with missing fields
+    const loginTabButton = screen.getByRole('button', { name: 'Login' });
+    fireEvent.click(loginTabButton);
+    const loginSubmitButton = screen
+      .getAllByRole('button')
+      .find((button) => button.getAttribute('type') === 'submit');
+    if (!loginSubmitButton) throw new Error('No login submit button');
+
+    fireEvent.click(loginSubmitButton);
+    expect(screen.getByText('Username and passphrase are required to log in.')).toBeInTheDocument();
+
+    // 2. Submit login with valid fields -> success
+    login.mockResolvedValueOnce({ success: true });
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'validuser' } });
+    fireEvent.change(screen.getByLabelText('Passphrase'), { target: { value: 'validpass' } });
+    fireEvent.click(loginSubmitButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Logged in successfully.')).toBeInTheDocument();
+    });
+
+    // 3. Submit register with blank username -> error
+    const registerTabButton = screen
+      .getAllByRole('button')
+      .find(
+        (button) => button.textContent === 'Register' && button.getAttribute('type') !== 'submit'
+      );
+    if (!registerTabButton) throw new Error('No register tab');
+    fireEvent.click(registerTabButton);
+
+    const registerSubmitButton = screen
+      .getAllByRole('button')
+      .find(
+        (button) => button.textContent === 'Register' && button.getAttribute('type') === 'submit'
+      );
+    if (!registerSubmitButton) throw new Error('No register submit button');
+
+    fireEvent.click(registerSubmitButton);
+    expect(screen.getByText('Username is required to register.')).toBeInTheDocument();
+
+    // 4. Submit register failing API -> error message
+    register.mockResolvedValueOnce({ success: false, error: 'Username already taken.' });
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'takenuser' } });
+    fireEvent.click(registerSubmitButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Username already taken.')).toBeInTheDocument();
+    });
+  });
+
+  it('handles save profile success and error responses', async () => {
+    const refreshUser = vi.fn().mockResolvedValue(undefined);
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user', attributes: {} },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser,
+    });
+
+    render(<AccountPage />);
+
+    const saveButton = screen.getByRole('button', { name: 'Save attributes' });
+
+    // 1. API error handling
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/api/users/me')) {
+          return {
+            ok: false,
+            json: async () => ({ error: 'Failed to update profile attributes.' }),
+          };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    fireEvent.click(saveButton);
+    await waitFor(() => {
+      expect(screen.getByText('Failed to update profile attributes.')).toBeInTheDocument();
+    });
+
+    // 2. Success handling
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/api/users/me')) {
+          return {
+            ok: true,
+            json: async () => ({ success: true }),
+          };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    fireEvent.click(saveButton);
+    await waitFor(() => {
+      expect(screen.getByText('Profile updated successfully.')).toBeInTheDocument();
+      expect(refreshUser).toHaveBeenCalled();
+    });
+  });
+
+  it('allows deactivating and reactivating user profile status', async () => {
+    const refreshUser = vi.fn().mockResolvedValue(undefined);
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user', is_active: true },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser,
+    });
+
+    // 1. Deactivate profile success
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/deactivate')) {
+          return { ok: true, json: async () => ({ success: true }) };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    const { rerender } = render(<AccountPage />);
+
+    const deactivateBtn = screen.getByRole('button', { name: 'Deactivate Profile' });
+    fireEvent.click(deactivateBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Profile deactivated successfully.')).toBeInTheDocument();
+      expect(refreshUser).toHaveBeenCalled();
+    });
+
+    // 2. Reactivate profile for inactive user
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user', is_active: false },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser,
+    });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/reactivate')) {
+          return { ok: true, json: async () => ({ success: true }) };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    rerender(<AccountPage />);
+
+    expect(screen.getByText('Inactive')).toBeInTheDocument();
+    const reactivateBtn = screen.getByRole('button', { name: 'Reactivate Profile' });
+    fireEvent.click(reactivateBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Profile reactivated successfully.')).toBeInTheDocument();
+    });
+  });
+
+  it('handles account deletion flow and error scenarios', async () => {
+    const logout = vi.fn();
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user', is_active: true },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout,
+      refreshUser: vi.fn(),
+    });
+
+    // 1. Delete preview API failure
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/delete-preview')) {
+          return { ok: false, json: async () => ({ error: 'Preview failed' }) };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    render(<AccountPage />);
+    const deleteAccountBtn = screen.getByRole('button', { name: 'Delete Account' });
+    fireEvent.click(deleteAccountBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to fetch delete preview.')).toBeInTheDocument();
+    });
+
+    // 2. Delete preview success -> open modal -> confirm delete -> failure
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/delete-preview')) {
+          return { ok: true, json: async () => ({ wishesCount: 2, wishmailsCount: 1 }) };
+        }
+        if (typeof url === 'string' && url.includes('/delete')) {
+          return { ok: false, json: async () => ({ error: 'Delete failed' }) };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    fireEvent.click(deleteAccountBtn);
+
+    const confirmModalBtn = await screen.findByRole('button', { name: 'Yes, Delete Account' });
+    fireEvent.click(confirmModalBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to delete account.')).toBeInTheDocument();
+    });
+
+    // 3. Confirm delete success -> calls logout
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/delete-preview')) {
+          return { ok: true, json: async () => ({ wishesCount: 2, wishmailsCount: 1 }) };
+        }
+        if (typeof url === 'string' && url.includes('/delete')) {
+          return { ok: true, json: async () => ({ success: true }) };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    fireEvent.click(deleteAccountBtn);
+    const confirmBtnSuccess = await screen.findByRole('button', { name: 'Yes, Delete Account' });
+    fireEvent.click(confirmBtnSuccess);
+
+    await waitFor(() => {
+      expect(logout).toHaveBeenCalled();
+    });
+  });
+
+  it('handles user wish deletion and unhide wish operations', async () => {
+    const unexcludeWish = vi.fn().mockResolvedValue(undefined);
+    useExcludedWishesMock.mockReturnValue({
+      excludedIds: ['wish-hidden-1'],
+      excludeWish: vi.fn(),
+      unexcludeWish,
+      loading: false,
+    });
+
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user' },
+      token: 'fake-token',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string) => {
+        if (typeof url === 'string' && url.includes('/me/wishes')) {
+          return {
+            ok: true,
+            json: async () => [
+              {
+                id: 'wish-1',
+                content: 'Test Wish 1',
+                flagged: 0,
+                contacts: [],
+                wishmail_enabled: true,
+                is_active: true,
+              },
+            ],
+          };
+        }
+        if (typeof url === 'string' && url.includes('/exclusions')) {
+          return {
+            ok: true,
+            json: async () => [
+              {
+                id: 'wish-hidden-1',
+                content: 'Hidden Wish 1',
+                flagged: 0,
+                contacts: [],
+                wishmail_enabled: false,
+                is_active: true,
+              },
+            ],
+          };
+        }
+        if (typeof url === 'string' && url.includes('/manage')) {
+          return { ok: true, json: async () => ({ success: true }) };
+        }
+        if (typeof url === 'string' && url.includes('/exclude')) {
+          return { ok: true, json: async () => ({ success: true }) };
+        }
+        return { ok: true, json: async () => [] };
+      })
+    );
+
+    render(<AccountPage />);
+
+    expect(await screen.findByText('Test Wish 1')).toBeInTheDocument();
+    expect(await screen.findByText('Hidden Wish 1')).toBeInTheDocument();
+
+    // Delete wish success
+    const deleteWishBtn = screen.getByRole('button', { name: 'Delete Wish' });
+    fireEvent.click(deleteWishBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Wish deleted successfully.')).toBeInTheDocument();
+    });
+
+    // Unhide wish success
+    const unhideBtn = screen.getByRole('button', { name: 'Unhide wish' });
+    fireEvent.click(unhideBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Wish is now visible again.')).toBeInTheDocument();
+    });
+  });
+
+  it('renders easy mobile login QR code and link when authenticated with token', async () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 'u1', username: 'user1', role: 'user' },
+      token: 'mobile-auth-token-123',
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    });
+
+    render(<AccountPage />);
+
+    expect(await screen.findByText('Easy Mobile Login')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Bookmark this auto-login link' })).toHaveAttribute(
+      'href',
+      '#account?token=mobile-auth-token-123'
+    );
+  });
 });

@@ -43,6 +43,14 @@ If you are working on a specific feature or file and want to see how robust your
 
 4. **View Local Results**: Once complete, Stryker will generate a local HTML report in `reports/mutation/html/index.html` which you can open in your browser.
 
-## Configuration
+## Configuration & Architecture
 
-Stryker is configured via `stryker.config.json`. We use a custom Vite configuration (`stryker.vite.config.ts`) during the Stryker test runs to exclude `src/server/index.test.js`, as it performs sandbox manipulations that interfere with Stryker's concurrent test execution environment.
+Stryker is configured via `stryker.config.json` with dedicated Vitest settings in `stryker.vite.config.ts`.
+
+### Key Configuration Practices:
+
+1. **Relocated Test Setup**: Test setup infrastructure and global mocks live in `tests/setupTests.ts` rather than the `src/` source tree. This ensures Stryker `mutate` patterns target pure application logic without generating noise for mock setups.
+2. **Boilerplate & Entry Point Exclusions**: Entry points and process bootstrap files without business logic (`src/server/index.js`, `src/client/src/main.tsx`) are excluded in `stryker.config.json`.
+3. **Vite Sandbox Stability (`stryker.vite.config.ts`)**:
+   - Excludes `src/server/index.test.js` to prevent Express server process listener sandbox collisions.
+   - Forces `pool: 'forks'` to isolate test worker environments.
