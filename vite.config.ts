@@ -52,7 +52,7 @@ export default defineConfig({
       'aws-serverless/**/*.{test,spec}.{js,mjs,ts}',
       'tests/integration/**/*.integration.test.js',
     ],
-    setupFiles: 'src/client/src/setupTests.ts',
+    setupFiles: 'tests/setupTests.ts',
     globalSetup: 'vitest.global-setup.js',
     coverage: {
       provider: 'v8',

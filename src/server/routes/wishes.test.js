@@ -19,8 +19,14 @@ const appModule = await import('../index.js');
 const app = appModule.default;
 const db = (await import('../db.js')).default;
 const { addRule, reloadRules, stopWatchingRules } = await import('../rulesManager.js');
-const { normalizeToken, escapeRegExp, hasToken, parseJsonSafe, parseAttributesInput } =
-  await import('./wishes.js');
+const {
+  normalizeToken,
+  escapeRegExp,
+  hasToken,
+  parseJsonSafe,
+  parseAttributesInput,
+  getExclusionConflicts,
+} = await import('./wishes.js');
 
 const clearTestData = async () => {
   await db.exec('DELETE FROM sessions');
@@ -538,5 +544,169 @@ describe('wishes route helper functions & file filter', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Invalid file type/i);
+  });
+
+  it('getExclusionConflicts identifies conflicting attributes based on rules', () => {
+    const rules = [
+      {
+        id: 1,
+        rule_type: 'exclusion',
+        trigger_attribute: 'orientation',
+        trigger_value: 'gay',
+        target_attribute: 'orientation',
+        target_value: 'straight',
+      },
+      {
+        id: 2,
+        rule_type: 'exclusion',
+        trigger_attribute: 'orientation',
+        trigger_value: 'lesbian',
+        context_attribute: 'gender',
+        context_value: 'woman',
+        target_attribute: 'gender',
+        target_value: 'man',
+      },
+    ];
+
+    // Conflict 1: gay + straight
+    const conflicts1 = getExclusionConflicts({ orientation: ['gay', 'straight'] }, rules);
+    expect(conflicts1.length).toBe(1);
+    expect(conflicts1[0].rule_id).toBe(1);
+
+    // Conflict 2: lesbian woman + man
+    const conflicts2 = getExclusionConflicts(
+      { orientation: ['lesbian'], gender: ['woman', 'man'] },
+      rules
+    );
+    expect(conflicts2.length).toBe(1);
+    expect(conflicts2[0].rule_id).toBe(2);
+
+    // No conflict: lesbian woman without man
+    const conflicts3 = getExclusionConflicts(
+      { orientation: ['lesbian'], gender: ['woman'] },
+      rules
+    );
+    expect(conflicts3.length).toBe(0);
+  });
+});
+
+describe('Wish creation, claim, and management API edge cases', () => {
+  it('rejects wish creation when neither content nor image is provided', async () => {
+    const res = await request(app)
+      .post('/api/wishes')
+      .send({ content: '   ' })
+      .set('Accept', 'application/json');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Wish content is required/i);
+  });
+
+  it('handles claim wish API validation and error scenarios', async () => {
+    const registerUser = await request(app)
+      .post('/api/users/register')
+      .send({ username: 'claimer1', passphrase: 'usersecret' });
+    const token = registerUser.body.token;
+
+    // Create an anonymous wish with passphrase
+    const createRes = await request(app)
+      .post('/api/wishes')
+      .send({ content: 'Anonymous wish to claim', passphrase: 'claim-wish-passphrase' })
+      .set('Accept', 'application/json');
+
+    expect(createRes.status).toBe(201);
+    const wishId = createRes.body.id;
+
+    // 1. Claim non-existent wish -> 404
+    const notFoundRes = await request(app)
+      .post('/api/wishes/nonexistentid/claim')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret: 'claim-wish-passphrase' });
+    expect(notFoundRes.status).toBe(404);
+    expect(notFoundRes.body.error).toMatch(/Wish not found/i);
+
+    // 2. Claim with missing secret -> 403
+    const missingSecretRes = await request(app)
+      .post(`/api/wishes/${wishId}/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret: '   ' });
+    expect(missingSecretRes.status).toBe(403);
+    expect(missingSecretRes.body.error).toBe('Invalid passphrase.');
+
+    // 3. Claim with wrong secret -> 403
+    const wrongSecretRes = await request(app)
+      .post(`/api/wishes/${wishId}/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret: 'WrongSecret' });
+    expect(wrongSecretRes.status).toBe(403);
+    expect(wrongSecretRes.body.error).toBe('Invalid passphrase.');
+
+    // 4. Claim valid wish with correct secret -> 200
+    const claimRes = await request(app)
+      .post(`/api/wishes/${wishId}/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret: 'claim-wish-passphrase' });
+    expect(claimRes.status).toBe(200);
+    expect(claimRes.body.success).toBe(true);
+
+    // 5. Claim already claimed wish -> 403
+    const reClaimRes = await request(app)
+      .post(`/api/wishes/${wishId}/claim`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ secret: 'claim-wish-passphrase' });
+    expect(reClaimRes.status).toBe(403);
+    expect(reClaimRes.body.error).toBe('This wish has already been claimed by a user.');
+  });
+
+  it('handles manage wish actions (deactivate, delete, invalid action)', async () => {
+    const createRes = await request(app)
+      .post('/api/wishes')
+      .send({ content: 'Wish to manage', passphrase: 'ManagePassphrase123' });
+    const wishId = createRes.body.id;
+
+    // 1. Invalid action -> 400
+    const invalidActionRes = await request(app)
+      .post(`/api/wishes/${wishId}/manage`)
+      .send({ action: 'unknown_action', secret: 'ManagePassphrase123' });
+    expect(invalidActionRes.status).toBe(400);
+    expect(invalidActionRes.body.error).toBe('Invalid update payload.');
+
+    // 2. Manage non-existent wish -> 404
+    const notFoundRes = await request(app)
+      .post('/api/wishes/badid/manage')
+      .send({ action: 'delete', secret: 'ManagePassphrase123' });
+    expect(notFoundRes.status).toBe(404);
+
+    // 3. Manage with wrong passphrase -> 403
+    const wrongPassRes = await request(app)
+      .post(`/api/wishes/${wishId}/manage`)
+      .send({ action: 'delete', secret: 'WrongSecret' });
+    expect(wrongPassRes.status).toBe(403);
+    expect(wrongPassRes.body.error).toBe('Invalid secret token or unauthorized.');
+
+    // 4. Deactivate wish -> 200
+    const deactivateRes = await request(app)
+      .post(`/api/wishes/${wishId}/deactivate`)
+      .send({ secret: 'ManagePassphrase123' });
+    expect(deactivateRes.status).toBe(200);
+    expect(deactivateRes.body.success).toBe(true);
+
+    // 5. Delete wish -> 200
+    const deleteRes = await request(app)
+      .post(`/api/wishes/${wishId}/manage`)
+      .send({ action: 'delete', secret: 'ManagePassphrase123' });
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.success).toBe(true);
+  });
+
+  it('supports querying wishes by explicit IDs array with ignore_attributes', async () => {
+    const wish1 = await request(app).post('/api/wishes').send({ content: 'Specific wish A' });
+    const wish2 = await request(app).post('/api/wishes').send({ content: 'Specific wish B' });
+
+    const queryRes = await request(app)
+      .get('/api/wishes')
+      .query({ ids: `${wish1.body.id},${wish2.body.id}`, ignore_attributes: '1' });
+
+    expect(queryRes.status).toBe(200);
+    expect(queryRes.body.length).toBe(2);
   });
 });

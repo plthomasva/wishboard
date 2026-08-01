@@ -57,7 +57,7 @@ globalThis.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
 });
 
 // Mock EventProfileContext so it renders children immediately without waiting for fetch in tests
-vi.mock('./EventProfileContext', async (importOriginal) => {
+vi.mock('../src/client/src/EventProfileContext', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
