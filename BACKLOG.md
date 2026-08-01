@@ -18,6 +18,9 @@ Enhancement and technical-debt work tracked as issues, for traceability:
 ### Features & Enhancements
 
 - **[#312](https://github.com/plthomasva/wishboard/issues/312)** — Offload OpenCV frame processing in `WishScanner` to a Web Worker to maintain smooth 60fps UI rendering on lower-power devices.
+- **[#330](https://github.com/plthomasva/wishboard/issues/330)** — Rules Engine Extraction Phase 1: Decouple matching engine logic from `wishes.js` into an isolated internal module `src/server/engine/` (see [ADR 0006](docs/adr/0006-extract-rules-engine.md)).
+- **[#331](https://github.com/plthomasva/wishboard/issues/331)** — Rules Engine Extraction Phase 2: Extract internal engine module into a standalone open-source library under the `wishboards` GitHub org / npm (`@wishboards/matching-engine`) (see [ADR 0006](docs/adr/0006-extract-rules-engine.md)).
+- **[#332](https://github.com/plthomasva/wishboard/issues/332)** — Decomposable & Optional AI Integration: Implement `InferenceProvider` / `EmbeddingProvider` interfaces, async tagging worker, UX suggestion badges, and optional vector search (see [ADR 0007](docs/adr/0007-ai-integration.md)).
 
 ## Infrastructure & DevOps
 
