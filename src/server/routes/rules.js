@@ -4,7 +4,7 @@ import { requireAdmin } from '../auth.js';
 import logger from '../logger.js';
 import { getRules, addRule, updateRule, deleteRule } from '../rulesManager.js';
 
-import { getExclusionConflicts } from './wishes.js';
+import { getExclusionConflicts } from '../engine/matchingEngine.js';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
