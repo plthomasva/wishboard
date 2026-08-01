@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.22.1...wishboard-v1.22.2) (2026-08-01)
+
+
+### Bug Fixes
+
+* **types:** add targeted comment for Listener any array in useWebSocket ([#328](https://github.com/plthomasva/wishboard/issues/328)) ([46ee04f](https://github.com/plthomasva/wishboard/commit/46ee04f32e0d749610a5e9b8a7796b75ea757d8e))
+
 ## [1.22.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.22.0...wishboard-v1.22.1) (2026-07-31)
 
 
