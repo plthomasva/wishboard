@@ -3,6 +3,14 @@ name: Deploy Serverless
 on:
   workflow_dispatch:
     inputs:
+      event_profile:
+        description: 'Event profile taxonomy (lifestyle or professional)'
+        required: true
+        default: 'lifestyle'
+        type: choice
+        options:
+          - lifestyle
+          - professional
       mode:
         description: 'Deployment mode (dev or prod)'
         required: true
@@ -11,45 +19,90 @@ on:
         options:
           - dev
           - prod
-      region:
-        description: 'AWS region to deploy to (falls back to AWS_REGION variable)'
+      domain_name:
+        description: 'Custom domain name (e.g. demo.wishboards.app)'
         required: false
         type: string
       stack_name:
-        description: 'CloudFormation stack name (falls back to AWS_STACK_NAME variable)'
+        description: 'CloudFormation stack name'
         required: false
         type: string
-  push:
-    branches:
-      - fix/add-gitlab-runner-deployment
+      database_url:
+        description: 'Turso Database URL'
+        required: false
+        type: string
+      database_auth_token_ssm:
+        description: 'Turso Auth Token SSM Parameter Name'
+        required: false
+        type: string
+      certificate_domain_name:
+        description: 'Certificate Domain Name (e.g. wishboards.app for primary wildcard cert)'
+        required: false
+        type: string
+      acm_certificate_arn:
+        description: 'Existing ACM Certificate ARN'
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      event_profile:
+        description: 'Event profile taxonomy (lifestyle or professional)'
+        required: true
+        default: 'lifestyle'
+        type: string
+      mode:
+        description: 'Deployment mode (dev or prod)'
+        required: true
+        default: 'dev'
+        type: string
+      domain_name:
+        description: 'Custom domain name'
+        required: false
+        type: string
+      stack_name:
+        description: 'CloudFormation stack name'
+        required: false
+        type: string
+      database_url:
+        description: 'Turso Database URL'
+        required: false
+        type: string
+      database_auth_token_ssm:
+        description: 'Turso Auth Token SSM Parameter Name'
+        required: false
+        type: string
+      certificate_domain_name:
+        description: 'Certificate Domain Name'
+        required: false
+        type: string
+      acm_certificate_arn:
+        description: 'ACM Certificate ARN'
+        required: false
+        type: string
 
 permissions:
-  id-token: write # Required for requesting the AWS JWT
-  contents: read # Required for checking out the repository
+  id-token: write
+  contents: read
 
 jobs:
   deploy:
-    name: Deploy Stack
+    name: Deploy Serverless (${{ inputs.event_profile || github.event.inputs.event_profile || 'lifestyle' }})
     runs-on: ubuntu-latest
 
     env:
-      # Inject parameter overrides from GitHub Variables if configured
-      PROJECT_NAME: ${{ vars.PROJECT_NAME }}
-      DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
+      DOMAIN_NAME: ${{ inputs.domain_name || github.event.inputs.domain_name }}
+      DATABASE_URL: ${{ inputs.database_url }}
+      DATABASE_AUTH_TOKEN_SSM: ${{ inputs.database_auth_token_ssm }}
+      CERTIFICATE_DOMAIN_NAME: ${{ inputs.certificate_domain_name }}
+      ACM_CERTIFICATE_ARN: ${{ inputs.acm_certificate_arn }}
       HOSTED_ZONE_ID: ${{ vars.HOSTED_ZONE_ID }}
-      ACM_CERTIFICATE_ARN: ${{ vars.ACM_CERTIFICATE_ARN }}
-      # Turso DB endpoint + the SSM parameter name holding its auth token. Both
-      # non-secret (the token itself lives only in SSM), so they are repo
-      # Variables, not Secrets. Required in CI because samconfig.toml is gitignored.
-      DATABASE_URL: ${{ vars.DATABASE_URL }}
-      DATABASE_AUTH_TOKEN_SSM: ${{ vars.DATABASE_AUTH_TOKEN_SSM }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@v7.0.0
         with:
           node-version: 22
           cache: 'npm'
@@ -58,15 +111,21 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ github.event.inputs.region || vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
           audience: sts.amazonaws.com
 
       - name: Deploy serverless stack
         run: |
-          node src/cli/wishboard.js serverless deploy \
-            --mode "${{ github.event.inputs.mode || 'dev' }}" \
-            --region "${{ github.event.inputs.region || vars.AWS_REGION || 'us-east-1' }}" \
-            --stack-name "${{ github.event.inputs.stack_name || vars.AWS_STACK_NAME || 'wishboard-serverless-dev' }}"
+          MODE="${{ inputs.mode || github.event.inputs.mode || 'dev' }}"
+          EVENT_PROF="${{ inputs.event_profile || github.event.inputs.event_profile || 'lifestyle' }}"
+          STACK_NAME="${{ inputs.stack_name || github.event.inputs.stack_name }}"
+
+          CMD="node src/cli/wishboard.js serverless deploy --mode $MODE --event-profile $EVENT_PROF"
+          if [ -n "$STACK_NAME" ]; then
+            CMD="$CMD --stack-name $STACK_NAME"
+          fi
+
+          eval $CMD

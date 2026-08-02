@@ -73,25 +73,22 @@ Turso tokens are all valid concurrently, but there is **no per-token revoke** â€
 
 The fastest path to manual deployment is using the bundled deploy scripts. However, for a fully automated CI/CD pipeline, you can use the **GitHub Actions Deployment** workflow.
 
-### GitHub Actions Deployment (Recommended)
+### GitHub Actions Release & Deployment Pipeline (Recommended)
 
-Wishboard includes a GitHub Actions workflow that automatically builds and deploys the serverless stack on every push to the `main` branch.
+Wishboard features automated serverless deployment triggered on **official release creation** (via `release-please`):
 
-To enable this, you must first configure AWS OIDC (OpenID Connect) authentication to allow GitHub to deploy without long-lived credentials.
+1. **Automatic Release Deployment**:
+   When a release PR is merged into `main`, GitHub Actions automatically deploys two production stacks concurrently:
+   - **Lifestyle Profile**: `demo.wishboards.app` (uses standard repository variables: `DOMAIN_NAME`, `DATABASE_URL`, `DATABASE_AUTH_TOKEN_SSM`, `AWS_STACK_NAME`).
+   - **Professional Profile**: `conference.wishboards.app` (uses professional overrides: `PROFESSIONAL_DOMAIN_NAME`, `PROFESSIONAL_DATABASE_URL`, `PROFESSIONAL_DATABASE_AUTH_TOKEN_SSM`, `PROFESSIONAL_AWS_STACK_NAME`, `PROFESSIONAL_ACM_CERTIFICATE_ARN`).
 
-1. **Run the OIDC Setup Script:**
+2. **Repository Variables Configuration**:
+   Configure GitHub Repository Variables to customize deployments:
+   - Standard / Lifestyle Stack: `DATABASE_URL`, `DATABASE_AUTH_TOKEN_SSM`, `DOMAIN_NAME` (`demo.wishboards.app`), `AWS_STACK_NAME`.
+   - Professional Stack Overrides: `PROFESSIONAL_DATABASE_URL`, `PROFESSIONAL_DATABASE_AUTH_TOKEN_SSM`, `PROFESSIONAL_DOMAIN_NAME` (`conference.wishboards.app`), `PROFESSIONAL_AWS_STACK_NAME`, `PROFESSIONAL_ACM_CERTIFICATE_ARN`.
 
-   ```bash
-   ./scripts/setup-oidc.sh --org <your-github-org> --repo <your-repo-name>
-   ```
-
-   _This creates an IAM Role in your AWS account and automatically configures the necessary Repository Secrets and Variables in your GitHub repository using the `gh` CLI._
-
-   > [!IMPORTANT]
-   > Also set two repository **Variables** (not Secrets), or CI can't reach the database: `DATABASE_URL` (the Turso `libsql://` URL) and `DATABASE_AUTH_TOKEN_SSM` (the SSM parameter name). Both are non-secret â€” the token itself stays in SSM. See **[Database (Turso)](#database-turso)**.
-
-2. **Trigger a Deployment:**
-   Push a commit to the `main` branch, or manually trigger the `Deploy Serverless` workflow from the GitHub Actions tab.
+3. **Manual Triggering (Workflow Dispatch)**:
+   You can also manually trigger `Deploy Serverless` from the GitHub Actions tab, selecting the target `event_profile` (`lifestyle` or `professional`) and mode (`prod` or `dev`).
 
 ### Local CLI Deployment
 
