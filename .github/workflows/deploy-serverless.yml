@@ -47,12 +47,12 @@ on:
     inputs:
       event_profile:
         description: 'Event profile taxonomy (lifestyle or professional)'
-        required: true
+        required: false
         default: 'lifestyle'
         type: string
       mode:
         description: 'Deployment mode (dev or prod)'
-        required: true
+        required: false
         default: 'dev'
         type: string
       domain_name:
