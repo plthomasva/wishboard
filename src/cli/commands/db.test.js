@@ -17,10 +17,7 @@ describe('reset-password script', () => {
         username TEXT UNIQUE NOT NULL,
         passphrase_hash TEXT NOT NULL,
         passphrase_salt TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'user',
-        identity_genders TEXT,
-        identity_orientations TEXT,
-        identity_roles TEXT,
+        identity_attributes TEXT,
         created_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS sessions (
