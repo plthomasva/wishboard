@@ -289,25 +289,30 @@ router.get('/', async (req, res) => {
   const searcher = await getRequestUser(req);
   const query = (req.query.q || '').trim();
   const manualAttributes = req.query.attributes ? parseJsonSafe(req.query.attributes) : {};
+  const queryAliasMap = { sg: 'gender', so: 'orientation', sr: 'role' };
+  for (const [alias, cat] of Object.entries(queryAliasMap)) {
+    if (req.query[alias] && !manualAttributes[cat]) {
+      manualAttributes[cat] = normalizeArrayInput(req.query[alias]);
+    }
+  }
+  for (const [key, val] of Object.entries(req.query)) {
+    if (['q', 'sg', 'so', 'sr', 'attributes', 'ignore_attributes', 'page', 'limit'].includes(key))
+      continue;
+    if (!manualAttributes[key]) {
+      manualAttributes[key] = normalizeArrayInput(val);
+    }
+  }
+
   let searcherAttributes = {};
   if (searcher?.identity_attributes) {
     searcherAttributes =
       typeof searcher.identity_attributes === 'string'
         ? parseJsonSafe(searcher.identity_attributes)
-        : searcher.identity_attributes;
-  } else {
-    searcherAttributes = {
-      gender:
-        searcher?.identity_genders ?? normalizeArrayInput(req.query.sg ?? manualAttributes.gender),
-      orientation:
-        searcher?.identity_orientations ??
-        normalizeArrayInput(req.query.so ?? manualAttributes.orientation),
-      role: searcher?.identity_roles ?? normalizeArrayInput(req.query.sr ?? manualAttributes.role),
-    };
+        : searcher.identity_attributes || {};
   }
 
   for (const [key, value] of Object.entries(manualAttributes)) {
-    if (!searcherAttributes[key]) {
+    if (!searcherAttributes[key] || searcherAttributes[key].length === 0) {
       searcherAttributes[key] = normalizeArrayInput(value);
     }
   }
