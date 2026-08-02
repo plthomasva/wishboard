@@ -82,7 +82,6 @@ export {
   applyCrossRule,
   getCrossMatchedDesired,
   matchesAttribute,
-  matchesGenderPreferenceImplicit,
   isCompatible,
 } from '@wishboards/matching-engine';
 
