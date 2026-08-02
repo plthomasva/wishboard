@@ -19,7 +19,6 @@ export default tseslint.config(
   {
     ignores: [
       'dist/**',
-      'packages/**/dist/**',
       'coverage/**',
       'reports/**',
       '.stryker-tmp/**',

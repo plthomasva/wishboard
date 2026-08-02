@@ -9,12 +9,12 @@
   "scripts": {
     "predev": "node ./src/cli/wishboard.js build prepare-profile",
     "dev": "concurrently \"vite\" \"node --watch ./src/server/index.js\"",
-    "prebuild": "npm run build --prefix packages/matching-engine && node ./src/cli/wishboard.js build download-fonts",
+    "prebuild": "npm run build --prefix ../matching-engine && node ./src/cli/wishboard.js build download-fonts",
     "build": "vite build",
     "build:cli": "esbuild src/cli/wishboard.js --bundle --platform=node --format=esm --outfile=dist/wishboard.js",
     "preview": "vite preview",
     "start": "npm run build && node ./src/server/index.js",
-    "pretest": "npm run build --prefix packages/matching-engine",
+    "pretest": "npm run build --prefix ../matching-engine",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
@@ -26,7 +26,7 @@
     "type-check": "tsc -p tsconfig.build.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "npm run build --prefix packages/matching-engine && node .husky/install.mjs"
+    "prepare": "npm run build --prefix ../matching-engine && node .husky/install.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -45,7 +45,7 @@
     "@aws-sdk/client-ssm": "^3.1095.0",
     "@codegenie/serverless-express": "^5.0.0",
     "@libsql/client": "^0.17.4",
-    "@wishboards/matching-engine": "file:./packages/matching-engine",
+    "@wishboards/matching-engine": "file:../matching-engine",
     "commander": "^15.0.0",
     "cors": "^2.8.5",
     "esbuild": "^0.28.1",
