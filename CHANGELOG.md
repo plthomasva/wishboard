@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.22.2...wishboard-v1.23.0) (2026-08-02)
+
+
+### Features
+
+* extract rules engine to standalone @wishboards/matching-engine package ([#337](https://github.com/plthomasva/wishboard/issues/337)) ([b2e6946](https://github.com/plthomasva/wishboard/commit/b2e6946104418de4a7c6ddec7a004c8e54078d45))
+
 ## [1.22.2](https://github.com/plthomasva/wishboard/compare/wishboard-v1.22.1...wishboard-v1.22.2) (2026-08-01)
 
 
