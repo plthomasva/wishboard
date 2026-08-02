@@ -14,7 +14,7 @@ import {
 import { generatePassphrase } from '../../client/src/passphrase.js';
 import logger from '../logger.js';
 import { getRules } from '../rulesManager.js';
-import { getExclusionConflicts, parseAttributesInput } from '../engine/matchingEngine.js';
+import { getExclusionConflicts, parseAttributesInput } from '@wishboards/matching-engine';
 
 const router = express.Router();
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);
