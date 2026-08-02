@@ -118,10 +118,42 @@ jobs:
           audience: sts.amazonaws.com
 
       - name: Deploy serverless stack
+        env:
+          VARS_JSON: ${{ toJson(vars) }}
         run: |
-          MODE="${{ inputs.mode || github.event.inputs.mode || 'dev' }}"
+          MODE="${{ inputs.mode || github.event.inputs.mode || '' }}"
           EVENT_PROF="${{ inputs.event_profile || github.event.inputs.event_profile || 'lifestyle' }}"
-          STACK_NAME="${{ inputs.stack_name || github.event.inputs.stack_name }}"
+          STACK_NAME="${{ inputs.stack_name || github.event.inputs.stack_name || '' }}"
+          DOMAIN_NAME="${{ inputs.domain_name || github.event.inputs.domain_name || '' }}"
+          DATABASE_URL="${{ inputs.database_url || '' }}"
+          DATABASE_AUTH_TOKEN_SSM="${{ inputs.database_auth_token_ssm || '' }}"
+          CERTIFICATE_DOMAIN_NAME="${{ inputs.certificate_domain_name || '' }}"
+          ACM_CERTIFICATE_ARN="${{ inputs.acm_certificate_arn || '' }}"
+
+          PREFIX=$(echo "$EVENT_PROF" | tr '[:lower:]' '[:upper:]')
+
+          get_var() {
+            local key="$1" explicit="$2" fallback="$3"
+            if [ -n "$explicit" ]; then
+              echo "$explicit"
+            else
+              local val
+              val=$(echo "$VARS_JSON" | jq -r --arg k "${PREFIX}_${key}" '.[$k] // empty')
+              if [ -n "$val" ]; then
+                echo "$val"
+              else
+                echo "$fallback"
+              fi
+            fi
+          }
+
+          export STACK_NAME=$(get_var "AWS_STACK_NAME" "$STACK_NAME" "")
+          export DOMAIN_NAME=$(get_var "DOMAIN_NAME" "$DOMAIN_NAME" "")
+          export DATABASE_URL=$(get_var "DATABASE_URL" "$DATABASE_URL" "")
+          export DATABASE_AUTH_TOKEN_SSM=$(get_var "DATABASE_AUTH_TOKEN_SSM" "$DATABASE_AUTH_TOKEN_SSM" "")
+          export CERTIFICATE_DOMAIN_NAME=$(get_var "CERTIFICATE_DOMAIN_NAME" "$CERTIFICATE_DOMAIN_NAME" "")
+          export ACM_CERTIFICATE_ARN=$(get_var "ACM_CERTIFICATE_ARN" "$ACM_CERTIFICATE_ARN" "")
+          MODE=$(get_var "MODE" "$MODE" "dev")
 
           CMD="node src/cli/wishboard.js serverless deploy --mode $MODE --event-profile $EVENT_PROF"
           if [ -n "$STACK_NAME" ]; then
