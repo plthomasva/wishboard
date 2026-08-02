@@ -1,22 +1,22 @@
-import { normalizeArrayInput } from '../auth.js';
+import { Rule, UserProfile, Wish, Conflict } from './types.js';
 
-export const normalizeToken = (value) =>
+export const normalizeToken = (value: unknown): string =>
   String(value || '')
     .trim()
     .toLowerCase();
 
-export const escapeRegExp = (string) => {
+export const escapeRegExp = (string: string): string => {
   return string.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 };
 
-export const hasToken = (str, token) => {
+export const hasToken = (str: unknown, token: string): boolean => {
   const escapedToken = escapeRegExp(token);
   return new RegExp(String.raw`\b${escapedToken}\b`, 'i').test(normalizeToken(str));
 };
 
-export const parseJsonSafe = (str) => {
+export const parseJsonSafe = (str: unknown): Record<string, unknown> => {
   if (!str) return {};
-  if (typeof str !== 'string') return str;
+  if (typeof str !== 'string') return (str as Record<string, unknown>) || {};
   try {
     return JSON.parse(str);
   } catch {
@@ -24,8 +24,19 @@ export const parseJsonSafe = (str) => {
   }
 };
 
-export const parseAttributesInput = (rawAttrs) => {
-  const result = {};
+export const normalizeArrayInput = (value: unknown): string[] => {
+  if (!value) {
+    return [];
+  }
+  const array = Array.isArray(value) ? value : [value];
+  return array
+    .flatMap((item) => String(item).split(','))
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+export const parseAttributesInput = (rawAttrs: unknown): Record<string, string[]> => {
+  const result: Record<string, string[]> = {};
   if (!rawAttrs) return result;
 
   let parsed = rawAttrs;
@@ -34,28 +45,32 @@ export const parseAttributesInput = (rawAttrs) => {
   }
 
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-    for (const key of Object.keys(parsed)) {
-      result[key] = normalizeArrayInput(parsed[key]);
+    for (const key of Object.keys(parsed as Record<string, unknown>)) {
+      result[key] = normalizeArrayInput((parsed as Record<string, unknown>)[key]);
     }
   }
   return result;
 };
 
-export const matchesContext = (rule, contextProfile, rules = []) => {
+export const matchesContext = (
+  rule: Rule,
+  contextProfile: Record<string, string[]> | undefined,
+  rules: Rule[] = []
+): boolean => {
   if (!rule.context_attribute || !rule.context_value) return true;
   if (!contextProfile) return false;
 
   const ctxVals = contextProfile[rule.context_attribute] || [];
-  const expandedCtxVals = getExpandedDesired(ctxVals, rule.context_attribute, rules, null);
-  return expandedCtxVals.some((v) => hasToken(v, rule.context_value));
+  const expandedCtxVals = getExpandedDesired(ctxVals, rule.context_attribute, rules, undefined);
+  return expandedCtxVals.some((v) => hasToken(v, rule.context_value!));
 };
 
 export const getExpandedDesired = (
-  desiredVals,
-  category,
-  rules = [],
-  contextProfile = undefined
-) => {
+  desiredVals: string[],
+  category: string,
+  rules: Rule[] = [],
+  contextProfile: Record<string, string[]> | undefined = undefined
+): string[] => {
   const result = new Set(desiredVals.map(normalizeToken));
   const expandRules = rules.filter(
     (r) =>
@@ -78,9 +93,12 @@ export const getExpandedDesired = (
   return Array.from(result);
 };
 
-export const getExclusionConflicts = (attributes, rules = []) => {
-  const conflicts = [];
-  const expandedAttrs = {};
+export const getExclusionConflicts = (
+  attributes: Record<string, string[]>,
+  rules: Rule[] = []
+): Conflict[] => {
+  const conflicts: Conflict[] = [];
+  const expandedAttrs: Record<string, string[]> = {};
   for (const key of Object.keys(attributes)) {
     const vals = attributes[key] || [];
     expandedAttrs[key] = getExpandedDesired(vals, key, rules, attributes);
@@ -104,17 +122,18 @@ export const getExclusionConflicts = (attributes, rules = []) => {
 
     let hasContext = true;
     if (rule.context_attribute && rule.context_value) {
+      const ctxAttr = rule.context_attribute;
       const contextTokens = rule.context_value
         .split(',')
         .map((t) => t.trim().toLowerCase())
         .filter(Boolean);
       hasContext = contextTokens.some((token) =>
-        expandedAttrs[rule.context_attribute]?.some((attrVal) => hasToken(attrVal, token))
+        expandedAttrs[ctxAttr]?.some((attrVal: string) => hasToken(attrVal, token))
       );
     }
 
     const hasTarget = targetTokens.some((token) =>
-      expandedAttrs[rule.target_attribute]?.some((attrVal) => hasToken(attrVal, token))
+      expandedAttrs[rule.target_attribute]?.some((attrVal: string) => hasToken(attrVal, token))
     );
 
     if (hasTrigger && hasContext && hasTarget) {
@@ -134,21 +153,30 @@ export const getExclusionConflicts = (attributes, rules = []) => {
   return conflicts;
 };
 
-export const evaluateRuleConditions = (rule, userAttributes, rules = []) => {
+export const evaluateRuleConditions = (
+  rule: Rule,
+  userAttributes: Record<string, string[]>,
+  rules: Rule[] = []
+): boolean => {
   const triggerVals = userAttributes[rule.trigger_attribute] || [];
   const triggerMatch = triggerVals.some((v) => hasToken(v, rule.trigger_value));
 
   let contextMatch = true;
   if (rule.context_attribute && rule.context_value) {
+    const ctxVal = rule.context_value;
     const ctxVals = userAttributes[rule.context_attribute] || [];
     const expandedCtxVals = getExpandedDesired(ctxVals, rule.context_attribute, rules);
-    contextMatch = expandedCtxVals.some((v) => hasToken(v, rule.context_value));
+    contextMatch = expandedCtxVals.some((v) => hasToken(v, ctxVal));
   }
 
   return triggerMatch && contextMatch;
 };
 
-export const enrichAttributes = (userAttributes, targetCategory, rules = []) => {
+export const enrichAttributes = (
+  userAttributes: Record<string, string[]>,
+  targetCategory: string,
+  rules: Rule[] = []
+): string[] => {
   const enriched = new Set((userAttributes[targetCategory] || []).map(normalizeToken));
   const enrichmentRules = rules.filter(
     (r) => r.rule_type === 'enrichment' && r.target_attribute === targetCategory
@@ -156,14 +184,18 @@ export const enrichAttributes = (userAttributes, targetCategory, rules = []) => 
 
   for (const rule of enrichmentRules) {
     if (evaluateRuleConditions(rule, userAttributes, rules)) {
-      enriched.add(rule.target_value);
+      enriched.add(rule.target_value.toLowerCase());
     }
   }
   return Array.from(enriched);
 };
 
-export const buildAcceptedSet = (userAttributes, targetCategory, rules = []) => {
-  const accepted = new Set();
+export const buildAcceptedSet = (
+  userAttributes: Record<string, string[]>,
+  targetCategory: string,
+  rules: Rule[] = []
+): Set<string> => {
+  const accepted = new Set<string>();
   const acceptanceRules = rules.filter(
     (r) => r.rule_type === 'acceptance' && r.target_attribute === targetCategory
   );
@@ -177,7 +209,13 @@ export const buildAcceptedSet = (userAttributes, targetCategory, rules = []) => 
   return accepted;
 };
 
-export const applyCrossRule = (val, rule, contextProfile, rules, result) => {
+export const applyCrossRule = (
+  val: string,
+  rule: Rule,
+  contextProfile: Record<string, string[]> | undefined,
+  rules: Rule[],
+  result: Set<string>
+): void => {
   if (contextProfile !== undefined && !matchesContext(rule, contextProfile, rules)) return;
   if (hasToken(val, rule.trigger_value)) {
     const targets = rule.target_value.split(',').map((t) => t.trim().toLowerCase());
@@ -189,12 +227,12 @@ export const applyCrossRule = (val, rule, contextProfile, rules, result) => {
 };
 
 export const getCrossMatchedDesired = (
-  desiredVals,
-  category,
-  rules = [],
-  contextProfile = undefined
-) => {
-  const result = new Set();
+  desiredVals: string[],
+  category: string,
+  rules: Rule[] = [],
+  contextProfile: Record<string, string[]> | undefined = undefined
+): string[] => {
+  const result = new Set<string>();
   const crossRules = rules.filter(
     (r) =>
       r.rule_type === 'cross_match' &&
@@ -211,12 +249,12 @@ export const getCrossMatchedDesired = (
 };
 
 export const matchesAttribute = (
-  searcherVals,
-  desiredVals,
-  category,
-  rules = [],
-  contextProfile = undefined
-) => {
+  searcherVals: string[],
+  desiredVals: string[],
+  category: string,
+  rules: Rule[] = [],
+  contextProfile: Record<string, string[]> | undefined = undefined
+): boolean => {
   if (!desiredVals || desiredVals.length === 0) return true;
   if (!searcherVals || searcherVals.length === 0) return false;
 
@@ -239,7 +277,11 @@ export const matchesAttribute = (
   return Array.from(allAcceptable).some((desired) => normalizedSearcher.has(desired));
 };
 
-export const matchesGenderPreferenceImplicit = (searcherAttributes, desiredGenders, rules = []) => {
+export const matchesGenderPreferenceImplicit = (
+  searcherAttributes: Record<string, string[]>,
+  desiredGenders: string[] = [],
+  rules: Rule[] = []
+): boolean => {
   if (!desiredGenders || desiredGenders.length === 0) return true;
   const searcherOrientations = searcherAttributes.orientation || [];
   if (!searcherOrientations || searcherOrientations.length === 0) return false;
@@ -250,7 +292,7 @@ export const matchesGenderPreferenceImplicit = (searcherAttributes, desiredGende
   return matchesAttribute(Array.from(accepted), desiredGenders, 'gender', rules);
 };
 
-export const isCompatible = (wish, searcher, rules = []) => {
+export const isCompatible = (wish: Wish, searcher: UserProfile, rules: Rule[] = []): boolean => {
   const creatorProfileRaw =
     typeof wish.creator_attributes === 'string'
       ? parseJsonSafe(wish.creator_attributes)
@@ -266,14 +308,29 @@ export const isCompatible = (wish, searcher, rules = []) => {
       ? parseJsonSafe(searcher.identity_attributes)
       : searcher.identity_attributes || {};
 
-  const creatorProfile = {};
+  const creatorParsed: Record<string, string[]> = {};
   for (const key of Object.keys(creatorProfileRaw)) {
-    creatorProfile[key] = enrichAttributes(creatorProfileRaw, key, rules);
+    creatorParsed[key] = normalizeArrayInput(creatorProfileRaw[key]);
   }
 
-  const searcherProfile = {};
+  const desiredParsed: Record<string, string[]> = {};
+  for (const key of Object.keys(desiredProfileRaw)) {
+    desiredParsed[key] = normalizeArrayInput(desiredProfileRaw[key]);
+  }
+
+  const searcherParsed: Record<string, string[]> = {};
   for (const key of Object.keys(searcherProfileRaw)) {
-    searcherProfile[key] = enrichAttributes(searcherProfileRaw, key, rules);
+    searcherParsed[key] = normalizeArrayInput(searcherProfileRaw[key]);
+  }
+
+  const creatorProfile: Record<string, string[]> = {};
+  for (const key of Object.keys(creatorParsed)) {
+    creatorProfile[key] = enrichAttributes(creatorParsed, key, rules);
+  }
+
+  const searcherProfile: Record<string, string[]> = {};
+  for (const key of Object.keys(searcherParsed)) {
+    searcherProfile[key] = enrichAttributes(searcherParsed, key, rules);
   }
 
   // 1. Does the searcher want the wish creator?
@@ -285,10 +342,10 @@ export const isCompatible = (wish, searcher, rules = []) => {
 
   // 2. Does the wish creator want the searcher?
   let creatorWantsSearcherGender = false;
-  const desiredGenders = desiredProfileRaw.gender || [];
+  const desiredGenders = desiredParsed.gender || [];
   if (desiredGenders.length > 0) {
     creatorWantsSearcherGender = matchesAttribute(
-      searcherProfile.gender,
+      searcherProfile.gender || [],
       desiredGenders,
       'gender',
       rules,
@@ -297,13 +354,13 @@ export const isCompatible = (wish, searcher, rules = []) => {
   } else {
     creatorWantsSearcherGender = matchesGenderPreferenceImplicit(
       creatorProfile,
-      searcherProfile.gender,
+      searcherProfile.gender || [],
       rules
     );
   }
 
   let creatorWantsSearcherAttributes = true;
-  for (const [cat, desiredVals] of Object.entries(desiredProfileRaw)) {
+  for (const [cat, desiredVals] of Object.entries(desiredParsed)) {
     if (cat === 'gender') continue;
     if (!matchesAttribute(searcherProfile[cat] || [], desiredVals, cat, rules, searcherProfile)) {
       creatorWantsSearcherAttributes = false;

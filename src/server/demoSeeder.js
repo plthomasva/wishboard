@@ -3,7 +3,7 @@ import { customAlphabet } from 'nanoid';
 import db from './db.js';
 import { createSalt, hashPassphrase } from './auth.js';
 import logger from './logger.js';
-import { getExclusionConflicts } from './engine/matchingEngine.js';
+import { getExclusionConflicts } from '@wishboards/matching-engine';
 import { getRules, reloadRules } from './rulesManager.js';
 
 const idGenerator = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8);

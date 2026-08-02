@@ -16,7 +16,8 @@ import {
   matchesAttribute,
   matchesGenderPreferenceImplicit,
   isCompatible,
-} from './matchingEngine.js';
+} from '../src/index.js';
+import { Rule, Wish, UserProfile } from '../src/types.js';
 
 describe('matchingEngine', () => {
   describe('normalizeToken', () => {
@@ -70,7 +71,7 @@ describe('matchingEngine', () => {
   });
 
   describe('matchesContext', () => {
-    const rules = [
+    const rules: Rule[] = [
       {
         id: 'r1',
         rule_type: 'expansion',
@@ -82,20 +83,36 @@ describe('matchingEngine', () => {
     ];
 
     it('returns true when rule has no context requirement', () => {
-      const rule = { trigger_attribute: 'gender', trigger_value: 'man' };
+      const rule: Rule = {
+        rule_type: 'enrichment',
+        trigger_attribute: 'gender',
+        trigger_value: 'man',
+        target_attribute: 'gender',
+        target_value: 'man',
+      };
       expect(matchesContext(rule, {})).toBe(true);
     });
 
     it('returns false when contextProfile is missing', () => {
-      const rule = {
+      const rule: Rule = {
+        rule_type: 'enrichment',
+        trigger_attribute: 'orientation',
+        trigger_value: 'gay',
+        target_attribute: 'gender',
+        target_value: 'man',
         context_attribute: 'orientation',
         context_value: 'gay',
       };
-      expect(matchesContext(rule, null)).toBe(false);
+      expect(matchesContext(rule, undefined)).toBe(false);
     });
 
     it('evaluates context against expanded values', () => {
-      const rule = {
+      const rule: Rule = {
+        rule_type: 'enrichment',
+        trigger_attribute: 'orientation',
+        trigger_value: 'gay',
+        target_attribute: 'gender',
+        target_value: 'man',
         context_attribute: 'orientation',
         context_value: 'gay',
       };
@@ -105,7 +122,7 @@ describe('matchingEngine', () => {
   });
 
   describe('getExpandedDesired', () => {
-    const rules = [
+    const rules: Rule[] = [
       {
         id: 'r1',
         rule_type: 'expansion',
@@ -125,7 +142,7 @@ describe('matchingEngine', () => {
   });
 
   describe('getExclusionConflicts', () => {
-    const rules = [
+    const rules: Rule[] = [
       {
         id: 'ex1',
         rule_type: 'exclusion',
@@ -151,7 +168,7 @@ describe('matchingEngine', () => {
   });
 
   describe('enrichAttributes & buildAcceptedSet', () => {
-    const rules = [
+    const rules: Rule[] = [
       {
         id: 'en1',
         rule_type: 'enrichment',
@@ -186,7 +203,7 @@ describe('matchingEngine', () => {
   });
 
   describe('getCrossMatchedDesired', () => {
-    const rules = [
+    const rules: Rule[] = [
       {
         id: 'cr1',
         rule_type: 'cross_match',
@@ -210,9 +227,12 @@ describe('matchingEngine', () => {
 
   describe('evaluateRuleConditions', () => {
     it('evaluates rule trigger and context conditions', () => {
-      const rule = {
+      const rule: Rule = {
+        rule_type: 'enrichment',
         trigger_attribute: 'orientation',
         trigger_value: 'gay',
+        target_attribute: 'gender',
+        target_value: 'man',
         context_attribute: 'gender',
         context_value: 'man',
       };
@@ -225,15 +245,18 @@ describe('matchingEngine', () => {
 
   describe('applyCrossRule', () => {
     it('populates result set with complementary target or trigger values', () => {
-      const rule = {
+      const rule: Rule = {
+        rule_type: 'cross_match',
+        trigger_attribute: 'role',
+        target_attribute: 'role',
         trigger_value: 'top',
         target_value: 'bottom',
       };
-      const result = new Set();
+      const result = new Set<string>();
       applyCrossRule('top', rule, undefined, [], result);
       expect(Array.from(result)).toContain('bottom');
 
-      const result2 = new Set();
+      const result2 = new Set<string>();
       applyCrossRule('bottom', rule, undefined, [], result2);
       expect(Array.from(result2)).toContain('top');
     });
@@ -260,7 +283,7 @@ describe('matchingEngine', () => {
   });
 
   describe('isCompatible', () => {
-    const rules = [
+    const rules: Rule[] = [
       {
         id: 'en1',
         rule_type: 'enrichment',
@@ -290,11 +313,11 @@ describe('matchingEngine', () => {
     ];
 
     it('evaluates compatibility between a wish and a searcher', () => {
-      const wish = {
+      const wish: Wish = {
         creator_attributes: { gender: ['man'], orientation: ['gay'], role: ['top'] },
         desired_attributes: { gender: ['man'], role: ['bottom'] },
       };
-      const searcher = {
+      const searcher: UserProfile = {
         identity_attributes: { gender: ['man'], orientation: ['gay'], role: ['bottom'] },
       };
 
@@ -302,11 +325,11 @@ describe('matchingEngine', () => {
     });
 
     it('returns false when role criteria do not match', () => {
-      const wish = {
+      const wish: Wish = {
         creator_attributes: { gender: ['man'], orientation: ['gay'], role: ['top'] },
         desired_attributes: { gender: ['man'], role: ['master'] },
       };
-      const searcher = {
+      const searcher: UserProfile = {
         identity_attributes: { gender: ['man'], orientation: ['gay'], role: ['bottom'] },
       };
 

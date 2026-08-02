@@ -84,14 +84,14 @@ export {
   matchesAttribute,
   matchesGenderPreferenceImplicit,
   isCompatible,
-} from '../engine/matchingEngine.js';
+} from '@wishboards/matching-engine';
 
 import {
   isCompatible,
   getExclusionConflicts,
   parseJsonSafe,
   parseAttributesInput,
-} from '../engine/matchingEngine.js';
+} from '@wishboards/matching-engine';
 
 const uploadImageToS3 = async (file) => {
   const safePath = path.join(imagesDir, path.basename(file.filename));

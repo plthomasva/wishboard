@@ -1,0 +1,51 @@
+{
+  "name": "@wishboards/matching-engine",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Zero-dependency, identity-based dynamic matchmaking and rules evaluation engine.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wishboards/matching-engine.git"
+  },
+  "keywords": [
+    "matchmaking",
+    "rules-engine",
+    "identity",
+    "bidirectional-matching",
+    "wishboard"
+  ],
+  "author": "Peter L. Thomas <https://github.com/plthomasva>",
+  "license": "CC-BY-NC-4.0",
+  "bugs": {
+    "url": "https://github.com/wishboards/matching-engine/issues"
+  },
+  "homepage": "https://github.com/wishboards/matching-engine#readme",
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ]
+}
