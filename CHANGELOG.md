@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.23.0...wishboard-v1.23.1) (2026-08-02)
+
+
+### Bug Fixes
+
+* **ci:** mark event_profile and mode inputs optional in deploy-serverless workflow_call ([#342](https://github.com/plthomasva/wishboard/issues/342)) ([4978b01](https://github.com/plthomasva/wishboard/commit/4978b01b8f80ceb9858dbbe3312e7a74c210fa41))
+
 ## [1.23.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.22.2...wishboard-v1.23.0) (2026-08-02)
 
 
