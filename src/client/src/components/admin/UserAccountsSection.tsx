@@ -217,7 +217,7 @@ export default function UserAccountsSection({
             borderRadius: '8px',
           }}
         >
-          <h2 style={{ color: '#ff4444' }}>Demo Seeder (Dev Only)</h2>
+          <h2 style={{ color: '#ff4444' }}>Demo Seeder</h2>
           <p>
             Generate simulated users and wishes for testing.{' '}
             <strong>Warning: This clears existing demo data.</strong>
