@@ -333,7 +333,7 @@ describe('UserAccountsSection Coverage', () => {
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ isProduction: false }), // loadConfig says NOT production
+        json: async () => ({ isProduction: false, hasDemoSeeds: true }), // loadConfig says NOT production
       });
 
     const setMessage = vi.fn();
@@ -348,7 +348,7 @@ describe('UserAccountsSection Coverage', () => {
       />
     );
 
-    await waitFor(() => expect(screen.getByText('Demo Seeder (Dev Only)')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Demo Seeder')).toBeInTheDocument());
 
     // Mock seeder failure
     mockFetch.mockResolvedValueOnce({ ok: false });
@@ -367,10 +367,15 @@ describe('UserAccountsSection Coverage', () => {
   });
 
   it('aborts delete if userToDelete is null but confirmDelete is somehow called', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => [{ id: 'u1', username: 'user1', role: 'user' }],
-    });
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'u1', username: 'user1', role: 'user' }],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ isProduction: true }),
+      });
 
     render(
       <UserAccountsSection
@@ -456,9 +461,10 @@ describe('UserAccountsSection Coverage', () => {
 
   it('runSeeder 401 fires onSessionExpired', async () => {
     const onSessionExpired = vi.fn();
-    mockFetch
-      .mockResolvedValueOnce({ ok: true, json: async () => [] })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ isProduction: false }) });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] }).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ isProduction: false, hasDemoSeeds: true }),
+    });
     render(
       <UserAccountsSection
         authHeader={{}}
@@ -469,7 +475,7 @@ describe('UserAccountsSection Coverage', () => {
         onSessionExpired={onSessionExpired}
       />
     );
-    await waitFor(() => expect(screen.getByText('Demo Seeder (Dev Only)')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Demo Seeder')).toBeInTheDocument());
     mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
     fireEvent.click(screen.getByRole('button', { name: 'Run Seeder' }));
     await waitFor(() => expect(onSessionExpired).toHaveBeenCalled());

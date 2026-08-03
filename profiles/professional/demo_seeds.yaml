@@ -1,0 +1,32 @@
+# Optional: override the default user/wish counts
+# user_count: 50
+# wish_count: 100
+actions:
+  - 'I wish to find someone to collaborate on'
+  - 'I wish to connect with professionals in'
+  - 'I wish to have a conversation about'
+  - "I'm looking to mentor someone in"
+  - 'I wish to find a co-founder for'
+  - 'I wish to explore career opportunities in'
+  - 'I wish to discuss investment trends in'
+  - "I'm seeking introductions in"
+subjects:
+  - 'AI and machine learning applications'
+  - 'sustainable product design'
+  - 'scaling engineering teams'
+  - 'go-to-market strategy'
+  - 'venture capital fundraising'
+  - 'DevOps and platform engineering'
+  - 'UX research and accessibility'
+  - 'the future of remote work'
+  - 'open-source community building'
+  - 'B2B SaaS growth strategies'
+contexts:
+  - 'at this conference.'
+  - 'over coffee between sessions.'
+  - 'during the networking hour.'
+  - 'before the keynote tomorrow.'
+  - 'in a focused, professional setting.'
+  - 'and schedule a follow-up meeting.'
+  - 'to explore mutual opportunities.'
+  - 'with an open mind and clear goals.'

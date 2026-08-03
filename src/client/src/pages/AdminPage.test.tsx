@@ -53,7 +53,10 @@ describe('AdminPage', () => {
     },
     {
       test: (url: string) => url.endsWith('/api/admin/config'),
-      handler: () => ({ ok: true, json: async () => ({ isProduction: false }) }),
+      handler: () => ({
+        ok: true,
+        json: async () => ({ isProduction: false, hasDemoSeeds: true }),
+      }),
     },
     {
       test: (url: string) => url.endsWith('/api/config'),
@@ -263,7 +266,7 @@ describe('AdminPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /Users/i }));
     });
 
-    await waitFor(() => expect(screen.getByText('Demo Seeder (Dev Only)')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Demo Seeder')).toBeInTheDocument());
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Run Seeder/i }));
@@ -318,7 +321,10 @@ describe('AdminPage', () => {
         return Promise.resolve({ ok: true, json: async () => [] });
       }
       if (url.endsWith('/api/admin/config')) {
-        return Promise.resolve({ ok: true, json: async () => ({ isProduction: false }) });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ isProduction: false, hasDemoSeeds: true }),
+        });
       }
       if (url.includes('/api/config')) {
         return Promise.resolve({ ok: true, json: async () => ({ realtimeProvider: 'socketio' }) });

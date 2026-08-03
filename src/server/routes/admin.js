@@ -352,7 +352,11 @@ router.get('/logs', requireAdmin, async (req, res) => {
 });
 
 router.get('/config', requireAdmin, async (req, res) => {
-  res.json({ isProduction: process.env.NODE_ENV === 'production' });
+  const config = getEventProfile();
+  res.json({
+    isProduction: process.env.NODE_ENV === 'production',
+    hasDemoSeeds: config.demo_seeds != null,
+  });
 });
 
 export default router;

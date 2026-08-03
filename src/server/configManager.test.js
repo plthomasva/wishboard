@@ -99,4 +99,59 @@ describe('configManager', () => {
       expect.any(String)
     );
   });
+
+  it('loads rules from separate rules.yaml file', () => {
+    // The default lifestyle profile now has a split rules.yaml
+    const config = getEventProfile();
+    expect(config.rules.length).toBeGreaterThan(0);
+    expect(config.rules[0]).toHaveProperty('rule_type');
+  });
+
+  it('loads stickers from separate stickers.yaml file', () => {
+    const config = getEventProfile();
+    expect(config.stickers).toBeDefined();
+    expect(typeof config.stickers).toBe('object');
+  });
+
+  it('loads demo_seeds from separate demo_seeds.yaml file', () => {
+    const config = getEventProfile();
+    expect(config.demo_seeds).not.toBeNull();
+    expect(Array.isArray(config.demo_seeds.actions)).toBe(true);
+    expect(Array.isArray(config.demo_seeds.subjects)).toBe(true);
+    expect(Array.isArray(config.demo_seeds.contexts)).toBe(true);
+  });
+
+  it('sets demo_seeds to null when demo_seeds.yaml does not exist', () => {
+    vi.spyOn(fs, 'readFileSync').mockReturnValue('profile: minimal\n');
+    // existsSync returns false for everything except the main profile.yaml path
+    vi.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+    const config = getEventProfile();
+    expect(config.demo_seeds).toBeNull();
+  });
+
+  it('prefers split rules.yaml over inline rules in profile.yaml', async () => {
+    const logger = (await import('./logger.js')).default;
+    const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+
+    const profileDir = path.resolve(process.cwd(), 'profiles', 'lifestyle');
+
+    const originalExistsSync = fs.existsSync;
+    vi.spyOn(fs, 'existsSync').mockImplementation((p) => originalExistsSync(p));
+
+    const originalReadFileSync = fs.readFileSync;
+    vi.spyOn(fs, 'readFileSync').mockImplementation((p, enc) => {
+      if (p === path.join(profileDir, 'profile.yaml')) {
+        // Simulate a monolithic file that also has inline rules
+        return 'profile: lifestyle\ncontact_methods:\n  - Phone\nrules:\n  - id: inline_rule\n    rule_type: expansion\n    trigger_attribute: test\n    trigger_value: test\n    target_attribute: test\n    target_value: test\n';
+      }
+      return originalReadFileSync(p, enc);
+    });
+
+    const config = getEventProfile();
+    // The split rules.yaml should win — look for its first rule, not the inline one
+    expect(config.rules.some((r) => r.id === 'inline_rule')).toBe(false);
+    expect(config.rules.length).toBeGreaterThan(0);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('rules.yaml takes precedence'));
+  });
 });

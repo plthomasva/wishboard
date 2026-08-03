@@ -40,6 +40,7 @@ export default function UserAccountsSection({
   } | null>(null);
 
   const [isProduction, setIsProduction] = useState<boolean>(true);
+  const [hasDemoSeeds, setHasDemoSeeds] = useState<boolean>(false);
 
   const loadUsers = async () => {
     setError(null);
@@ -58,6 +59,7 @@ export default function UserAccountsSection({
     if (response.ok) {
       const config = await response.json();
       setIsProduction(config.isProduction);
+      setHasDemoSeeds(config.hasDemoSeeds ?? false);
     } else {
       handledUnauthorized(response);
     }
@@ -206,7 +208,7 @@ export default function UserAccountsSection({
         )}
       </section>
 
-      {!isProduction && (
+      {!isProduction && hasDemoSeeds && (
         <section
           style={{
             marginTop: '48px',
@@ -215,7 +217,7 @@ export default function UserAccountsSection({
             borderRadius: '8px',
           }}
         >
-          <h2 style={{ color: '#ff4444' }}>Demo Seeder (Dev Only)</h2>
+          <h2 style={{ color: '#ff4444' }}>Demo Seeder</h2>
           <p>
             Generate simulated users and wishes for testing.{' '}
             <strong>Warning: This clears existing demo data.</strong>
@@ -228,6 +230,27 @@ export default function UserAccountsSection({
           >
             Run Seeder
           </button>
+        </section>
+      )}
+
+      {!isProduction && !hasDemoSeeds && (
+        <section
+          style={{
+            marginTop: '48px',
+            padding: '16px',
+            border: '1px dashed #888',
+            borderRadius: '8px',
+          }}
+        >
+          <h2>Demo Seeder</h2>
+          <p>
+            This profile doesn&apos;t include demo seed data. To add demo wishes, create a{' '}
+            <code>demo_seeds.yaml</code> file in your profile directory with <code>actions</code>,{' '}
+            <code>subjects</code>, and <code>contexts</code> arrays.
+          </p>
+          <p style={{ marginTop: '8px', fontSize: '0.9em', color: '#888' }}>
+            See <code>docs/EVENT_PROFILES.md</code> for details on the demo seed format.
+          </p>
         </section>
       )}
 

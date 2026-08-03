@@ -1,0 +1,11 @@
+rules:
+  - rule_type: cross_match
+    trigger_attribute: goal
+    trigger_value: Hiring
+    target_attribute: goal
+    target_value: Job Seeking
+  - rule_type: cross_match
+    trigger_attribute: goal
+    trigger_value: Mentoring
+    target_attribute: goal
+    target_value: Seeking Mentor

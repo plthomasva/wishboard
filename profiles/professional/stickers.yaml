@@ -1,0 +1,4 @@
+stickers:
+  role:
+    presenter: { type: image, src: '/assets/presenter.png' }
+    attendee: { type: image, src: '/assets/attendee.png' }

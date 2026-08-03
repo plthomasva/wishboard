@@ -1,0 +1,32 @@
+# Optional: override the default user/wish counts
+# user_count: 50
+# wish_count: 100
+actions:
+  - 'I wish to find someone to explore'
+  - 'I wish to connect with people who share my love for'
+  - 'I wish for a deep, meaningful conversation about'
+  - 'I wish to find a partner for'
+  - "I'm looking for a community interested in"
+  - 'I wish someone would teach me more about'
+  - 'I wish to meet people who enjoy'
+  - 'I wish for a dedicated buddy for'
+subjects:
+  - 'local hiking trails'
+  - 'indie tabletop games'
+  - 'classic science fiction and fantasy novels'
+  - 'swing dancing'
+  - 'sustainable energy and electric vehicles'
+  - 'cryptography and logic puzzles'
+  - 'perfecting the art of brewing coffee'
+  - 'spontaneous weekend road trips'
+  - 'authentic cooking and culinary experiments'
+  - 'navigating recent life transitions'
+contexts:
+  - 'over the weekend.'
+  - 'in a safe, communicative environment.'
+  - 'over a cup of perfectly brewed coffee.'
+  - 'while hanging out with our cats.'
+  - 'during a quiet evening at home.'
+  - 'with good company and a relaxed vibe.'
+  - 'and see where the adventure takes us.'
+  - 'without any pressure or expectations.'
