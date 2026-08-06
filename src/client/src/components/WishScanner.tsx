@@ -136,6 +136,26 @@ function renderOverlay(
   outPtsMat.delete();
 }
 
+async function getCameraStream(): Promise<MediaStream> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error('Camera API not available. Make sure you are using HTTPS or localhost.');
+  }
+  return navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+  });
+}
+
+function handleCameraError(
+  err: unknown,
+  setIsProcessing: (val: boolean) => void,
+  setProcessingStatus: (msg: string) => void
+) {
+  console.error('Error accessing camera', err);
+  setIsProcessing(true);
+  const message = err instanceof Error ? err.message : 'Permissions denied or insecure context';
+  setProcessingStatus(`Camera Error: ${message}`);
+}
+
 export default function WishScanner({
   onCapture,
   onCancel,
@@ -178,23 +198,14 @@ export default function WishScanner({
     let activeStream: MediaStream | null = null;
     async function setupCamera() {
       try {
-        if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error('Camera API not available. Make sure you are using HTTPS or localhost.');
-        }
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-        });
+        const mediaStream = await getCameraStream();
         activeStream = mediaStream;
         setStream(mediaStream);
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
         }
       } catch (err: unknown) {
-        console.error('Error accessing camera', err);
-        setIsProcessing(true);
-        const message =
-          err instanceof Error ? err.message : 'Permissions denied or insecure context';
-        setProcessingStatus(`Camera Error: ${message}`);
+        handleCameraError(err, setIsProcessing, setProcessingStatus);
       }
     }
     setupCamera();
