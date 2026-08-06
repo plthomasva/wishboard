@@ -279,7 +279,6 @@ interface Wish {
   unread_wishmail_count?: number;
 }
 
-
 function UnauthenticatedAccountPage() {
   const { login, register } = useAuth();
   const { excludedIds, unexcludeWish } = useExcludedWishes();
@@ -318,9 +317,7 @@ function UnauthenticatedAccountPage() {
       return;
     }
     try {
-      const response = await fetch(
-        `/api/wishes?ids=${excludedIds.join(',')}&ignore_attributes=1`
-      );
+      const response = await fetch(`/api/wishes?ids=${excludedIds.join(',')}&ignore_attributes=1`);
       if (response.ok) {
         const data = await response.json();
         setHiddenWishes(data);
@@ -430,7 +427,6 @@ function UnauthenticatedAccountPage() {
     </>
   );
 }
-
 
 function AuthenticatedAccountPage() {
   const { user, token, logout, refreshUser } = useAuth();
@@ -950,7 +946,6 @@ function AuthenticatedAccountPage() {
     </section>
   );
 }
-
 
 export default function AccountPage() {
   const { user } = useAuth();
