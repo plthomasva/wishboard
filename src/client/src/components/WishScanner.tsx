@@ -23,6 +23,30 @@ interface DrawConfig {
   h: number;
 }
 
+function renderOverlay(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OpenCV WASM instance for perspective transform matrices
+  cv: any,
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  video: HTMLVideoElement,
+  pts: Point[],
+  draw: DrawConfig,
+  stickerZoneHeightPercentage: number
+) {
+  const mapPt = (p: Point) => ({
+    x: draw.x + (p.x / video.videoWidth) * draw.w,
+    y: draw.y + (p.y / video.videoHeight) * draw.h,
+  });
+
+  const p0 = mapPt(pts[0]);
+  const p1 = mapPt(pts[1]);
+  const p2 = mapPt(pts[2]);
+  const p3 = mapPt(pts[3]);
+
+  drawDocumentOutline(ctx, canvas, p0, p1, p2, p3);
+  drawStickerZone(cv, ctx, p0, p1, p2, p3, stickerZoneHeightPercentage);
+}
+
 function drawDocumentOutline(
   ctx: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement,
@@ -133,30 +157,6 @@ function drawStickerZone(
   transform.delete();
   zonePtsMat.delete();
   outPtsMat.delete();
-}
-
-function renderOverlay(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- OpenCV WASM instance for perspective transform matrices
-  cv: any,
-  ctx: CanvasRenderingContext2D,
-  canvas: HTMLCanvasElement,
-  video: HTMLVideoElement,
-  pts: Point[],
-  draw: DrawConfig,
-  stickerZoneHeightPercentage: number
-) {
-  const mapPt = (p: Point) => ({
-    x: draw.x + (p.x / video.videoWidth) * draw.w,
-    y: draw.y + (p.y / video.videoHeight) * draw.h,
-  });
-
-  const p0 = mapPt(pts[0]);
-  const p1 = mapPt(pts[1]);
-  const p2 = mapPt(pts[2]);
-  const p3 = mapPt(pts[3]);
-
-  drawDocumentOutline(ctx, canvas, p0, p1, p2, p3);
-  drawStickerZone(cv, ctx, p0, p1, p2, p3, stickerZoneHeightPercentage);
 }
 
 export default function WishScanner({
