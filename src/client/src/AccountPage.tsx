@@ -53,10 +53,7 @@ function useUsernameExistence(username: string) {
   return { existingUsername, mode, setMode };
 }
 
-function ClaimWishForm({
-  token,
-  loadWishes,
-}: Readonly<{ token: string | null; loadWishes: () => void }>) {
+function useClaimWish(token: string | null, loadWishes: () => void) {
   const [claimId, setClaimId] = useState('');
   const [claimSecret, setClaimSecret] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -91,6 +88,16 @@ function ClaimWishForm({
     setClaimSecret('');
     loadWishes();
   };
+
+  return { claimId, setClaimId, claimSecret, setClaimSecret, message, error, claimWish };
+}
+
+function ClaimWishForm({
+  token,
+  loadWishes,
+}: Readonly<{ token: string | null; loadWishes: () => void }>) {
+  const { claimId, setClaimId, claimSecret, setClaimSecret, message, error, claimWish } =
+    useClaimWish(token, loadWishes);
 
   return (
     <div className="profile-edit">
