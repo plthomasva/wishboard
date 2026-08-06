@@ -137,7 +137,8 @@ export function deployKiosk(options) {
     // Always clean up the remote temp dir.
     if (!dryRun && remoteTemp && remoteTemp !== '/' && remoteTemp !== '/tmp') {
       logStep('Cleaning up remote temporary directory...');
-      execCommand('ssh', [target, `rm -rf ${remoteTemp}`], { stdio: 'pipe' });
+      const safeTemp = "'" + remoteTemp.replace(/'/g, "'\\''") + "'";
+      execCommand('ssh', [target, `rm -rf -- ${safeTemp}`], { stdio: 'pipe' });
     }
   }
 }
