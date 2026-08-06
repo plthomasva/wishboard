@@ -1,0 +1,23 @@
+name: Apply Commit Overrides
+
+on:
+  push:
+    branches:
+      - apply-overrides-branch
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  apply-overrides:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Apply Overrides
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_PAT }}
+        run: |
+          node scripts/apply_overrides_to_prs.js
