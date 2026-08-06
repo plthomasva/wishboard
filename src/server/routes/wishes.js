@@ -266,7 +266,9 @@ function parseQueryIds(raw) {
  */
 function applyUserExclusionFilter(sql, args, searcher) {
   return {
-    sql: sql + ' AND NOT EXISTS (SELECT 1 FROM wish_exclusions x WHERE x.wish_id = w.id AND x.user_id = ?)',
+    sql:
+      sql +
+      ' AND NOT EXISTS (SELECT 1 FROM wish_exclusions x WHERE x.wish_id = w.id AND x.user_id = ?)',
     args: [...args, searcher.id],
   };
 }
