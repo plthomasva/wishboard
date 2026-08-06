@@ -276,9 +276,8 @@ function applyExclusionFilter({ sql, args, searcher, excludeQuery }) {
   } else {
     const excludeIds = parseQueryIds(excludeQuery);
     if (excludeIds.length > 0) {
-      const placeholders = excludeIds.map(() => '?').join(', ');
-      updatedSql += ` AND w.id NOT IN (${placeholders})`;
-      updatedArgs.push(...excludeIds);
+      updatedSql += ` AND w.id NOT IN (SELECT value FROM json_each(?))`;
+      updatedArgs.push(JSON.stringify(excludeIds));
     }
   }
   return { sql: updatedSql, args: updatedArgs };
@@ -340,9 +339,8 @@ router.get('/', async (req, res) => {
   if (req.query.ids) {
     const filterIds = parseQueryIds(req.query.ids);
     if (filterIds.length > 0) {
-      const placeholders = filterIds.map(() => '?').join(', ');
-      sql += ` AND w.id IN (${placeholders})`;
-      args.push(...filterIds);
+      sql += ` AND w.id IN (SELECT value FROM json_each(?))`;
+      args.push(JSON.stringify(filterIds));
     }
   }
 
