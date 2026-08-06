@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthProvider, useAuth, AuthUser } from './AuthContext';
 import { EventProfileProvider } from './EventProfileContext';
 import HomePage from './pages/HomePage';
@@ -96,7 +96,7 @@ const removeKioskParams = () => {
   }
 };
 
-function AppHeader({
+const AppHeader = React.memo(function AppHeader({
   page,
   navigate,
   user,
@@ -172,9 +172,9 @@ function AppHeader({
       </div>
     </header>
   );
-}
+});
 
-function AppMain({
+const AppMain = React.memo(function AppMain({
   isKiosk,
   page,
   setIsKiosk,
@@ -208,9 +208,9 @@ function AppMain({
       {page === 'poster' && <PosterPage />}
     </main>
   );
-}
+});
 
-function MobileBottomBar({
+const MobileBottomBar = React.memo(function MobileBottomBar({
   page,
   navigate,
   isMobileMenuOpen,
@@ -255,9 +255,9 @@ function MobileBottomBar({
       </button>
     </nav>
   );
-}
+});
 
-function MobileHamburgerMenu({
+const MobileHamburgerMenu = React.memo(function MobileHamburgerMenu({
   setIsMobileMenuOpen,
   navigate,
   user,
@@ -334,9 +334,9 @@ function MobileHamburgerMenu({
       </div>
     </div>
   );
-}
+});
 
-function ExitKioskModal({
+const ExitKioskModal = React.memo(function ExitKioskModal({
   handleExitKiosk,
   kioskError,
   kioskUsername,
@@ -404,7 +404,7 @@ function ExitKioskModal({
       </div>
     </div>
   );
-}
+});
 
 function AppContent() {
   const [page, setPage] = useState<PageId>(getHashPage);
