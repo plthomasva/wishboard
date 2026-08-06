@@ -64,7 +64,6 @@ describe('WiFiQrCode', () => {
   });
 
   it('prefers the server-configured public domain over the build-time env (https)', () => {
-    // The #197 fix: the runtime domain wins over anything baked in at build time.
     setConfig({ domain: 'demo.wishboards.app' });
     (import.meta.env as Record<string, unknown>).VITE_WISHBOARD_DOMAIN = 'stale.example.com';
 
