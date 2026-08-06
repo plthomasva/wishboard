@@ -8,7 +8,7 @@ import React, {
   ReactNode,
 } from 'react';
 
-type AuthUser = {
+export type AuthUser = {
   id: string;
   username: string;
   role: string;
