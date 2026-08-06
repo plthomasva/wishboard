@@ -548,9 +548,7 @@ interface LocalMetricsDashboardProps {
   authHeader: Record<string, string>;
 }
 
-export default function LocalMetricsDashboard({
-  authHeader,
-}: Readonly<LocalMetricsDashboardProps>) {
+function useLocalMetrics(authHeader: Record<string, string>) {
   const [data, setData] = useState<LocalMetricsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -590,55 +588,94 @@ export default function LocalMetricsDashboard({
     };
   }, [autoRefresh, fetchMetrics]);
 
+  return {
+    data,
+    loading,
+    error,
+    autoRefresh,
+    setAutoRefresh,
+    fetchMetrics,
+  };
+}
+
+interface MetricsToolbarProps {
+  loading: boolean;
+  autoRefresh: boolean;
+  setAutoRefresh: (val: boolean) => void;
+  fetchMetrics: () => void;
+  generatedAt?: string;
+}
+
+const MetricsToolbar = ({
+  loading,
+  autoRefresh,
+  setAutoRefresh,
+  fetchMetrics,
+  generatedAt,
+}: MetricsToolbarProps) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      marginBottom: '20px',
+      flexWrap: 'wrap',
+    }}
+  >
+    <button
+      type="button"
+      className="secondary-button"
+      onClick={fetchMetrics}
+      disabled={loading}
+    >
+      {loading ? '⟳ Refreshing…' : '⟳ Refresh Now'}
+    </button>
+    <label
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        fontSize: '13px',
+        color: '#9ca3af',
+        cursor: 'pointer',
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={autoRefresh}
+        onChange={(e) => setAutoRefresh(e.target.checked)}
+      />
+      <span>Auto-refresh every 10s</span>
+    </label>
+    {generatedAt && (
+      <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#6b7280' }}>
+        Last updated:{' '}
+        {new Date(generatedAt).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        })}
+      </span>
+    )}
+  </div>
+);
+
+export default function LocalMetricsDashboard({
+  authHeader,
+}: Readonly<LocalMetricsDashboardProps>) {
+  const { data, loading, error, autoRefresh, setAutoRefresh, fetchMetrics } =
+    useLocalMetrics(authHeader);
+
   return (
     <div style={{ color: '#e5e7eb' }}>
-      {/* Toolbar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={fetchMetrics}
-          disabled={loading}
-        >
-          {loading ? '⟳ Refreshing…' : '⟳ Refresh Now'}
-        </button>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '13px',
-            color: '#9ca3af',
-            cursor: 'pointer',
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={autoRefresh}
-            onChange={(e) => setAutoRefresh(e.target.checked)}
-          />
-          <span>Auto-refresh every 10s</span>
-        </label>
-        {data?.generatedAt && (
-          <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#6b7280' }}>
-            Last updated:{' '}
-            {new Date(data.generatedAt).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: false,
-            })}
-          </span>
-        )}
-      </div>
+      <MetricsToolbar
+        loading={loading}
+        autoRefresh={autoRefresh}
+        setAutoRefresh={setAutoRefresh}
+        fetchMetrics={fetchMetrics}
+        generatedAt={data?.generatedAt}
+      />
 
       {error && (
         <div
