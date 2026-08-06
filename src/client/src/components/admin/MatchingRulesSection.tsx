@@ -25,7 +25,6 @@ interface MatchingRulesSectionProps {
   refreshCounter: number;
 }
 
-
 interface MatchingRulesTableProps {
   filteredRules: Rule[];
   ruleSort: { key: string; dir: 'asc' | 'desc' };
@@ -140,7 +139,6 @@ function MatchingRulesTable({
     </div>
   );
 }
-
 
 interface MatchingRuleFormProps {
   editingRuleId: string | null;
