@@ -135,7 +135,7 @@ describe('db initialization', () => {
       rows: [],
       rowsAffected: 1,
     });
-    mockClient.execute = mockExecute;
+    mockClient.batch = vi.fn().mockResolvedValue([]); mockClient.execute = mockExecute;
 
     const mockLocalExecute = vi.fn().mockResolvedValue({
       rows: [
@@ -173,7 +173,10 @@ describe('db initialization', () => {
     );
 
     expect(localCalls.some((c) => c.includes('SELECT * FROM'))).toBe(true);
-    expect(remoteCalls.some((c) => c.includes('INSERT OR IGNORE INTO'))).toBe(true);
+    const remoteBatchCalls = mockClient.batch.mock.calls;
+    expect(remoteBatchCalls.length).toBeGreaterThan(0);
+    const firstBatchStmt = remoteBatchCalls[0][0][0]; // first call, first arg (array), first element
+    expect(firstBatchStmt.sql).toContain('INSERT OR IGNORE INTO');
     expect(writeSpy).toHaveBeenCalled();
 
     // Restore with delete-if-undefined: `process.env.X = undefined` coerces to
