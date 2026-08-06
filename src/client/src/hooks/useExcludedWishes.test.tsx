@@ -238,7 +238,10 @@ describe('useExcludedWishes', () => {
 
     expect(result.current.loading).toBe(false);
     expect(result.current.excludedIds).toEqual([]);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load wish exclusions from server:', expect.any(Error));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to load wish exclusions from server:',
+      expect.any(Error)
+    );
 
     unmount(); // Unmount triggers the `if (active) setLoading(false);` case where active is false
 
@@ -267,7 +270,10 @@ describe('useExcludedWishes', () => {
     });
 
     expect(result.current.excludedIds).toEqual([]);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to exclude wish on server:', expect.any(Error));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to exclude wish on server:',
+      expect.any(Error)
+    );
 
     consoleErrorSpy.mockRestore();
   });
@@ -294,7 +300,10 @@ describe('useExcludedWishes', () => {
     });
 
     expect(result.current.excludedIds).toEqual(['w1']);
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to remove wish exclusion on server:', expect.any(Error));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to remove wish exclusion on server:',
+      expect.any(Error)
+    );
 
     consoleErrorSpy.mockRestore();
   });
