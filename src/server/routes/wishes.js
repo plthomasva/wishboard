@@ -276,7 +276,7 @@ function applyExclusionFilter({ sql, args, searcher, excludeQuery }) {
   } else {
     const excludeIds = parseQueryIds(excludeQuery);
     if (excludeIds.length > 0) {
-      updatedSql += ' AND w.id NOT IN (SELECT value FROM json_each(?))';
+      updatedSql += ` AND w.id NOT IN (SELECT value FROM json_each(?))`;
       updatedArgs.push(JSON.stringify(excludeIds));
     }
   }
@@ -339,7 +339,7 @@ router.get('/', async (req, res) => {
   if (req.query.ids) {
     const filterIds = parseQueryIds(req.query.ids);
     if (filterIds.length > 0) {
-      sql += ' AND w.id IN (SELECT value FROM json_each(?))';
+      sql += ` AND w.id IN (SELECT value FROM json_each(?))`;
       args.push(JSON.stringify(filterIds));
     }
   }
