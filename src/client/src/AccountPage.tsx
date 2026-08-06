@@ -153,8 +153,8 @@ function IdentityAttributesFields({
       <div className="label-with-info" style={{ marginTop: '12px', marginBottom: '8px' }}>
         <strong style={{ display: 'block' }}>Identity Attributes</strong>
         <InfoToggle>
-          These attributes are automatically applied to any wishes you create, and are used by default
-          when you search.
+          These attributes are automatically applied to any wishes you create, and are used by
+          default when you search.
         </InfoToggle>
       </div>
       {categories.map((cat) => {
