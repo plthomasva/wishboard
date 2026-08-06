@@ -258,6 +258,40 @@ function parseQueryIds(raw) {
 }
 
 /**
+ * Append user-based exclusion filter clauses to the SQL query.
+ * @param {string} sql
+ * @param {any[]} args
+ * @param {object} searcher
+ * @returns {{ sql: string; args: any[] }}
+ */
+function applyUserExclusionFilter(sql, args, searcher) {
+  return {
+    sql: sql + ' AND NOT EXISTS (SELECT 1 FROM wish_exclusions x WHERE x.wish_id = w.id AND x.user_id = ?)',
+    args: [...args, searcher.id],
+  };
+}
+
+/**
+ * Append query-based exclusion filter clauses to the SQL query.
+ * @param {string} sql
+ * @param {any[]} args
+ * @param {string | string[] | undefined} excludeQuery
+ * @returns {{ sql: string; args: any[] }}
+ */
+function applyQueryExclusionFilter(sql, args, excludeQuery) {
+  const excludeIds = parseQueryIds(excludeQuery);
+  if (excludeIds.length === 0) {
+    return { sql, args };
+  }
+
+  const placeholders = excludeIds.map(() => '?').join(', ');
+  return {
+    sql: sql + ` AND w.id NOT IN (${placeholders})`,
+    args: [...args, ...excludeIds],
+  };
+}
+
+/**
  * Append exclusion filter clauses to the SQL query.
  * @param {object} params
  * @param {string} params.sql
@@ -267,21 +301,10 @@ function parseQueryIds(raw) {
  * @returns {{ sql: string; args: any[] }}
  */
 function applyExclusionFilter({ sql, args, searcher, excludeQuery }) {
-  let updatedSql = sql;
-  const updatedArgs = [...args];
   if (searcher) {
-    updatedSql +=
-      ' AND NOT EXISTS (SELECT 1 FROM wish_exclusions x WHERE x.wish_id = w.id AND x.user_id = ?)';
-    updatedArgs.push(searcher.id);
-  } else {
-    const excludeIds = parseQueryIds(excludeQuery);
-    if (excludeIds.length > 0) {
-      const placeholders = excludeIds.map(() => '?').join(', ');
-      updatedSql += ` AND w.id NOT IN (${placeholders})`;
-      updatedArgs.push(...excludeIds);
-    }
+    return applyUserExclusionFilter(sql, args, searcher);
   }
-  return { sql: updatedSql, args: updatedArgs };
+  return applyQueryExclusionFilter(sql, args, excludeQuery);
 }
 
 router.get('/', async (req, res) => {
