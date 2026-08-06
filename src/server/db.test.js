@@ -135,7 +135,8 @@ describe('db initialization', () => {
       rows: [],
       rowsAffected: 1,
     });
-    mockClient.batch = vi.fn().mockResolvedValue([]); mockClient.execute = mockExecute;
+    mockClient.batch = vi.fn().mockResolvedValue([]);
+    mockClient.execute = mockExecute;
 
     const mockLocalExecute = vi.fn().mockResolvedValue({
       rows: [
