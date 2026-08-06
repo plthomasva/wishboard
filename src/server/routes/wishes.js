@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,7 +19,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = Date.now() + '-' + crypto.randomUUID();
     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   },
 });
@@ -365,9 +366,8 @@ router.get('/', async (req, res) => {
   if (req.query.ids) {
     const filterIds = parseQueryIds(req.query.ids);
     if (filterIds.length > 0) {
-      const placeholders = filterIds.map(() => '?').join(', ');
-      sql += ` AND w.id IN (${placeholders})`;
-      args.push(...filterIds);
+      sql += ` AND w.id IN (SELECT value FROM json_each(?))`;
+      args.push(JSON.stringify(filterIds));
     }
   }
 
