@@ -168,7 +168,7 @@ describe('db initialization', () => {
     const localCalls = mockLocalExecute.mock.calls.map(([arg]) =>
       typeof arg === 'string' ? arg : arg.sql
     );
-    const remoteCalls = mockExecute.mock.calls.map(([arg]) =>
+    const _remoteCalls = mockExecute.mock.calls.map(([arg]) =>
       typeof arg === 'string' ? arg : arg.sql
     );
 
