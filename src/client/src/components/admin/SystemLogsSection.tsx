@@ -13,7 +13,7 @@ export interface ParsedLogEntry {
 }
 
 // eslint-disable-next-line no-control-regex -- intentionally matches ANSI escape sequences
-const ansiRegex = /\u001b?\[[0-9;]*m/g; // NOSONAR
+const ansiRegex = /\u001b?\[[0-9;]*m/g;
 const winstonRegex = /^(?:\[(WS)\]\s*)?(?:\[([0-9T:.\s-]+)\]\s*)?(\w+):\s*(.*)$/i;
 const cloudwatchRegex =
   /^(?:\[(WS)\]\s*)?(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}\S*)\s+(\S+)\s+(INFO|WARN|WARNING|ERROR|ERR|DEBUG|TRACE)\b\s*(.*)$/i;
