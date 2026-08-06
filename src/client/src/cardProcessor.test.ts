@@ -188,7 +188,7 @@ describe('fallbackTextContour', () => {
     // Original w/h ratio is (0.5+0.1) / (0.1+0.1) = 0.6 / 0.2 = 3 which is > 5/3
     // So h is calculated as w * (3/5)
     const expectedW = maxX - minX;
-    const expectedH = expectedW * (3/5);
+    const expectedH = expectedW * (3 / 5);
 
     expect(result![0].x).toBeCloseTo(cx - expectedW / 2);
     expect(result![0].y).toBeCloseTo(cy - expectedH / 2);
@@ -227,7 +227,7 @@ describe('fallbackTextContour', () => {
     // Original w/h ratio is (0.2+0.1) / (0.4+0.1) = 0.3 / 0.5 = 0.6 which is < 5/3
     // So w is calculated as h * (5/3)
     const expectedH = maxY - minY;
-    const expectedW = expectedH * (5/3);
+    const expectedW = expectedH * (5 / 3);
 
     expect(result![0].x).toBeCloseTo(cx - expectedW / 2);
     expect(result![0].y).toBeCloseTo(cy - expectedH / 2);
