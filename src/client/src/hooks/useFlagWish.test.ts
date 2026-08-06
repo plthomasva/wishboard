@@ -28,7 +28,9 @@ describe('useFlagWish', () => {
       await result.current('wish-1');
     });
 
-    expect(confirmSpy).toHaveBeenCalledWith('Are you sure you want to flag this wish as inappropriate?');
+    expect(confirmSpy).toHaveBeenCalledWith(
+      'Are you sure you want to flag this wish as inappropriate?'
+    );
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
   });
@@ -45,7 +47,9 @@ describe('useFlagWish', () => {
       await result.current('wish-2');
     });
 
-    expect(confirmSpy).toHaveBeenCalledWith('Are you sure you want to flag this wish as inappropriate?');
+    expect(confirmSpy).toHaveBeenCalledWith(
+      'Are you sure you want to flag this wish as inappropriate?'
+    );
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/wishes/wish-2/flag', {
       method: 'POST',
     });
