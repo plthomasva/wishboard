@@ -622,12 +622,7 @@ const MetricsToolbar = ({
       flexWrap: 'wrap',
     }}
   >
-    <button
-      type="button"
-      className="secondary-button"
-      onClick={fetchMetrics}
-      disabled={loading}
-    >
+    <button type="button" className="secondary-button" onClick={fetchMetrics} disabled={loading}>
       {loading ? '⟳ Refreshing…' : '⟳ Refresh Now'}
     </button>
     <label
