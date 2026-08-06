@@ -428,19 +428,28 @@ router.post('/exclusions/import', requireAuth, async (req, res) => {
     .slice(0, 200);
 
   const now = new Date().toISOString();
-  for (const id of cleanIds) {
+  if (cleanIds.length > 0) {
     try {
-      // Check if wish exists
-      const wishExists = await db.prepare('SELECT 1 FROM wishes WHERE id = ?').get(id);
-      if (wishExists) {
+      const placeholders = cleanIds.map(() => '?').join(', ');
+      const existingWishes = await db
+        .prepare(`SELECT id FROM wishes WHERE id IN (${placeholders})`)
+        .all(...cleanIds);
+      const existingIds = existingWishes.map((w) => w.id);
+
+      if (existingIds.length > 0) {
+        const insertPlaceholders = existingIds.map(() => '(?, ?, ?)').join(', ');
+        const args = [];
+        for (const id of existingIds) {
+          args.push(userId, id, now);
+        }
         await db
           .prepare(
-            'INSERT OR IGNORE INTO wish_exclusions (user_id, wish_id, created_at) VALUES (?, ?, ?)'
+            `INSERT OR IGNORE INTO wish_exclusions (user_id, wish_id, created_at) VALUES ${insertPlaceholders}`
           )
-          .run(userId, id, now);
+          .run(...args);
       }
     } catch (err) {
-      logger.warn('Failed to import exclusion', { user_id: userId, wish_id: id, err });
+      logger.warn('Failed to import exclusions in bulk', { user_id: userId, err });
     }
   }
 
