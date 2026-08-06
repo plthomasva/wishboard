@@ -33,12 +33,12 @@ describe('conflicts utils', () => {
 
     it('should return conflicts when the fetch response is ok', async () => {
       const mockConflicts: Conflict[] = [
-        { message: 'conflict message', target_attribute: 'attr1' }
+        { message: 'conflict message', target_attribute: 'attr1' },
       ];
 
       fetchSpy.mockResolvedValue({
         ok: true,
-        json: async () => ({ conflicts: mockConflicts })
+        json: async () => ({ conflicts: mockConflicts }),
       } as Response);
 
       const result = await fetchConflicts({ attr1: ['val1'] });
@@ -54,7 +54,7 @@ describe('conflicts utils', () => {
     it('should return an empty array if the response is ok but missing conflicts array', async () => {
       fetchSpy.mockResolvedValue({
         ok: true,
-        json: async () => ({})
+        json: async () => ({}),
       } as Response);
 
       const result = await fetchConflicts({ attr1: ['val1'] });
