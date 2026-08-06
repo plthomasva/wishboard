@@ -11,61 +11,8 @@ export interface WishboardSocket {
   emit(event: string, data?: Record<string, unknown>): void;
 }
 
-class RawWebSocketWrapper implements WishboardSocket {
-  private listeners: Record<string, Listener[]> = {};
-  private ws: WebSocket | null = null;
-  private pending: string[] = [];
-  public connected: boolean = false;
-
-  constructor() {
-    this.connect();
-  }
-
-  private connect() {
-    const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Fallback to routing over CloudFront /socket.io path or configured URL
-    const wsUrl =
-      (import.meta.env.VITE_WS_URL as string) ||
-      // Trailing slash matters: CloudFront's `/socket.io/*` behavior does not
-      // match the bare `/socket.io`, which would fall through to the S3 origin.
-      `${protocol}//${globalThis.location.host}/socket.io/`;
-
-    try {
-      this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
-        this.connected = true;
-        // Flush anything queued before the socket opened (e.g. an early subscribe).
-        this.pending.forEach((m) => this.ws?.send(m));
-        this.pending = [];
-        this.trigger('connect');
-      };
-
-      this.ws.onclose = () => {
-        this.connected = false;
-        this.trigger('disconnect');
-        setTimeout(() => this.connect(), 3000); // Reconnect interval
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.event) {
-            this.trigger(payload.event, payload.data);
-          }
-        } catch (err) {
-          console.error('Error parsing raw WebSocket message:', err);
-        }
-      };
-
-      this.ws.onerror = (err) => {
-        console.error('Raw WebSocket error:', err);
-      };
-    } catch (err) {
-      console.error('Failed to initialize raw WebSocket connection:', err);
-      setTimeout(() => this.connect(), 3000);
-    }
-  }
+class EventEmitter {
+  protected listeners: Record<string, Listener[]> = {};
 
   public on(event: string, cb: Listener) {
     this.listeners[event] ??= [];
@@ -75,6 +22,76 @@ class RawWebSocketWrapper implements WishboardSocket {
   public off(event: string, cb: Listener) {
     if (!this.listeners[event]) return;
     this.listeners[event] = this.listeners[event].filter((l) => l !== cb);
+  }
+
+  protected trigger(event: string, data?: unknown) {
+    if (!this.listeners[event]) return;
+    this.listeners[event].forEach((cb) => cb(data));
+  }
+}
+
+class RawWebSocketWrapper extends EventEmitter implements WishboardSocket {
+  private ws: WebSocket | null = null;
+  private pending: string[] = [];
+  public connected: boolean = false;
+
+  constructor() {
+    super();
+    this.connect();
+  }
+
+  private getWsUrl(): string {
+    const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    // Fallback to routing over CloudFront /socket.io path or configured URL
+    return (
+      (import.meta.env.VITE_WS_URL as string) ||
+      // Trailing slash matters: CloudFront's `/socket.io/*` behavior does not
+      // match the bare `/socket.io`, which would fall through to the S3 origin.
+      `${protocol}//${globalThis.location.host}/socket.io/`
+    );
+  }
+
+  private setupSocketHandlers() {
+    if (!this.ws) return;
+
+    this.ws.onopen = () => {
+      this.connected = true;
+      // Flush anything queued before the socket opened (e.g. an early subscribe).
+      this.pending.forEach((m) => this.ws?.send(m));
+      this.pending = [];
+      this.trigger('connect');
+    };
+
+    this.ws.onclose = () => {
+      this.connected = false;
+      this.trigger('disconnect');
+      setTimeout(() => this.connect(), 3000); // Reconnect interval
+    };
+
+    this.ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.event) {
+          this.trigger(payload.event, payload.data);
+        }
+      } catch (err) {
+        console.error('Error parsing raw WebSocket message:', err);
+      }
+    };
+
+    this.ws.onerror = (err) => {
+      console.error('Raw WebSocket error:', err);
+    };
+  }
+
+  private connect() {
+    try {
+      this.ws = new WebSocket(this.getWsUrl());
+      this.setupSocketHandlers();
+    } catch (err) {
+      console.error('Failed to initialize raw WebSocket connection:', err);
+      setTimeout(() => this.connect(), 3000);
+    }
   }
 
   /**
@@ -89,11 +106,6 @@ class RawWebSocketWrapper implements WishboardSocket {
     } else {
       this.pending.push(message);
     }
-  }
-
-  private trigger(event: string, data?: unknown) {
-    if (!this.listeners[event]) return;
-    this.listeners[event].forEach((cb) => cb(data));
   }
 }
 

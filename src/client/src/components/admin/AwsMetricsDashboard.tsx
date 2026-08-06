@@ -287,6 +287,97 @@ const MetricGroupSection: React.FC<{ group: MetricGroup }> = ({ group }) => (
   </div>
 );
 
+// ── Dashboard Toolbar ──────────────────────────────────────────────────────────
+
+interface DashboardToolbarProps {
+  fetchMetrics: () => void;
+  loading: boolean;
+  autoRefresh: boolean;
+  setAutoRefresh: (val: boolean) => void;
+  generatedAt?: string;
+}
+
+const DashboardToolbar: React.FC<DashboardToolbarProps> = ({
+  fetchMetrics,
+  loading,
+  autoRefresh,
+  setAutoRefresh,
+  generatedAt,
+}) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      marginBottom: '20px',
+      flexWrap: 'wrap',
+    }}
+  >
+    <button type="button" className="secondary-button" onClick={fetchMetrics} disabled={loading}>
+      {loading ? '⟳ Refreshing…' : '⟳ Refresh Now'}
+    </button>
+
+    <label
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        fontSize: '13px',
+        color: '#9ca3af',
+        cursor: 'pointer',
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={autoRefresh}
+        onChange={(e) => setAutoRefresh(e.target.checked)}
+      />
+      <span>Auto-refresh every 30s</span>
+    </label>
+
+    {generatedAt && (
+      <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#6b7280' }}>
+        Last updated:{' '}
+        {new Date(generatedAt).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        })}
+      </span>
+    )}
+  </div>
+);
+
+// ── Dashboard Error ────────────────────────────────────────────────────────────
+
+const DashboardError: React.FC<{ error: string | null }> = ({ error }) => {
+  if (!error) return null;
+  return (
+    <div
+      style={{
+        background: '#1c0a0a',
+        border: '1px solid #7f1d1d',
+        borderRadius: '6px',
+        padding: '12px 16px',
+        color: '#fca5a5',
+        fontSize: '13px',
+        marginBottom: '16px',
+      }}
+    >
+      <strong>Error:</strong> {error}
+      {error.toLowerCase().includes('iam') ||
+      error.toLowerCase().includes('access denied') ||
+      error.toLowerCase().includes('not authorized') ? (
+        <p style={{ margin: '8px 0 0', color: '#9ca3af', fontSize: '12px' }}>
+          The Lambda execution role needs <code>cloudwatch:GetMetricData</code> permission. See{' '}
+          <code>aws-serverless/template.yaml</code> → <code>ApiFunction.Policies</code>.
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
 // ── Main Dashboard Component ───────────────────────────────────────────────────
 
 const AUTO_REFRESH_MS = 30_000;
@@ -339,80 +430,15 @@ export default function AwsMetricsDashboard({ authHeader }: Readonly<AwsMetricsD
 
   return (
     <div style={{ color: '#e5e7eb' }}>
-      {/* Toolbar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={fetchMetrics}
-          disabled={loading}
-        >
-          {loading ? '⟳ Refreshing…' : '⟳ Refresh Now'}
-        </button>
+      <DashboardToolbar
+        fetchMetrics={fetchMetrics}
+        loading={loading}
+        autoRefresh={autoRefresh}
+        setAutoRefresh={setAutoRefresh}
+        generatedAt={data?.generatedAt}
+      />
 
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '13px',
-            color: '#9ca3af',
-            cursor: 'pointer',
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={autoRefresh}
-            onChange={(e) => setAutoRefresh(e.target.checked)}
-          />
-          <span>Auto-refresh every 30s</span>
-        </label>
-
-        {data?.generatedAt && (
-          <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#6b7280' }}>
-            Last updated:{' '}
-            {new Date(data.generatedAt).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: false,
-            })}
-          </span>
-        )}
-      </div>
-
-      {/* Error state */}
-      {error && (
-        <div
-          style={{
-            background: '#1c0a0a',
-            border: '1px solid #7f1d1d',
-            borderRadius: '6px',
-            padding: '12px 16px',
-            color: '#fca5a5',
-            fontSize: '13px',
-            marginBottom: '16px',
-          }}
-        >
-          <strong>Error:</strong> {error}
-          {error.toLowerCase().includes('iam') ||
-          error.toLowerCase().includes('access denied') ||
-          error.toLowerCase().includes('not authorized') ? (
-            <p style={{ margin: '8px 0 0', color: '#9ca3af', fontSize: '12px' }}>
-              The Lambda execution role needs <code>cloudwatch:GetMetricData</code> permission. See{' '}
-              <code>aws-serverless/template.yaml</code> → <code>ApiFunction.Policies</code>.
-            </p>
-          ) : null}
-        </div>
-      )}
+      <DashboardError error={error} />
 
       {/* Skeleton / loading on first load */}
       {loading && !data && (
