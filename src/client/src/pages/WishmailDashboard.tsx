@@ -10,127 +10,6 @@ interface Wishmail {
   created_at: string;
 }
 
-interface WishmailItemProps {
-  mail: Wishmail;
-  markRead: (id: string) => void;
-  deleteMail: (id: string) => void;
-}
-
-const WishmailItem: React.FC<WishmailItemProps> = ({ mail, markRead, deleteMail }) => {
-  return (
-    <div
-      style={{
-        padding: '20px',
-        borderRadius: '16px',
-        border: `1px solid ${mail.read ? '#e2e8f0' : '#bfdbfe'}`,
-        background: mail.read ? '#f8fafc' : '#eff6ff',
-        boxShadow: mail.read ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.08)',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px',
-        }}
-      >
-        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
-          {new Date(mail.created_at).toLocaleString(undefined, {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          })}
-        </span>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {!mail.read && (
-            <button
-              type="button"
-              onClick={() => markRead(mail.id)}
-              style={{
-                padding: '6px 12px',
-                fontSize: '0.85rem',
-                minHeight: 'auto',
-                borderRadius: '99px',
-              }}
-            >
-              Mark as Read
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => deleteMail(mail.id)}
-            className="secondary-button"
-            style={{
-              padding: '6px 12px',
-              fontSize: '0.85rem',
-              minHeight: 'auto',
-              borderRadius: '99px',
-              background: '#fee2e2',
-              color: '#b91c1c',
-              border: '1px solid #fecaca',
-            }}
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-      <p
-        style={{
-          whiteSpace: 'pre-wrap',
-          margin: '0 0 20px 0',
-          fontSize: '1.05rem',
-          color: '#1e293b',
-          lineHeight: 1.6,
-        }}
-      >
-        {mail.content}
-      </p>
-
-      {mail.return_contacts && mail.return_contacts.length > 0 && (
-        <div
-          style={{
-            background: 'white',
-            padding: '16px',
-            borderRadius: '12px',
-            border: '1px solid #e2e8f0',
-          }}
-        >
-          <span
-            style={{
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              color: '#64748b',
-              display: 'block',
-              marginBottom: '12px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-            }}
-          >
-            Return Contacts
-          </span>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {mail.return_contacts.map((c) => (
-              <span
-                key={`${c.type}-${c.value}`}
-                style={{
-                  background: '#f8fafc',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.95rem',
-                  color: '#334155',
-                }}
-              >
-                <strong style={{ color: '#0f172a' }}>{c.type}:</strong> {c.value}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 export default function WishmailDashboard() {
   const { token } = useAuth();
   const [mails, setMails] = useState<Wishmail[]>([]);
@@ -291,7 +170,117 @@ export default function WishmailDashboard() {
           </div>
         ) : (
           mails.map((mail) => (
-            <WishmailItem key={mail.id} mail={mail} markRead={markRead} deleteMail={deleteMail} />
+            <div
+              key={mail.id}
+              style={{
+                padding: '20px',
+                borderRadius: '16px',
+                border: `1px solid ${mail.read ? '#e2e8f0' : '#bfdbfe'}`,
+                background: mail.read ? '#f8fafc' : '#eff6ff',
+                boxShadow: mail.read ? 'none' : '0 4px 12px rgba(37, 99, 235, 0.08)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '16px',
+                }}
+              >
+                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
+                  {new Date(mail.created_at).toLocaleString(undefined, {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })}
+                </span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {!mail.read && (
+                    <button
+                      type="button"
+                      onClick={() => markRead(mail.id)}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.85rem',
+                        minHeight: 'auto',
+                        borderRadius: '99px',
+                      }}
+                    >
+                      Mark as Read
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => deleteMail(mail.id)}
+                    className="secondary-button"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '0.85rem',
+                      minHeight: 'auto',
+                      borderRadius: '99px',
+                      background: '#fee2e2',
+                      color: '#b91c1c',
+                      border: '1px solid #fecaca',
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+              <p
+                style={{
+                  whiteSpace: 'pre-wrap',
+                  margin: '0 0 20px 0',
+                  fontSize: '1.05rem',
+                  color: '#1e293b',
+                  lineHeight: 1.6,
+                }}
+              >
+                {mail.content}
+              </p>
+
+              {mail.return_contacts && mail.return_contacts.length > 0 && (
+                <div
+                  style={{
+                    background: 'white',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: '#64748b',
+                      display: 'block',
+                      marginBottom: '12px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    Return Contacts
+                  </span>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {mail.return_contacts.map((c) => (
+                      <span
+                        key={`${c.type}-${c.value}`}
+                        style={{
+                          background: '#f8fafc',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.95rem',
+                          color: '#334155',
+                        }}
+                      >
+                        <strong style={{ color: '#0f172a' }}>{c.type}:</strong> {c.value}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           ))
         )}
       </div>

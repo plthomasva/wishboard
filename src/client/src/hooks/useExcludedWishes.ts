@@ -33,11 +33,11 @@ export function useExcludedWishes() {
     function loadLocalExclusions() {
       try {
         const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (!raw || !active) return;
-
-        const ids = JSON.parse(raw);
-        if (Array.isArray(ids)) {
-          setExcludedIds(ids);
+        if (raw && active) {
+          const ids = JSON.parse(raw);
+          if (Array.isArray(ids)) {
+            setExcludedIds(ids);
+          }
         }
       } catch (err) {
         console.error('Failed to load wish exclusions from localStorage:', err);

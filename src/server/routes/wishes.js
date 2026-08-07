@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
-    const uniqueSuffix = Date.now() + '-' + crypto.randomUUID();
+    const uniqueSuffix = Date.now() + '-' + crypto.randomInt(0, 1000000000);
     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   },
 });
@@ -277,8 +277,9 @@ function applyExclusionFilter({ sql, args, searcher, excludeQuery }) {
   } else {
     const excludeIds = parseQueryIds(excludeQuery);
     if (excludeIds.length > 0) {
-      updatedSql += ` AND w.id NOT IN (SELECT value FROM json_each(?))`;
-      updatedArgs.push(JSON.stringify(excludeIds));
+      const placeholders = excludeIds.map(() => '?').join(', ');
+      updatedSql += ` AND w.id NOT IN (${placeholders})`;
+      updatedArgs.push(...excludeIds);
     }
   }
   return { sql: updatedSql, args: updatedArgs };
@@ -340,8 +341,9 @@ router.get('/', async (req, res) => {
   if (req.query.ids) {
     const filterIds = parseQueryIds(req.query.ids);
     if (filterIds.length > 0) {
-      sql += ` AND w.id IN (SELECT value FROM json_each(?))`;
-      args.push(JSON.stringify(filterIds));
+      const placeholders = filterIds.map(() => '?').join(', ');
+      sql += ` AND w.id IN (${placeholders})`;
+      args.push(...filterIds);
     }
   }
 
