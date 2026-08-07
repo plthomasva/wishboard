@@ -137,17 +137,19 @@ function ClaimWishForm({
   );
 }
 
+interface IdentityAttributesFieldsProps {
+  categories: Category[];
+  identityAttributes: Record<string, string>;
+  setIdentityAttributes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  regConflicts: Array<{ message: string; target_attribute: string }>;
+}
+
 function IdentityAttributesFields({
   categories,
   identityAttributes,
   setIdentityAttributes,
   regConflicts,
-}: {
-  categories: Category[];
-  identityAttributes: Record<string, string>;
-  setIdentityAttributes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  regConflicts: Array<{ message: string; target_attribute: string }>;
-}) {
+}: Readonly<IdentityAttributesFieldsProps>) {
   return (
     <>
       <div className="label-with-info" style={{ marginTop: '12px', marginBottom: '8px' }}>
@@ -177,13 +179,12 @@ function IdentityAttributesFields({
   );
 }
 
-function AccountTabs({
-  mode,
-  setMode,
-}: {
+interface AccountTabsProps {
   mode: 'login' | 'register';
   setMode: (mode: 'login' | 'register') => void;
-}) {
+}
+
+function AccountTabs({ mode, setMode }: Readonly<AccountTabsProps>) {
   return (
     <div className="tab-buttons">
       <button
