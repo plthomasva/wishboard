@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.24.0](https://github.com/plthomasva/wishboard/compare/wishboard-v1.23.1...wishboard-v1.24.0) (2026-08-07)
+
+
+### Features
+
+* profile-driven demo seeder and profile yaml decomposition ([#345](https://github.com/plthomasva/wishboard/issues/345)) ([710e1b8](https://github.com/plthomasva/wishboard/commit/710e1b8260567b9536a609cd0674ce4a2639eb37))
+
+
+### Bug Fixes
+
+* ⚡ address N+1 query issue during legacy SQLite migration ([#366](https://github.com/plthomasva/wishboard/issues/366)) ([aed5915](https://github.com/plthomasva/wishboard/commit/aed5915d42470d49830ea58123c62196cc6c18f2))
+* **cli:** 🔒 prevent command injection in kiosk remote cleanup ([b14eb27](https://github.com/plthomasva/wishboard/commit/b14eb27cc08a6146a553a130b8b235b49177e23d))
+* **cli:** escape dynamic regex keys in serverless.js ([30c7b55](https://github.com/plthomasva/wishboard/commit/30c7b55e60ab2605b06afee4d541da138fde4306))
+* eliminate sql injection vulnerability in wishes API by using json_each ([#354](https://github.com/plthomasva/wishboard/issues/354)) ([4c89954](https://github.com/plthomasva/wishboard/commit/4c899547027ac3527530a62f4baa8428175a5fd5))
+* **security:** 🔒 Fix SQL injection vulnerability in wishes filters using json_each ([#361](https://github.com/plthomasva/wishboard/issues/361)) ([2b60f37](https://github.com/plthomasva/wishboard/commit/2b60f37362127d49ef40e339cdea1c6c271d3e5f))
+* support separate yaml files for organization ([710e1b8](https://github.com/plthomasva/wishboard/commit/710e1b8260567b9536a609cd0674ce4a2639eb37))
+
+
+### Performance Improvements
+
+* optimize N+1 query in admin rules seeding ([#353](https://github.com/plthomasva/wishboard/issues/353)) ([c8a8b16](https://github.com/plthomasva/wishboard/commit/c8a8b16e41bed570f009d2aeda70d47993a820a1))
+* optimize N+1 query in wish exclusions import⚡ ([#351](https://github.com/plthomasva/wishboard/issues/351)) ([f277ff0](https://github.com/plthomasva/wishboard/commit/f277ff0b6ed8f066c69c125757dd481796c546de))
+
 ## [1.23.1](https://github.com/plthomasva/wishboard/compare/wishboard-v1.23.0...wishboard-v1.23.1) (2026-08-02)
 
 
