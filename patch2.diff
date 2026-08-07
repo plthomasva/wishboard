@@ -1,0 +1,14 @@
+--- src/server/routes/wishes.js
++++ src/server/routes/wishes.js
+@@ -282,10 +282,9 @@
+     return { sql, args };
+   }
+
+-  const placeholders = excludeIds.map(() => '?').join(', ');
+   return {
+-    sql: sql + ` AND w.id NOT IN (${placeholders})`,
+-    args: [...args, ...excludeIds],
++    sql: sql + ` AND w.id NOT IN (SELECT value FROM json_each(?))`,
++    args: [...args, JSON.stringify(excludeIds)],
+   };
+ }

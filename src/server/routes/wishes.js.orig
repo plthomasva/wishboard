@@ -287,9 +287,10 @@ function applyQueryExclusionFilter(sql, args, excludeQuery) {
     return { sql, args };
   }
 
+  const placeholders = excludeIds.map(() => '?').join(', ');
   return {
-    sql: sql + ` AND w.id NOT IN (SELECT value FROM json_each(?))`,
-    args: [...args, JSON.stringify(excludeIds)],
+    sql: sql + ` AND w.id NOT IN (${placeholders})`,
+    args: [...args, ...excludeIds],
   };
 }
 
